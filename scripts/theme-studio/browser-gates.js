@@ -729,3 +729,24 @@ if(location.hash==='#paltoggletest'){let ok=true;const notes=[];const A=(c,n)=>{
  PALETTE=saveP;for(const k in MAP)delete MAP[k];Object.assign(MAP,saveM);syncSyntaxFromCache();renderPalette();
  document.title='PALTOGGLETEST '+(ok?'PASS':'FAIL');
  const d=document.createElement('div');d.id='paltoggletest';d.textContent='PALTOGGLETEST '+(ok?'PASS':'FAIL')+(notes.length?' fails='+notes.join(','):'');document.body.appendChild(d);}
+// Unused-tile gate (open with #unusedtest): a palette color referenced nowhere
+// in the theme gets the .unused flag; a column with no used members gets
+// .unused-col; referenced colors stay unflagged.
+if(location.hash==='#unusedtest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c){ok=false;notes.push(n);}};
+ const saveP=PALETTE.slice(),saveM=Object.assign({},MAP),saveSyn=JSON.parse(JSON.stringify(SYNTAX)),saveU=JSON.parse(JSON.stringify(UIMAP));
+ setSyntaxFg('bg','#101010');setSyntaxFg('p','#f0f0f0');
+ PALETTE=[['#101010','bg','ground'],['#f0f0f0','fg','ground'],['#67809c','blue','blue'],['#123456','teal','teal']];
+ for(const f in UIMAP)UIMAP[f]={fg:null,bg:null,bold:false,italic:false,underline:false,strike:false};
+ setSyntaxFg('kw','#67809c');
+ renderPalette();
+ const tealStrip=document.querySelector('#pals .fstrip[data-column="teal"]');
+ const blueStrip=document.querySelector('#pals .fstrip[data-column="blue"]');
+ const tealChip=tealStrip&&tealStrip.querySelector('.pchip');
+ const blueChip=blueStrip&&blueStrip.querySelector('.pchip');
+ A(tealChip&&tealChip.classList.contains('unused'),'unreferenced-tile-flagged');
+ A(blueChip&&!blueChip.classList.contains('unused'),'referenced-tile-not-flagged');
+ A(tealStrip&&tealStrip.classList.contains('unused-col'),'all-unused-column-flagged');
+ A(blueStrip&&!blueStrip.classList.contains('unused-col'),'used-column-not-flagged');
+ PALETTE=saveP;for(const k in MAP)delete MAP[k];Object.assign(MAP,saveM);for(const k in SYNTAX)delete SYNTAX[k];Object.assign(SYNTAX,saveSyn);for(const f in UIMAP)delete UIMAP[f];Object.assign(UIMAP,saveU);syncSyntaxFromCache();renderPalette();
+ document.title='UNUSEDTEST '+(ok?'PASS':'FAIL');
+ const d=document.createElement('div');d.id='unusedtest';d.textContent='UNUSEDTEST '+(ok?'PASS':'FAIL')+(notes.length?' fails='+notes.join(','):'');document.body.appendChild(d);}

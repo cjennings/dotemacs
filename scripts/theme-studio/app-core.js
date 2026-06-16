@@ -240,6 +240,21 @@ function toggleLockSet(keys,locked){
 // from the palette, and ground+N entries are reserved for that column. Everything
 // else groups by its stable column id, not by OKLCH hue/chroma or display name.
 // Legacy two-field entries fall back to their generated-name stem until edited.
+// Reverse lookup: every palette hex referenced by an assignment (syntax, ui, or
+// package fg / bg / box-color), plus the ground endpoints, which are always in
+// use. Values may be palette names or hexes; nameToHex resolves both, so a tile
+// whose hex is absent from this set is genuinely unreferenced. Biased safe: an
+// unresolvable value simply marks nothing, so a used color is never flagged.
+function usedPaletteHexes(palette,syntax,uimap,pkgmap,ground){
+  const used=new Set();
+  const add=v=>{const h=nameToHex(v,palette);if(h)used.add(h.toLowerCase());};
+  const addFace=f=>{if(!f)return;add(f.fg);add(f.bg);if(f.box&&f.box.color)add(f.box.color);};
+  if(ground){if(ground.bg)add(ground.bg);if(ground.fg)add(ground.fg);}
+  for(const k in (syntax||{}))addFace(syntax[k]);
+  for(const face in (uimap||{}))addFace(uimap[face]);
+  for(const app in (pkgmap||{}))for(const face in pkgmap[app])addFace(pkgmap[app][face]);
+  return used;
+}
 function columnsFromPalette(palette,ground){
   const bg=ground&&ground.bg,fg=ground&&ground.fg;
   const groundStrip=[];
@@ -352,4 +367,4 @@ function spanNeighborHex(cur,palette,ground,dir){
   return null;
 }
 
-export { nameToHex, normalizePkgFace, buildPkgmap, packagesForExport, mergePackagesInto, effResolve, resolveSyntaxFg, resolveUiAttr, dropdownRowTextColor, paletteOptionList, spanNeighborHex, slugify, fgSetFor, floor, lMax, COVERED_FACES, columnsFromPalette, regenColumn, rankByLightness, stepRepointPlan, sortColumns, sortColumnMembers, groundRoleOfEntry, groundColumnMembersFromPalette, clearPalettePlan, deletePaletteColumnPlan, areAllLocked, lockToggleLabel, toggleLockSet };
+export { nameToHex, normalizePkgFace, buildPkgmap, packagesForExport, mergePackagesInto, effResolve, resolveSyntaxFg, resolveUiAttr, dropdownRowTextColor, paletteOptionList, spanNeighborHex, slugify, fgSetFor, floor, lMax, COVERED_FACES, columnsFromPalette, usedPaletteHexes, regenColumn, rankByLightness, stepRepointPlan, sortColumns, sortColumnMembers, groundRoleOfEntry, groundColumnMembersFromPalette, clearPalettePlan, deletePaletteColumnPlan, areAllLocked, lockToggleLabel, toggleLockSet };

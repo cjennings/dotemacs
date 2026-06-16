@@ -87,13 +87,14 @@ function renderPaletteWarnings(warnings,overflow){
 }
 // One palette chip for PALETTE[i], with its remove / rename / select handlers.
 // Families sort deterministically, so the old move-arrow / drag reordering is gone.
-function paletteChip(i,nearest){
+function paletteChip(i,nearest,used){
   const [hex,name]=PALETTE[i],tc=textOn(hex),nde=nearest[i];
   const role=groundRoleOfEntry(PALETTE[i],{bg:MAP['bg'],fg:MAP['p']});
   const locked=(role==='bg'||role==='fg');
   const d=document.createElement('div');d.className='pchip'+(i===selectedIdx?' sel':'');d.style.background=hex;
   d.dataset.paletteIndex=String(i);
   d.title=name+' '+hex+(nde===Infinity||nde===undefined?'':' — nearest ΔE '+nde.toFixed(3));
+  if(used&&!used.has(hex.toLowerCase())){d.classList.add('unused');d.title+=' — not used in the theme';}
   const rm=locked?`<span class="lock" title="${role==='bg'?'background':'foreground'} — can't remove" style="color:${tc}">&#128274;</span>`:`<button class="rm" title="remove" style="color:${tc}">×</button>`;
   d.innerHTML=`${rm}<input class="nm" value="${name}" readonly style="color:${tc}"><div class="hx" style="color:${tc}">${hex}</div>`;
   if(!locked)d.querySelector('.rm').onclick=(e)=>{e.stopPropagation();rememberGone(hex,name);PALETTE.splice(i,1);if(selectedIdx===i)selectedIdx=null;refreshPaletteState({code:false,ground:false});};
@@ -183,6 +184,7 @@ function renderPalette(){
   p.appendChild(tg);
   const {warnings,overflow,nearest}=paletteWarnings(PALETTE,DELTAE_MIN,5);
   const {ground,columns}=columnsFromPalette(PALETTE,{bg:MAP['bg'],fg:MAP['p']});
+  const usedHexes=usedPaletteHexes(PALETTE,SYNTAX,UIMAP,PKGMAP,{bg:MAP['bg'],fg:MAP['p']});
   const used=new Set();
   const idxOf=(hex,name)=>{for(let i=0;i<PALETTE.length;i++)if(!used.has(i)&&PALETTE[i][0]===hex&&PALETTE[i][1]===name){used.add(i);return i;}return -1;};
   const strip=(cls)=>{const s=document.createElement('div');s.className='fstrip'+(cls||'');p.appendChild(s);return s;};
@@ -192,7 +194,7 @@ function renderPalette(){
     gs.appendChild(groundSpanControl());
     (paletteShowFull?groundColumnMembers():groundColumnMembers().filter(m=>!/^ground[+-]\d+$/i.test(m.name||''))).forEach(m=>{
       const i=idxOf(m.hex,m.name);
-      if(i>=0)gs.appendChild(paletteChip(i,nearest));
+      if(i>=0)gs.appendChild(paletteChip(i,nearest,usedHexes));
       else{const tc=textOn(m.hex),sw=document.createElement('div');sw.className='pchip';sw.style.background=m.hex;sw.title=(m.name||'ground')+' '+m.hex;
         sw.innerHTML=`<input class="nm" value="${m.name||'ground'}" disabled style="color:${tc}"><div class="hx" style="color:${tc}">${m.hex}</div>`;gs.appendChild(sw);}
     });
@@ -204,7 +206,8 @@ function renderPalette(){
     const s=strip('');s.dataset.column=f.column||f.base;
     s.appendChild(columnHeader(f,pos,ordered.length));
     s.appendChild(columnCountControl(f));
-    (paletteShowFull?f.members:f.members.filter(m=>m.hex.toLowerCase()===f.base.toLowerCase())).forEach(m=>{const i=idxOf(m.hex,m.name);if(i>=0)s.appendChild(paletteChip(i,nearest));});
+    (paletteShowFull?f.members:f.members.filter(m=>m.hex.toLowerCase()===f.base.toLowerCase())).forEach(m=>{const i=idxOf(m.hex,m.name);if(i>=0)s.appendChild(paletteChip(i,nearest,usedHexes));});
+    if(f.members.every(m=>!usedHexes.has(m.hex.toLowerCase())))s.classList.add('unused-col');
   });
   renderPaletteWarnings(warnings,overflow);
   buildUITable();if(document.getElementById('pkgbody'))buildPkgTable();

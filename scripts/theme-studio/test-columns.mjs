@@ -5,7 +5,7 @@
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { columnsFromPalette, regenColumn, groundRoleOfEntry, rankByLightness, stepRepointPlan, sortColumns } from './app-core.js';
+import { columnsFromPalette, usedPaletteHexes, regenColumn, groundRoleOfEntry, rankByLightness, stepRepointPlan, sortColumns } from './app-core.js';
 
 const columnOf = (columns, name) => columns.find(f => f.members.some(m => m.name === name));
 
@@ -221,4 +221,19 @@ test('regenColumn: Boundary - a near-black bg yields no duplicate pure-black til
 
 test('regenColumn: Boundary - no ground falls back to the black/white span', () => {
   assert.equal(regenColumn('#67809c', 2).members.length, 5);
+});
+
+// --- usedPaletteHexes (unused-tile flagging) --------------------------------
+test('usedPaletteHexes: Normal - records ground, syntax-by-hex, ui-by-name, pkg box color', () => {
+  const palette = [['#101010','bg','ground'],['#f0f0f0','fg','ground'],['#67809c','blue','blue'],['#aa3344','red','red'],['#123456','teal','teal']];
+  const used = usedPaletteHexes(palette, { kw: { fg: '#67809c' } }, { region: { bg: 'red' } }, { magit: { m: { box: { color: '#aa3344' } } } }, { bg: '#101010', fg: '#f0f0f0' });
+  assert.ok(used.has('#101010') && used.has('#f0f0f0'), 'ground endpoints are always used');
+  assert.ok(used.has('#67809c'), 'a syntax hex reference is recorded');
+  assert.ok(used.has('#aa3344'), 'a ui name reference resolves to its hex');
+  assert.ok(!used.has('#123456'), 'an unreferenced color is absent');
+});
+
+test('usedPaletteHexes: Boundary - empty maps leave only the ground endpoints', () => {
+  const used = usedPaletteHexes([['#101010','bg','ground'],['#f0f0f0','fg','ground']], {}, {}, {}, { bg: '#101010', fg: '#f0f0f0' });
+  assert.deepEqual([...used].sort(), ['#101010', '#f0f0f0']);
 });
