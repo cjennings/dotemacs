@@ -76,6 +76,29 @@ non-visited entry, not the second."
         (when (get-buffer "*test-alive*") (kill-buffer "*test-alive*"))))
     (should (equal opened "/tmp/dead.org"))))
 
+(ert-deftest test-ui-navigation-undo-kill-buffer-skips-open-file-at-head ()
+  "Boundary: an open file at the head of the list is skipped (equal, not eq).
+The previous delq compared expand-file-name strings by identity, so a
+currently-open most-recent file was never skipped."
+  (let ((opened nil)
+        (recentf-mode t)
+        ;; The open file is FIRST — only an equal-based filter removes it.
+        (recentf-list '("/tmp/alive.txt" "/tmp/dead.org")))
+    (cl-letf (((symbol-function 'require) (lambda (&rest _) t))
+              ((symbol-function 'recentf-mode) (lambda (&rest _) t))
+              ((symbol-function 'buffer-list)
+               (lambda (&rest _)
+                 (list (let ((b (get-buffer-create "*test-alive*")))
+                         (with-current-buffer b
+                           (setq buffer-file-name "/tmp/alive.txt"))
+                         b))))
+              ((symbol-function 'find-file)
+               (lambda (f) (setq opened f))))
+      (unwind-protect
+          (cj/undo-kill-buffer 1)
+        (when (get-buffer "*test-alive*") (kill-buffer "*test-alive*"))))
+    (should (equal opened "/tmp/dead.org"))))
+
 (ert-deftest test-ui-navigation-undo-kill-buffer-numeric-arg-is-one-based ()
   "Normal: a numeric prefix is 1-based — N=2 opens the second non-visited entry."
   (let ((opened nil)

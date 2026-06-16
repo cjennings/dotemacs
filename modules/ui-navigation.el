@@ -203,8 +203,11 @@ With numeric prefix ARG, re-open the ARGth most-recently-killed file
 						   (buffer-list)))))
 	(mapc
 	 (lambda (buf-file)
+	   ;; delete (equal), not delq (eq): buf-file is a fresh string from
+	   ;; expand-file-name and never eq to the recentf-list entries, so the
+	   ;; skip-open-files logic was dead.
 	   (setq recently-killed-list
-			 (delq buf-file recently-killed-list)))
+			 (delete buf-file recently-killed-list)))
 	 buffer-files-list)
 	(when recently-killed-list
 	  (let ((file (nth (1- arg) recently-killed-list)))
