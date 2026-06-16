@@ -101,8 +101,11 @@ Used to disable functionality with defalias \='somefunc \='cj/disabled)."
 ;; CUSTOMIZATIONS
 ;; All customizations should be declared in Emacs init files.
 ;; Add accidental customizations via the customization interface to a temp file that's never read.
-(setq custom-file (make-temp-file
-                   "emacs-customizations-trashbin-"))
+;; Guarded so a batch module load (make validate-modules, byte-compile) doesn't
+;; create a throwaway temp file on every run.
+(unless noninteractive
+  (setq custom-file (make-temp-file
+                     "emacs-customizations-trashbin-")))
 
 (defun cj/--warn-customize-discarded (&rest _)
   "Warn once that Customize edits land in a throwaway `custom-file'.
@@ -137,7 +140,9 @@ appears only once per session."
 ;; -------------------------------- Emacs Server -------------------------------
 ;; Start server so emacsclient can connect (needed for pinentry-emacs in terminal)
 
-(unless (or (daemonp) (server-running-p))
+;; noninteractive guard: a raw module load under --batch (make validate-modules
+;; on a machine with no daemon socket) would otherwise start a server.
+(unless (or noninteractive (daemonp) (server-running-p))
   (server-start))
 
 (setq system-time-locale "C")                       ;; use en_US locale to format time.

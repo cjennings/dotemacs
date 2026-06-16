@@ -24,7 +24,10 @@
   "Normal: custom-file points at a throwaway temp file, never the repo.
 This is what stops accidental Customize writes from landing in tracked init."
   (test-system-defaults--with-load-environment
-    (let ((custom-file nil))
+    ;; noninteractive is t under ERT batch; bind it nil so the interactive
+    ;; redirect runs (the module guards the redirect to interactive sessions).
+    (let ((custom-file nil)
+          (noninteractive nil))
       (test-system-defaults--load)
       (should (stringp custom-file))
       (should (string-prefix-p (file-name-as-directory
@@ -34,6 +37,15 @@ This is what stops accidental Customize writes from landing in tracked init."
                               (file-name-nondirectory custom-file)))
       (should-not (string-prefix-p (expand-file-name user-emacs-directory)
                                    (expand-file-name custom-file))))))
+
+(ert-deftest test-system-defaults-custom-file-not-littered-in-batch ()
+  "Boundary: a noninteractive (batch) load does not create a trashbin custom-file.
+Guards make validate-modules / byte-compile from dropping a temp file per run."
+  (test-system-defaults--with-load-environment
+    (let ((custom-file nil)
+          (noninteractive t))
+      (test-system-defaults--load)
+      (should-not custom-file))))
 
 ;;; backup directory
 
