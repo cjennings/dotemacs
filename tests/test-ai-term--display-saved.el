@@ -32,13 +32,12 @@
   "Normal: nil state on a desktop -> rightmost, size=cj/ai-term-desktop-width.
 The cardinal `right' default maps to the frame-edge variant
 `rightmost' so agent lands at the frame's right edge regardless of
-which window is selected.  `env-laptop-p' is stubbed nil to pin the
-desktop branch."
+which window is selected.  The default direction is stubbed `right'."
   (let (received-buf received-alist
         (cj/--ai-term-last-direction nil)
         (cj/--ai-term-last-size nil)
         (cj/ai-term-desktop-width 0.5))
-    (cl-letf (((symbol-function 'env-laptop-p) (lambda () nil))
+    (cl-letf (((symbol-function 'cj/--ai-term-default-direction) (lambda (&rest _) 'right))
               ((symbol-function 'display-buffer-in-direction)
                (lambda (b a)
                  (setq received-buf b received-alist a)
@@ -49,16 +48,16 @@ desktop branch."
     (should (= (cdr (assq 'window-width received-alist)) 0.5))
     (should (eq (cdr (assq 'inhibit-same-window received-alist)) t))))
 
-(ert-deftest test-ai-term--display-saved-uses-laptop-defaults-when-state-nil ()
-  "Normal: nil state on a laptop -> bottom, size=cj/ai-term-laptop-height.
+(ert-deftest test-ai-term--display-saved-uses-below-default-when-state-nil ()
+  "Normal: nil state with a `below' default -> bottom, size=cj/ai-term-laptop-height.
 The cardinal `below' default maps to the frame-edge variant `bottom'
-and the size lands on the `window-height' axis.  `env-laptop-p' is
-stubbed t to pin the laptop branch."
+and the size lands on the `window-height' axis.  The default direction
+is stubbed `below' (the size helper follows it)."
   (let (received-alist
         (cj/--ai-term-last-direction nil)
         (cj/--ai-term-last-size nil)
         (cj/ai-term-laptop-height 0.75))
-    (cl-letf (((symbol-function 'env-laptop-p) (lambda () t))
+    (cl-letf (((symbol-function 'cj/--ai-term-default-direction) (lambda (&rest _) 'below))
               ((symbol-function 'display-buffer-in-direction)
                (lambda (_b a) (setq received-alist a) 'fake-window)))
       (cj/--ai-term-display-saved 'fake-buf '((inhibit-same-window . t))))
