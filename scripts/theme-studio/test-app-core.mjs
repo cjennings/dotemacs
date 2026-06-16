@@ -9,7 +9,7 @@ import { fileURLToPath } from 'node:url';
 import {
   nameToHex, normalizePkgFace, buildPkgmap, packagesForExport, mergePackagesInto, effResolve, resolveSyntaxFg, resolveUiAttr, dropdownRowTextColor, paletteOptionList, spanNeighborHex, slugify,
   clearPalettePlan, deletePaletteColumnPlan, groundColumnMembersFromPalette, areAllLocked, lockToggleLabel, toggleLockSet,
-  galleryModel, appViewKeysSorted, faceBoxNonDefaults,
+  galleryModel, appViewKeysSorted, faceBoxNonDefaults, stepViewIndex,
 } from './app-core.js';
 import { planPaletteGenerator, entriesForGeneratedColumn } from './palette-generator-core.js';
 import { oklch2hex, deltaE } from './colormath.js';
@@ -877,4 +877,21 @@ test('faceBoxNonDefaults: inherit and box differences are flagged', () => {
 test('faceBoxNonDefaults: nullish inputs flag nothing', () => {
   assert.deepEqual(faceBoxNonDefaults(null, null),
     { fg: false, bg: false, style: false, inherit: false, height: false, box: false });
+});
+
+// stepViewIndex: the prev/next arrows step the view-dropdown selection, clamped
+// to the option range (no wrap).
+test('stepViewIndex: steps forward and back within range', () => {
+  assert.equal(stepViewIndex(2, 5, 1), 3);
+  assert.equal(stepViewIndex(2, 5, -1), 1);
+});
+test('stepViewIndex: clamps at both ends, no wrap', () => {
+  assert.equal(stepViewIndex(0, 5, -1), 0);
+  assert.equal(stepViewIndex(4, 5, 1), 4);
+});
+test('stepViewIndex: a single option or empty list stays put', () => {
+  assert.equal(stepViewIndex(0, 1, 1), 0);
+  assert.equal(stepViewIndex(0, 1, -1), 0);
+  assert.equal(stepViewIndex(3, 0, -1), 3);
+  assert.equal(stepViewIndex(0, 0, 1), 0);
 });

@@ -25,6 +25,9 @@
  .stylecluster .sbtn{margin:0}
  table.leg th:hover{color:#e8bd30}
  select.chip{appearance:none;border:1px solid #00000060;border-radius:5px;padding:5px 10px;font:bold 14px monospace;width:160px;cursor:pointer}
+ /* Prev/next arrows flanking the view dropdown: step the selection without reopening it. */
+ .viewnav{appearance:none;border:1px solid #00000060;border-radius:5px;background:#1f1c19;color:#e8bd30;font:bold 16px monospace;width:24px;height:30px;padding:0;margin:0 4px;cursor:pointer;vertical-align:middle}
+ .viewnav:hover{border-color:#e8bd30}
  /* Non-default marker: a small gold corner flag on a per-face setting cell whose
     value differs from the face's default. The size box looks identical default
     or not, so the flag is the only at-a-glance cue that a value was changed. */
@@ -223,7 +226,7 @@
   <div class="pals" id="pals"></div>
  </section>
 <h1>assignment</h1>
-<div class="pkgbar"><label style="color:#b4b1a2">view</label><select id="viewsel" class="chip" style="width:auto;font:bold 10pt monospace" onchange="onViewChange()"></select></div>
+<div class="pkgbar"><label style="color:#b4b1a2">view</label><button id="viewprev" class="viewnav" title="previous in the list" onclick="stepView(-1)">&lsaquo;</button><select id="viewsel" class="chip" style="width:auto;font:bold 10pt monospace" onchange="onViewChange()"></select><button id="viewnext" class="viewnav" title="next in the list" onclick="stepView(1)">&rsaquo;</button></div>
 <div id="view-code" class="viewblock">
 <div class="cols">
  <section class="pane">
@@ -925,6 +928,13 @@ function appViewKeysSorted(apps){
   return Object.keys(apps||{}).sort((a,b)=>
     String((apps[a]&&apps[a].label)||a).localeCompare(
       String((apps[b]&&apps[b].label)||b), undefined, {sensitivity:'base'}));
+}
+
+// The prev/next arrows step the view-dropdown selection by DIR (-1/+1), clamped
+// to [0, LEN-1] with no wrap. An empty list (LEN<=0) keeps CUR.
+function stepViewIndex(cur,len,dir){
+  if(!(len>0)) return cur;
+  return Math.max(0, Math.min(len-1, cur+dir));
 }
 
 // Which of the six per-face setting boxes (fg, bg, style, inherit, height, box)
@@ -2136,6 +2146,13 @@ function buildViewSel(){const s=document.getElementById('viewsel');if(!s)return;
   const og=document.createElement('optgroup');og.label='package faces';
   for(const app of appViewKeysSorted(APPS))og.appendChild(mk(app,APPS[app].label));
   s.appendChild(og);}
+// The ‹ › buttons flanking the dropdown step the selection by DIR and re-render
+// the view (faces table + preview), so you can walk the list without reopening it.
+function stepView(dir){
+  const s=document.getElementById('viewsel');if(!s)return;
+  const i=stepViewIndex(s.selectedIndex,s.options.length,dir);
+  if(i!==s.selectedIndex){s.selectedIndex=i;onViewChange();}
+}
 function onViewChange(){const s=document.getElementById('viewsel');const v=(s&&s.value)||'@code';
   const show=(id,on)=>{const e=document.getElementById(id);if(e)e.style.display=on?'':'none';};
   show('view-code',v==='@code');show('view-ui',v==='@ui');show('view-pkg',v[0]!=='@');
@@ -3390,6 +3407,24 @@ if(location.hash==='#crtest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c){
  A(span&&span.title&&/(passes|fails) WCAG/i.test(span.title),'contrast cell carries a WCAG hover: '+(span&&span.title));
  document.title='CRTEST '+(ok?'PASS':'FAIL');
  const d=document.createElement('div');d.id='crtest';d.textContent='CRTEST '+(ok?'PASS':'FAIL')+(notes.length?' fails='+notes.join(','):'');document.body.appendChild(d);}
+// View-nav gate (open with #navtest): the prev/next arrows flanking the view
+// dropdown step the selection (clamped, no wrap) and re-render the view.
+if(location.hash==='#navtest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c){ok=false;notes.push(n);}};
+ const sel=document.getElementById('viewsel'),prev=document.getElementById('viewprev'),next=document.getElementById('viewnext');
+ A(!!prev&&!!next,'nav arrows exist');
+ if(sel&&prev&&next){
+  const vis=id=>{const e=document.getElementById(id);return !!e&&e.style.display!=='none';};
+  sel.selectedIndex=0;onViewChange();
+  next.click();A(sel.selectedIndex===1,'next advances the selection');
+  prev.click();A(sel.selectedIndex===0,'prev steps back');
+  prev.click();A(sel.selectedIndex===0,'prev clamps at the first option');
+  sel.selectedIndex=sel.options.length-1;onViewChange();
+  next.click();A(sel.selectedIndex===sel.options.length-1,'next clamps at the last option');
+  sel.selectedIndex=2;onViewChange();
+  A(sel.options[2]&&sel.options[2].value[0]!=='@'&&vis('view-pkg'),'stepping to a package shows the pkg view');
+ }
+ document.title='NAVTEST '+(ok?'PASS':'FAIL');
+ const d=document.createElement('div');d.id='navtest';d.textContent='NAVTEST '+(ok?'PASS':'FAIL')+(notes.length?' fails='+notes.join(','):'');document.body.appendChild(d);}
 // Box-cluster gate (open with #boxtest): the box control is a 2x2 cluster of
 // four radio buttons (none / line / pressed / raised); the color swatch shows
 // only while a box style is active.

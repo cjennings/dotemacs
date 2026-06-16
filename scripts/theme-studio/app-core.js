@@ -417,6 +417,13 @@ function appViewKeysSorted(apps){
       String((apps[b]&&apps[b].label)||b), undefined, {sensitivity:'base'}));
 }
 
+// The prev/next arrows step the view-dropdown selection by DIR (-1/+1), clamped
+// to [0, LEN-1] with no wrap. An empty list (LEN<=0) keeps CUR.
+function stepViewIndex(cur,len,dir){
+  if(!(len>0)) return cur;
+  return Math.max(0, Math.min(len-1, cur+dir));
+}
+
 // Which of the six per-face setting boxes (fg, bg, style, inherit, height, box)
 // differ from the face's seed default, so the table can mark a non-default box.
 // A non-default height looks identical to the default in the number input, so the
@@ -436,4 +443,4 @@ function faceBoxNonDefaults(cur,def){
   };
 }
 
-export { nameToHex, normalizePkgFace, buildPkgmap, packagesForExport, mergePackagesInto, effResolve, resolveSyntaxFg, resolveUiAttr, dropdownRowTextColor, paletteOptionList, galleryModel, appViewKeysSorted, faceBoxNonDefaults, spanNeighborHex, slugify, fgSetFor, floor, lMax, COVERED_FACES, columnsFromPalette, usedPaletteHexes, paletteUsages, regenColumn, rankByLightness, stepRepointPlan, sortColumns, sortColumnMembers, groundRoleOfEntry, groundColumnMembersFromPalette, clearPalettePlan, deletePaletteColumnPlan, areAllLocked, lockToggleLabel, toggleLockSet };
+export { nameToHex, normalizePkgFace, buildPkgmap, packagesForExport, mergePackagesInto, effResolve, resolveSyntaxFg, resolveUiAttr, dropdownRowTextColor, paletteOptionList, galleryModel, appViewKeysSorted, faceBoxNonDefaults, stepViewIndex, spanNeighborHex, slugify, fgSetFor, floor, lMax, COVERED_FACES, columnsFromPalette, usedPaletteHexes, paletteUsages, regenColumn, rankByLightness, stepRepointPlan, sortColumns, sortColumnMembers, groundRoleOfEntry, groundColumnMembersFromPalette, clearPalettePlan, deletePaletteColumnPlan, areAllLocked, lockToggleLabel, toggleLockSet };

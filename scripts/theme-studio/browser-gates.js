@@ -730,6 +730,24 @@ if(location.hash==='#crtest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c){
  A(span&&span.title&&/(passes|fails) WCAG/i.test(span.title),'contrast cell carries a WCAG hover: '+(span&&span.title));
  document.title='CRTEST '+(ok?'PASS':'FAIL');
  const d=document.createElement('div');d.id='crtest';d.textContent='CRTEST '+(ok?'PASS':'FAIL')+(notes.length?' fails='+notes.join(','):'');document.body.appendChild(d);}
+// View-nav gate (open with #navtest): the prev/next arrows flanking the view
+// dropdown step the selection (clamped, no wrap) and re-render the view.
+if(location.hash==='#navtest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c){ok=false;notes.push(n);}};
+ const sel=document.getElementById('viewsel'),prev=document.getElementById('viewprev'),next=document.getElementById('viewnext');
+ A(!!prev&&!!next,'nav arrows exist');
+ if(sel&&prev&&next){
+  const vis=id=>{const e=document.getElementById(id);return !!e&&e.style.display!=='none';};
+  sel.selectedIndex=0;onViewChange();
+  next.click();A(sel.selectedIndex===1,'next advances the selection');
+  prev.click();A(sel.selectedIndex===0,'prev steps back');
+  prev.click();A(sel.selectedIndex===0,'prev clamps at the first option');
+  sel.selectedIndex=sel.options.length-1;onViewChange();
+  next.click();A(sel.selectedIndex===sel.options.length-1,'next clamps at the last option');
+  sel.selectedIndex=2;onViewChange();
+  A(sel.options[2]&&sel.options[2].value[0]!=='@'&&vis('view-pkg'),'stepping to a package shows the pkg view');
+ }
+ document.title='NAVTEST '+(ok?'PASS':'FAIL');
+ const d=document.createElement('div');d.id='navtest';d.textContent='NAVTEST '+(ok?'PASS':'FAIL')+(notes.length?' fails='+notes.join(','):'');document.body.appendChild(d);}
 // Box-cluster gate (open with #boxtest): the box control is a 2x2 cluster of
 // four radio buttons (none / line / pressed / raised); the color swatch shows
 // only while a box style is active.

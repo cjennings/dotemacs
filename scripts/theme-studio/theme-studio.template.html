@@ -58,7 +58,7 @@ STYLES_CSS</style>
   <div class="pals" id="pals"></div>
  </section>
 <h1>assignment</h1>
-<div class="pkgbar"><label style="color:#b4b1a2">view</label><select id="viewsel" class="chip" style="width:auto;font:bold 10pt monospace" onchange="onViewChange()"></select></div>
+<div class="pkgbar"><label style="color:#b4b1a2">view</label><button id="viewprev" class="viewnav" title="previous in the list" onclick="stepView(-1)">&lsaquo;</button><select id="viewsel" class="chip" style="width:auto;font:bold 10pt monospace" onchange="onViewChange()"></select><button id="viewnext" class="viewnav" title="next in the list" onclick="stepView(1)">&rsaquo;</button></div>
 <div id="view-code" class="viewblock">
 <div class="cols">
  <section class="pane">

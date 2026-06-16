@@ -528,6 +528,13 @@ function buildViewSel(){const s=document.getElementById('viewsel');if(!s)return;
   const og=document.createElement('optgroup');og.label='package faces';
   for(const app of appViewKeysSorted(APPS))og.appendChild(mk(app,APPS[app].label));
   s.appendChild(og);}
+// The ‹ › buttons flanking the dropdown step the selection by DIR and re-render
+// the view (faces table + preview), so you can walk the list without reopening it.
+function stepView(dir){
+  const s=document.getElementById('viewsel');if(!s)return;
+  const i=stepViewIndex(s.selectedIndex,s.options.length,dir);
+  if(i!==s.selectedIndex){s.selectedIndex=i;onViewChange();}
+}
 function onViewChange(){const s=document.getElementById('viewsel');const v=(s&&s.value)||'@code';
   const show=(id,on)=>{const e=document.getElementById(id);if(e)e.style.display=on?'':'none';};
   show('view-code',v==='@code');show('view-ui',v==='@ui');show('view-pkg',v[0]!=='@');
