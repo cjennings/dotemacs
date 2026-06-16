@@ -25,7 +25,8 @@
 
 (require 'dashboard-config)
 
-(defconst test-dash--keys '("c" "d" "t" "a" "r" "b" "f" "m" "e" "i" "g" "s" "l"))
+;; Telegram moved from "g" to "G" so "g" is free for dashboard refresh.
+(defconst test-dash--keys '("c" "d" "t" "a" "r" "b" "f" "m" "e" "i" "G" "s" "l"))
 
 ;; ----------------------------- launcher table --------------------------------
 

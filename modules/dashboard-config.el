@@ -90,7 +90,7 @@ Adjust this if the title doesn't appear centered under the banner image.")
    (list "m" #'nerd-icons-mdicon  "nf-md-music"        "Music"      "EMMS Music Player"      (lambda () (cj/music-playlist-toggle) (cj/music-playlist-load)))
    (list "e" #'nerd-icons-faicon  "nf-fa-envelope"     "Email"      "Mu4e Email Client"      (lambda () (mu4e)))
    (list "i" #'nerd-icons-faicon  "nf-fa-comments"     "IRC"        "Emacs Relay Chat"       (lambda () (cj/erc-switch-to-buffer-with-completion)))
-   (list "g" #'nerd-icons-faicon  "nf-fa-telegram"     "Telegram"   "Telega Telegram Client" (lambda () (cj/telega)))
+   (list "G" #'nerd-icons-faicon  "nf-fa-telegram"     "Telegram"   "Telega Telegram Client" (lambda () (cj/telega)))
    (list "s" #'nerd-icons-faicon  "nf-fa-slack"        "Slack"      "Slack Client"           (lambda () (cj/slack-start)))
    (list "l" #'nerd-icons-octicon "nf-oct-issue_tracks" "Linear"    "Linear Issue Tracker"   (lambda () (pearl-list-issues))))
   "Dashboard launcher table: (KEY ICON-FN ICON-NAME LABEL TOOLTIP ACTION).
@@ -144,6 +144,9 @@ window."
         (cj/kill-all-other-buffers-and-windows))
     (when (fboundp 'dashboard-open)
       (dashboard-open)))
+  ;; Refresh so re-showing the dashboard always lands on fresh content.
+  (when (fboundp 'dashboard-refresh-buffer)
+    (dashboard-refresh-buffer))
   (goto-char (point-min))
   (set-window-start (selected-window) (point-min)))
 
@@ -227,6 +230,10 @@ system-defaults) are preserved rather than overwritten."
 (with-eval-after-load 'dashboard
   ;; Disable 'q' to quit dashboard
   (define-key dashboard-mode-map (kbd "q") nil)
+
+  ;; 'g' refreshes the dashboard (the dired/magit convention). Telegram moved to
+  ;; 'G' in the launcher table to free it.
+  (define-key dashboard-mode-map (kbd "g") #'dashboard-refresh-buffer)
 
   ;; Launcher keys, derived from `cj/dashboard--launchers' (same source as the
   ;; navigator icons, so key order can't drift from the icon-row order).
