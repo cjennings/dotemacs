@@ -157,39 +157,12 @@ detached from Emacs."
 ;; Set scratch buffer to org-mode
 (setopt initial-major-mode 'org-mode)
 
-;; Tint the *scratch* background a shade lighter than the default so it reads
-;; as the scratch buffer at a glance.  Buffer-local face remap, recomputed from
-;; whatever theme is loaded.
-(require 'color)
-
-(defcustom cj/scratch-background-lighten 5
-  "Percent to lighten the *scratch* background above the default background.
-Aesthetic; tune to taste."
-  :type 'integer
-  :group 'convenience)
-
-(defun cj/--scratch-lightened-background (bg)
-  "Return BG lightened by `cj/scratch-background-lighten' percent.
-Return nil when BG is not a usable color string (e.g. `unspecified')."
-  (when (and (stringp bg) (color-name-to-rgb bg))
-    (color-lighten-name bg cj/scratch-background-lighten)))
-
-(defun cj/scratch-apply-background ()
-  "Remap the *scratch* buffer background a shade lighter than the default."
-  (when (get-buffer "*scratch*")
-    (with-current-buffer "*scratch*"
-      (let ((lighter (cj/--scratch-lightened-background
-                      (face-attribute 'default :background nil t))))
-        (when lighter
-          (face-remap-add-relative 'default :background lighter))))))
-
-;; Move cursor to end of scratch buffer on startup, and tint its background
+;; Move cursor to end of scratch buffer on startup
 (add-hook 'emacs-startup-hook
           (lambda ()
             (when (get-buffer "*scratch*")
               (with-current-buffer "*scratch*"
-                (goto-char (point-max))))
-            (cj/scratch-apply-background)))
+                (goto-char (point-max))))))
 
 ;;; --------------------------------- Dictionary --------------------------------
 
