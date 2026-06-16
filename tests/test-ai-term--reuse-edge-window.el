@@ -45,7 +45,7 @@ right half: the frame stays at two windows [left | agent]."
     (unwind-protect
         (save-window-excursion
           (delete-other-windows)
-          (cl-letf (((symbol-function 'env-laptop-p) (lambda () nil)))
+          (cl-letf (((symbol-function 'cj/--ai-term-default-direction) (lambda (&rest _) 'right)))
             (let ((left-buf (get-buffer-create left-name))
                   (right-buf (get-buffer-create right-name))
                   (agent-buf (get-buffer-create agent-name)))
@@ -77,7 +77,7 @@ bottom half: the frame stays at two windows."
     (unwind-protect
         (save-window-excursion
           (delete-other-windows)
-          (cl-letf (((symbol-function 'env-laptop-p) (lambda () t)))
+          (cl-letf (((symbol-function 'cj/--ai-term-default-direction) (lambda (&rest _) 'below)))
             (let ((top-buf (get-buffer-create top-name))
                   (bottom-buf (get-buffer-create bottom-name))
                   (agent-buf (get-buffer-create agent-name)))
@@ -107,7 +107,7 @@ the frame goes from one window to two with the agent present."
     (unwind-protect
         (save-window-excursion
           (delete-other-windows)
-          (cl-letf (((symbol-function 'env-laptop-p) (lambda () nil)))
+          (cl-letf (((symbol-function 'cj/--ai-term-default-direction) (lambda (&rest _) 'right)))
             (let ((sole-buf (get-buffer-create sole-name))
                   (agent-buf (get-buffer-create agent-name)))
               (set-window-buffer (selected-window) sole-buf)
@@ -133,7 +133,7 @@ ends up displayed."
     (unwind-protect
         (save-window-excursion
           (delete-other-windows)
-          (cl-letf (((symbol-function 'env-laptop-p) (lambda () nil)))
+          (cl-letf (((symbol-function 'cj/--ai-term-default-direction) (lambda (&rest _) 'right)))
             (let ((top-buf (get-buffer-create top-name))
                   (bottom-buf (get-buffer-create bottom-name))
                   (agent-buf (get-buffer-create agent-name)))
@@ -165,7 +165,7 @@ window rather than restoring the displaced buffer into a kept slot."
     (unwind-protect
         (save-window-excursion
           (delete-other-windows)
-          (cl-letf (((symbol-function 'env-laptop-p) (lambda () nil)))
+          (cl-letf (((symbol-function 'cj/--ai-term-default-direction) (lambda (&rest _) 'right)))
             (let ((left-buf (get-buffer-create left-name))
                   (right-buf (get-buffer-create right-name))
                   (agent-buf (get-buffer-create agent-name)))
@@ -202,7 +202,7 @@ preserved across the toggle (respect-split-width)."
     (unwind-protect
         (save-window-excursion
           (delete-other-windows)
-          (cl-letf (((symbol-function 'env-laptop-p) (lambda () nil)))
+          (cl-letf (((symbol-function 'cj/--ai-term-default-direction) (lambda (&rest _) 'right)))
             (let ((left-buf (get-buffer-create left-name))
                   (right-buf (get-buffer-create right-name))
                   (agent-buf (get-buffer-create agent-name))
@@ -246,7 +246,7 @@ most-recent agent, which would now be the other one."
     (unwind-protect
         (save-window-excursion
           (delete-other-windows)
-          (cl-letf (((symbol-function 'env-laptop-p) (lambda () nil)))
+          (cl-letf (((symbol-function 'cj/--ai-term-default-direction) (lambda (&rest _) 'right)))
             (let ((a1 (get-buffer-create a1-name))
                   (a2 (get-buffer-create a2-name))
                   (left-buf (get-buffer-create left-name))
