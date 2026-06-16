@@ -189,6 +189,18 @@ directions.
   (registry, predicate, display rule, minor mode, dispatchers), TDD: ERT over
   the pure parts (registration shape, buffer matching, dispatch with stub
   fns, nil-verb error). Wire signel; retire its private display entry.
+  - /Smoke-first parity (Craig 2026-06-16)./ Signal is the least-built backend
+    and the only one whose UX Craig fully controls (no upstream package fighting
+    back), so the smoke rebuild is where the shape gets dialed in first: build
+    smoke to implement every core leaf (=j a u m k C Q=) and the in-buffer
+    chords natively, tune the feel against real use, and only then adapt telega
+    and slack to the now-proven contract. The guardrail: design the contract to
+    the /capability floor/, not to smoke's ceiling. Smoke can do anything, which
+    makes it the least representative backend — validate each core leaf against
+    the others' known limits as it is built (telega keeps its modal root buffer;
+    ERC has no threads/reactions/files; slack has no file upload or search), so
+    the reference does not bake in something a thinner backend can never match.
+    Rich verbs (=r e f /=) stay optional per-backend extensions, never core.
 - *Phase 2 — telega.* Registration + the decision-3 cancel ladder; audit what
   else the minor-mode map hides in =telega-chat-mode-map=.
 - *Phase 3 — slack.* Per decision 5; conform compose buffers either way.
@@ -199,6 +211,132 @@ directions.
 Each phase ends with a manual-test checklist filed under the
 "Manual testing and validation" parent in =todo.org= (placement, each chord,
 the not-supported message), per the verification discipline.
+
+* Global Prefix Keybinding Alphabet (per-app)
+
+/DRAFT addition, Claude 2026-06-16, for Craig's review (his request: "put this/
+/in the spec and I'll review it"). Folds the per-action prefix-key analysis/
+/into the held-open spec./
+
+This is the third of three keybinding surfaces, and the only one the rest of the
+spec doesn't already cover. The first is the in-chat buffer chords (C-c C-c
+confirm, C-c C-k cancel, C-c C-a attach) owned by =cj/messenger-mode=. The second
+is the cross-app aggregate verb (decision 6's jump-to-unread, one global chord
+that raises the newest unread conversation in /any/ backend). This third surface
+is the per-app global prefix: each messenger hangs off =C-;= with its own second
+key (=S= Slack, =M= Signal, =T= Telega, =E= ERC), and today the third key, the
+action leaf, is ad hoc per app. The goal: one leaf alphabet so the same action
+is the same final keystroke under every messenger.
+
+** The problem: the same key means different things today
+
+| Action               | Slack (C-; S) | Signal (C-; M) | Telega (C-; T) | ERC (C-; E) |
+|----------------------+---------------+----------------+----------------+-------------|
+| Open a chat by name  | C             | m              | unbound        | c           |
+|----------------------+---------------+----------------+----------------+-------------|
+| Directory: all       | C             | d              | root buffer    | b           |
+|----------------------+---------------+----------------+----------------+-------------|
+| Directory: unread    | c             | none           | unbound        | unbound     |
+|----------------------+---------------+----------------+----------------+-------------|
+| New DM / message     | d             | m              | unbound        | unbound     |
+|----------------------+---------------+----------------+----------------+-------------|
+| Close this chat      | unbound       | none           | C-x k          | q           |
+|----------------------+---------------+----------------+----------------+-------------|
+| Mark read + bury     | q             | none           | unbound        | n/a         |
+|----------------------+---------------+----------------+----------------+-------------|
+| Connect / start      | s             | SPC            | T = launch     | C           |
+|----------------------+---------------+----------------+----------------+-------------|
+| Disconnect / stop    | S             | q              | Q (in-buffer)  | Q           |
+|----------------------+---------------+----------------+----------------+-------------|
+
+Read down a column and the leaves are arbitrary; read across a row and they
+disagree. Worse, the same letter collides on meaning: =C= opens Slack's roster
+but connects an ERC server; =q= disconnects Signal, marks-read in Slack, and
+parts a channel in ERC. There is no muscle-memory transfer between messengers.
+
+** Canonical per-app actions (spelled out)
+
+Daily verbs (per-conversation): open a specific chat by name; view the directory
+of all chats/channels; view the directory of only unread / reply-needed chats;
+message someone new; reply in a thread; close the current chat window; mark the
+current chat read and bury it; jump to next / previous unread chat; add a
+reaction; send an attachment; search messages.
+
+Session verbs (lifecycle): connect / bring online; disconnect / take offline;
+open the dashboard / roster overview.
+
+** Proposed unified leaf alphabet
+
+Keep each app's second key (=S M T E=); make the third key identical across all
+four so the action is the same tail-keystroke regardless of app.
+
+| Leaf  | Action                       | Backends that can bind it today      |
+|-------+------------------------------+--------------------------------------|
+| j     | jump to / open a chat        | Slack, Signal, Telega*, ERC          |
+|-------+------------------------------+--------------------------------------|
+| a     | directory: all chats         | Slack, Signal, Telega, ERC           |
+|-------+------------------------------+--------------------------------------|
+| u     | directory: unread only       | Slack, Telega*, ERC* (signel: gap)   |
+|-------+------------------------------+--------------------------------------|
+| m     | message someone new / DM     | Slack, Signal, Telega, ERC*          |
+|-------+------------------------------+--------------------------------------|
+| k     | close (bury) this chat       | all four (thin wrappers)             |
+|-------+------------------------------+--------------------------------------|
+| SPC   | mark read + bury             | Slack, Telega* (others: gap)         |
+|-------+------------------------------+--------------------------------------|
+| n / p | next / previous unread       | Telega, ERC* (others: gap)           |
+|-------+------------------------------+--------------------------------------|
+| r     | reply in thread              | Slack (others: protocol N/A)         |
+|-------+------------------------------+--------------------------------------|
+| e     | reaction / emoji             | Slack, Telega (others: protocol N/A) |
+|-------+------------------------------+--------------------------------------|
+| f     | attach file                  | Telega (others: protocol N/A)        |
+|-------+------------------------------+--------------------------------------|
+| /     | search                       | Telega in-chat (others: gap)         |
+|-------+------------------------------+--------------------------------------|
+| C     | connect / start              | all four                             |
+|-------+------------------------------+--------------------------------------|
+| Q     | disconnect / stop            | all four                             |
+|-------+------------------------------+--------------------------------------|
+
+(* = the package command exists but needs a global wrapper or a binding added.)
+
+The core seven (=j a u m k C Q=) are the unifiable floor: every backend can
+support them (once signel's gaps are filled). The richer verbs (=r e f /=) bind
+only where the protocol and package allow; which-key then shows fewer options
+under a thinner backend, which is honest rather than confusing. An unsupported
+leaf is simply absent under that app's prefix, the same "nil verb = not
+supported" stance the registry already takes for the in-buffer chords.
+
+** How this rides the registry
+
+These leaves are the global-prefix face of the same verb set decision 6 is
+already growing. jump-to-unread, jump-to-chat-picker, and mark-read-and-bury in
+decision 6 map directly to =u= (or the cross-app aggregate), =j=, and =SPC=
+here. The registry should carry an optional per-backend command for each leaf
+(=:open=, =:roster=, =:unread=, =:message=, =:close= ...), and the library
+builds each app's =C-; <key>= submap from whatever the backend registered, so a
+new verb lands everywhere in one place, exactly as the in-buffer verbs do. A
+backend that registers nil for a leaf gets no binding for it.
+
+** A caveat on visual UX (keys unify cleanly; rendering does not)
+
+The leaf can be identical, but "open the directory" still /looks/ different per
+backend, because the packages have different display models: Slack and ERC pop a
+minibuffer completing-read picker; Telega and (smoke) Signal show a persistent
+roster buffer. The bottom-drawer placement rule unifies where a /chat/ lands;
+it does not make Slack grow a persistent roster. Unify the keys and the action
+vocabulary; accept that the roster rendering differs per backend rather than
+fighting each package's design.
+
+** Open questions for Craig
+
+1. The leaf letters: are =j a u m k C Q= (+ =r e f / n p SPC=) right, or do you
+   want different mnemonics (=o= open, =l= list, ...)? This is the muscle-memory
+   commitment, so it is yours to set before any binding lands.
+2. Signal parity (now in scope per Craig 2026-06-16): the smoke rebuild is the
+   place to hit every core leaf natively. See the smoke-first note added to the
+   Phases section.
 
 * Risks
 
