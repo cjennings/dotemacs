@@ -77,7 +77,10 @@
                (lambda (fmt &rest args) (setq msg (apply #'format fmt args)))))
       (cj/gptel-switch-backend))
     (should (eq gptel-backend 'anthropic-backend))
-    (should (equal gptel-model "claude-opus"))
+    ;; gptel-model must be a symbol, not the raw completing-read string:
+    ;; gptel's modeline calls `symbolp' on it and hangs redisplay otherwise.
+    (should (symbolp gptel-model))
+    (should (eq gptel-model 'claude-opus))
     (should (string-match-p "Anthropic - Claude" msg))))
 
 (ert-deftest test-ai-config-switch-backend-error-invalid-choice ()

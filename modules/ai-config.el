@@ -192,6 +192,16 @@ Ensures gptel and backends are initialized."
    ((symbolp m) (symbol-name m))
    (t (format "%s" m))))
 
+(defun cj/gptel--model-to-symbol (m)
+  "Return model M as a symbol regardless of its type.
+`gptel-model' must be a symbol: gptel's modeline code calls `symbolp'
+on it and signals `wrong-type-argument' on a string, which surfaces as a
+redisplay hang.  Coerce any model value through this before assigning it."
+  (cond
+   ((symbolp m) m)
+   ((stringp m) (intern m))
+   (t (intern (format "%s" m)))))
+
 ;; Backend/model switching helpers (pure logic, extracted for testability)
 
 (defun cj/gptel--build-model-list (backends model-fn)
@@ -270,7 +280,7 @@ necessary. Prompt for whether to apply the selection globally or buffer-locally.
                                    (mapcar #'cj/gptel--model-to-string models)
                                    nil t nil nil (cj/gptel--model-to-string (bound-and-true-p gptel-model)))))
       (setq gptel-backend backend
-            gptel-model model)
+            gptel-model (cj/gptel--model-to-symbol model))
       (message "Switched to %s with model: %s" choice model))))
 
 ;; Clear assistant buffer (moved out so it's always available)
