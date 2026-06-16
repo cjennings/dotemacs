@@ -51,6 +51,7 @@
  .paltoggle{align-self:flex-start;width:22px;height:22px;padding:0;border:1px solid #3a3a3a;border-radius:4px;background:#1f1c19;color:#e8bd30;font:12px monospace;line-height:1;cursor:pointer;margin-right:6px}
  .pchip.unused{outline:2px dashed #cb6b4d;outline-offset:-2px}
  .fstrip.unused-col{outline:1px dashed #cb6b4d;outline-offset:2px;border-radius:8px}
+ .cdd.gone{outline:2px solid #e0533f;outline-offset:-2px}
  .sbtn{width:17px;height:15px;border:1px solid #3a3a3a;border-radius:3px;background:#eaeaea;color:#111;cursor:pointer;font-size:13px;line-height:1;margin-right:2px;padding:0}
  .sbtn.on{background:#0d0b0a;color:#cdced1;border-color:#8a9496}
  .pals{display:flex;flex-direction:row;flex-wrap:wrap;gap:10px;align-items:flex-start}
@@ -1338,7 +1339,7 @@ function mkColorDropdown(options,cur,onPick,opts={}){
     left.disabled=locked||!spanNeighborHex(cur,PALETTE,{bg:MAP['bg'],fg:MAP['p']},-1);
     right.disabled=locked||!spanNeighborHex(cur,PALETTE,{bg:MAP['bg'],fg:MAP['p']},1);
   }
-  function paint(){const shown=displayHex(cur),nm=displayName(cur),ttl=cur?(nm+' '+cur):(nm+(shown?' -> '+shown:''));t.style.background=shown||'#161412';t.style.color=shown?textOn(shown):'#b4b1a2';t.dataset.val=cur||'';t.title=ttl;t.classList.toggle('is-default',!cur);
+  function paint(){const shown=displayHex(cur),nm=displayName(cur),ttl=cur?(nm+' '+cur):(nm+(shown?' -> '+shown:''));t.style.background=shown||'#161412';t.style.color=shown?textOn(shown):'#b4b1a2';t.dataset.val=cur||'';t.title=ttl;t.classList.toggle('is-default',!cur);t.classList.toggle('gone',!!cur&&nameOf(cur)==='(gone)');
     t.innerHTML=opts.compact?`<span class="cddsw" style="background:${shown||'transparent'}"></span>`:`<span class="cddsw" style="background:${shown||'transparent'}"></span>${esc(nm)}`;paintStepButtons();}
   paint();
   left.onclick=e=>{e.stopPropagation();step(-1);};
@@ -3292,4 +3293,21 @@ if(location.hash==='#unusedtest'){let ok=true;const notes=[];const A=(c,n)=>{if(
  PALETTE=saveP;for(const k in MAP)delete MAP[k];Object.assign(MAP,saveM);for(const k in SYNTAX)delete SYNTAX[k];Object.assign(SYNTAX,saveSyn);for(const f in UIMAP)delete UIMAP[f];Object.assign(UIMAP,saveU);syncSyntaxFromCache();renderPalette();
  document.title='UNUSEDTEST '+(ok?'PASS':'FAIL');
  const d=document.createElement('div');d.id='unusedtest';d.textContent='UNUSEDTEST '+(ok?'PASS':'FAIL')+(notes.length?' fails='+notes.join(','):'');document.body.appendChild(d);}
+// Gone-assignment gate (open with #gonetest): a swatch whose assigned color is
+// no longer in the palette gets the .gone flag; an assignment to a present color
+// does not.
+if(location.hash==='#gonetest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c){ok=false;notes.push(n);}};
+ const saveP=PALETTE.slice(),saveM=Object.assign({},MAP),saveU=JSON.parse(JSON.stringify(UIMAP));
+ setSyntaxFg('bg','#101010');setSyntaxFg('p','#f0f0f0');
+ PALETTE=[['#101010','bg','ground'],['#f0f0f0','fg','ground'],['#67809c','blue','blue']];
+ UIMAP['region']={fg:null,bg:'#deadbe',bold:false,italic:false,underline:false,strike:false};
+ UIMAP['highlight']={fg:null,bg:'#67809c',bold:false,italic:false,underline:false,strike:false};
+ buildUITable();
+ const goneDd=document.querySelector('#uibody tr[data-face="region"]').cells[3].querySelector('.cdd');
+ const okDd=document.querySelector('#uibody tr[data-face="highlight"]').cells[3].querySelector('.cdd');
+ A(goneDd&&goneDd.classList.contains('gone'),'assignment-to-missing-color-flagged');
+ A(okDd&&!okDd.classList.contains('gone'),'assignment-to-present-color-not-flagged');
+ PALETTE=saveP;for(const k in MAP)delete MAP[k];Object.assign(MAP,saveM);for(const f in UIMAP)delete UIMAP[f];Object.assign(UIMAP,saveU);syncSyntaxFromCache();buildUITable();
+ document.title='GONETEST '+(ok?'PASS':'FAIL');
+ const d=document.createElement('div');d.id='gonetest';d.textContent='GONETEST '+(ok?'PASS':'FAIL')+(notes.length?' fails='+notes.join(','):'');document.body.appendChild(d);}
 </script>

@@ -49,6 +49,7 @@
  .paltoggle{align-self:flex-start;width:22px;height:22px;padding:0;border:1px solid #3a3a3a;border-radius:4px;background:#1f1c19;color:#e8bd30;font:12px monospace;line-height:1;cursor:pointer;margin-right:6px}
  .pchip.unused{outline:2px dashed #cb6b4d;outline-offset:-2px}
  .fstrip.unused-col{outline:1px dashed #cb6b4d;outline-offset:2px;border-radius:8px}
+ .cdd.gone{outline:2px solid #e0533f;outline-offset:-2px}
  .sbtn{width:17px;height:15px;border:1px solid #3a3a3a;border-radius:3px;background:#eaeaea;color:#111;cursor:pointer;font-size:13px;line-height:1;margin-right:2px;padding:0}
  .sbtn.on{background:#0d0b0a;color:#cdced1;border-color:#8a9496}
  .pals{display:flex;flex-direction:row;flex-wrap:wrap;gap:10px;align-items:flex-start}

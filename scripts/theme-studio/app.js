@@ -74,7 +74,7 @@ function mkColorDropdown(options,cur,onPick,opts={}){
     left.disabled=locked||!spanNeighborHex(cur,PALETTE,{bg:MAP['bg'],fg:MAP['p']},-1);
     right.disabled=locked||!spanNeighborHex(cur,PALETTE,{bg:MAP['bg'],fg:MAP['p']},1);
   }
-  function paint(){const shown=displayHex(cur),nm=displayName(cur),ttl=cur?(nm+' '+cur):(nm+(shown?' -> '+shown:''));t.style.background=shown||'#161412';t.style.color=shown?textOn(shown):'#b4b1a2';t.dataset.val=cur||'';t.title=ttl;t.classList.toggle('is-default',!cur);
+  function paint(){const shown=displayHex(cur),nm=displayName(cur),ttl=cur?(nm+' '+cur):(nm+(shown?' -> '+shown:''));t.style.background=shown||'#161412';t.style.color=shown?textOn(shown):'#b4b1a2';t.dataset.val=cur||'';t.title=ttl;t.classList.toggle('is-default',!cur);t.classList.toggle('gone',!!cur&&nameOf(cur)==='(gone)');
     t.innerHTML=opts.compact?`<span class="cddsw" style="background:${shown||'transparent'}"></span>`:`<span class="cddsw" style="background:${shown||'transparent'}"></span>${esc(nm)}`;paintStepButtons();}
   paint();
   left.onclick=e=>{e.stopPropagation();step(-1);};

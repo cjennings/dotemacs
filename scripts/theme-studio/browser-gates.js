@@ -750,3 +750,20 @@ if(location.hash==='#unusedtest'){let ok=true;const notes=[];const A=(c,n)=>{if(
  PALETTE=saveP;for(const k in MAP)delete MAP[k];Object.assign(MAP,saveM);for(const k in SYNTAX)delete SYNTAX[k];Object.assign(SYNTAX,saveSyn);for(const f in UIMAP)delete UIMAP[f];Object.assign(UIMAP,saveU);syncSyntaxFromCache();renderPalette();
  document.title='UNUSEDTEST '+(ok?'PASS':'FAIL');
  const d=document.createElement('div');d.id='unusedtest';d.textContent='UNUSEDTEST '+(ok?'PASS':'FAIL')+(notes.length?' fails='+notes.join(','):'');document.body.appendChild(d);}
+// Gone-assignment gate (open with #gonetest): a swatch whose assigned color is
+// no longer in the palette gets the .gone flag; an assignment to a present color
+// does not.
+if(location.hash==='#gonetest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c){ok=false;notes.push(n);}};
+ const saveP=PALETTE.slice(),saveM=Object.assign({},MAP),saveU=JSON.parse(JSON.stringify(UIMAP));
+ setSyntaxFg('bg','#101010');setSyntaxFg('p','#f0f0f0');
+ PALETTE=[['#101010','bg','ground'],['#f0f0f0','fg','ground'],['#67809c','blue','blue']];
+ UIMAP['region']={fg:null,bg:'#deadbe',bold:false,italic:false,underline:false,strike:false};
+ UIMAP['highlight']={fg:null,bg:'#67809c',bold:false,italic:false,underline:false,strike:false};
+ buildUITable();
+ const goneDd=document.querySelector('#uibody tr[data-face="region"]').cells[3].querySelector('.cdd');
+ const okDd=document.querySelector('#uibody tr[data-face="highlight"]').cells[3].querySelector('.cdd');
+ A(goneDd&&goneDd.classList.contains('gone'),'assignment-to-missing-color-flagged');
+ A(okDd&&!okDd.classList.contains('gone'),'assignment-to-present-color-not-flagged');
+ PALETTE=saveP;for(const k in MAP)delete MAP[k];Object.assign(MAP,saveM);for(const f in UIMAP)delete UIMAP[f];Object.assign(UIMAP,saveU);syncSyntaxFromCache();buildUITable();
+ document.title='GONETEST '+(ok?'PASS':'FAIL');
+ const d=document.createElement('div');d.id='gonetest';d.textContent='GONETEST '+(ok?'PASS':'FAIL')+(notes.length?' fails='+notes.join(','):'');document.body.appendChild(d);}
