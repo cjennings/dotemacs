@@ -94,51 +94,10 @@ When `cj/enable-transparency' is nil, reset alpha to fully opaque."
 		   (if cj/enable-transparency "enabled" "disabled")))
 
 ;; ----------------------------------- Cursor ----------------------------------
-;; Set the cursor color from the active theme's faces according to buffer state.
-;; The state classifier and the state->face map live in user-constants.el
-;; (cj/buffer-status-state / cj/buffer-status-faces, colored via the theme's
-;; error / warning / success faces) and are shared with the modeline buffer-name
-;; indicator, so the cursor and the modeline stay in sync.
-
-(defvar cj/-cursor-last-color nil
-  "Last color applied by `cj/set-cursor-color-according-to-mode'.")
-(defvar cj/-cursor-last-buffer nil
-  "Last buffer name where cursor color was applied.")
-
-(defun cj/set-cursor-color-according-to-mode ()
-  "Set the cursor color from the active theme according to buffer state.
-The state and its theme face come from `cj/buffer-status-state' and
-`cj/buffer-status-color' (shared with the modeline), so the color follows the
-loaded theme.  Only updates real user buffers, not internal/temporary ones; a
-no-op on non-graphical frames -- TTY/batch sessions have no cursor color to set."
-  (when (display-graphic-p)
-    ;; Only update cursor for real buffers (not internal ones like *temp*, *Echo Area*).
-    (unless (string-prefix-p " " (buffer-name))  ; internal buffers start with a space
-      (let ((color (cj/buffer-status-color (cj/buffer-status-state))))
-        ;; Skip only when BOTH color and buffer are unchanged (so the color still
-        ;; updates when the buffer state changes).
-        (when (and color
-                   (not (and (equal color cj/-cursor-last-color)
-                             (equal (buffer-name) cj/-cursor-last-buffer))))
-          (set-cursor-color color)
-          (setq cj/-cursor-last-color color
-                cj/-cursor-last-buffer (buffer-name)))))))
-
-;; Use post-command-hook to update cursor color after every command
-;; This ensures cursor color always matches the current buffer's state.
-;; The hook only registers under a graphical session so batch / TTY runs
-;; don't pay per-command overhead for a no-op.
-(when (display-graphic-p)
-  (add-hook 'post-command-hook #'cj/set-cursor-color-according-to-mode))
-;; Daemon mode: the first frame may be created after this module loads.
-;; Re-attempt the hook install once a GUI frame appears.
-(add-hook 'server-after-make-frame-hook
-          (lambda ()
-            (when (and (display-graphic-p)
-                       (not (memq #'cj/set-cursor-color-according-to-mode
-                                  post-command-hook)))
-              (add-hook 'post-command-hook
-                        #'cj/set-cursor-color-according-to-mode))))
+;; The cursor uses the theme's cursor face. Buffer-state cursor coloring was
+;; removed -- a cursor that changed color by buffer state was confusing. The
+;; cj/buffer-status-state / cj/buffer-status-color classifier stays in
+;; user-constants.el; the modeline buffer-name indicator still uses it.
 
 ;; Don’t show a cursor in non-selected windows:
 (setq cursor-in-non-selected-windows nil)

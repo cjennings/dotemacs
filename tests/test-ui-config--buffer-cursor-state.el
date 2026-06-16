@@ -1,9 +1,9 @@
 ;;; test-ui-config--buffer-cursor-state.el --- Tests for cursor-state classification -*- lexical-binding: t; -*-
 
 ;;; Commentary:
-;; `cj/buffer-status-state' picks the buffer-state symbol that
-;; `cj/set-cursor-color-according-to-mode' maps to a cursor color via
-;; `cj/buffer-status-colors'.  The subtle case: a live ghostel terminal is
+;; `cj/buffer-status-state' picks the buffer-state symbol the modeline
+;; buffer-name indicator maps to a face via `cj/buffer-status-color'.  The
+;; subtle case: a live ghostel terminal is
 ;; technically `buffer-read-only' but the user types into it -- keystrokes go
 ;; to the terminal process -- so it must report a writeable state, not
 ;; `read-only'.  ghostel's `copy' / `emacs' input modes are the exception:
@@ -68,35 +68,6 @@ the user navigates, so `read-only' (orange) is kept."
           (setq buffer-read-only t)
           (setq-local ghostel--input-mode 'copy)
           (should (eq (cj/buffer-status-state) 'read-only)))
-      (when (buffer-live-p buf) (kill-buffer buf)))))
-
-(ert-deftest test-ui-config-set-cursor-color-live-ghostel-uses-writeable-color ()
-  "Normal: in a live ghostel terminal the cursor-color hook applies the writeable
-\(success) color, not the read-only (error) color, even though the buffer is
-read-only.  `error' and `success' are given known foregrounds so the resolver
-returns concrete colors; `display-graphic-p' is stubbed t so the body runs in
-batch (the live function no-ops on TTY frames by design)."
-  (let ((buf (cj/test--make-fake-ghostel-buffer "*test-ghostel-cursor-color*"))
-        (orig-err (face-attribute 'error :foreground nil t))
-        (orig-suc (face-attribute 'success :foreground nil t))
-        (applied 'unset))
-    (unwind-protect
-        (progn
-          (set-face-foreground 'error "#ff0000")
-          (set-face-foreground 'success "#00ff00")
-          (with-current-buffer buf
-            (setq buffer-read-only t)
-            (setq-local ghostel--input-mode 'semi-char)
-            (let ((cj/-cursor-last-color nil)
-                  (cj/-cursor-last-buffer nil))
-              (cl-letf (((symbol-function 'display-graphic-p) (lambda () t))
-                        ((symbol-function 'set-cursor-color)
-                         (lambda (c) (setq applied c))))
-                (cj/set-cursor-color-according-to-mode))))
-          (should (equal applied "#00ff00"))
-          (should-not (equal applied "#ff0000")))
-      (when (stringp orig-err) (set-face-foreground 'error orig-err))
-      (when (stringp orig-suc) (set-face-foreground 'success orig-suc))
       (when (buffer-live-p buf) (kill-buffer buf)))))
 
 (provide 'test-ui-config--buffer-cursor-state)
