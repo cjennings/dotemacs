@@ -35,6 +35,10 @@
 (defvar-keymap cj/custom-keymap
   :doc "User custom prefix keymap base for nested keymaps.")
 (keymap-global-set "C-;" cj/custom-keymap)
+;; C-; is GUI-only; terminals can't encode Control-semicolon.  Mirror the same
+;; keymap under C-c ; (the standard user prefix, always TTY-encodable) so the
+;; whole command family works in a terminal frame with no leaf-key relearning.
+(keymap-global-set "C-c ;" cj/custom-keymap)
 
 ;; ------------------------ Custom Keymap Registration -------------------------
 
