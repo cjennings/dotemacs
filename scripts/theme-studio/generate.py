@@ -228,6 +228,7 @@ _BESPOKE_APPS=[
  ("magit","magit","magit",MAGIT_FACES,"magit-",MAGIT_SEED),
  ("elfeed","elfeed","elfeed",ELFEED_FACES,"elfeed-",ELFEED_SEED),
  ("mu4e","mu4e","mu4e",MU4E_FACES,"mu4e-",MU4E_SEED),
+ ("gnus","gnus (mu4e article view)","gnus",GNUS_FACES,"gnus-",GNUS_SEED),
  ("org-faces","org-faces","orgfaces",ORGFACES_FACES,"org-faces-",ORGFACES_SEED),
  ("ghostel","ghostel","ghostel",GHOSTEL_FACES,"ghostel-",GHOSTEL_SEED),
  ("auto-dim-other-buffers","auto-dim","autodim",AUTODIM_FACES,"auto-dim-other-buffers-",AUTODIM_SEED),

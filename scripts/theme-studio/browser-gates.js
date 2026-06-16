@@ -778,6 +778,21 @@ if(location.hash==='#mupreviewtest'){let ok=true;const notes=[];const A=(c,n)=>{
   A(used.includes(f),'preview includes '+f);
  document.title='MUPREVIEWTEST '+(ok?'PASS':'FAIL');
  const d=document.createElement('div');d.id='mupreviewtest';d.textContent='MUPREVIEWTEST '+(ok?'PASS':'FAIL')+(notes.length?' fails='+notes.join(','):'');document.body.appendChild(d);}
+// gnus-preview gate (open with #gnustest): gnus is its own view package (it drives
+// the mu4e article view), and every data-face its preview emits is a real gnus face.
+if(location.hash==='#gnustest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c){ok=false;notes.push(n);}};
+ A(!!APPS['gnus'],'gnus is a registered view package');
+ A(APPS['gnus']&&APPS['gnus'].preview==='gnus','gnus uses the gnus preview renderer');
+ const box=document.createElement('div');box.innerHTML=renderGnusPreview();
+ const valid=new Set((APPS['gnus']&&APPS['gnus'].faces||[]).map(r=>r[0]));
+ const used=[...box.querySelectorAll('[data-face]')].map(e=>e.dataset.face);
+ A(used.length>=20,'preview exercises many faces ('+used.length+')');
+ const bad=used.filter(f=>!valid.has(f));
+ A(bad.length===0,'every data-face is a real gnus face; bad='+bad.join(','));
+ for(const f of ['gnus-header-name','gnus-header-from','gnus-header-subject','gnus-cite-1','gnus-cite-attribution','gnus-signature','gnus-button','gnus-emphasis-highlight-words'])
+  A(used.includes(f),'preview includes '+f);
+ document.title='GNUSTEST '+(ok?'PASS':'FAIL');
+ const d=document.createElement('div');d.id='gnustest';d.textContent='GNUSTEST '+(ok?'PASS':'FAIL')+(notes.length?' fails='+notes.join(','):'');document.body.appendChild(d);}
 // Box-cluster gate (open with #boxtest): the box control is a 2x2 cluster of
 // four radio buttons (none / line / pressed / raised); the color swatch shows
 // only while a box style is active.

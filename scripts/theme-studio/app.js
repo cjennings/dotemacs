@@ -753,6 +753,35 @@ function renderMu4ePreview(){const a='mu4e',L=[];
   L.push('');
   L.push(os(a,'mu4e-compose-separator-face','--text follows this line--'));
   return previewLines(L);}
+function renderGnusPreview(){const a='gnus',L=[];
+  // mu4e renders the open message with gnus, so this is the article view:
+  // a header block, a body with inline emphasis and a button, then a quoted
+  // reply chain (one cite face per nesting level) and the signature.
+  L.push(os(a,'gnus-header-name','From: ')+os(a,'gnus-header-from','Christine Park &lt;christine@example.com&gt;'));
+  L.push(os(a,'gnus-header-name','To: ')+os(a,'gnus-header-content','craig@cjennings.net'));
+  L.push(os(a,'gnus-header-name','Newsgroups: ')+os(a,'gnus-header-newsgroups','gnu.emacs.help'));
+  L.push(os(a,'gnus-header-name','Subject: ')+os(a,'gnus-header-subject','Re: quarterly numbers'));
+  L.push(os(a,'gnus-header-name','Date: ')+os(a,'gnus-header-content','Sat, 14 Jun 2026 09:12:04 -0500'));
+  L.push('');
+  L.push('Thanks for the draft. The '+os(a,'gnus-emphasis-bold','revenue line')+' is '+os(a,'gnus-emphasis-italic','close')+', but the '+os(a,'gnus-emphasis-underline','footnote')+' is '+os(a,'gnus-emphasis-strikethru','wrong')+' '+os(a,'gnus-emphasis-highlight-words','FIXME')+'.');
+  L.push('See the worksheet: '+os(a,'gnus-button','[https://example.com/q2]'));
+  L.push('');
+  L.push(os(a,'gnus-cite-attribution','On Fri, Bob Lin wrote:'));
+  L.push(os(a,'gnus-cite-1','> The Q2 totals are ready for review.'));
+  L.push(os(a,'gnus-cite-2','>> Did the Segpay refund post yet?'));
+  L.push(os(a,'gnus-cite-3','>>> Yes, it cleared on the 5th.'));
+  L.push(os(a,'gnus-cite-4','>>>> Good, then we are square.'));
+  L.push(os(a,'gnus-cite-5','>>>>> earlier reply, level 5'));
+  L.push(os(a,'gnus-cite-6','>>>>>> level 6'));
+  L.push(os(a,'gnus-cite-7','>>>>>>> level 7'));
+  L.push(os(a,'gnus-cite-8','>>>>>>>> level 8'));
+  L.push(os(a,'gnus-cite-9','>>>>>>>>> level 9'));
+  L.push(os(a,'gnus-cite-10','>>>>>>>>>> level 10'));
+  L.push(os(a,'gnus-cite-11','>>>>>>>>>>> level 11'));
+  L.push('');
+  L.push(os(a,'gnus-signature','-- '));
+  L.push(os(a,'gnus-signature','Christine Park, Finance'));
+  return previewLines(L);}
 function renderOrgFacesPreview(){const a='org-faces',L=[];
   L.push('Agenda header row -- one face per keyword and priority (this config, not built-in org):');
   L.push('');
@@ -1007,7 +1036,7 @@ function renderMarkdownPreview(){const a='markdown-mode',L=[];
 const PACKAGE_PREVIEWS={
   autodim:renderAutodimPreview,markdown:renderMarkdownPreview,
   org:renderOrgPreview,magit:renderMagitPreview,elfeed:renderElfeedPreview,ghostel:renderGhostelPreview,
-  dashboard:renderDashboardPreview,mu4e:renderMu4ePreview,orgfaces:renderOrgFacesPreview,lsp:renderLspPreview,gitgutter:renderGitGutterPreview,
+  dashboard:renderDashboardPreview,mu4e:renderMu4ePreview,gnus:renderGnusPreview,orgfaces:renderOrgFacesPreview,lsp:renderLspPreview,gitgutter:renderGitGutterPreview,
   flycheck:renderFlycheckPreview,dired:renderDiredPreview,dirvish:renderDirvishPreview,calibredb:renderCalibredbPreview,
   erc:renderErcPreview,orgdrill:renderOrgdrillPreview,orgnoter:renderOrgnoterPreview,signel:renderSignelPreview,
   pearl:renderPearlPreview,slack:renderSlackPreview,telega:renderTelegaPreview,shr:renderShrPreview

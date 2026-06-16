@@ -316,3 +316,15 @@ SHR_FACES=("shr-h1 shr-h2 shr-h3 shr-h4 shr-h5 shr-h6 shr-text shr-link shr-sele
 SHR_SEED={
  "shr-h1":{"fg":"gold","bold":True,"height":1.4},"shr-h2":{"fg":"blue","bold":True,"height":1.2},"shr-h3":{"fg":"blue","bold":True},"shr-h4":{"fg":"silver","bold":True},"shr-h5":{"fg":"steel","bold":True},"shr-h6":{"fg":"pewter","bold":True},
  "shr-text":{"fg":"#cdced1"},"shr-link":{"fg":"blue","underline":True},"shr-selected-link":{"fg":"gold","bold":True,"underline":True},"shr-code":{"fg":"terracotta","bg":"bg-dim"},"shr-mark":{"fg":"#000000","bg":"gold"},"shr-strike-through":{"fg":"pewter","strike":True},"shr-sup":{"fg":"steel","height":0.8},"shr-abbreviation":{"fg":"steel","italic":True,"underline":True}}
+# gnus drives the mu4e article (message) view: headers, quote levels, signature,
+# buttons, and inline emphasis. gnus's own defaults are bright greens on a dark
+# background, so these seeds restate the set in the theme palette.
+GNUS_FACES=("gnus-header-name gnus-header-from gnus-header-subject gnus-header-content gnus-header-newsgroups "
+ "gnus-cite-1 gnus-cite-2 gnus-cite-3 gnus-cite-4 gnus-cite-5 gnus-cite-6 gnus-cite-7 gnus-cite-8 gnus-cite-9 gnus-cite-10 gnus-cite-11 gnus-cite-attribution "
+ "gnus-signature gnus-button "
+ "gnus-emphasis-bold gnus-emphasis-italic gnus-emphasis-underline gnus-emphasis-strikethru gnus-emphasis-highlight-words").split()
+GNUS_SEED={
+ "gnus-header-name":{"fg":"blue","bold":True},"gnus-header-from":{"fg":"gold"},"gnus-header-subject":{"fg":"white","bold":True},"gnus-header-content":{"fg":"silver"},"gnus-header-newsgroups":{"fg":"silver"},
+ "gnus-cite-1":{"fg":"sage"},"gnus-cite-2":{"fg":"steel"},"gnus-cite-3":{"fg":"gold"},"gnus-cite-4":{"fg":"blue"},"gnus-cite-5":{"fg":"sage"},"gnus-cite-6":{"fg":"steel"},"gnus-cite-7":{"fg":"gold"},"gnus-cite-8":{"fg":"blue"},"gnus-cite-9":{"fg":"sage"},"gnus-cite-10":{"fg":"steel"},"gnus-cite-11":{"fg":"gold"},"gnus-cite-attribution":{"fg":"silver","italic":True},
+ "gnus-signature":{"fg":"pewter","italic":True},"gnus-button":{"fg":"blue","underline":True},
+ "gnus-emphasis-bold":{"bold":True},"gnus-emphasis-italic":{"italic":True},"gnus-emphasis-underline":{"underline":True},"gnus-emphasis-strikethru":{"fg":"pewter","strike":True},"gnus-emphasis-highlight-words":{"fg":"gold","bold":True}}

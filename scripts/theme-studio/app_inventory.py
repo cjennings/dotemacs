@@ -14,6 +14,7 @@ BESPOKE_APPS = {
     "org",
     "org-mode",
     "mu4e",
+    "gnus",
     "org-faces",
     "ghostel",
     "auto-dim-other-buffers",
