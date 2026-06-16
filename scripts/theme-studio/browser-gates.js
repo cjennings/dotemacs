@@ -279,17 +279,6 @@ if(location.hash==='#oklchtest'){let ok=true;const notes=[];
  const {clamped}=oklch2hex(0.7,0.4,140);setOklchInputs(0.7,0.4,140);pkOklchSet();
  if(!(clamped&&document.getElementById('pkclamp').classList.contains('show'))){ok=false;notes.push('clamp status missing for out-of-gamut C');}
  document.title='OKLCHTEST '+(ok?'PASS':'FAIL');const d=document.createElement('div');d.id='oklchtest';d.textContent='OKLCHTEST '+(ok?'PASS':'FAIL')+(notes.length?' | '+notes.join(' ; '):'');document.body.appendChild(d);}
-if(location.hash==='#deltatest'){const save=PALETTE.slice();let ok=true;const notes=[];const W=()=>document.getElementById('palwarn');
- PALETTE=[['#0d0b0a','ground'],['#cdced1','fg'],['#67809c','blue'],['#69829e','blue2']];renderPalette();
- const t1=W().textContent;if(!(W().style.display!=='none'&&/blue \/ blue2/.test(t1)&&/ΔE/.test(t1))){ok=false;notes.push('near-pair did not fire: '+t1);}
- PALETTE=[['#0d0b0a','ground'],['#cdced1','fg'],['#67809c','blue'],['#e8bd30','gold'],['#cb6b4d','terra']];renderPalette();
- if(W().style.display!=='none'){ok=false;notes.push('spread palette warned: '+W().textContent);}
- PALETTE=[['#0d0b0a','ground'],['#cdced1','fg']];for(let k=0;k<7;k++){const v=(0x67+k).toString(16).padStart(2,'0');PALETTE.push(['#'+v+'809c','c'+k]);}renderPalette();
- const tc=W().textContent;const nums=[...tc.matchAll(/ΔE (\d+\.\d+)/g)].map(m=>parseFloat(m[1]));
- if(!/and \d+ more/.test(tc)){ok=false;notes.push('no cap suffix: '+tc);}
- if(!(nums.length===5&&nums.every((n,k)=>k===0||n>=nums[k-1]))){ok=false;notes.push('not 5-capped ascending: '+nums.join(','));}
- PALETTE=save;renderPalette();
- document.title='DELTATEST '+(ok?'PASS':'FAIL');const d=document.createElement('div');d.id='deltatest';d.textContent='DELTATEST '+(ok?'PASS':'FAIL')+(notes.length?' | '+notes.join(' ; '):'');document.body.appendChild(d);}
 if(location.hash==='#readouttest'){const hex='#67809c';document.getElementById('newhexstr').value=hex;openPicker();pkReadout(hex);
  const o=document.getElementById('pkoklch').textContent,a=document.getElementById('pkapca').textContent,w=document.getElementById('pkcon').textContent;
  const lch=oklab2oklch(srgb2oklab(hex));

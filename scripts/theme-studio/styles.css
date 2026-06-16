@@ -77,9 +77,6 @@
  .fhead .cdel:hover{color:#ff9078;border-color:#6d342c;background:#211512}
  .fcount{margin-top:3px;font:9pt monospace;color:#8a9496;text-align:center}
  .fcount input{width:40px;background:#0d0b0a;border:1px solid #252321;color:#cdced1;border-radius:4px;padding:2px 4px;font:9pt monospace;text-align:center}
- .palwarn{display:none;margin-top:8px;font:10pt monospace;color:#cb6b4d}
- .palwarn .pwh{font-weight:bold;margin-bottom:2px}
- .palwarn .pwl{opacity:.92}
  .pchip{width:128px;height:58px;border-radius:6px;border:1px solid #555;position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:grab}
  .pchip.sel{outline:3px solid #e8bd30;outline-offset:2px} .pchip input.nm{background:transparent;border:none;text-align:center;font:bold 10pt monospace;width:108px;outline:none;cursor:pointer}
  .pchip input.nm.editing{cursor:text;text-align:left}

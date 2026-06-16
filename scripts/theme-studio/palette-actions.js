@@ -76,15 +76,6 @@ function setGroundSpan(n){
 }
 // Pairwise OKLab ΔE over the palette. Returns the sub-threshold pairs (sorted
 // closest-first) and each color's nearest-neighbor distance for its chip title.
-// Pure pairwise ΔE analysis lives in colormath.js (paletteWarnings); this renders it.
-function renderPaletteWarnings(warnings,overflow){
-  const w=document.getElementById('palwarn');if(!w)return;
-  if(!warnings.length){w.style.display='none';w.innerHTML='';return;}
-  let html='<div class="pwh">too-similar colors</div>';
-  html+=warnings.map(p=>`<div class="pwl">${esc(p.aName+' / '+p.bName)} — \u0394E ${p.dE.toFixed(3)}, hard to distinguish</div>`).join('');
-  if(overflow>0)html+=`<div class="pwl">and ${overflow} more</div>`;
-  w.innerHTML=html;w.style.display='block';
-}
 // One palette chip for PALETTE[i], with its remove / rename / select handlers.
 // Families sort deterministically, so the old move-arrow / drag reordering is gone.
 function paletteChip(i,nearest,used,scopes){
@@ -183,7 +174,9 @@ function renderPalette(){
   tg.title=paletteShowFull?'showing full palette with spans — click for base colors only':'showing base colors only — click for the full palette';
   tg.onclick=()=>{paletteShowFull=!paletteShowFull;renderPalette();};
   p.appendChild(tg);
-  const {warnings,overflow,nearest}=paletteWarnings(PALETTE,DELTAE_MIN,5);
+  // nearest drives the per-chip ΔE tooltip; the too-similar warning box was
+  // removed (the same info is reachable inline via the contrast field).
+  const {nearest}=paletteWarnings(PALETTE,DELTAE_MIN,5);
   const {ground,columns}=columnsFromPalette(PALETTE,groundPair());
   const usedHexes=usedPaletteHexes(PALETTE,SYNTAX,UIMAP,PKGMAP,groundPair());
   // Per-view-area scopes for the hover "view area > element" usage list. Area
@@ -207,8 +200,6 @@ function renderPalette(){
         sw.innerHTML=`<input class="nm" value="${m.name||'ground'}" disabled style="color:${tc}"><div class="hx" style="color:${tc}">${m.hex}</div>`;gs.appendChild(sw);}
     });
   }
-  // The too-similar warning stays on the full flat palette, so large spans can
-  // still expose genuinely hard-to-distinguish neighboring colors.
   const ordered=sortColumns(columns);
   ordered.forEach((f,pos)=>{
     const s=strip('');s.dataset.column=f.column||f.base;
@@ -217,7 +208,6 @@ function renderPalette(){
     (paletteShowFull?f.members:f.members.filter(m=>m.hex.toLowerCase()===f.base.toLowerCase())).forEach(m=>{const i=idxOf(m.hex,m.name);if(i>=0)s.appendChild(paletteChip(i,nearest,usedHexes,usageScopes));});
     if(f.members.every(m=>!usedHexes.has(m.hex.toLowerCase())))s.classList.add('unused-col');
   });
-  renderPaletteWarnings(warnings,overflow);
   buildUITable();if(document.getElementById('pkgbody'))buildPkgTable();
 }
 // The per-column count control under a chromatic strip. Its value is the column's

@@ -79,9 +79,6 @@
  .fhead .cdel:hover{color:#ff9078;border-color:#6d342c;background:#211512}
  .fcount{margin-top:3px;font:9pt monospace;color:#8a9496;text-align:center}
  .fcount input{width:40px;background:#0d0b0a;border:1px solid #252321;color:#cdced1;border-radius:4px;padding:2px 4px;font:9pt monospace;text-align:center}
- .palwarn{display:none;margin-top:8px;font:10pt monospace;color:#cb6b4d}
- .palwarn .pwh{font-weight:bold;margin-bottom:2px}
- .palwarn .pwl{opacity:.92}
  .pchip{width:128px;height:58px;border-radius:6px;border:1px solid #555;position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:grab}
  .pchip.sel{outline:3px solid #e8bd30;outline-offset:2px} .pchip input.nm{background:transparent;border:none;text-align:center;font:bold 10pt monospace;width:108px;outline:none;cursor:pointer}
  .pchip input.nm.editing{cursor:text;text-align:left}
@@ -219,7 +216,6 @@
    <div id="genpreview" class="genpreview"></div>
   </div>
   <div class="pals" id="pals"></div>
-  <div class="palwarn" id="palwarn"></div>
  </section>
 <h1>assignment</h1>
 <div class="pkgbar"><label style="color:#b4b1a2">view</label><select id="viewsel" class="chip" style="width:auto;font:bold 10pt monospace" onchange="onViewChange()"></select></div>
@@ -1621,15 +1617,6 @@ function setGroundSpan(n){
 }
 // Pairwise OKLab ΔE over the palette. Returns the sub-threshold pairs (sorted
 // closest-first) and each color's nearest-neighbor distance for its chip title.
-// Pure pairwise ΔE analysis lives in colormath.js (paletteWarnings); this renders it.
-function renderPaletteWarnings(warnings,overflow){
-  const w=document.getElementById('palwarn');if(!w)return;
-  if(!warnings.length){w.style.display='none';w.innerHTML='';return;}
-  let html='<div class="pwh">too-similar colors</div>';
-  html+=warnings.map(p=>`<div class="pwl">${esc(p.aName+' / '+p.bName)} — \u0394E ${p.dE.toFixed(3)}, hard to distinguish</div>`).join('');
-  if(overflow>0)html+=`<div class="pwl">and ${overflow} more</div>`;
-  w.innerHTML=html;w.style.display='block';
-}
 // One palette chip for PALETTE[i], with its remove / rename / select handlers.
 // Families sort deterministically, so the old move-arrow / drag reordering is gone.
 function paletteChip(i,nearest,used,scopes){
@@ -1728,7 +1715,9 @@ function renderPalette(){
   tg.title=paletteShowFull?'showing full palette with spans — click for base colors only':'showing base colors only — click for the full palette';
   tg.onclick=()=>{paletteShowFull=!paletteShowFull;renderPalette();};
   p.appendChild(tg);
-  const {warnings,overflow,nearest}=paletteWarnings(PALETTE,DELTAE_MIN,5);
+  // nearest drives the per-chip ΔE tooltip; the too-similar warning box was
+  // removed (the same info is reachable inline via the contrast field).
+  const {nearest}=paletteWarnings(PALETTE,DELTAE_MIN,5);
   const {ground,columns}=columnsFromPalette(PALETTE,groundPair());
   const usedHexes=usedPaletteHexes(PALETTE,SYNTAX,UIMAP,PKGMAP,groundPair());
   // Per-view-area scopes for the hover "view area > element" usage list. Area
@@ -1752,8 +1741,6 @@ function renderPalette(){
         sw.innerHTML=`<input class="nm" value="${m.name||'ground'}" disabled style="color:${tc}"><div class="hx" style="color:${tc}">${m.hex}</div>`;gs.appendChild(sw);}
     });
   }
-  // The too-similar warning stays on the full flat palette, so large spans can
-  // still expose genuinely hard-to-distinguish neighboring colors.
   const ordered=sortColumns(columns);
   ordered.forEach((f,pos)=>{
     const s=strip('');s.dataset.column=f.column||f.base;
@@ -1762,7 +1749,6 @@ function renderPalette(){
     (paletteShowFull?f.members:f.members.filter(m=>m.hex.toLowerCase()===f.base.toLowerCase())).forEach(m=>{const i=idxOf(m.hex,m.name);if(i>=0)s.appendChild(paletteChip(i,nearest,usedHexes,usageScopes));});
     if(f.members.every(m=>!usedHexes.has(m.hex.toLowerCase())))s.classList.add('unused-col');
   });
-  renderPaletteWarnings(warnings,overflow);
   buildUITable();if(document.getElementById('pkgbody'))buildPkgTable();
 }
 // The per-column count control under a chromatic strip. Its value is the column's
@@ -2902,17 +2888,6 @@ if(location.hash==='#oklchtest'){let ok=true;const notes=[];
  const {clamped}=oklch2hex(0.7,0.4,140);setOklchInputs(0.7,0.4,140);pkOklchSet();
  if(!(clamped&&document.getElementById('pkclamp').classList.contains('show'))){ok=false;notes.push('clamp status missing for out-of-gamut C');}
  document.title='OKLCHTEST '+(ok?'PASS':'FAIL');const d=document.createElement('div');d.id='oklchtest';d.textContent='OKLCHTEST '+(ok?'PASS':'FAIL')+(notes.length?' | '+notes.join(' ; '):'');document.body.appendChild(d);}
-if(location.hash==='#deltatest'){const save=PALETTE.slice();let ok=true;const notes=[];const W=()=>document.getElementById('palwarn');
- PALETTE=[['#0d0b0a','ground'],['#cdced1','fg'],['#67809c','blue'],['#69829e','blue2']];renderPalette();
- const t1=W().textContent;if(!(W().style.display!=='none'&&/blue \/ blue2/.test(t1)&&/ΔE/.test(t1))){ok=false;notes.push('near-pair did not fire: '+t1);}
- PALETTE=[['#0d0b0a','ground'],['#cdced1','fg'],['#67809c','blue'],['#e8bd30','gold'],['#cb6b4d','terra']];renderPalette();
- if(W().style.display!=='none'){ok=false;notes.push('spread palette warned: '+W().textContent);}
- PALETTE=[['#0d0b0a','ground'],['#cdced1','fg']];for(let k=0;k<7;k++){const v=(0x67+k).toString(16).padStart(2,'0');PALETTE.push(['#'+v+'809c','c'+k]);}renderPalette();
- const tc=W().textContent;const nums=[...tc.matchAll(/ΔE (\d+\.\d+)/g)].map(m=>parseFloat(m[1]));
- if(!/and \d+ more/.test(tc)){ok=false;notes.push('no cap suffix: '+tc);}
- if(!(nums.length===5&&nums.every((n,k)=>k===0||n>=nums[k-1]))){ok=false;notes.push('not 5-capped ascending: '+nums.join(','));}
- PALETTE=save;renderPalette();
- document.title='DELTATEST '+(ok?'PASS':'FAIL');const d=document.createElement('div');d.id='deltatest';d.textContent='DELTATEST '+(ok?'PASS':'FAIL')+(notes.length?' | '+notes.join(' ; '):'');document.body.appendChild(d);}
 if(location.hash==='#readouttest'){const hex='#67809c';document.getElementById('newhexstr').value=hex;openPicker();pkReadout(hex);
  const o=document.getElementById('pkoklch').textContent,a=document.getElementById('pkapca').textContent,w=document.getElementById('pkcon').textContent;
  const lch=oklab2oklch(srgb2oklab(hex));
