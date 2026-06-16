@@ -50,6 +50,7 @@ EMACS_TEST = $(EMACS_BATCH) -L $(TEST_DIR) -L $(MODULE_DIR)
         test-bash theme-studio-test theme-studio-check theme-studio-coverage theme-studio-gen theme-studio-open theme-studio-theme theme-studio-theme-load theme-studio-theme-reload deploy-wip \
         benchmark coverage coverage-summary coverage-clean \
         validate-parens validate-modules compile compile-file lint profile \
+        task-sorted \
         clean clean-compiled clean-tests reset
 
 # Alias for help
@@ -456,6 +457,13 @@ profile:
 		$(EMACS) -Q --load "$(EMACS_HOME)/custom/profile-dotemacs.el" \
 			--eval "(profile-dotemacs)"; \
 	fi
+
+# Move completed tasks (DONE/CANCELLED level-2 subtrees) out of "Open Work"
+# and into the "Resolved" section of todo.org. Wraps todo-cleanup.el's
+# --archive-done; a no-op when nothing is in a closed state.
+task-sorted:
+	@echo "Archiving resolved tasks in todo.org..."
+	@$(EMACS) --batch -q -l .ai/scripts/todo-cleanup.el --archive-done todo.org
 
 clean: clean-tests clean-compiled
 	@echo "✓ Clean complete"
