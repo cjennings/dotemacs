@@ -37,13 +37,17 @@
   (vertico-resize nil)             ; Don't resize the minibuffer
   (vertico-sort-function #'vertico-sort-history-alpha) ; History first, then alphabetical
   :bind (:map vertico-map
-              ("C-j"   . vertico-next)
-              ("C-k"   . vertico-previous)
-              ("C-l"   . vertico-insert)  ; Insert current candidate
-              ("RET"   . vertico-exit)
-              ("C-RET" . vertico-exit-input)
-              ("M-RET" . minibuffer-force-complete-and-exit)
-              ("TAB"   . minibuffer-complete))
+              ("C-j"    . vertico-next)
+              ("C-k"    . vertico-previous)
+              ("C-l"    . vertico-insert)  ; Insert current candidate
+              ("RET"    . vertico-exit)
+              ("C-RET"  . vertico-exit-input)
+              ("M-RET"  . minibuffer-force-complete-and-exit)
+              ("TAB"    . minibuffer-complete)
+              ;; Page-Up/Down scroll the candidate page instead of falling
+              ;; through to minibuffer history (which selected + dismissed).
+              ("<next>"  . vertico-scroll-up)
+              ("<prior>" . vertico-scroll-down))
   :init
   (vertico-mode))
 
