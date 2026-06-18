@@ -226,6 +226,15 @@ run its own project-named tmux session instead of a bare, auto-named one.
       (ghostel-send-string "tmux\n"))))
 
 (use-package ghostel
+  ;; PINNED at module 0.33.0 (ghostel-20260604.2049, the last pre-rework June-4
+  ;; build), installed directly into elpa/ rather than from MELPA.  The 0.35.0-0.35.2
+  ;; native-PTY rework (worker threads + mutex-outside-read-loop) hard-crashes the
+  ;; whole Emacs process when a ghostel buffer is displayed: on Linux/glibc a
+  ;; SIGSETXID handler calls malloc while the main thread holds the arena lock
+  ;; (ghostel upstream #422); on macOS a recursive os_unfair_lock via
+  ;; run_window_change_functions (#423).  `:ensure t' is satisfied by the present
+  ;; 0.33.0 dir and will NOT upgrade it -- do NOT `package-upgrade' ghostel until
+  ;; #422/#423 are fixed upstream, or it returns to the crashing 0.35.x.
   :ensure t
   :commands (ghostel)
   :init
@@ -252,6 +261,12 @@ run its own project-named tmux session instead of a bare, auto-named one.
    (ghostel-mode . cj/term-launch-tmux))
   :custom
   (ghostel-kill-buffer-on-exit t)
+  ;; Auto-download the prebuilt native module on first launch instead of the
+  ;; default `ask' prompt -- it fetches the platform release asset from GitHub
+  ;; (for the pinned 0.33.0 source this resolves to the matching v0.33.0 module).
+  ;; The compile-from-source fallback also works here: zig 0.15.2 is installed at
+  ;; /usr/local/bin/zig (see M-x ghostel-module-compile).
+  (ghostel-module-auto-install 'download)
   ;; Byte analog of the prior 100000-line vterm setting (~100 bytes/line) -- D7.
   (ghostel-max-scrollback (* 10 1024 1024)))
 
