@@ -100,6 +100,3 @@ __pycache__/
 # editor/image backup files
 *.bak
 smoke/
-
-# theme-studio working/scratch JSON sources (the generated themes are tracked)
-/scripts/theme-studio/WIP.json
