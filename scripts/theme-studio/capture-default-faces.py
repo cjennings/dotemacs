@@ -17,6 +17,8 @@ import re
 import subprocess
 import tempfile
 
+from face_specs import FACE_ATTRS
+
 HERE = pathlib.Path(__file__).resolve().parent
 ROOT = HERE.parents[1]
 OUT = HERE / "emacs-default-faces.json"
@@ -85,21 +87,11 @@ BUILTIN_FEATURES = [
     "shr",
 ]
 
-ATTRS = {
-    ":foreground": "foreground",
-    ":background": "background",
-    ":weight": "weight",
-    ":slant": "slant",
-    ":underline": "underline",
-    ":strike-through": "strike",
-    ":overline": "overline",
-    ":box": "box",
-    ":height": "height",
-    ":inherit": "inherit",
-    ":inverse-video": "inverseVideo",
-    ":extend": "extend",
-    ":distant-foreground": "distantForeground",
-}
+# Emacs face :attribute keyword -> snapshot field name, derived from the shared
+# face-attribute spec so the capture, the seed extraction, and STYLE_DEFAULTS all
+# stay in step. Attributes the snapshot doesn't carry (e.g. family) have no
+# capture keyword and are skipped.
+ATTRS = {a["capture"]: a["snapshot"] for a in FACE_ATTRS if a["capture"]}
 
 
 def x11_colors() -> dict[str, str]:

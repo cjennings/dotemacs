@@ -6,6 +6,8 @@ import json
 import pathlib
 from typing import Any
 
+from face_specs import FACE_ATTRS
+
 
 class DefaultFaces:
     def __init__(self, data: dict[str, Any] | None):
@@ -35,49 +37,46 @@ class DefaultFaces:
         data = self.face(face, effective)
         return data.get(attr + "Hex") or data.get(attr)
 
+    def _seed_value(self, attr: dict[str, Any], data: dict[str, Any]) -> Any:
+        """Turn a snapshot field into a model value per the attribute's kind.
+
+        The snapshot speaks a different dialect than the model: colors carry a
+        Hex variant with a name fallback; weight/slant are value-narrowed to the
+        legacy bold/italic until the snapshot refresh; underline/strike/overline
+        are truthy flags that become objects; inverse/extend coerce Emacs's "t".
+        Returns None (skip) when the attribute is unset or not seedable.
+        """
+        kind, snap = attr["kind"], attr["snapshot"]
+        if not kind:
+            return None
+        if kind == "color":
+            return data.get(snap + "Hex") or data.get(snap)
+        if kind == "weight-bold":
+            return "bold" if data.get(snap) == "bold" else None
+        if kind == "slant-italic":
+            return "italic" if data.get(snap) == "italic" else None
+        if kind == "underline-obj":
+            return {"style": "line", "color": None} if data.get(snap) else None
+        if kind == "color-obj":
+            return {"color": None} if data.get(snap) else None
+        if kind == "bool":
+            return True if data.get(snap) in (True, "t") else None
+        if kind == "scalar":
+            return data.get(snap) or None
+        if kind == "height":
+            h = data.get(snap)
+            return h if (h and h != 1) else None
+        if kind == "box":
+            return self.box_to_theme(data.get(snap))
+        return None
+
     def seed(self, face: str, effective: bool = False) -> dict[str, Any]:
         data = self.face(face, effective)
         out: dict[str, Any] = {}
-        fg = data.get("foregroundHex") or data.get("foreground")
-        bg = data.get("backgroundHex") or data.get("background")
-        if fg:
-            out["fg"] = fg
-        if bg:
-            out["bg"] = bg
-        # Representation-only cutover: the snapshot's bold/italic become the new
-        # weight/slant shape, and underline/strike become objects. The same
-        # narrowing as before (only "bold"/"italic" survive; richer weights and
-        # underline colors wait for the snapshot refresh), so the emitted theme
-        # is byte-identical.
-        if data.get("weight") == "bold":
-            out["weight"] = "bold"
-        if data.get("slant") == "italic":
-            out["slant"] = "italic"
-        if data.get("underline"):
-            out["underline"] = {"style": "line", "color": None}
-        if data.get("strike"):
-            out["strike"] = {"color": None}
-        # Additive attrs the snapshot already carries for the faces that set them:
-        # distant-foreground (e.g. lazy-highlight), inverse-video, and extend.
-        # overline is captured too once the snapshot is refreshed; stock faces
-        # almost never set it, so it is usually absent. These seed faces with the
-        # attrs Emacs gives them by default, so the studio opens closer to reality.
-        df = data.get("distantForegroundHex") or data.get("distantForeground")
-        if df:
-            out["distant-fg"] = df
-        if data.get("overline"):
-            out["overline"] = {"color": None}
-        if data.get("inverseVideo") in (True, "t"):
-            out["inverse"] = True
-        if data.get("extend") in (True, "t"):
-            out["extend"] = True
-        if data.get("inherit"):
-            out["inherit"] = data.get("inherit")
-        if data.get("height") and data.get("height") != 1:
-            out["height"] = data.get("height")
-        box = self.box_to_theme(data.get("box"))
-        if box:
-            out["box"] = box
+        for attr in FACE_ATTRS:
+            v = self._seed_value(attr, data)
+            if v:
+                out[attr["model"]] = v
         return out
 
     def box_to_theme(self, box: Any) -> dict[str, Any] | None:

@@ -5,27 +5,39 @@ from __future__ import annotations
 from typing import Any
 
 
-# The full per-face attribute model, in its final shape. weight and slant replace
-# the legacy bold/italic booleans (weight is one of light/normal/medium/semibold/
-# bold/heavy; slant is normal/italic/oblique). underline and strike are objects:
-# underline is {style: line|wave, color} and strike is {color}; null means unset.
-# inherit and height are no longer package-only — every tier can set them.
-STYLE_DEFAULTS: dict[str, Any] = {
-    "fg": None,
-    "bg": None,
-    "distant-fg": None,
-    "family": None,
-    "weight": None,
-    "slant": None,
-    "underline": None,
-    "strike": None,
-    "overline": None,
-    "box": None,
-    "inverse": False,
-    "extend": False,
-    "inherit": None,
-    "height": None,
-}
+# The full per-face attribute model, in its final shape, as one spec list that is
+# the single source for: STYLE_DEFAULTS (model key -> default), the capture probe
+# map in capture-default-faces.py (emacs :attr -> snapshot field), and the
+# snapshot extraction in default_faces.seed (snapshot field + kind -> model value).
+# Per row:
+#   model    : theme-model key
+#   default  : value when unset
+#   capture  : the Emacs face :attribute keyword the capture probes (None = not
+#              captured, e.g. family, which the model carries but the snapshot omits)
+#   snapshot : the field name the capture writes (and seed reads)
+#   kind     : how seed turns the snapshot field into a model value (None = not seeded)
+# weight/slant replaced the legacy bold/italic booleans; underline/strike/overline
+# are objects ({style: line|wave, color} / {color}); inherit and height apply to
+# every tier. Keep this in step with app-core.js FACE_ATTRS (separate runtime).
+FACE_ATTRS: list[dict[str, Any]] = [
+    {"model": "fg",         "default": None,  "capture": ":foreground",         "snapshot": "foreground",         "kind": "color"},
+    {"model": "bg",         "default": None,  "capture": ":background",         "snapshot": "background",         "kind": "color"},
+    {"model": "distant-fg", "default": None,  "capture": ":distant-foreground", "snapshot": "distantForeground", "kind": "color"},
+    {"model": "family",     "default": None,  "capture": None,                  "snapshot": None,                "kind": None},
+    {"model": "weight",     "default": None,  "capture": ":weight",             "snapshot": "weight",            "kind": "weight-bold"},
+    {"model": "slant",      "default": None,  "capture": ":slant",              "snapshot": "slant",             "kind": "slant-italic"},
+    {"model": "underline",  "default": None,  "capture": ":underline",          "snapshot": "underline",         "kind": "underline-obj"},
+    {"model": "strike",     "default": None,  "capture": ":strike-through",     "snapshot": "strike",            "kind": "color-obj"},
+    {"model": "overline",   "default": None,  "capture": ":overline",           "snapshot": "overline",          "kind": "color-obj"},
+    {"model": "box",        "default": None,  "capture": ":box",                "snapshot": "box",               "kind": "box"},
+    {"model": "inverse",    "default": False, "capture": ":inverse-video",      "snapshot": "inverseVideo",      "kind": "bool"},
+    {"model": "extend",     "default": False, "capture": ":extend",             "snapshot": "extend",            "kind": "bool"},
+    {"model": "inherit",    "default": None,  "capture": ":inherit",            "snapshot": "inherit",           "kind": "scalar"},
+    {"model": "height",     "default": None,  "capture": ":height",             "snapshot": "height",            "kind": "height"},
+]
+
+# model key -> default, derived from the spec above (order preserved).
+STYLE_DEFAULTS: dict[str, Any] = {a["model"]: a["default"] for a in FACE_ATTRS}
 
 # Kept as a distinct name for callers, but inherit/height are no longer
 # package-only, so the package defaults are now the same full set.
