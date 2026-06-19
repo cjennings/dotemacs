@@ -13,7 +13,7 @@ import {
   srgb2oklab, oklab2oklch, oklch2oklab, oklch2hex, apca, deltaE,
   hex2rgb, rl, contrast, rating, hsv2rgb, rgb2hsv, rgb2hex,
   oklab2lrgb, inGamut, lrgb2hex, planeCell, paletteWarnings,
-  reliefColors,
+  reliefColors, isPureEndpointHex,
 } from './colormath.js';
 
 const close = (a, b, eps = 0.005) => Math.abs(a - b) <= eps;
@@ -269,4 +269,33 @@ test('inline-integrity: theme-studio.html contains the colormath.js body verbati
   const body = stripExports(readFileSync(here + 'colormath.js', 'utf8'));
   const html = readFileSync(here + 'theme-studio.html', 'utf8');
   assert.ok(html.includes(body), 'generated page is missing the colormath.js body verbatim');
+});
+
+// --- apca contrast branches + isPureEndpointHex ------------------------------
+
+test('apca: Boundary — equal luminance returns 0 (below the delta-Y floor)', () => {
+  assert.equal(apca('#808080', '#808080'), 0);
+});
+test('apca: Normal — dark text on light background is positive (Ybg > Ytxt)', () => {
+  assert.ok(apca('#000000', '#ffffff') > 0);
+});
+test('apca: Normal — light text on dark background is negative (else branch)', () => {
+  assert.ok(apca('#ffffff', '#000000') < 0);
+});
+test('apca: Boundary — near-equal colors below the floor clamp to 0', () => {
+  assert.equal(apca('#808080', '#828282'), 0);
+});
+
+test('isPureEndpointHex: Normal — pure black and white are endpoints', () => {
+  assert.equal(isPureEndpointHex('#ffffff'), true);
+  assert.equal(isPureEndpointHex('#000000'), true);
+  assert.equal(isPureEndpointHex('#FFFFFF'), true);
+});
+test('isPureEndpointHex: Boundary — any other color is not an endpoint', () => {
+  assert.equal(isPureEndpointHex('#010101'), false);
+  assert.equal(isPureEndpointHex('#123456'), false);
+});
+test('isPureEndpointHex: Error — null/empty is not an endpoint', () => {
+  assert.equal(isPureEndpointHex(null), false);
+  assert.equal(isPureEndpointHex(''), false);
 });

@@ -1103,3 +1103,35 @@ test('faceCss: Error — opts omitted still works', () => {
   assert.equal(faceCss({}, '#111', null),
     'color:#111;font-weight:normal;font-style:normal;text-decoration:none');
 });
+
+// --- defensive / fallback branches -------------------------------------------
+
+test('migrateLegacyFace: Boundary — null/undefined input yields an empty object', () => {
+  assert.deepEqual(migrateLegacyFace(null), {});
+  assert.deepEqual(migrateLegacyFace(undefined), {});
+});
+
+test('normalizePkgFace: Normal — source falls back through arg, d.source, then "user"', () => {
+  assert.equal(normalizePkgFace({}, 'default').source, 'default');     // arg wins
+  assert.equal(normalizePkgFace({source: 'cleared'}).source, 'cleared'); // d.source
+  assert.equal(normalizePkgFace({}).source, 'user');                   // default
+});
+
+test('mergePackagesInto: Boundary — null packages is a no-op', () => {
+  const map = {existing: {f: {fg: '#111'}}};
+  mergePackagesInto(map, null);
+  assert.deepEqual(Object.keys(map), ['existing']);
+});
+test('mergePackagesInto: Normal — a new app key is created', () => {
+  const map = {};
+  mergePackagesInto(map, {newapp: {'face-a': {fg: '#112233', source: 'user'}}});
+  assert.ok(map.newapp && map.newapp['face-a']);
+  assert.equal(map.newapp['face-a'].fg, '#112233');
+});
+
+test('boxCss: Boundary — released with no color but a bg shades from the bg', () => {
+  const fromBg = boxCss({style: 'released'}, '#808080');
+  // not the translucent no-bg fallback, and a real two-edge relief
+  assert.notEqual(fromBg, 'inset 1px 1px 0 #ffffff33,inset -1px -1px 0 #00000066');
+  assert.match(fromBg, /^inset 1px 1px 0 \S+,inset -1px -1px 0 \S+$/);
+});
