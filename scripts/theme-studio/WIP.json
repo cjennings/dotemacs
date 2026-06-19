@@ -588,17 +588,13 @@
    "strike": false
   },
   "region": {
-   "fg": null,
-   "bg": "#363638",
+   "fg": "#100f0f",
+   "bg": "#ab8d2e",
    "bold": false,
    "italic": false,
    "underline": false,
    "strike": false,
-   "box": {
-    "style": "line",
-    "width": 1,
-    "color": "#4a4b4f"
-   }
+   "box": null
   },
   "hl-line": {
    "fg": null,
@@ -619,7 +615,7 @@
    "box": null
   },
   "mode-line": {
-   "fg": "#bac1c8",
+   "fg": "#cbd0d6",
    "bg": "#424f5e",
    "bold": false,
    "italic": false,
@@ -639,11 +635,16 @@
    "underline": false,
    "strike": false,
    "inherit": "mode-line",
-   "box": {
-    "style": "released",
-    "width": 1,
-    "color": "#0a0c0d"
-   }
+   "box": null
+  },
+  "mode-line-highlight": {
+   "fg": "#e6ce88",
+   "bg": "#424f5e",
+   "bold": false,
+   "italic": false,
+   "underline": false,
+   "strike": false,
+   "box": null
   },
   "fringe": {
    "fg": "#f3e7c5",
@@ -801,7 +802,6 @@
   "ui:isearch",
   "ui:hl-line",
   "ui:highlight",
-  "ui:region",
   "str",
   "esc",
   "re",
@@ -1087,13 +1087,14 @@
   "pkg:gnus:gnus-header-subject",
   "pkg:gnus:gnus-header-content",
   "pkg:gnus:gnus-header-newsgroups",
-  "ui:mode-line-inactive",
-  "ui:mode-line",
   "pkg:pearl:pearl-modified-highlight",
   "pkg:pearl:pearl-modified-local",
   "pkg:pearl:pearl-modified-unknown",
   "pkg:pearl:pearl-readonly-comment",
-  "pkg:pearl:pearl-editable-comment"
+  "pkg:pearl:pearl-editable-comment",
+  "ui:mode-line-inactive",
+  "ui:mode-line",
+  "ui:mode-line-highlight"
  ],
  "packages": {
   "org-mode": {
