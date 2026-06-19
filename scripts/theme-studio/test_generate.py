@@ -421,6 +421,16 @@ class DefaultFaceAdapter(unittest.TestCase):
                     },
                     "effectiveGuiLight": {},
                 },
+                "rich": {
+                    "chosenGuiLight": {
+                        "distantForeground": "black",
+                        "distantForegroundHex": "#000000",
+                        "overline": "t",
+                        "inverseVideo": "t",
+                        "extend": "t",
+                    },
+                    "effectiveGuiLight": {},
+                },
             }
         })
 
@@ -434,6 +444,19 @@ class DefaultFaceAdapter(unittest.TestCase):
             "inherit": "parent",
             "box": {"style": "released", "width": 2, "color": None},
         })
+
+    def test_seed_emits_the_additive_attrs_when_the_snapshot_has_them(self):
+        self.assertEqual(self.defaults.seed("rich", effective=False), {
+            "distant-fg": "#000000",
+            "overline": {"color": None},
+            "inverse": True,
+            "extend": True,
+        })
+
+    def test_seed_omits_additive_attrs_when_the_snapshot_lacks_them(self):
+        seeded = self.defaults.seed("sample", effective=False)
+        for key in ("distant-fg", "overline", "inverse", "extend"):
+            self.assertNotIn(key, seeded)
 
     def test_color_reads_effective_hex_by_default(self):
         self.assertEqual(self.defaults.color("sample"), "#000000")

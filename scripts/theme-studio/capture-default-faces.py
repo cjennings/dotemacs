@@ -92,6 +92,7 @@ ATTRS = {
     ":slant": "slant",
     ":underline": "underline",
     ":strike-through": "strike",
+    ":overline": "overline",
     ":box": "box",
     ":height": "height",
     ":inherit": "inherit",
@@ -397,6 +398,7 @@ def main() -> None:
         (slant . ,(ts-probe--safe (ts-probe--attr face :slant)))
         (underline . ,(ts-probe--safe (ts-probe--attr face :underline)))
         (strike . ,(ts-probe--safe (ts-probe--attr face :strike-through)))
+        (overline . ,(ts-probe--safe (ts-probe--attr face :overline)))
         (box . ,(ts-probe--safe (ts-probe--attr face :box)))
         (height . ,(ts-probe--safe (ts-probe--attr face :height)))
         (inherit . ,(ts-probe--safe (ts-probe--attr face :inherit)))

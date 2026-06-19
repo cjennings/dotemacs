@@ -57,6 +57,20 @@ class DefaultFaces:
             out["underline"] = {"style": "line", "color": None}
         if data.get("strike"):
             out["strike"] = {"color": None}
+        # Additive attrs the snapshot already carries for the faces that set them:
+        # distant-foreground (e.g. lazy-highlight), inverse-video, and extend.
+        # overline is captured too once the snapshot is refreshed; stock faces
+        # almost never set it, so it is usually absent. These seed faces with the
+        # attrs Emacs gives them by default, so the studio opens closer to reality.
+        df = data.get("distantForegroundHex") or data.get("distantForeground")
+        if df:
+            out["distant-fg"] = df
+        if data.get("overline"):
+            out["overline"] = {"color": None}
+        if data.get("inverseVideo") in (True, "t"):
+            out["inverse"] = True
+        if data.get("extend") in (True, "t"):
+            out["extend"] = True
         if data.get("inherit"):
             out["inherit"] = data.get("inherit")
         if data.get("height") and data.get("height") != 1:
