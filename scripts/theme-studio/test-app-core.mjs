@@ -630,16 +630,38 @@ test('buildPkgmap: Normal — seeds faces, resolving names and applying defaults
 
 test('normalizePkgFace: Normal — fills every package face field', () => {
   assert.deepEqual(normalizePkgFace({ fg: 'blue', bold: true, inherit: 'base' }, 'default', PAL), {
-    fg: '#67809c', bg: null, bold: true, italic: false, underline: false,
-    strike: false, inherit: 'base', height: 1, box: null, source: 'default',
+    fg: '#67809c', bg: null, 'distant-fg': null, family: null, bold: true,
+    italic: false, underline: false, strike: false, overline: null,
+    inherit: 'base', height: 1, box: null, inverse: false, extend: false,
+    source: 'default',
   });
+});
+
+test('normalizePkgFace: Normal — carries the additive attribute model', () => {
+  const f = normalizePkgFace({
+    fg: 'blue', 'distant-fg': '#222222', family: 'Iosevka',
+    overline: { color: '#abcdef' }, inverse: true, extend: 1, height: 1.4,
+  }, 'user', PAL);
+  assert.equal(f['distant-fg'], '#222222');
+  assert.equal(f.family, 'Iosevka');
+  assert.deepEqual(f.overline, { color: '#abcdef' });
+  assert.equal(f.inverse, true);
+  assert.equal(f.extend, true); // coerced to boolean
+  assert.equal(f.height, 1.4);
+});
+
+test('normalizePkgFace: Boundary — distant-fg resolves through the palette', () => {
+  const f = normalizePkgFace({ 'distant-fg': 'blue' }, 'user', PAL);
+  assert.equal(f['distant-fg'], '#67809c');
 });
 
 test('buildPkgmap: Boundary — a face with no default dict still seeds blank', () => {
   const m = buildPkgmap({ a: { faces: [['f', 'f']] } }, PAL);
   assert.deepEqual(m.a.f, {
-    fg: null, bg: null, bold: false, italic: false, underline: false,
-    strike: false, inherit: null, height: 1, box: null, source: 'default',
+    fg: null, bg: null, 'distant-fg': null, family: null, bold: false,
+    italic: false, underline: false, strike: false, overline: null,
+    inherit: null, height: 1, box: null, inverse: false, extend: false,
+    source: 'default',
   });
 });
 
@@ -689,12 +711,35 @@ test('packagesForExport: Error — faces with an unknown source are skipped', ()
   assert.deepEqual(packagesForExport(m), {});
 });
 
+test('packagesForExport: Normal — emits additive attrs only when set', () => {
+  const m = { a: { f: normalizePkgFace({
+    fg: '#67809c', 'distant-fg': '#222222', family: 'Iosevka',
+    overline: { color: '#abcdef' }, inverse: true, extend: true,
+  }, 'user') } };
+  const o = packagesForExport(m).a.f;
+  assert.equal(o['distant-fg'], '#222222');
+  assert.equal(o.family, 'Iosevka');
+  assert.deepEqual(o.overline, { color: '#abcdef' });
+  assert.equal(o.inverse, true);
+  assert.equal(o.extend, true);
+});
+
+test('packagesForExport: Boundary — unset additive attrs are omitted', () => {
+  const m = { a: { f: normalizePkgFace({ fg: '#67809c' }, 'user') } };
+  const o = packagesForExport(m).a.f;
+  for (const k of ['distant-fg', 'family', 'overline', 'inverse', 'extend']) {
+    assert.ok(!(k in o), k + ' is omitted when unset');
+  }
+});
+
 test('mergePackagesInto: Normal — fills missing fields with defaults', () => {
   const m = {};
   mergePackagesInto(m, { a: { f: { fg: '#112233' } } });
   assert.deepEqual(m.a.f, {
-    fg: '#112233', bg: null, bold: false, italic: false, underline: false,
-    strike: false, inherit: null, height: 1, box: null, source: 'user',
+    fg: '#112233', bg: null, 'distant-fg': null, family: null, bold: false,
+    italic: false, underline: false, strike: false, overline: null,
+    inherit: null, height: 1, box: null, inverse: false, extend: false,
+    source: 'user',
   });
 });
 

@@ -17,14 +17,14 @@ function nameToHex(n,palette){if(!n)return null;if(/^#/.test(n))return n;const p
 function normalizePkgFace(d,source,palette){
   d=d||{};
   const resolve=(v)=>palette?nameToHex(v,palette):v;
-  return {fg:resolve(d.fg)??null,bg:resolve(d.bg)??null,bold:!!d.bold,italic:!!d.italic,underline:!!d.underline,strike:!!d.strike,inherit:d.inherit??null,height:d.height||1,box:d.box??null,source:source||d.source||'user'};
+  return {fg:resolve(d.fg)??null,bg:resolve(d.bg)??null,'distant-fg':resolve(d['distant-fg'])??null,family:d.family??null,bold:!!d.bold,italic:!!d.italic,underline:!!d.underline,strike:!!d.strike,overline:d.overline??null,inherit:d.inherit??null,height:d.height||1,box:d.box??null,inverse:!!d.inverse,extend:!!d.extend,source:source||d.source||'user'};
 }
 
 // Seed the package-face map from the app inventory's per-face defaults.
 function buildPkgmap(apps,palette){const m={};for(const app in apps){m[app]={};for(const row of apps[app].faces){m[app][row[0]]=normalizePkgFace(row[2],'default',palette);}}return m;}
 
 // The package faces worth exporting (anything seeded or user-touched), trimmed.
-function packagesForExport(map){const out={};for(const app in map){const faces={};for(const face in map[app]){const f=map[app][face];if(f.source==='default'||f.source==='user'||f.source==='cleared'){const o={fg:f.fg,bg:f.bg,bold:f.bold,italic:f.italic,underline:!!f.underline,strike:!!f.strike,inherit:f.inherit,source:f.source};if(f.height&&f.height!==1)o.height=f.height;if(f.box)o.box=f.box;faces[face]=o;}}if(Object.keys(faces).length)out[app]=faces;}return out;}
+function packagesForExport(map){const out={};for(const app in map){const faces={};for(const face in map[app]){const f=map[app][face];if(f.source==='default'||f.source==='user'||f.source==='cleared'){const o={fg:f.fg,bg:f.bg,bold:f.bold,italic:f.italic,underline:!!f.underline,strike:!!f.strike,inherit:f.inherit,source:f.source};if(f['distant-fg'])o['distant-fg']=f['distant-fg'];if(f.family)o.family=f.family;if(f.overline)o.overline=f.overline;if(f.inverse)o.inverse=true;if(f.extend)o.extend=true;if(f.height&&f.height!==1)o.height=f.height;if(f.box)o.box=f.box;faces[face]=o;}}if(Object.keys(faces).length)out[app]=faces;}return out;}
 
 // Merge an imported package block into a face map, filling missing fields.
 function mergePackagesInto(map,pkgs){if(!pkgs)return;for(const app in pkgs){if(!map[app])map[app]={};for(const face in pkgs[app]){const f=pkgs[app][face]||{};map[app][face]=normalizePkgFace(f,f.source||'user');}}}

@@ -4,7 +4,7 @@ let MAP=MAP_J, PALETTE=PALETTE_J, SYNTAX=SYNTAX_J, UIMAP=UIMAP_J;
 let LOCKED=new Set(LOCKS_J);   // rows whose choice is decided (controls disabled, skipped by erase/reset batch actions)
 const DELTAE_MIN=0.02; // OKLab ΔE below this = colors too close to tell apart (perceptual-metrics spec)
 const DEFAULT_UIMAP=JSON.parse(JSON.stringify(UIMAP));
-function syntaxBlank(k){return {fg:MAP[k]||null,bg:null,bold:false,italic:false,underline:false,strike:false,box:null};}
+function syntaxBlank(k){return {fg:MAP[k]||null,bg:null,'distant-fg':null,family:null,bold:false,italic:false,underline:false,strike:false,overline:null,box:null,inverse:false,extend:false,inherit:null,height:null};}
 function syncSyntaxCache(k){const s=SYNTAX[k]||syntaxBlank(k);MAP[k]=s.fg||'';}
 function syncAllSyntaxCache(){CATS.forEach(c=>syncSyntaxCache(c[0]));}
 function syncSyntaxFromCache(){CATS.forEach(c=>{const k=c[0];syntaxFace(k).fg=MAP[k]||null;});}
@@ -514,8 +514,8 @@ function buildMockFrame(){
 function uiSelect(face,attr){const cur=UIMAP[face][attr]||'';
   return mkColorDropdown(ddList(cur),cur,h=>{UIMAP[face][attr]=h||null;paintUI(face);buildMockFrame();},{compact:true,defaultHex:attr==='fg'?effFg(null):effBg(null)});}
 const BASE_INHERITS=['fixed-pitch','variable-pitch','default','link','bold','italic','shadow'];
-function uiFaceBlank(){return {fg:null,bg:null,bold:false,italic:false,underline:false,strike:false};}
-function seedFace(d){return normalizePkgFace({fg:pname(d.fg),bg:pname(d.bg),bold:d.bold,italic:d.italic,underline:d.underline,strike:d.strike,inherit:d.inherit,height:d.height,box:d.box},'default');}
+function uiFaceBlank(){return {fg:null,bg:null,'distant-fg':null,family:null,bold:false,italic:false,underline:false,strike:false,overline:null,box:null,inverse:false,extend:false,inherit:null,height:null};}
+function seedFace(d){return normalizePkgFace({fg:pname(d.fg),bg:pname(d.bg),'distant-fg':pname(d['distant-fg']),family:d.family,bold:d.bold,italic:d.italic,underline:d.underline,strike:d.strike,overline:d.overline,inherit:d.inherit,height:d.height,box:d.box,inverse:d.inverse,extend:d.extend},'default');}
 function curApp(){const s=document.getElementById('viewsel');const v=s&&s.value;return (v&&v[0]!=='@')?v:Object.keys(APPS)[0];}
 function pkgEffFg(app,face,seen){return effResolve(PKGMAP,app,face,'fg',seen);}
 function pkgEffBg(app,face,seen){return effResolve(PKGMAP,app,face,'bg',seen);}

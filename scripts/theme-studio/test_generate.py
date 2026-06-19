@@ -195,24 +195,42 @@ class FaceSpecDefaults(unittest.TestCase):
         self.assertEqual(ui_face_spec({"bg": "#ffffff", "bold": True}), {
             "fg": None,
             "bg": "#ffffff",
+            "distant-fg": None,
+            "family": None,
             "bold": True,
             "italic": False,
             "underline": False,
             "strike": False,
+            "overline": None,
             "box": None,
+            "inverse": False,
+            "extend": False,
+            "inherit": None,
+            "height": None,
         })
+
+    def test_ui_face_spec_carries_inherit_and_height(self):
+        # inherit/height are no longer package-only; a ui face can set them.
+        spec = ui_face_spec({"inherit": "shadow", "height": 1.3})
+        self.assertEqual(spec["inherit"], "shadow")
+        self.assertEqual(spec["height"], 1.3)
 
     def test_package_face_spec_fills_structure_fields(self):
         self.assertEqual(package_face_spec({"inherit": "base", "height": 1.2}), {
             "fg": None,
             "bg": None,
+            "distant-fg": None,
+            "family": None,
             "bold": False,
             "italic": False,
             "underline": False,
             "strike": False,
+            "overline": None,
+            "box": None,
+            "inverse": False,
+            "extend": False,
             "inherit": "base",
             "height": 1.2,
-            "box": None,
         })
 
     def test_generated_color_names_are_base_columns_when_legacy(self):
