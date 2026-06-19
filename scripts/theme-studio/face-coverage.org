@@ -11,15 +11,13 @@ studio already themes it; TODO = not yet. Three top-level tiers:
 Tier is decided by where each face's defface lives: /usr/share/emacs = built-in, elpa = package.
 The line under each face is its Emacs docstring (first line), where one exists.
 
-Totals: 690 / 1293 faces covered; 1129 carry a docstring. Tiers: core 1, general 73, packages 38.
+Totals: 690 / 1293 faces covered; 1129 carry a docstring. Tiers: core 1, general 75, packages 43.
 Coverage tiers in the studio: syntax font-lock=23, UI tier=21, package inventory=643 (39 packages).
 
 Mechanism to close a TODO: core/UI faces -> UI_FACES in generate.py; package + subsystem faces
 -> package-inventory.json (regenerable via build-inventory.el / app_inventory.py).
 
-* DOING emacs-core [54/107]
-** TODO abbrev-table-name
-   Face used for displaying the abbrev table name in 'edit-abbrevs-mode'.
+* DOING emacs-core [24/74]
 ** TODO blink-matching-paren-offscreen
    Face for showing in the echo area matched open paren that is off-screen.
 ** TODO bold
@@ -40,8 +38,6 @@ Mechanism to close a TODO: core/UI faces -> UI_FACES in generate.py; package + s
    Basic face for the cursor color under X.
 ** DONE default
    Basic default face.
-** TODO edit-indirect-edited-region
-   Face used to highlight an indirectly edited region.
 ** DONE error
    Basic face used to highlight errors and to denote failure.
 ** TODO escape-glyph
@@ -54,35 +50,6 @@ Mechanism to close a TODO: core/UI faces -> UI_FACES in generate.py; package + s
    The basic fixed-pitch face with serifs.
 ** DONE fringe
    Basic face for the fringes to the left and right of windows under X.
-** DONE git-commit-comment-action
-   Face used for actions in commit message comments.
-** DONE git-commit-comment-branch-local
-   Face used for names of local branches in commit message comments.
-** DONE git-commit-comment-branch-remote
-   Face used for names of remote branches in commit message comments.
-** DONE git-commit-comment-detached
-   Face used for detached 'HEAD' in commit message comments.
-** DONE git-commit-comment-file
-   Face used for file names in commit message comments.
-** DONE git-commit-comment-heading
-   Face used for headings in commit message comments.
-** DONE git-commit-keyword
-   Face used for keywords in commit messages.
-** DONE git-commit-nonempty-second-line
-   Face used for non-whitespace on the second line of commit messages.
-** DONE git-commit-overlong-summary
-   Face used for the tail of overlong commit message summaries.
-** DONE git-commit-summary
-   Face used for the summary in commit messages.
-** DONE git-commit-trailer-token
-   Face used for Git trailer tokens in commit messages.
-** DONE git-commit-trailer-value
-   Face used for Git trailer values in commit messages.
-** DONE git-gutter:added
-** DONE git-gutter:deleted
-** DONE git-gutter:modified
-** DONE git-gutter:separator
-** DONE git-gutter:unchanged
 ** TODO glyphless-char
    Face for displaying non-graphic characters (e.g. U+202A (LRE)).
 ** TODO header-line
@@ -183,28 +150,6 @@ Mechanism to close a TODO: core/UI faces -> UI_FACES in generate.py; package + s
    Face for displaying enabled items in TTY menus.
 ** TODO tty-menu-selected-face
    Face for displaying the currently selected item in TTY menus.
-** DONE twentyfortyeight-face-1024
-   Face for the tile 1024.
-** DONE twentyfortyeight-face-128
-   Face for the tile 128.
-** DONE twentyfortyeight-face-16
-   Face for the tile 16.
-** DONE twentyfortyeight-face-2
-   Face for the tile 2.
-** DONE twentyfortyeight-face-2048
-   Face for the tile 2048.
-** DONE twentyfortyeight-face-256
-   Face for the tile 256.
-** DONE twentyfortyeight-face-32
-   Face for the tile 32.
-** DONE twentyfortyeight-face-4
-   Face for the tile 4.
-** DONE twentyfortyeight-face-512
-   Face for the tile 512.
-** DONE twentyfortyeight-face-64
-   Face for the tile 64.
-** DONE twentyfortyeight-face-8
-   Face for the tile 8.
 ** TODO underline
    Basic underlined face.
 ** DONE variable-pitch
@@ -215,20 +160,17 @@ Mechanism to close a TODO: core/UI faces -> UI_FACES in generate.py; package + s
    Face used for vertical window dividers on ttys.
 ** DONE warning
    Basic face used to highlight warnings.
-** TODO which-func
-   Face used to highlight mode line function names.
 ** TODO window-divider
    Basic face for window dividers.
 ** TODO window-divider-first-pixel
    Basic face for first pixel line/column of window dividers.
 ** TODO window-divider-last-pixel
    Basic face for last pixel line/column of window dividers.
-** DONE yas--field-debug-face
-   The face used for debugging some overlays normally hidden
-** DONE yas-field-highlight-face
-   The face used to highlight the currently active field of a snippet
 
-* DOING emacs-general [23/561]
+* DOING emacs-general [23/563]
+** TODO abbrev [0/1]
+*** TODO abbrev-table-name
+    Face used for displaying the abbrev table name in 'edit-abbrevs-mode'.
 ** TODO ansi-color [0/23]
 *** TODO ansi-color-black
     Face used to render black color code.
@@ -1383,6 +1325,9 @@ Mechanism to close a TODO: core/UI faces -> UI_FACES in generate.py; package + s
     Base face for VC state indicator.
 *** TODO vc-up-to-date-state
     Face for VC modeline state when the file is up to date.
+** TODO which-func [0/1]
+*** TODO which-func
+    Face used to highlight mode line function names.
 ** TODO which-key [0/9]
 *** TODO which-key-command-description-face
     Face for the key description when it is a command.
@@ -1703,6 +1648,10 @@ Mechanism to close a TODO: core/UI faces -> UI_FACES in generate.py; package + s
 ** DONE dirvish-vc-unregistered-face
    Face used for 'unregistered' vc state in the Dirvish buffer.
 
+* TODO edit-indirect [0/1]
+** TODO edit-indirect-edited-region
+   Face used to highlight an indirectly edited region.
+
 * DONE elfeed [13/13]
 ** DONE elfeed-log-date-face
    Face for showing the date in the elfeed log buffer.
@@ -1834,6 +1783,39 @@ Mechanism to close a TODO: core/UI faces -> UI_FACES in generate.py; package + s
    Face for the hollow hint cursor drawn in copy and Emacs modes.
 ** DONE ghostel-fake-cursor-box
    Face for the solid hint cursor drawn for box-style cursors.
+
+* DONE git-commit [12/12]
+** DONE git-commit-comment-action
+   Face used for actions in commit message comments.
+** DONE git-commit-comment-branch-local
+   Face used for names of local branches in commit message comments.
+** DONE git-commit-comment-branch-remote
+   Face used for names of remote branches in commit message comments.
+** DONE git-commit-comment-detached
+   Face used for detached 'HEAD' in commit message comments.
+** DONE git-commit-comment-file
+   Face used for file names in commit message comments.
+** DONE git-commit-comment-heading
+   Face used for headings in commit message comments.
+** DONE git-commit-keyword
+   Face used for keywords in commit messages.
+** DONE git-commit-nonempty-second-line
+   Face used for non-whitespace on the second line of commit messages.
+** DONE git-commit-overlong-summary
+   Face used for the tail of overlong commit message summaries.
+** DONE git-commit-summary
+   Face used for the summary in commit messages.
+** DONE git-commit-trailer-token
+   Face used for Git trailer tokens in commit messages.
+** DONE git-commit-trailer-value
+   Face used for Git trailer values in commit messages.
+
+* DONE git-gutter [5/5]
+** DONE git-gutter:added
+** DONE git-gutter:deleted
+** DONE git-gutter:modified
+** DONE git-gutter:separator
+** DONE git-gutter:unchanged
 
 * DONE highlight-indent-guides [9/9]
 ** DONE highlight-indent-guides-character-face
@@ -2499,6 +2481,30 @@ Mechanism to close a TODO: core/UI faces -> UI_FACES in generate.py; package + s
 ** DONE transient-value
    Face used for values.
 
+* DONE twentyfortyeight [11/11]
+** DONE twentyfortyeight-face-1024
+   Face for the tile 1024.
+** DONE twentyfortyeight-face-128
+   Face for the tile 128.
+** DONE twentyfortyeight-face-16
+   Face for the tile 16.
+** DONE twentyfortyeight-face-2
+   Face for the tile 2.
+** DONE twentyfortyeight-face-2048
+   Face for the tile 2048.
+** DONE twentyfortyeight-face-256
+   Face for the tile 256.
+** DONE twentyfortyeight-face-32
+   Face for the tile 32.
+** DONE twentyfortyeight-face-4
+   Face for the tile 4.
+** DONE twentyfortyeight-face-512
+   Face for the tile 512.
+** DONE twentyfortyeight-face-64
+   Face for the tile 64.
+** DONE twentyfortyeight-face-8
+   Face for the tile 8.
+
 * DONE vertico [4/4]
 ** DONE vertico-current
    Face used to highlight the currently selected candidate.
@@ -2591,3 +2597,9 @@ Mechanism to close a TODO: core/UI faces -> UI_FACES in generate.py; package + s
 ** DONE web-mode-variable-name-face
 ** DONE web-mode-warning-face
 ** DONE web-mode-whitespace-face
+
+* DONE yas [2/2]
+** DONE yas--field-debug-face
+   The face used for debugging some overlays normally hidden
+** DONE yas-field-highlight-face
+   The face used to highlight the currently active field of a snippet
