@@ -9,7 +9,7 @@
 // where normHex (app-util.js) and the colormath helpers are already present from
 // the bodies inlined above this one.
 import { normHex } from './app-util.js';
-import { oklch2hex, srgb2oklab, oklab2lrgb, lrgb2hex, inGamut, contrast, oklchOf, isPureEndpointHex } from './colormath.js';
+import { oklch2hex, srgb2oklab, oklab2lrgb, lrgb2hex, inGamut, contrast, oklchOf, isPureEndpointHex, reliefColors } from './colormath.js';
 
 // Resolve a palette name (or a raw #hex) to a hex; null when the name is unknown.
 function nameToHex(n,palette){if(!n)return null;if(/^#/.test(n))return n;const p=palette.find(p=>p[1]===n);return p?p[0]:null;}
@@ -26,6 +26,42 @@ function migrateLegacyFace(d){
   if('underline' in out){if(out.underline===true)out.underline={style:'line',color:null};else if(out.underline===false)out.underline=null;}
   if('strike' in out){if(out.strike===true)out.strike={color:null};else if(out.strike===false)out.strike=null;}
   return out;
+}
+
+// --- face CSS rendering ------------------------------------------------------
+// Pure builders for the face preview/inline CSS strings. app.js's syntaxStyle /
+// uiCss / ofs / udeco wrappers differ only in how they resolve fg/bg and whether
+// they add a font-size; they all delegate here. cssWeight maps the curated weight
+// names to numeric CSS weights; faceDecoration is the underline/strike value.
+function cssWeight(w){const M={light:300,normal:400,medium:500,semibold:600,bold:700,heavy:900};return w&&M[w]!=null?M[w]:'normal';}
+function faceDecoration(face){return ((face.underline?'underline ':'')+(face.strike?'line-through':'')).trim()||'none';}
+// A face's :box, rendered as an inset box-shadow (no layout shift). Returns the
+// box-shadow VALUE (or '' for no box). 'line' is a flat border in the box color
+// (or the face's own color when unset); 'released'/'pressed' are the 3D button
+// styles Emacs draws, derived from explicit box color when set, otherwise BG so
+// they read on any color (reliefColors is ported from xterm.c).
+function boxCss(b,bg){if(!b||!b.style)return '';const w=b.width||1;
+  if(b.style==='released'||b.style==='pressed'){
+    const r=(b.color||bg)?reliefColors(b.color||bg):{hl:null,sh:null};
+    const hl=r.hl||'#ffffff33',sh=r.sh||'#00000066';
+    const [a,z]=b.style==='released'?[hl,sh]:[sh,hl];
+    return `inset ${w}px ${w}px 0 ${a},inset -${w}px -${w}px 0 ${z}`;}
+  return `inset 0 0 0 ${w}px ${b.color||'currentColor'}`;}
+// CSS declaration string for FACE with already-resolved FG/BG. opts: noBg
+// (never emit background), fontSize (em number for height), boxBg (background
+// handed to the relief shading). Declaration order matches the strings the four
+// callers previously assembled by hand, so the rendered output is unchanged.
+function faceCss(face,fg,bg,opts){
+  opts=opts||{};
+  const parts=['color:'+fg];
+  if(bg&&!opts.noBg)parts.push('background:'+bg);
+  parts.push('font-weight:'+cssWeight(face.weight),
+             'font-style:'+(face.slant||'normal'),
+             'text-decoration:'+faceDecoration(face));
+  if(opts.fontSize!=null)parts.push('font-size:'+opts.fontSize+'em');
+  const bx=boxCss(face.box,opts.boxBg);
+  if(bx)parts.push('box-shadow:'+bx);
+  return parts.join(';');
 }
 
 // Single source of truth for the per-face attribute model. One row per
@@ -509,4 +545,4 @@ function overflowNonDefault(cur,def,showInheritHeight){
   return false;
 }
 
-export { nameToHex, migrateLegacyFace, normalizePkgFace, buildPkgmap, packagesForExport, mergePackagesInto, effResolve, resolveSyntaxFg, resolveUiAttr, dropdownRowTextColor, paletteOptionList, galleryModel, appViewKeysSorted, faceBoxNonDefaults, overflowNonDefault, stepViewIndex, spanNeighborHex, slugify, fgSetFor, floor, lMax, COVERED_FACES, columnsFromPalette, usedPaletteHexes, paletteUsages, regenColumn, rankByLightness, stepRepointPlan, sortColumns, sortColumnMembers, groundRoleOfEntry, groundColumnMembersFromPalette, clearPalettePlan, deletePaletteColumnPlan, areAllLocked, lockToggleLabel, toggleLockSet };
+export { nameToHex, migrateLegacyFace, cssWeight, faceDecoration, boxCss, faceCss, normalizePkgFace, buildPkgmap, packagesForExport, mergePackagesInto, effResolve, resolveSyntaxFg, resolveUiAttr, dropdownRowTextColor, paletteOptionList, galleryModel, appViewKeysSorted, faceBoxNonDefaults, overflowNonDefault, stepViewIndex, spanNeighborHex, slugify, fgSetFor, floor, lMax, COVERED_FACES, columnsFromPalette, usedPaletteHexes, paletteUsages, regenColumn, rankByLightness, stepRepointPlan, sortColumns, sortColumnMembers, groundRoleOfEntry, groundColumnMembersFromPalette, clearPalettePlan, deletePaletteColumnPlan, areAllLocked, lockToggleLabel, toggleLockSet };

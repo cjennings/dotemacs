@@ -558,6 +558,42 @@ function migrateLegacyFace(d){
   return out;
 }
 
+// --- face CSS rendering ------------------------------------------------------
+// Pure builders for the face preview/inline CSS strings. app.js's syntaxStyle /
+// uiCss / ofs / udeco wrappers differ only in how they resolve fg/bg and whether
+// they add a font-size; they all delegate here. cssWeight maps the curated weight
+// names to numeric CSS weights; faceDecoration is the underline/strike value.
+function cssWeight(w){const M={light:300,normal:400,medium:500,semibold:600,bold:700,heavy:900};return w&&M[w]!=null?M[w]:'normal';}
+function faceDecoration(face){return ((face.underline?'underline ':'')+(face.strike?'line-through':'')).trim()||'none';}
+// A face's :box, rendered as an inset box-shadow (no layout shift). Returns the
+// box-shadow VALUE (or '' for no box). 'line' is a flat border in the box color
+// (or the face's own color when unset); 'released'/'pressed' are the 3D button
+// styles Emacs draws, derived from explicit box color when set, otherwise BG so
+// they read on any color (reliefColors is ported from xterm.c).
+function boxCss(b,bg){if(!b||!b.style)return '';const w=b.width||1;
+  if(b.style==='released'||b.style==='pressed'){
+    const r=(b.color||bg)?reliefColors(b.color||bg):{hl:null,sh:null};
+    const hl=r.hl||'#ffffff33',sh=r.sh||'#00000066';
+    const [a,z]=b.style==='released'?[hl,sh]:[sh,hl];
+    return `inset ${w}px ${w}px 0 ${a},inset -${w}px -${w}px 0 ${z}`;}
+  return `inset 0 0 0 ${w}px ${b.color||'currentColor'}`;}
+// CSS declaration string for FACE with already-resolved FG/BG. opts: noBg
+// (never emit background), fontSize (em number for height), boxBg (background
+// handed to the relief shading). Declaration order matches the strings the four
+// callers previously assembled by hand, so the rendered output is unchanged.
+function faceCss(face,fg,bg,opts){
+  opts=opts||{};
+  const parts=['color:'+fg];
+  if(bg&&!opts.noBg)parts.push('background:'+bg);
+  parts.push('font-weight:'+cssWeight(face.weight),
+             'font-style:'+(face.slant||'normal'),
+             'text-decoration:'+faceDecoration(face));
+  if(opts.fontSize!=null)parts.push('font-size:'+opts.fontSize+'em');
+  const bx=boxCss(face.box,opts.boxBg);
+  if(bx)parts.push('box-shadow:'+bx);
+  return parts.join(';');
+}
+
 // Single source of truth for the per-face attribute model. One row per
 // attribute drives both normalizePkgFace (defaulting + palette resolution) and
 // packagesForExport (which attrs serialize and when). Adding a face attribute
@@ -2160,25 +2196,10 @@ function uf(f){return UIMAP[f]||{};}
 // Map a weight name to a CSS font-weight for the live previews. The named
 // weights light/medium/semibold/heavy aren't CSS keywords, so resolve to the
 // numeric scale; an unset weight renders normal.
-function cssWeight(w){const M={light:300,normal:400,medium:500,semibold:600,bold:700,heavy:900};return w&&M[w]!=null?M[w]:'normal';}
-function udeco(o){return `font-weight:${cssWeight(o.weight)};font-style:${o.slant||'normal'};text-decoration:${(o.underline?'underline ':'')+(o.strike?'line-through':'')||'none'}`;}
-// A face's :box, rendered as an inset box-shadow (no layout shift). Returns the
-// box-shadow VALUE (or '' for no box). 'line' is a flat border in the box color
-// (or the face's own color when unset); 'released'/'pressed' are the 3D button
-// styles Emacs draws, derived from explicit box color when set, otherwise the
-// background so they read on any color.
-function boxCss(b,bg){if(!b||!b.style)return '';const w=b.width||1;
-  if(b.style==='released'||b.style==='pressed'){
-    // Emacs derives the 3D edges from a base color (reliefColors, ported from
-    // xterm.c); the translucent pair is only the no-color fallback.
-    const r=(b.color||bg)?reliefColors(b.color||bg):{hl:null,sh:null};
-    const hl=r.hl||'#ffffff33',sh=r.sh||'#00000066';
-    const [a,z]=b.style==='released'?[hl,sh]:[sh,hl];
-    return `inset ${w}px ${w}px 0 ${a},inset -${w}px -${w}px 0 ${z}`;}
-  return `inset 0 0 0 ${w}px ${b.color||'currentColor'}`;}
-function syntaxStyle(k){const s=syntaxFace(k),fg=(k==='bg'?MAP['p']:resolveSyntaxFg(k,SYNTAX,MAP['p'])),bg=s.bg||null,dec=(s.underline?'underline ':'')+(s.strike?'line-through':''),
-  bx=boxCss(s.box,bg||MAP['bg']);
-  return `color:${fg};${bg?'background:'+bg+';':''}font-weight:${cssWeight(s.weight)};font-style:${s.slant||'normal'};text-decoration:${dec.trim()||'none'}${bx?';box-shadow:'+bx:''}`;}
+// cssWeight, boxCss, faceDecoration, and faceCss live in app-core.js now.
+// udeco keeps its own (untrimmed) decoration form, so it stays here.
+function udeco(o){return 'font-weight:'+cssWeight(o.weight)+';font-style:'+(o.slant||'normal')+';text-decoration:'+((o.underline?'underline ':'')+(o.strike?'line-through':'')||'none');}
+function syntaxStyle(k){const s=syntaxFace(k),fg=(k==='bg'?MAP['p']:resolveSyntaxFg(k,SYNTAX,MAP['p'])),bg=s.bg||null;return faceCss(s,fg,bg,{boxBg:bg||MAP['bg']});}
 // The per-row box control: none / line / raised / pressed plus optional line
 // color. get()/set() read and write the face's box object (null = no box).
 // Box control: a 2x2 cluster of radio buttons for the four box styles (no box /
@@ -2212,9 +2233,7 @@ function flashUiPreview(f){const sp=document.querySelectorAll(`#mockframe [data-
 function flashPkg(f){flashRow(document.querySelector(`#pkgbody tr[data-face="${f}"]`));}
 function flashPkgPreview(f){const sp=document.querySelectorAll(`#pkgpreview [data-face="${f}"]`);if(sp.length){flashEls(sp);return;}const row=document.querySelector(`#pkgbody tr[data-face="${f}"]`);if(row)flashEl(row.querySelector('.cat'));}
 function mockSpan(k,t){return `<span data-k="${k}" style="${syntaxStyle(k)}">${esc(t)}</span>`;}
-function uiCss(o,fgv,bgv,opts={}){const fg=fgv===undefined?effFg(o.fg):fgv,bg=bgv===undefined?o.bg:bgv,dec=(o.underline?'underline ':'')+(o.strike?'line-through':''),
-  bx=boxCss(o.box,bg||MAP['bg']);
-  return `color:${fg};${bg&&!opts.noBg?'background:'+bg+';':''}font-weight:${cssWeight(o.weight)};font-style:${o.slant||'normal'};text-decoration:${dec.trim()||'none'}${bx?';box-shadow:'+bx:''}`;}
+function uiCss(o,fgv,bgv,opts={}){const fg=fgv===undefined?effFg(o.fg):fgv,bg=bgv===undefined?o.bg:bgv;return faceCss(o,fg,bg,{noBg:opts.noBg,boxBg:bg||MAP['bg']});}
 function syncMockHeight(){const t=document.getElementById('uitable'),m=document.getElementById('mockframe');if(!t||!m)return;const lb=m.previousElementSibling,lbh=lb?lb.getBoundingClientRect().height+10:30;m.style.height=Math.max(t.getBoundingClientRect().height-lbh,220)+'px';}
 function buildMockFrame(){
   const fr=document.getElementById('mockframe');if(!fr)return;
@@ -2358,7 +2377,7 @@ function buildPkgTable(){
   applyTableSort('pkgbody');
   updateLockToggle('pkg');
 }
-function ofs(app,face){const f=PKGMAP[app][face]||{},fg=effFg(pkgEffFg(app,face)),bg=pkgEffBg(app,face);const dec=(f.underline?'underline ':'')+(f.strike?'line-through':'');const bx=boxCss(f.box,bg||MAP['bg']);return `color:${fg};${bg?'background:'+bg+';':''}font-weight:${cssWeight(f.weight)};font-style:${f.slant||'normal'};text-decoration:${dec.trim()||'none'};font-size:${(f.height||1)}em${bx?';box-shadow:'+bx:''}`;}
+function ofs(app,face){const f=PKGMAP[app][face]||{},fg=effFg(pkgEffFg(app,face)),bg=pkgEffBg(app,face);return faceCss(f,fg,bg,{fontSize:(f.height||1),boxBg:bg||MAP['bg']});}
 function os(app,face,txt){return `<span data-face="${face}" style="${ofs(app,face)}">${txt}</span>`;}
 // Shared wrapper for the line-based package previews: a monospace pre block.
 // Each renderer builds its own L array of os(...) lines and returns previewLines(L).
