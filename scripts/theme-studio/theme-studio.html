@@ -2377,6 +2377,12 @@ function buildPkgTable(){
   applyTableSort('pkgbody');
   updateLockToggle('pkg');
 }
+// The per-package preview renderers live in previews.js, spliced here so the
+// PACKAGE_PREVIEWS registry below can reference them.
+// previews.js -- the bespoke per-package preview renderers, extracted from
+// app.js. Pure preview HTML builders (ofs/os/previewLines + renderXxxPreview);
+// they reference shared globals (PKGMAP, MAP, faceCss, effFg, ...) and are
+// inlined into the page's single script element via the PREVIEWS_J token in app.js.
 function ofs(app,face){const f=PKGMAP[app][face]||{},fg=effFg(pkgEffFg(app,face)),bg=pkgEffBg(app,face);return faceCss(f,fg,bg,{fontSize:(f.height||1),boxBg:bg||MAP['bg']});}
 function os(app,face,txt){return `<span data-face="${face}" style="${ofs(app,face)}">${txt}</span>`;}
 // Shared wrapper for the line-based package previews: a monospace pre block.
@@ -2836,6 +2842,7 @@ function renderMarkdownPreview(){const a='markdown-mode',L=[];
   L.push(os(a,'markdown-html-tag-delimiter-face','&lt;')+os(a,'markdown-html-tag-name-face','kbd')+os(a,'markdown-html-tag-delimiter-face','&gt;')+'Ctrl-C'+os(a,'markdown-html-tag-delimiter-face','&lt;/')+os(a,'markdown-html-tag-name-face','kbd')+os(a,'markdown-html-tag-delimiter-face','&gt;'));
   L.push(os(a,'markdown-footnote-marker-face','[^1]:')+' '+os(a,'markdown-footnote-text-face','the footnote text.'));
   return previewLines(L);}
+
 const PACKAGE_PREVIEWS={
   autodim:renderAutodimPreview,markdown:renderMarkdownPreview,
   org:renderOrgPreview,magit:renderMagitPreview,elfeed:renderElfeedPreview,ghostel:renderGhostelPreview,

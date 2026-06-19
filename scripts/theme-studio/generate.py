@@ -37,6 +37,9 @@ COLORMATH_BODY=strip_exports(read_text('colormath.js'))
 # (MAP_J, PALETTE_J, COLORMATH_J, ...); those are filled after it is spliced in.
 STYLES=read_text('styles.css')
 APP_BODY=read_text('app.js')
+# Bespoke per-package preview renderers, spliced into the page <script> via the
+# PREVIEWS_J token in app.js. No imports/exports, so read raw.
+PREVIEWS_BODY=read_text('previews.js')
 # Pure package-model + dropdown logic, inlined into the page (and unit-tested via
 # test-app-core.mjs) the same way colormath.js is.
 APP_CORE_BODY=strip_exports(read_text('app-core.js'))
@@ -290,6 +293,7 @@ HTML=read_text('theme-studio.template.html')
 def fill_data(s):
     return (s.replace("COLORMATH_J",COLORMATH_BODY)
      .replace("APP_CORE_J",APP_CORE_BODY)
+     .replace("PREVIEWS_J",PREVIEWS_BODY)
      .replace("APP_UTIL_J",APP_UTIL_BODY)
      .replace("PALETTE_GENERATOR_CORE_J",PALETTE_GENERATOR_CORE_BODY)
      .replace("PALETTE_GENERATOR_UI_J",PALETTE_GENERATOR_UI_BODY)
