@@ -1,0 +1,1523 @@
+#+TITLE: theme-studio — face coverage master list
+#+DATE: 2026-06-18
+#+TODO: TODO DOING | DONE
+#+STARTUP: overview
+
+Every known face (live Emacs face-list ∪ everything theme-studio manages), grouped
+by package/subsystem. DONE = theme-studio already themes it; TODO = not yet. A group
+is DONE when all its faces are covered, DOING when some are, TODO when none are.
+
+Totals: 690 / 1293 faces covered across 108 groups.
+Coverage tiers: syntax font-lock=23, UI tier=21, package inventory=643 (39 packages).
+
+Mechanism to close a TODO: core/UI faces → UI_FACES in generate.py; package faces →
+package-inventory.json (regenerable via build-inventory.el / app_inventory.py).
+
+* DOING emacs-core [111/170]
+** TODO abbrev-table-name
+** TODO blink-matching-paren-offscreen
+** TODO bold
+** TODO bold-italic
+** TODO border
+** TODO button
+** TODO child-frame-border
+** TODO completions-annotations
+** TODO completions-common-part
+** TODO completions-first-difference
+** TODO completions-group-title
+** TODO completions-highlight
+** DONE cursor
+** DONE default
+** TODO edit-indirect-edited-region
+** DONE error
+** TODO escape-glyph
+** TODO fill-column-indicator
+** DONE fixed-pitch
+** TODO fixed-pitch-serif
+** DONE fringe
+** DONE git-commit-comment-action
+** DONE git-commit-comment-branch-local
+** DONE git-commit-comment-branch-remote
+** DONE git-commit-comment-detached
+** DONE git-commit-comment-file
+** DONE git-commit-comment-heading
+** DONE git-commit-keyword
+** DONE git-commit-nonempty-second-line
+** DONE git-commit-overlong-summary
+** DONE git-commit-summary
+** DONE git-commit-trailer-token
+** DONE git-commit-trailer-value
+** DONE git-gutter:added
+** DONE git-gutter:deleted
+** DONE git-gutter:modified
+** DONE git-gutter:separator
+** DONE git-gutter:unchanged
+** TODO glyphless-char
+** TODO header-line
+** TODO header-line-highlight
+** TODO help-key-binding
+** DONE highlight
+** DONE hl-line
+** TODO homoglyph
+** TODO internal-border
+** DONE isearch
+** DONE isearch-fail
+** TODO isearch-group-1
+** TODO isearch-group-2
+** TODO italic
+** DONE lazy-highlight
+** DONE line-number
+** DONE line-number-current-line
+** TODO line-number-major-tick
+** TODO line-number-minor-tick
+** DONE link
+** TODO link-visited
+** DONE lsp-details-face
+** DONE lsp-face-highlight-read
+** DONE lsp-face-highlight-textual
+** DONE lsp-face-highlight-write
+** DONE lsp-face-rename
+** DONE lsp-inlay-hint-face
+** DONE lsp-inlay-hint-parameter-face
+** DONE lsp-inlay-hint-type-face
+** DONE lsp-installation-buffer-face
+** DONE lsp-installation-finished-buffer-face
+** DONE lsp-rename-placeholder-face
+** DONE lsp-signature-face
+** DONE lsp-signature-highlight-function-argument
+** DONE lsp-signature-posframe
+** DONE markdown-blockquote-face
+** DONE markdown-bold-face
+** DONE markdown-code-face
+** DONE markdown-comment-face
+** DONE markdown-footnote-marker-face
+** DONE markdown-footnote-text-face
+** DONE markdown-gfm-checkbox-face
+** DONE markdown-header-delimiter-face
+** DONE markdown-header-face
+** DONE markdown-header-face-1
+** DONE markdown-header-face-2
+** DONE markdown-header-face-3
+** DONE markdown-header-face-4
+** DONE markdown-header-face-5
+** DONE markdown-header-face-6
+** DONE markdown-header-rule-face
+** DONE markdown-highlight-face
+** DONE markdown-highlighting-face
+** DONE markdown-hr-face
+** DONE markdown-html-attr-name-face
+** DONE markdown-html-attr-value-face
+** DONE markdown-html-entity-face
+** DONE markdown-html-tag-delimiter-face
+** DONE markdown-html-tag-name-face
+** DONE markdown-inline-code-face
+** DONE markdown-italic-face
+** DONE markdown-language-info-face
+** DONE markdown-language-keyword-face
+** DONE markdown-line-break-face
+** DONE markdown-link-face
+** DONE markdown-link-title-face
+** DONE markdown-list-face
+** DONE markdown-markup-face
+** DONE markdown-math-face
+** DONE markdown-metadata-key-face
+** DONE markdown-metadata-value-face
+** DONE markdown-missing-link-face
+** DONE markdown-plain-url-face
+** DONE markdown-pre-face
+** DONE markdown-reference-face
+** DONE markdown-strike-through-face
+** DONE markdown-table-face
+** DONE markdown-url-face
+** TODO match
+** TODO menu
+** DONE minibuffer-prompt
+** DONE mode-line
+** TODO mode-line-active
+** TODO mode-line-buffer-id
+** TODO mode-line-emphasis
+** DONE mode-line-highlight
+** DONE mode-line-inactive
+** TODO mouse
+** TODO mouse-drag-and-drop-region
+** TODO next-error
+** TODO next-error-message
+** TODO nobreak-hyphen
+** TODO nobreak-space
+** TODO query-replace
+** TODO read-multiple-choice-face
+** DONE region
+** TODO scroll-bar
+** TODO secondary-selection
+** TODO separator-line
+** TODO shadow
+** DONE show-paren-match
+** TODO show-paren-match-expression
+** DONE show-paren-mismatch
+** DONE success
+** TODO tab-bar
+** TODO tool-bar
+** TODO tooltip
+** TODO trailing-whitespace
+** TODO tty-menu-disabled-face
+** TODO tty-menu-enabled-face
+** TODO tty-menu-selected-face
+** DONE twentyfortyeight-face-1024
+** DONE twentyfortyeight-face-128
+** DONE twentyfortyeight-face-16
+** DONE twentyfortyeight-face-2
+** DONE twentyfortyeight-face-2048
+** DONE twentyfortyeight-face-256
+** DONE twentyfortyeight-face-32
+** DONE twentyfortyeight-face-4
+** DONE twentyfortyeight-face-512
+** DONE twentyfortyeight-face-64
+** DONE twentyfortyeight-face-8
+** TODO underline
+** DONE variable-pitch
+** TODO variable-pitch-text
+** DONE vertical-border
+** DONE warning
+** TODO which-func
+** TODO window-divider
+** TODO window-divider-first-pixel
+** TODO window-divider-last-pixel
+** DONE yas--field-debug-face
+** DONE yas-field-highlight-face
+
+* TODO adob [0/1]
+** TODO adob--hack
+
+* DOING alert [6/8]
+** DONE alert-high-face
+** DONE alert-low-face
+** DONE alert-moderate-face
+** DONE alert-normal-face
+** TODO alert-saved-fringe-face
+** TODO alert-saved-mode-line-face
+** DONE alert-trivial-face
+** DONE alert-urgent-face
+
+* DONE all-the-icons [34/34]
+** DONE all-the-icons-blue
+** DONE all-the-icons-blue-alt
+** DONE all-the-icons-cyan
+** DONE all-the-icons-cyan-alt
+** DONE all-the-icons-dblue
+** DONE all-the-icons-dcyan
+** DONE all-the-icons-dgreen
+** DONE all-the-icons-dmaroon
+** DONE all-the-icons-dorange
+** DONE all-the-icons-dpink
+** DONE all-the-icons-dpurple
+** DONE all-the-icons-dred
+** DONE all-the-icons-dsilver
+** DONE all-the-icons-dyellow
+** DONE all-the-icons-green
+** DONE all-the-icons-lblue
+** DONE all-the-icons-lcyan
+** DONE all-the-icons-lgreen
+** DONE all-the-icons-lmaroon
+** DONE all-the-icons-lorange
+** DONE all-the-icons-lpink
+** DONE all-the-icons-lpurple
+** DONE all-the-icons-lred
+** DONE all-the-icons-lsilver
+** DONE all-the-icons-lyellow
+** DONE all-the-icons-maroon
+** DONE all-the-icons-orange
+** DONE all-the-icons-pink
+** DONE all-the-icons-purple
+** DONE all-the-icons-purple-alt
+** DONE all-the-icons-red
+** DONE all-the-icons-red-alt
+** DONE all-the-icons-silver
+** DONE all-the-icons-yellow
+
+* TODO ansi-color [0/23]
+** TODO ansi-color-black
+** TODO ansi-color-blue
+** TODO ansi-color-bold
+** TODO ansi-color-bright-black
+** TODO ansi-color-bright-blue
+** TODO ansi-color-bright-cyan
+** TODO ansi-color-bright-green
+** TODO ansi-color-bright-magenta
+** TODO ansi-color-bright-red
+** TODO ansi-color-bright-white
+** TODO ansi-color-bright-yellow
+** TODO ansi-color-cyan
+** TODO ansi-color-faint
+** TODO ansi-color-fast-blink
+** TODO ansi-color-green
+** TODO ansi-color-inverse
+** TODO ansi-color-italic
+** TODO ansi-color-magenta
+** TODO ansi-color-red
+** TODO ansi-color-slow-blink
+** TODO ansi-color-underline
+** TODO ansi-color-white
+** TODO ansi-color-yellow
+
+* TODO apropos [0/8]
+** TODO apropos-button
+** TODO apropos-function-button
+** TODO apropos-keybinding
+** TODO apropos-misc-button
+** TODO apropos-property
+** TODO apropos-symbol
+** TODO apropos-user-option-button
+** TODO apropos-variable-button
+
+* TODO auto [0/2]
+** TODO auto-dim-other-buffers
+** TODO auto-dim-other-buffers-hide
+
+* TODO bookmark [0/2]
+** TODO bookmark-face
+** TODO bookmark-menu-bookmark
+
+* TODO breakpoint [0/2]
+** TODO breakpoint-disabled
+** TODO breakpoint-enabled
+
+* TODO browse [0/1]
+** TODO browse-url-button
+
+* TODO buffer [0/1]
+** TODO buffer-menu-buffer
+
+* TODO calendar [0/4]
+** TODO calendar-month-header
+** TODO calendar-today
+** TODO calendar-weekday-header
+** TODO calendar-weekend-header
+
+* TODO change-log [0/8]
+** TODO change-log-acknowledgment
+** TODO change-log-conditionals
+** TODO change-log-date
+** TODO change-log-email
+** TODO change-log-file
+** TODO change-log-function
+** TODO change-log-list
+** TODO change-log-name
+
+* TODO comint [0/2]
+** TODO comint-highlight-input
+** TODO comint-highlight-prompt
+
+* DONE company [19/19]
+** DONE company-echo
+** DONE company-echo-common
+** DONE company-preview
+** DONE company-preview-common
+** DONE company-preview-search
+** DONE company-tooltip
+** DONE company-tooltip-annotation
+** DONE company-tooltip-annotation-selection
+** DONE company-tooltip-common
+** DONE company-tooltip-common-selection
+** DONE company-tooltip-deprecated
+** DONE company-tooltip-mouse
+** DONE company-tooltip-quick-access
+** DONE company-tooltip-quick-access-selection
+** DONE company-tooltip-scrollbar-thumb
+** DONE company-tooltip-scrollbar-track
+** DONE company-tooltip-search
+** DONE company-tooltip-search-selection
+** DONE company-tooltip-selection
+
+* DONE company-box [6/6]
+** DONE company-box-annotation
+** DONE company-box-background
+** DONE company-box-candidate
+** DONE company-box-numbers
+** DONE company-box-scrollbar
+** DONE company-box-selection
+
+* TODO compilation [0/8]
+** TODO compilation-column-number
+** TODO compilation-error
+** TODO compilation-info
+** TODO compilation-line-number
+** TODO compilation-mode-line-exit
+** TODO compilation-mode-line-fail
+** TODO compilation-mode-line-run
+** TODO compilation-warning
+
+* TODO completions [0/1]
+** TODO completions-group-separator
+
+* TODO confusingly [0/1]
+** TODO confusingly-reordered
+
+* DOING consult [20/21]
+** DONE consult-async-failed
+** DONE consult-async-finished
+** TODO consult-async-option
+** DONE consult-async-running
+** DONE consult-async-split
+** DONE consult-bookmark
+** DONE consult-buffer
+** DONE consult-file
+** DONE consult-grep-context
+** DONE consult-help
+** DONE consult-highlight-mark
+** DONE consult-highlight-match
+** DONE consult-key
+** DONE consult-line-number
+** DONE consult-line-number-prefix
+** DONE consult-line-number-wrapped
+** DONE consult-narrow-indicator
+** DONE consult-preview-insertion
+** DONE consult-preview-line
+** DONE consult-preview-match
+** DONE consult-separator
+
+* TODO custom [0/25]
+** TODO custom-button
+** TODO custom-button-mouse
+** TODO custom-button-pressed
+** TODO custom-button-pressed-unraised
+** TODO custom-button-unraised
+** TODO custom-changed
+** TODO custom-comment
+** TODO custom-comment-tag
+** TODO custom-documentation
+** TODO custom-face-tag
+** TODO custom-group-subtitle
+** TODO custom-group-tag
+** TODO custom-group-tag-1
+** TODO custom-invalid
+** TODO custom-link
+** TODO custom-modified
+** TODO custom-rogue
+** TODO custom-saved
+** TODO custom-set
+** TODO custom-state
+** TODO custom-themed
+** TODO custom-variable-button
+** TODO custom-variable-obsolete
+** TODO custom-variable-tag
+** TODO custom-visibility
+
+* DONE dashboard [8/8]
+** DONE dashboard-banner-logo-title
+** DONE dashboard-footer-face
+** DONE dashboard-footer-icon-face
+** DONE dashboard-heading
+** DONE dashboard-items-face
+** DONE dashboard-navigator
+** DONE dashboard-no-items-face
+** DONE dashboard-text-banner
+
+* TODO diary [0/1]
+** TODO diary
+
+* TODO diff [0/18]
+** TODO diff-added
+** TODO diff-changed
+** TODO diff-changed-unspecified
+** TODO diff-context
+** TODO diff-error
+** TODO diff-file-header
+** TODO diff-function
+** TODO diff-header
+** TODO diff-hunk-header
+** TODO diff-index
+** TODO diff-indicator-added
+** TODO diff-indicator-changed
+** TODO diff-indicator-removed
+** TODO diff-nonexistent
+** TODO diff-refine-added
+** TODO diff-refine-changed
+** TODO diff-refine-removed
+** TODO diff-removed
+
+* TODO dired [0/12]
+** TODO dired-broken-symlink
+** TODO dired-directory
+** TODO dired-flagged
+** TODO dired-header
+** TODO dired-ignored
+** TODO dired-mark
+** TODO dired-marked
+** TODO dired-perm-write
+** TODO dired-set-id
+** TODO dired-special
+** TODO dired-symlink
+** TODO dired-warning
+
+* DONE dirvish [38/38]
+** DONE dirvish-collapse-dir-face
+** DONE dirvish-collapse-empty-dir-face
+** DONE dirvish-collapse-file-face
+** DONE dirvish-emerge-group-title
+** DONE dirvish-file-device-number
+** DONE dirvish-file-group-id
+** DONE dirvish-file-inode-number
+** DONE dirvish-file-link-number
+** DONE dirvish-file-modes
+** DONE dirvish-file-size
+** DONE dirvish-file-time
+** DONE dirvish-file-user-id
+** DONE dirvish-free-space
+** DONE dirvish-git-commit-message-face
+** DONE dirvish-hl-line
+** DONE dirvish-hl-line-inactive
+** DONE dirvish-inactive
+** DONE dirvish-media-info-heading
+** DONE dirvish-media-info-property-key
+** DONE dirvish-narrow-match-face-0
+** DONE dirvish-narrow-match-face-1
+** DONE dirvish-narrow-match-face-2
+** DONE dirvish-narrow-match-face-3
+** DONE dirvish-narrow-split
+** DONE dirvish-proc-failed
+** DONE dirvish-proc-finished
+** DONE dirvish-proc-running
+** DONE dirvish-subtree-guide
+** DONE dirvish-subtree-state
+** DONE dirvish-vc-added-state
+** DONE dirvish-vc-conflict-state
+** DONE dirvish-vc-edited-state
+** DONE dirvish-vc-locked-state
+** DONE dirvish-vc-missing-state
+** DONE dirvish-vc-needs-merge-face
+** DONE dirvish-vc-needs-update-state
+** DONE dirvish-vc-removed-state
+** DONE dirvish-vc-unregistered-face
+
+* TODO doc [0/1]
+** TODO doc-view-svg-face
+
+* TODO edmacro [0/1]
+** TODO edmacro-label
+
+* TODO eldoc [0/1]
+** TODO eldoc-highlight-function-argument
+
+* DONE elfeed [13/13]
+** DONE elfeed-log-date-face
+** DONE elfeed-log-debug-level-face
+** DONE elfeed-log-error-level-face
+** DONE elfeed-log-info-level-face
+** DONE elfeed-log-warn-level-face
+** DONE elfeed-search-date-face
+** DONE elfeed-search-feed-face
+** DONE elfeed-search-filter-face
+** DONE elfeed-search-last-update-face
+** DONE elfeed-search-tag-face
+** DONE elfeed-search-title-face
+** DONE elfeed-search-unread-count-face
+** DONE elfeed-search-unread-title-face
+
+* TODO elisp [0/1]
+** TODO elisp-shorthand-font-lock-face
+
+* DONE embark [12/12]
+** DONE embark-collect-annotation
+** DONE embark-collect-candidate
+** DONE embark-collect-group-separator
+** DONE embark-collect-group-title
+** DONE embark-keybinding
+** DONE embark-keybinding-repeat
+** DONE embark-keymap
+** DONE embark-selected
+** DONE embark-target
+** DONE embark-verbose-indicator-documentation
+** DONE embark-verbose-indicator-shadowed
+** DONE embark-verbose-indicator-title
+
+* DONE emms [11/11]
+** DONE emms-browser-album-face
+** DONE emms-browser-albumartist-face
+** DONE emms-browser-artist-face
+** DONE emms-browser-composer-face
+** DONE emms-browser-performer-face
+** DONE emms-browser-track-face
+** DONE emms-browser-year/genre-face
+** DONE emms-metaplaylist-mode-current-face
+** DONE emms-metaplaylist-mode-face
+** DONE emms-playlist-selected-face
+** DONE emms-playlist-track-face
+
+* TODO epa [0/8]
+** TODO epa-field-body
+** TODO epa-field-name
+** TODO epa-mark
+** TODO epa-string
+** TODO epa-validity-disabled
+** TODO epa-validity-high
+** TODO epa-validity-low
+** TODO epa-validity-medium
+
+* TODO erc [0/31]
+** TODO erc-action-face
+** TODO erc-bold-face
+** TODO erc-button
+** TODO erc-button-nick-default-face
+** TODO erc-command-indicator-face
+** TODO erc-current-nick-face
+** TODO erc-dangerous-host-face
+** TODO erc-default-face
+** TODO erc-direct-msg-face
+** TODO erc-error-face
+** TODO erc-fill-wrap-merge-indicator-face
+** TODO erc-fool-face
+** TODO erc-header-line
+** TODO erc-information
+** TODO erc-input-face
+** TODO erc-inverse-face
+** TODO erc-italic-face
+** TODO erc-keep-place-indicator-arrow
+** TODO erc-keep-place-indicator-line
+** TODO erc-keyword-face
+** TODO erc-my-nick-face
+** TODO erc-my-nick-prefix-face
+** TODO erc-nick-default-face
+** TODO erc-nick-msg-face
+** TODO erc-nick-prefix-face
+** TODO erc-notice-face
+** TODO erc-pal-face
+** TODO erc-prompt-face
+** TODO erc-spoiler-face
+** TODO erc-timestamp-face
+** TODO erc-underline-face
+
+* TODO erc-ansi [0/32]
+** TODO bg:erc-color-face0
+** TODO bg:erc-color-face1
+** TODO bg:erc-color-face10
+** TODO bg:erc-color-face11
+** TODO bg:erc-color-face12
+** TODO bg:erc-color-face13
+** TODO bg:erc-color-face14
+** TODO bg:erc-color-face15
+** TODO bg:erc-color-face2
+** TODO bg:erc-color-face3
+** TODO bg:erc-color-face4
+** TODO bg:erc-color-face5
+** TODO bg:erc-color-face6
+** TODO bg:erc-color-face7
+** TODO bg:erc-color-face8
+** TODO bg:erc-color-face9
+** TODO fg:erc-color-face0
+** TODO fg:erc-color-face1
+** TODO fg:erc-color-face10
+** TODO fg:erc-color-face11
+** TODO fg:erc-color-face12
+** TODO fg:erc-color-face13
+** TODO fg:erc-color-face14
+** TODO fg:erc-color-face15
+** TODO fg:erc-color-face2
+** TODO fg:erc-color-face3
+** TODO fg:erc-color-face4
+** TODO fg:erc-color-face5
+** TODO fg:erc-color-face6
+** TODO fg:erc-color-face7
+** TODO fg:erc-color-face8
+** TODO fg:erc-color-face9
+
+* TODO ert [0/2]
+** TODO ert-test-result-expected
+** TODO ert-test-result-unexpected
+
+* TODO eww [0/8]
+** TODO eww-form-checkbox
+** TODO eww-form-file
+** TODO eww-form-select
+** TODO eww-form-submit
+** TODO eww-form-text
+** TODO eww-form-textarea
+** TODO eww-invalid-certificate
+** TODO eww-valid-certificate
+
+* TODO ffap [0/1]
+** TODO ffap
+
+* TODO file [0/1]
+** TODO file-name-shadow
+
+* DONE flycheck [20/20]
+** DONE flycheck-delimited-error
+** DONE flycheck-error
+** DONE flycheck-error-delimiter
+** DONE flycheck-error-list-checker-name
+** DONE flycheck-error-list-column-number
+** DONE flycheck-error-list-error
+** DONE flycheck-error-list-error-message
+** DONE flycheck-error-list-filename
+** DONE flycheck-error-list-highlight
+** DONE flycheck-error-list-id
+** DONE flycheck-error-list-id-with-explainer
+** DONE flycheck-error-list-info
+** DONE flycheck-error-list-line-number
+** DONE flycheck-error-list-warning
+** DONE flycheck-fringe-error
+** DONE flycheck-fringe-info
+** DONE flycheck-fringe-warning
+** DONE flycheck-info
+** DONE flycheck-verify-select-checker
+** DONE flycheck-warning
+
+* DONE flyspell-correct [1/1]
+** DONE flyspell-correct-highlight-face
+
+* DOING font-lock [23/28]
+** DONE font-lock-bracket-face
+** DONE font-lock-builtin-face
+** DONE font-lock-comment-delimiter-face
+** DONE font-lock-comment-face
+** DONE font-lock-constant-face
+** DONE font-lock-delimiter-face
+** DONE font-lock-doc-face
+** TODO font-lock-doc-markup-face
+** DONE font-lock-escape-face
+** DONE font-lock-function-call-face
+** DONE font-lock-function-name-face
+** DONE font-lock-keyword-face
+** DONE font-lock-misc-punctuation-face
+** TODO font-lock-negation-char-face
+** DONE font-lock-number-face
+** DONE font-lock-operator-face
+** DONE font-lock-preprocessor-face
+** DONE font-lock-property-name-face
+** DONE font-lock-property-use-face
+** DONE font-lock-punctuation-face
+** DONE font-lock-regexp-face
+** TODO font-lock-regexp-grouping-backslash
+** TODO font-lock-regexp-grouping-construct
+** DONE font-lock-string-face
+** DONE font-lock-type-face
+** DONE font-lock-variable-name-face
+** DONE font-lock-variable-use-face
+** TODO font-lock-warning-face
+
+* DONE ghostel [19/19]
+** DONE ghostel-color-black
+** DONE ghostel-color-blue
+** DONE ghostel-color-bright-black
+** DONE ghostel-color-bright-blue
+** DONE ghostel-color-bright-cyan
+** DONE ghostel-color-bright-green
+** DONE ghostel-color-bright-magenta
+** DONE ghostel-color-bright-red
+** DONE ghostel-color-bright-white
+** DONE ghostel-color-bright-yellow
+** DONE ghostel-color-cyan
+** DONE ghostel-color-green
+** DONE ghostel-color-magenta
+** DONE ghostel-color-red
+** DONE ghostel-color-white
+** DONE ghostel-color-yellow
+** DONE ghostel-default
+** DONE ghostel-fake-cursor
+** DONE ghostel-fake-cursor-box
+
+* TODO gnus-button [0/1]
+** TODO gnus-button
+
+* TODO gnus-emphasis [0/9]
+** TODO gnus-emphasis-bold
+** TODO gnus-emphasis-bold-italic
+** TODO gnus-emphasis-highlight-words
+** TODO gnus-emphasis-italic
+** TODO gnus-emphasis-strikethru
+** TODO gnus-emphasis-underline
+** TODO gnus-emphasis-underline-bold
+** TODO gnus-emphasis-underline-bold-italic
+** TODO gnus-emphasis-underline-italic
+
+* TODO gnus-group [0/22]
+** TODO gnus-group-mail-1
+** TODO gnus-group-mail-1-empty
+** TODO gnus-group-mail-2
+** TODO gnus-group-mail-2-empty
+** TODO gnus-group-mail-3
+** TODO gnus-group-mail-3-empty
+** TODO gnus-group-mail-low
+** TODO gnus-group-mail-low-empty
+** TODO gnus-group-news-1
+** TODO gnus-group-news-1-empty
+** TODO gnus-group-news-2
+** TODO gnus-group-news-2-empty
+** TODO gnus-group-news-3
+** TODO gnus-group-news-3-empty
+** TODO gnus-group-news-4
+** TODO gnus-group-news-4-empty
+** TODO gnus-group-news-5
+** TODO gnus-group-news-5-empty
+** TODO gnus-group-news-6
+** TODO gnus-group-news-6-empty
+** TODO gnus-group-news-low
+** TODO gnus-group-news-low-empty
+
+* TODO gnus-header [0/6]
+** TODO gnus-header
+** TODO gnus-header-content
+** TODO gnus-header-from
+** TODO gnus-header-name
+** TODO gnus-header-newsgroups
+** TODO gnus-header-subject
+
+* TODO gnus-signature [0/1]
+** TODO gnus-signature
+
+* TODO gnus-splash [0/1]
+** TODO gnus-splash
+
+* TODO gnus-summary [0/17]
+** TODO gnus-summary-cancelled
+** TODO gnus-summary-high-ancient
+** TODO gnus-summary-high-read
+** TODO gnus-summary-high-ticked
+** TODO gnus-summary-high-undownloaded
+** TODO gnus-summary-high-unread
+** TODO gnus-summary-low-ancient
+** TODO gnus-summary-low-read
+** TODO gnus-summary-low-ticked
+** TODO gnus-summary-low-undownloaded
+** TODO gnus-summary-low-unread
+** TODO gnus-summary-normal-ancient
+** TODO gnus-summary-normal-read
+** TODO gnus-summary-normal-ticked
+** TODO gnus-summary-normal-undownloaded
+** TODO gnus-summary-normal-unread
+** TODO gnus-summary-selected
+
+* TODO grep [0/1]
+** TODO grep-heading
+
+* TODO gud [0/1]
+** TODO gud-highlight-current-line-face
+
+* TODO help [0/2]
+** TODO help-argument-name
+** TODO help-for-help-header
+
+* DONE highlight-indent-guides [9/9]
+** DONE highlight-indent-guides-character-face
+** DONE highlight-indent-guides-even-face
+** DONE highlight-indent-guides-odd-face
+** DONE highlight-indent-guides-stack-character-face
+** DONE highlight-indent-guides-stack-even-face
+** DONE highlight-indent-guides-stack-odd-face
+** DONE highlight-indent-guides-top-character-face
+** DONE highlight-indent-guides-top-even-face
+** DONE highlight-indent-guides-top-odd-face
+
+* DONE hl-todo [2/2]
+** DONE hl-todo
+** DONE hl-todo-flymake-type
+
+* TODO holiday [0/1]
+** TODO holiday
+
+* TODO ibuffer [0/1]
+** TODO ibuffer-locked-buffer
+
+* TODO icon [0/2]
+** TODO icon
+** TODO icon-button
+
+* TODO image-dired [0/6]
+** TODO image-dired-thumb-flagged
+** TODO image-dired-thumb-header-directory-name
+** TODO image-dired-thumb-header-file-name
+** TODO image-dired-thumb-header-file-size
+** TODO image-dired-thumb-header-image-count
+** TODO image-dired-thumb-mark
+
+* TODO info [0/13]
+** TODO Info-quoted
+** TODO info-header-node
+** TODO info-header-xref
+** TODO info-index-match
+** TODO info-menu-header
+** TODO info-menu-star
+** TODO info-node
+** TODO info-title-1
+** TODO info-title-2
+** TODO info-title-3
+** TODO info-title-4
+** TODO info-xref
+** TODO info-xref-visited
+
+* DONE json-mode [1/1]
+** DONE json-mode-object-name-face
+
+* TODO kmacro [0/3]
+** TODO kmacro-menu-flagged
+** TODO kmacro-menu-mark
+** TODO kmacro-menu-marked
+
+* DONE llama [5/5]
+** DONE llama-##-macro
+** DONE llama-deleted-argument
+** DONE llama-llama-macro
+** DONE llama-mandatory-argument
+** DONE llama-optional-argument
+
+* TODO log [0/4]
+** TODO log-edit-header
+** TODO log-edit-headers-separator
+** TODO log-edit-summary
+** TODO log-edit-unknown-header
+
+* DONE lv [1/1]
+** DONE lv-separator
+
+* DONE magit [93/93]
+** DONE magit-bisect-bad
+** DONE magit-bisect-good
+** DONE magit-bisect-skip
+** DONE magit-blame-date
+** DONE magit-blame-dimmed
+** DONE magit-blame-hash
+** DONE magit-blame-heading
+** DONE magit-blame-highlight
+** DONE magit-blame-margin
+** DONE magit-blame-name
+** DONE magit-blame-summary
+** DONE magit-branch-current
+** DONE magit-branch-local
+** DONE magit-branch-remote
+** DONE magit-branch-remote-head
+** DONE magit-branch-upstream
+** DONE magit-branch-warning
+** DONE magit-cherry-equivalent
+** DONE magit-cherry-unmatched
+** DONE magit-diff-added
+** DONE magit-diff-added-highlight
+** DONE magit-diff-base
+** DONE magit-diff-base-highlight
+** DONE magit-diff-conflict-heading
+** DONE magit-diff-conflict-heading-highlight
+** DONE magit-diff-context
+** DONE magit-diff-context-highlight
+** DONE magit-diff-file-heading
+** DONE magit-diff-file-heading-highlight
+** DONE magit-diff-file-heading-selection
+** DONE magit-diff-hunk-heading
+** DONE magit-diff-hunk-heading-highlight
+** DONE magit-diff-hunk-heading-selection
+** DONE magit-diff-hunk-region
+** DONE magit-diff-lines-boundary
+** DONE magit-diff-lines-heading
+** DONE magit-diff-our
+** DONE magit-diff-our-highlight
+** DONE magit-diff-removed
+** DONE magit-diff-removed-highlight
+** DONE magit-diff-revision-summary
+** DONE magit-diff-revision-summary-highlight
+** DONE magit-diff-their
+** DONE magit-diff-their-highlight
+** DONE magit-diff-whitespace-warning
+** DONE magit-diffstat-added
+** DONE magit-diffstat-removed
+** DONE magit-dimmed
+** DONE magit-filename
+** DONE magit-hash
+** DONE magit-head
+** DONE magit-header-line
+** DONE magit-header-line-key
+** DONE magit-header-line-log-select
+** DONE magit-keyword
+** DONE magit-keyword-squash
+** DONE magit-left-margin
+** DONE magit-log-author
+** DONE magit-log-date
+** DONE magit-log-graph
+** DONE magit-mode-line-process
+** DONE magit-mode-line-process-error
+** DONE magit-process-ng
+** DONE magit-process-ok
+** DONE magit-reflog-amend
+** DONE magit-reflog-checkout
+** DONE magit-reflog-cherry-pick
+** DONE magit-reflog-commit
+** DONE magit-reflog-merge
+** DONE magit-reflog-other
+** DONE magit-reflog-rebase
+** DONE magit-reflog-remote
+** DONE magit-reflog-reset
+** DONE magit-refname
+** DONE magit-refname-pullreq
+** DONE magit-refname-stash
+** DONE magit-refname-wip
+** DONE magit-sequence-done
+** DONE magit-sequence-drop
+** DONE magit-sequence-exec
+** DONE magit-sequence-head
+** DONE magit-sequence-onto
+** DONE magit-sequence-part
+** DONE magit-sequence-pick
+** DONE magit-sequence-stop
+** DONE magit-signature-bad
+** DONE magit-signature-error
+** DONE magit-signature-expired
+** DONE magit-signature-expired-key
+** DONE magit-signature-good
+** DONE magit-signature-revoked
+** DONE magit-signature-untrusted
+** DONE magit-tag
+
+* DONE magit-section [5/5]
+** DONE magit-section-child-count
+** DONE magit-section-heading
+** DONE magit-section-heading-selection
+** DONE magit-section-highlight
+** DONE magit-section-secondary-heading
+
+* TODO makefile [0/4]
+** TODO makefile-makepp-perl
+** TODO makefile-shell
+** TODO makefile-space
+** TODO makefile-targets
+
+* DONE malyon [5/5]
+** DONE malyon-face-bold
+** DONE malyon-face-error
+** DONE malyon-face-italic
+** DONE malyon-face-plain
+** DONE malyon-face-reverse
+
+* DONE marginalia [32/32]
+** DONE marginalia-archive
+** DONE marginalia-char
+** DONE marginalia-date
+** DONE marginalia-documentation
+** DONE marginalia-file-name
+** DONE marginalia-file-owner
+** DONE marginalia-file-priv-dir
+** DONE marginalia-file-priv-exec
+** DONE marginalia-file-priv-link
+** DONE marginalia-file-priv-no
+** DONE marginalia-file-priv-other
+** DONE marginalia-file-priv-rare
+** DONE marginalia-file-priv-read
+** DONE marginalia-file-priv-write
+** DONE marginalia-function
+** DONE marginalia-installed
+** DONE marginalia-key
+** DONE marginalia-lighter
+** DONE marginalia-list
+** DONE marginalia-mode
+** DONE marginalia-modified
+** DONE marginalia-null
+** DONE marginalia-number
+** DONE marginalia-off
+** DONE marginalia-on
+** DONE marginalia-size
+** DONE marginalia-string
+** DONE marginalia-symbol
+** DONE marginalia-true
+** DONE marginalia-type
+** DONE marginalia-value
+** DONE marginalia-version
+
+* TODO message [0/7]
+** TODO message-cited-text-1
+** TODO message-cited-text-2
+** TODO message-cited-text-3
+** TODO message-cited-text-4
+** TODO message-mml
+** TODO message-separator
+** TODO message-signature-separator
+
+* TODO message-header [0/7]
+** TODO message-header-cc
+** TODO message-header-name
+** TODO message-header-newsgroups
+** TODO message-header-other
+** TODO message-header-subject
+** TODO message-header-to
+** TODO message-header-xheader
+
+* TODO mm [0/2]
+** TODO mm-command-output
+** TODO mm-uu-extract
+
+* DONE nerd-icons [34/34]
+** DONE nerd-icons-blue
+** DONE nerd-icons-blue-alt
+** DONE nerd-icons-cyan
+** DONE nerd-icons-cyan-alt
+** DONE nerd-icons-dblue
+** DONE nerd-icons-dcyan
+** DONE nerd-icons-dgreen
+** DONE nerd-icons-dmaroon
+** DONE nerd-icons-dorange
+** DONE nerd-icons-dpink
+** DONE nerd-icons-dpurple
+** DONE nerd-icons-dred
+** DONE nerd-icons-dsilver
+** DONE nerd-icons-dyellow
+** DONE nerd-icons-green
+** DONE nerd-icons-lblue
+** DONE nerd-icons-lcyan
+** DONE nerd-icons-lgreen
+** DONE nerd-icons-lmaroon
+** DONE nerd-icons-lorange
+** DONE nerd-icons-lpink
+** DONE nerd-icons-lpurple
+** DONE nerd-icons-lred
+** DONE nerd-icons-lsilver
+** DONE nerd-icons-lyellow
+** DONE nerd-icons-maroon
+** DONE nerd-icons-orange
+** DONE nerd-icons-pink
+** DONE nerd-icons-purple
+** DONE nerd-icons-purple-alt
+** DONE nerd-icons-red
+** DONE nerd-icons-red-alt
+** DONE nerd-icons-silver
+** DONE nerd-icons-yellow
+
+* DONE nerd-icons-completion [1/1]
+** DONE nerd-icons-completion-dir-face
+
+* DONE orderless [4/4]
+** DONE orderless-match-face-0
+** DONE orderless-match-face-1
+** DONE orderless-match-face-2
+** DONE orderless-match-face-3
+
+* TODO org [0/88]
+** TODO org-archived
+** TODO org-checkbox
+** TODO org-checkbox-statistics-done
+** TODO org-checkbox-statistics-todo
+** TODO org-cite
+** TODO org-cite-key
+** TODO org-clock-overlay
+** TODO org-code
+** TODO org-column
+** TODO org-column-title
+** TODO org-date
+** TODO org-date-selected
+** TODO org-default
+** TODO org-dispatcher-highlight
+** TODO org-done
+** TODO org-drawer
+** TODO org-drill-hidden-cloze-face
+** TODO org-drill-visible-cloze-face
+** TODO org-drill-visible-cloze-hint-face
+** TODO org-ellipsis
+** TODO org-faces-cancelled
+** TODO org-faces-cancelled-dim
+** TODO org-faces-delegated
+** TODO org-faces-delegated-dim
+** TODO org-faces-doing
+** TODO org-faces-doing-dim
+** TODO org-faces-done
+** TODO org-faces-done-dim
+** TODO org-faces-failed
+** TODO org-faces-failed-dim
+** TODO org-faces-priority-a
+** TODO org-faces-priority-a-dim
+** TODO org-faces-priority-b
+** TODO org-faces-priority-b-dim
+** TODO org-faces-priority-c
+** TODO org-faces-priority-c-dim
+** TODO org-faces-priority-d
+** TODO org-faces-priority-d-dim
+** TODO org-faces-project
+** TODO org-faces-project-dim
+** TODO org-faces-stalled
+** TODO org-faces-stalled-dim
+** TODO org-faces-todo
+** TODO org-faces-todo-dim
+** TODO org-faces-verify
+** TODO org-faces-verify-dim
+** TODO org-faces-waiting
+** TODO org-faces-waiting-dim
+** TODO org-footnote
+** TODO org-formula
+** TODO org-headline-done
+** TODO org-headline-todo
+** TODO org-hide
+** TODO org-imminent-deadline
+** TODO org-indent
+** TODO org-inline-src-block
+** TODO org-latex-and-related
+** TODO org-level-1
+** TODO org-level-2
+** TODO org-level-3
+** TODO org-level-4
+** TODO org-level-5
+** TODO org-level-6
+** TODO org-level-7
+** TODO org-level-8
+** TODO org-link
+** TODO org-list-dt
+** TODO org-macro
+** TODO org-meta-line
+** TODO org-mode-line-clock
+** TODO org-mode-line-clock-overrun
+** TODO org-property-value
+** TODO org-quote
+** TODO org-scheduled
+** TODO org-scheduled-previously
+** TODO org-scheduled-today
+** TODO org-sexp-date
+** TODO org-special-keyword
+** TODO org-tag
+** TODO org-tag-group
+** TODO org-target
+** TODO org-time-grid
+** TODO org-todo
+** TODO org-upcoming-deadline
+** TODO org-upcoming-distant-deadline
+** TODO org-verbatim
+** TODO org-verse
+** TODO org-warning
+
+* TODO org-agenda [0/21]
+** TODO org-agenda-calendar-daterange
+** TODO org-agenda-calendar-event
+** TODO org-agenda-calendar-sexp
+** TODO org-agenda-clocking
+** TODO org-agenda-column-dateline
+** TODO org-agenda-current-time
+** TODO org-agenda-date
+** TODO org-agenda-date-today
+** TODO org-agenda-date-weekend
+** TODO org-agenda-date-weekend-today
+** TODO org-agenda-diary
+** TODO org-agenda-dimmed-todo-face
+** TODO org-agenda-done
+** TODO org-agenda-filter-category
+** TODO org-agenda-filter-effort
+** TODO org-agenda-filter-regexp
+** TODO org-agenda-filter-tags
+** TODO org-agenda-restriction-lock
+** TODO org-agenda-structure
+** TODO org-agenda-structure-filter
+** TODO org-agenda-structure-secondary
+
+* TODO org-block [0/3]
+** TODO org-block
+** TODO org-block-begin-line
+** TODO org-block-end-line
+
+* TODO org-document [0/3]
+** TODO org-document-info
+** TODO org-document-info-keyword
+** TODO org-document-title
+
+* TODO org-priority [0/1]
+** TODO org-priority
+
+* DONE org-roam [9/9]
+** DONE org-roam-dailies-calendar-note
+** DONE org-roam-dim
+** DONE org-roam-header-line
+** DONE org-roam-olp
+** DONE org-roam-preview-heading
+** DONE org-roam-preview-heading-highlight
+** DONE org-roam-preview-heading-selection
+** DONE org-roam-preview-region
+** DONE org-roam-title
+
+* DOING org-superstar [4/5]
+** DONE org-superstar-first
+** DONE org-superstar-header-bullet
+** DONE org-superstar-item
+** DONE org-superstar-leading
+** TODO org-superstar-ordered-item
+
+* TODO org-table [0/3]
+** TODO org-table
+** TODO org-table-header
+** TODO org-table-row
+
+* TODO outline [0/8]
+** TODO outline-1
+** TODO outline-2
+** TODO outline-3
+** TODO outline-4
+** TODO outline-5
+** TODO outline-6
+** TODO outline-7
+** TODO outline-8
+
+* TODO package [0/15]
+** TODO package-description
+** TODO package-help-section-name
+** TODO package-name
+** TODO package-status-avail-obso
+** TODO package-status-available
+** TODO package-status-built-in
+** TODO package-status-dependency
+** TODO package-status-disabled
+** TODO package-status-external
+** TODO package-status-from-source
+** TODO package-status-held
+** TODO package-status-incompat
+** TODO package-status-installed
+** TODO package-status-new
+** TODO package-status-unsigned
+
+* DONE prescient [2/2]
+** DONE prescient-primary-highlight
+** DONE prescient-secondary-highlight
+
+* DONE rainbow-delimiters [13/13]
+** DONE rainbow-delimiters-base-error-face
+** DONE rainbow-delimiters-base-face
+** DONE rainbow-delimiters-depth-1-face
+** DONE rainbow-delimiters-depth-2-face
+** DONE rainbow-delimiters-depth-3-face
+** DONE rainbow-delimiters-depth-4-face
+** DONE rainbow-delimiters-depth-5-face
+** DONE rainbow-delimiters-depth-6-face
+** DONE rainbow-delimiters-depth-7-face
+** DONE rainbow-delimiters-depth-8-face
+** DONE rainbow-delimiters-depth-9-face
+** DONE rainbow-delimiters-mismatched-face
+** DONE rainbow-delimiters-unmatched-face
+
+* TODO rectangle [0/1]
+** TODO rectangle-preview
+
+* TODO sh [0/3]
+** TODO sh-escaped-newline
+** TODO sh-heredoc
+** TODO sh-quoted-exec
+
+* TODO shell [0/3]
+** TODO shell-highlight-undef-alias-face
+** TODO shell-highlight-undef-defined-face
+** TODO shell-highlight-undef-undefined-face
+
+* TODO shr [0/15]
+** TODO shr-abbreviation
+** TODO shr-code
+** TODO shr-h1
+** TODO shr-h2
+** TODO shr-h3
+** TODO shr-h4
+** TODO shr-h5
+** TODO shr-h6
+** TODO shr-link
+** TODO shr-mark
+** TODO shr-selected-link
+** TODO shr-sliced-image
+** TODO shr-strike-through
+** TODO shr-sup
+** TODO shr-text
+
+* TODO smerge [0/7]
+** TODO smerge-base
+** TODO smerge-lower
+** TODO smerge-markers
+** TODO smerge-refined-added
+** TODO smerge-refined-changed
+** TODO smerge-refined-removed
+** TODO smerge-upper
+
+* DONE symbol-overlay [9/9]
+** DONE symbol-overlay-default-face
+** DONE symbol-overlay-face-1
+** DONE symbol-overlay-face-2
+** DONE symbol-overlay-face-3
+** DONE symbol-overlay-face-4
+** DONE symbol-overlay-face-5
+** DONE symbol-overlay-face-6
+** DONE symbol-overlay-face-7
+** DONE symbol-overlay-face-8
+
+* TODO tab-bar [0/5]
+** TODO tab-bar-tab
+** TODO tab-bar-tab-group-current
+** TODO tab-bar-tab-group-inactive
+** TODO tab-bar-tab-inactive
+** TODO tab-bar-tab-ungrouped
+
+* TODO tab-line [0/1]
+** TODO tab-line
+
+* TODO table [0/1]
+** TODO table-cell
+
+* TODO tabulated-list [0/1]
+** TODO tabulated-list-fake-header
+
+* DOING tmr [12/17]
+** DONE tmr-description
+** DONE tmr-duration
+** DONE tmr-end-time
+** DONE tmr-finished
+** DONE tmr-is-acknowledged
+** TODO tmr-mode-line-active
+** TODO tmr-mode-line-soon
+** TODO tmr-mode-line-urgent
+** DONE tmr-must-be-acknowledged
+** TODO tmr-paused
+** DONE tmr-start-time
+** DONE tmr-tabulated-acknowledgement
+** DONE tmr-tabulated-description
+** DONE tmr-tabulated-end-time
+** TODO tmr-tabulated-paused
+** DONE tmr-tabulated-remaining-time
+** DONE tmr-tabulated-start-time
+
+* DONE transient [23/23]
+** DONE transient-active-infix
+** DONE transient-argument
+** DONE transient-delimiter
+** DONE transient-disabled-suffix
+** DONE transient-enabled-suffix
+** DONE transient-heading
+** DONE transient-higher-level
+** DONE transient-inactive-argument
+** DONE transient-inactive-value
+** DONE transient-inapt-argument
+** DONE transient-inapt-suffix
+** DONE transient-key
+** DONE transient-key-exit
+** DONE transient-key-noop
+** DONE transient-key-recurse
+** DONE transient-key-return
+** DONE transient-key-stack
+** DONE transient-key-stay
+** DONE transient-mismatched-key
+** DONE transient-nonstandard-key
+** DONE transient-unreachable
+** DONE transient-unreachable-key
+** DONE transient-value
+
+* TODO treesit [0/2]
+** TODO treesit-explorer-anonymous-node
+** TODO treesit-explorer-field-name
+
+* TODO vc [0/12]
+** TODO vc-conflict-state
+** TODO vc-edited-state
+** TODO vc-git-log-edit-summary-max-warning
+** TODO vc-git-log-edit-summary-target-warning
+** TODO vc-ignored-state
+** TODO vc-locally-added-state
+** TODO vc-locked-state
+** TODO vc-missing-state
+** TODO vc-needs-update-state
+** TODO vc-removed-state
+** TODO vc-state-base
+** TODO vc-up-to-date-state
+
+* DONE vertico [4/4]
+** DONE vertico-current
+** DONE vertico-group-separator
+** DONE vertico-group-title
+** DONE vertico-multiline
+
+* DONE web-mode [81/81]
+** DONE web-mode-annotation-face
+** DONE web-mode-annotation-html-face
+** DONE web-mode-annotation-tag-face
+** DONE web-mode-annotation-type-face
+** DONE web-mode-annotation-value-face
+** DONE web-mode-block-attr-name-face
+** DONE web-mode-block-attr-value-face
+** DONE web-mode-block-comment-face
+** DONE web-mode-block-control-face
+** DONE web-mode-block-delimiter-face
+** DONE web-mode-block-face
+** DONE web-mode-block-string-face
+** DONE web-mode-bold-face
+** DONE web-mode-builtin-face
+** DONE web-mode-comment-face
+** DONE web-mode-comment-keyword-face
+** DONE web-mode-constant-face
+** DONE web-mode-css-at-rule-face
+** DONE web-mode-css-color-face
+** DONE web-mode-css-comment-face
+** DONE web-mode-css-function-face
+** DONE web-mode-css-priority-face
+** DONE web-mode-css-property-name-face
+** DONE web-mode-css-pseudo-class-face
+** DONE web-mode-css-selector-class-face
+** DONE web-mode-css-selector-face
+** DONE web-mode-css-selector-tag-face
+** DONE web-mode-css-string-face
+** DONE web-mode-css-variable-face
+** DONE web-mode-current-column-highlight-face
+** DONE web-mode-current-element-highlight-face
+** DONE web-mode-doctype-face
+** DONE web-mode-error-face
+** DONE web-mode-filter-face
+** DONE web-mode-folded-face
+** DONE web-mode-function-call-face
+** DONE web-mode-function-name-face
+** DONE web-mode-html-attr-custom-face
+** DONE web-mode-html-attr-engine-face
+** DONE web-mode-html-attr-equal-face
+** DONE web-mode-html-attr-name-face
+** DONE web-mode-html-attr-value-face
+** DONE web-mode-html-entity-face
+** DONE web-mode-html-tag-bracket-face
+** DONE web-mode-html-tag-custom-face
+** DONE web-mode-html-tag-face
+** DONE web-mode-html-tag-namespaced-face
+** DONE web-mode-html-tag-unclosed-face
+** DONE web-mode-inlay-face
+** DONE web-mode-interpolate-color1-face
+** DONE web-mode-interpolate-color2-face
+** DONE web-mode-interpolate-color3-face
+** DONE web-mode-interpolate-color4-face
+** DONE web-mode-italic-face
+** DONE web-mode-javascript-comment-face
+** DONE web-mode-javascript-string-face
+** DONE web-mode-json-comment-face
+** DONE web-mode-json-context-face
+** DONE web-mode-json-key-face
+** DONE web-mode-json-string-face
+** DONE web-mode-jsx-depth-1-face
+** DONE web-mode-jsx-depth-2-face
+** DONE web-mode-jsx-depth-3-face
+** DONE web-mode-jsx-depth-4-face
+** DONE web-mode-jsx-depth-5-face
+** DONE web-mode-keyword-face
+** DONE web-mode-param-name-face
+** DONE web-mode-part-comment-face
+** DONE web-mode-part-face
+** DONE web-mode-part-string-face
+** DONE web-mode-preprocessor-face
+** DONE web-mode-script-face
+** DONE web-mode-sql-keyword-face
+** DONE web-mode-string-face
+** DONE web-mode-style-face
+** DONE web-mode-symbol-face
+** DONE web-mode-type-face
+** DONE web-mode-underline-face
+** DONE web-mode-variable-name-face
+** DONE web-mode-warning-face
+** DONE web-mode-whitespace-face
+
+* TODO which-key [0/9]
+** TODO which-key-command-description-face
+** TODO which-key-docstring-face
+** TODO which-key-group-description-face
+** TODO which-key-highlighted-command-face
+** TODO which-key-key-face
+** TODO which-key-local-map-description-face
+** TODO which-key-note-face
+** TODO which-key-separator-face
+** TODO which-key-special-key-face
+
+* TODO widget [0/7]
+** TODO widget-button
+** TODO widget-button-pressed
+** TODO widget-documentation
+** TODO widget-field
+** TODO widget-inactive
+** TODO widget-single-line-field
+** TODO widget-unselected
+
+* TODO xref [0/3]
+** TODO xref-file-header
+** TODO xref-line-number
+** TODO xref-match
