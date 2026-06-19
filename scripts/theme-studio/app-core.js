@@ -132,16 +132,16 @@ const SYNTAX_INHERIT={cmd:'cm',doc:'str',prop:'var',fnc:'fnd'};
 // theme's default foreground (the chain's floor). `dec` (decorator) is pinned to
 // `ty`: Emacs has no decorator face and renders decorators with
 // font-lock-type-face, so a dec color set in the studio would never reach Emacs.
+// Walk an inherit chain from START, returning the first truthy valueFn(key) or
+// null. nextFn(key) gives the parent key; a seen-set guards against a cycle.
+function walkInheritChain(start,nextFn,valueFn){
+  let k=start;const seen={};
+  while(k&&!seen[k]){seen[k]=1;const v=valueFn(k);if(v)return v;k=nextFn(k);}
+  return null;
+}
 function resolveSyntaxFg(cat,syntax,defaultFg){
-  let k=(cat==='dec')?'ty':cat;
-  const seen={};
-  while(k&&!seen[k]){
-    seen[k]=1;
-    const fg=syntax[k]&&syntax[k].fg;
-    if(fg)return fg;
-    k=SYNTAX_INHERIT[k];
-  }
-  return defaultFg;
+  const start=(cat==='dec')?'ty':cat;
+  return walkInheritChain(start,k=>SYNTAX_INHERIT[k],k=>syntax[k]&&syntax[k].fg)||defaultFg;
 }
 
 // Emacs built-in inherit chains for the ui faces whose parent is also a studio ui
@@ -153,15 +153,7 @@ const UI_INHERIT={'mode-line-inactive':'mode-line','line-number-current-line':'l
 // nothing up the chain is set. The caller applies its own floor (default fg,
 // ground, or transparent), since that floor differs per attribute and face.
 function resolveUiAttr(face,attr,uimap){
-  let f=face;
-  const seen={};
-  while(f&&!seen[f]){
-    seen[f]=1;
-    const v=uimap[f]&&uimap[f][attr];
-    if(v)return v;
-    f=UI_INHERIT[f];
-  }
-  return null;
+  return walkInheritChain(face,f=>UI_INHERIT[f],f=>uimap[f]&&uimap[f][attr]);
 }
 
 // Text color for a swatch-dropdown popup row. A row showing a real palette color

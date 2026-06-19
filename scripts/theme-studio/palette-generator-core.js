@@ -141,16 +141,14 @@ function randomChroma(rng){
 }
 function vibeChroma(vibe,rng){
   const rnd=typeof rng==='function'?rng:Math.random;
-  if(vibe==='muted')return 0.045+rnd()*0.035;
-  if(vibe==='pastel')return 0.035+rnd()*0.045;
-  if(vibe==='deep')return 0.085+rnd()*0.055;
-  if(vibe==='jewel')return 0.12+rnd()*0.075;
-  if(vibe==='earthy')return 0.055+rnd()*0.04;
-  if(vibe==='warm'||vibe==='cool')return 0.08+rnd()*0.06;
-  if(vibe==='neon')return 0.18+rnd()*0.09;
-  if(vibe==='strange')return 0.145+rnd()*0.095;
-  if(vibe==='balanced')return 0.075+rnd()*0.045;
-  return 0.12+rnd()*0.07;
+  // [base, range]: chroma is base + rnd()*range. Table, not an if-ladder, so a
+  // vibe is one row to read or tune. The default covers unknown vibes.
+  const t={muted:[0.045,0.035],pastel:[0.035,0.045],deep:[0.085,0.055],
+           jewel:[0.12,0.075],earthy:[0.055,0.04],warm:[0.08,0.06],
+           cool:[0.08,0.06],neon:[0.18,0.09],strange:[0.145,0.095],
+           balanced:[0.075,0.045]};
+  const [base,range]=t[vibe]||[0.12,0.07];
+  return base+rnd()*range;
 }
 function accentCandidateForHue(hue,ground,cfg){
   const C=cfg&&cfg.vibe?vibeChroma(cfg.vibe,cfg.rng):(cfg&&cfg.scheme==='random'?randomChroma(cfg.rng):generatorChroma(cfg&&cfg.chromaMode)), target=generatorTarget(cfg&&cfg.contrastMode), bg=ground&&ground.bg;

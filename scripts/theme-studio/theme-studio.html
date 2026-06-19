@@ -662,16 +662,16 @@ const SYNTAX_INHERIT={cmd:'cm',doc:'str',prop:'var',fnc:'fnd'};
 // theme's default foreground (the chain's floor). `dec` (decorator) is pinned to
 // `ty`: Emacs has no decorator face and renders decorators with
 // font-lock-type-face, so a dec color set in the studio would never reach Emacs.
+// Walk an inherit chain from START, returning the first truthy valueFn(key) or
+// null. nextFn(key) gives the parent key; a seen-set guards against a cycle.
+function walkInheritChain(start,nextFn,valueFn){
+  let k=start;const seen={};
+  while(k&&!seen[k]){seen[k]=1;const v=valueFn(k);if(v)return v;k=nextFn(k);}
+  return null;
+}
 function resolveSyntaxFg(cat,syntax,defaultFg){
-  let k=(cat==='dec')?'ty':cat;
-  const seen={};
-  while(k&&!seen[k]){
-    seen[k]=1;
-    const fg=syntax[k]&&syntax[k].fg;
-    if(fg)return fg;
-    k=SYNTAX_INHERIT[k];
-  }
-  return defaultFg;
+  const start=(cat==='dec')?'ty':cat;
+  return walkInheritChain(start,k=>SYNTAX_INHERIT[k],k=>syntax[k]&&syntax[k].fg)||defaultFg;
 }
 
 // Emacs built-in inherit chains for the ui faces whose parent is also a studio ui
@@ -683,15 +683,7 @@ const UI_INHERIT={'mode-line-inactive':'mode-line','line-number-current-line':'l
 // nothing up the chain is set. The caller applies its own floor (default fg,
 // ground, or transparent), since that floor differs per attribute and face.
 function resolveUiAttr(face,attr,uimap){
-  let f=face;
-  const seen={};
-  while(f&&!seen[f]){
-    seen[f]=1;
-    const v=uimap[f]&&uimap[f][attr];
-    if(v)return v;
-    f=UI_INHERIT[f];
-  }
-  return null;
+  return walkInheritChain(face,f=>UI_INHERIT[f],f=>uimap[f]&&uimap[f][attr]);
 }
 
 // Text color for a swatch-dropdown popup row. A row showing a real palette color
@@ -1244,16 +1236,14 @@ function randomChroma(rng){
 }
 function vibeChroma(vibe,rng){
   const rnd=typeof rng==='function'?rng:Math.random;
-  if(vibe==='muted')return 0.045+rnd()*0.035;
-  if(vibe==='pastel')return 0.035+rnd()*0.045;
-  if(vibe==='deep')return 0.085+rnd()*0.055;
-  if(vibe==='jewel')return 0.12+rnd()*0.075;
-  if(vibe==='earthy')return 0.055+rnd()*0.04;
-  if(vibe==='warm'||vibe==='cool')return 0.08+rnd()*0.06;
-  if(vibe==='neon')return 0.18+rnd()*0.09;
-  if(vibe==='strange')return 0.145+rnd()*0.095;
-  if(vibe==='balanced')return 0.075+rnd()*0.045;
-  return 0.12+rnd()*0.07;
+  // [base, range]: chroma is base + rnd()*range. Table, not an if-ladder, so a
+  // vibe is one row to read or tune. The default covers unknown vibes.
+  const t={muted:[0.045,0.035],pastel:[0.035,0.045],deep:[0.085,0.055],
+           jewel:[0.12,0.075],earthy:[0.055,0.04],warm:[0.08,0.06],
+           cool:[0.08,0.06],neon:[0.18,0.09],strange:[0.145,0.095],
+           balanced:[0.075,0.045]};
+  const [base,range]=t[vibe]||[0.12,0.07];
+  return base+rnd()*range;
 }
 function accentCandidateForHue(hue,ground,cfg){
   const C=cfg&&cfg.vibe?vibeChroma(cfg.vibe,cfg.rng):(cfg&&cfg.scheme==='random'?randomChroma(cfg.rng):generatorChroma(cfg&&cfg.chromaMode)), target=generatorTarget(cfg&&cfg.contrastMode), bg=ground&&ground.bg;
