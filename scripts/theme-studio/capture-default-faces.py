@@ -365,9 +365,36 @@ def main() -> None:
   (add-to-list 'load-path dir))
 (dolist (feature (mapcar #'intern ts-probe-builtin-features))
   (ignore-errors (require feature)))
+(defun ts-probe--eval-deffaces (file)
+  "Evaluate only the `defface' forms in FILE.
+
+A defface form is self-contained, so registering a face this way avoids
+loading the whole package (and its dependencies / side effects), which in
+batch -Q is fragile: a missing dependency or mid-load error would silently
+drop every face in the file. Each form is evaluated independently."
+  (when (file-readable-p file)
+    (with-temp-buffer
+      (insert-file-contents file)
+      (goto-char (point-min))
+      (condition-case nil
+          (while t
+            (let ((form (read (current-buffer))))
+              (when (and (consp form) (eq (car form) 'defface))
+                (ignore-errors (eval form t)))))
+        (end-of-file nil)))))
+;; Pass 1: best-effort full load. Registers faces that are defined by a macro
+;; or loop rather than a literal defface (e.g. rainbow-delimiters depth faces,
+;; markdown header faces), which pass 2 cannot see. Failures are swallowed.
 (dolist (file ts-probe-package-files)
   (with-temp-file {elisp_quote(str(PROGRESS))} (insert file))
   (ignore-errors (load file nil t)))
+;; Pass 2: evaluate literal defface forms directly. Robustly registers faces
+;; whose package failed to fully load in pass 1 (e.g. transient needing
+;; cond-let, magit's transient/forge stack) and resets literal faces to their
+;; pristine defface default spec. Runs last so the default spec wins over any
+;; customization a pass-1 load may have applied.
+(dolist (file ts-probe-package-files)
+  (ts-probe--eval-deffaces file))
 (defun ts-probe--proper-list-p (value)
   (or (null value)
       (and (consp value) (ts-probe--proper-list-p (cdr value)))))
