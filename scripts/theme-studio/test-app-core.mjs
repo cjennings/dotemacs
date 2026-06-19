@@ -10,6 +10,7 @@ import {
   nameToHex, migrateLegacyFace, normalizePkgFace, buildPkgmap, packagesForExport, mergePackagesInto, effResolve, resolveSyntaxFg, resolveUiAttr, dropdownRowTextColor, paletteOptionList, spanNeighborHex, slugify,
   clearPalettePlan, deletePaletteColumnPlan, groundColumnMembersFromPalette, areAllLocked, lockToggleLabel, toggleLockSet,
   galleryModel, appViewKeysSorted, faceBoxNonDefaults, overflowNonDefault, stepViewIndex,
+  cssWeight, faceDecoration, boxCss, faceCss,
 } from './app-core.js';
 import { planPaletteGenerator, entriesForGeneratedColumn } from './palette-generator-core.js';
 import { oklch2hex, deltaE } from './colormath.js';
@@ -1013,4 +1014,92 @@ test('stepViewIndex: a single option or empty list stays put', () => {
   assert.equal(stepViewIndex(0, 1, -1), 0);
   assert.equal(stepViewIndex(3, 0, -1), 3);
   assert.equal(stepViewIndex(0, 0, 1), 0);
+});
+
+// --- face CSS rendering helpers (promoted from app.js into app-core) ----------
+
+test('cssWeight: Normal — each weight name maps to its CSS number', () => {
+  assert.equal(cssWeight('light'), 300);
+  assert.equal(cssWeight('normal'), 400);
+  assert.equal(cssWeight('medium'), 500);
+  assert.equal(cssWeight('semibold'), 600);
+  assert.equal(cssWeight('bold'), 700);
+  assert.equal(cssWeight('heavy'), 900);
+});
+test('cssWeight: Boundary — null/undefined/empty fall back to "normal"', () => {
+  assert.equal(cssWeight(null), 'normal');
+  assert.equal(cssWeight(undefined), 'normal');
+  assert.equal(cssWeight(''), 'normal');
+});
+test('cssWeight: Error — unknown name or a number falls back to "normal"', () => {
+  assert.equal(cssWeight('ultrablack'), 'normal');
+  assert.equal(cssWeight(700), 'normal');
+});
+
+test('faceDecoration: Normal — underline, strike, or both', () => {
+  assert.equal(faceDecoration({underline:{style:'line',color:null}}), 'underline');
+  assert.equal(faceDecoration({strike:{color:null}}), 'line-through');
+  assert.equal(faceDecoration({underline:{style:'line'}, strike:{color:null}}),
+    'underline line-through');
+});
+test('faceDecoration: Boundary — neither set yields "none"', () => {
+  assert.equal(faceDecoration({}), 'none');
+  assert.equal(faceDecoration({underline:null, strike:null}), 'none');
+});
+test('faceDecoration: Error — falsy underline/strike are ignored', () => {
+  assert.equal(faceDecoration({underline:false, strike:false}), 'none');
+});
+
+test('boxCss: Normal — line box uses the box color', () => {
+  assert.equal(boxCss({style:'line', color:'#aabbcc'}), 'inset 0 0 0 1px #aabbcc');
+});
+test('boxCss: Normal — pressed is released with the relief edges swapped', () => {
+  const rel = boxCss({style:'released', width:1, color:'#808080'});
+  const pre = boxCss({style:'pressed', width:1, color:'#808080'});
+  assert.match(rel, /^inset 1px 1px 0 \S+,inset -1px -1px 0 \S+$/);
+  assert.notEqual(rel, pre);
+  const [, ra, rz] = rel.match(/inset 1px 1px 0 (\S+?),inset -1px -1px 0 (\S+)/);
+  const [, pa, pz] = pre.match(/inset 1px 1px 0 (\S+?),inset -1px -1px 0 (\S+)/);
+  assert.equal(pa, rz);
+  assert.equal(pz, ra);
+});
+test('boxCss: Boundary — width respected; missing color uses currentColor', () => {
+  assert.equal(boxCss({style:'line', width:3, color:'#123456'}), 'inset 0 0 0 3px #123456');
+  assert.equal(boxCss({style:'line'}), 'inset 0 0 0 1px currentColor');
+});
+test('boxCss: Boundary — released/pressed with no color and no bg use the fallback', () => {
+  assert.equal(boxCss({style:'released'}),
+    'inset 1px 1px 0 #ffffff33,inset -1px -1px 0 #00000066');
+  assert.equal(boxCss({style:'pressed'}),
+    'inset 1px 1px 0 #00000066,inset -1px -1px 0 #ffffff33');
+});
+test('boxCss: Error — null or styleless box yields the empty string', () => {
+  assert.equal(boxCss(null), '');
+  assert.equal(boxCss({}), '');
+  assert.equal(boxCss({color:'#ffffff'}), '');
+});
+
+test('faceCss: Normal — minimal face is color plus defaults', () => {
+  assert.equal(faceCss({}, '#111111', null, {}),
+    'color:#111111;font-weight:normal;font-style:normal;text-decoration:none');
+});
+test('faceCss: Normal — background, weight, slant, decoration reflected', () => {
+  assert.equal(
+    faceCss({weight:'bold', slant:'italic', underline:{style:'line'}}, '#111', '#222', {}),
+    'color:#111;background:#222;font-weight:700;font-style:italic;text-decoration:underline');
+});
+test('faceCss: Boundary — noBg suppresses background; null bg omits it', () => {
+  assert.equal(faceCss({}, '#111', '#222', {noBg:true}),
+    'color:#111;font-weight:normal;font-style:normal;text-decoration:none');
+  assert.equal(faceCss({}, '#111', null, {}),
+    'color:#111;font-weight:normal;font-style:normal;text-decoration:none');
+});
+test('faceCss: Boundary — font-size precedes box-shadow', () => {
+  assert.equal(
+    faceCss({box:{style:'line',color:'#abcabc'}}, '#111', null, {fontSize:1.15, boxBg:'#000'}),
+    'color:#111;font-weight:normal;font-style:normal;text-decoration:none;font-size:1.15em;box-shadow:inset 0 0 0 1px #abcabc');
+});
+test('faceCss: Error — opts omitted still works', () => {
+  assert.equal(faceCss({}, '#111', null),
+    'color:#111;font-weight:normal;font-style:normal;text-decoration:none');
 });
