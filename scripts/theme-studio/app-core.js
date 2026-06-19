@@ -28,10 +28,44 @@ function migrateLegacyFace(d){
   return out;
 }
 
+// Single source of truth for the per-face attribute model. One row per
+// attribute drives both normalizePkgFace (defaulting + palette resolution) and
+// packagesForExport (which attrs serialize and when). Adding a face attribute
+// is one row here, not an edit in four hand-kept lists.
+//   def     : value when unset
+//   resolve : fg/bg/distant-fg run through the palette name->hex resolver
+//   coerce  : 'bool' -> !!v ; 'height' -> v||1 ; default -> v ?? def
+//   emit    : export rule -- 'always' | 'truthy' | 'non-one' | 'bool'
+// A hoisted function rather than a const: the inlined page calls normalizePkgFace
+// at top level (seedPkgmap) before this point in source order, and a const would
+// be in its temporal dead zone there; a function declaration is hoisted.
+function faceAttrs(){return [
+  {k:'fg',         def:null,  resolve:true, emit:'always'},
+  {k:'bg',         def:null,  resolve:true, emit:'always'},
+  {k:'distant-fg', def:null,  resolve:true, emit:'truthy'},
+  {k:'family',     def:null,                emit:'truthy'},
+  {k:'weight',     def:null,                emit:'truthy'},
+  {k:'slant',      def:null,                emit:'truthy'},
+  {k:'underline',  def:null,                emit:'truthy'},
+  {k:'strike',     def:null,                emit:'truthy'},
+  {k:'overline',   def:null,                emit:'truthy'},
+  {k:'inherit',    def:null,                emit:'always'},
+  {k:'height',     def:1,     coerce:'height', emit:'non-one'},
+  {k:'box',        def:null,                emit:'truthy'},
+  {k:'inverse',    def:false, coerce:'bool',   emit:'bool'},
+  {k:'extend',     def:false, coerce:'bool',   emit:'bool'},
+];}
+
 function normalizePkgFace(d,source,palette){
   d=migrateLegacyFace(d||{});
   const resolve=(v)=>palette?nameToHex(v,palette):v;
-  return {fg:resolve(d.fg)??null,bg:resolve(d.bg)??null,'distant-fg':resolve(d['distant-fg'])??null,family:d.family??null,weight:d.weight??null,slant:d.slant??null,underline:d.underline??null,strike:d.strike??null,overline:d.overline??null,inherit:d.inherit??null,height:d.height||1,box:d.box??null,inverse:!!d.inverse,extend:!!d.extend,source:source||d.source||'user'};
+  const out={};
+  for(const a of faceAttrs()){
+    let v=a.resolve?resolve(d[a.k]):d[a.k];
+    out[a.k]=a.coerce==='bool'?!!v:a.coerce==='height'?(v||1):(v??a.def);
+  }
+  out.source=source||d.source||'user';
+  return out;
 }
 
 
@@ -39,7 +73,8 @@ function normalizePkgFace(d,source,palette){
 function buildPkgmap(apps,palette){const m={};for(const app in apps){m[app]={};for(const row of apps[app].faces){m[app][row[0]]=normalizePkgFace(row[2],'default',palette);}}return m;}
 
 // The package faces worth exporting (anything seeded or user-touched), trimmed.
-function packagesForExport(map){const out={};for(const app in map){const faces={};for(const face in map[app]){const f=map[app][face];if(f.source==='default'||f.source==='user'||f.source==='cleared'){const o={fg:f.fg,bg:f.bg,inherit:f.inherit,source:f.source};if(f.weight)o.weight=f.weight;if(f.slant)o.slant=f.slant;if(f.underline)o.underline=f.underline;if(f.strike)o.strike=f.strike;if(f['distant-fg'])o['distant-fg']=f['distant-fg'];if(f.family)o.family=f.family;if(f.overline)o.overline=f.overline;if(f.inverse)o.inverse=true;if(f.extend)o.extend=true;if(f.height&&f.height!==1)o.height=f.height;if(f.box)o.box=f.box;faces[face]=o;}}if(Object.keys(faces).length)out[app]=faces;}return out;}
+// Driven by FACE_ATTRS: each attribute's `emit` rule decides whether it lands.
+function packagesForExport(map){const out={};for(const app in map){const faces={};for(const face in map[app]){const f=map[app][face];if(f.source==='default'||f.source==='user'||f.source==='cleared'){const o={};for(const a of faceAttrs()){const v=f[a.k];if(a.emit==='always')o[a.k]=v;else if(a.emit==='truthy'){if(v)o[a.k]=v;}else if(a.emit==='non-one'){if(v&&v!==1)o[a.k]=v;}else if(a.emit==='bool'){if(v)o[a.k]=true;}}o.source=f.source;faces[face]=o;}}if(Object.keys(faces).length)out[app]=faces;}return out;}
 
 // Merge an imported package block into a face map, filling missing fields.
 function mergePackagesInto(map,pkgs){if(!pkgs)return;for(const app in pkgs){if(!map[app])map[app]={};for(const face in pkgs[app]){const f=pkgs[app][face]||{};map[app][face]=normalizePkgFace(f,f.source||'user');}}}
