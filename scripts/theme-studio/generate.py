@@ -177,25 +177,23 @@ def add_palette_color(palette,defaults,value,label=None):
         name=base+'-'+str(n); n+=1
     palette.append([value,name,column_id(name)])
 
+def _harvest_spec_colors(palette,defaults,spec):
+    """Add a face spec's fg, bg, and box color (if any) to the palette, in order."""
+    add_palette_color(palette,defaults,spec.get('fg'))
+    add_palette_color(palette,defaults,spec.get('bg'))
+    if spec.get('box'):
+        add_palette_color(palette,defaults,spec['box'].get('color'))
+
 def add_default_palette_colors(palette,map_,syntax,uimap,apps,defaults):
     for key,value in map_.items():
         add_palette_color(palette,defaults,value,'bg' if key=='bg' else 'fg' if key=='p' else None)
     for spec in syntax.values():
-        add_palette_color(palette,defaults,spec.get('fg'))
-        add_palette_color(palette,defaults,spec.get('bg'))
-        if spec.get('box'):
-            add_palette_color(palette,defaults,spec['box'].get('color'))
+        _harvest_spec_colors(palette,defaults,spec)
     for _face,spec in uimap.items():
-        add_palette_color(palette,defaults,spec.get('fg'))
-        add_palette_color(palette,defaults,spec.get('bg'))
-        if spec.get('box'):
-            add_palette_color(palette,defaults,spec['box'].get('color'))
+        _harvest_spec_colors(palette,defaults,spec)
     for app in apps.values():
         for _face,_label,spec in app['faces']:
-            add_palette_color(palette,defaults,spec.get('fg'))
-            add_palette_color(palette,defaults,spec.get('bg'))
-            if spec.get('box'):
-                add_palette_color(palette,defaults,spec['box'].get('color'))
+            _harvest_spec_colors(palette,defaults,spec)
 
 def apply_seed_packages(apps,data,seed):
     if seed:

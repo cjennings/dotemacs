@@ -141,32 +141,30 @@ class DefaultFaces:
             "packageInherits": package_inherits,
         }
 
-    def _build_color_hex(self) -> dict[str, str]:
-        out: dict[str, str] = {}
+    def _iter_color_pairs(self):
+        """Yield (name, hexValue) over every face's chosen/effective color attrs.
+        Both color maps walk this same nested structure; they differ only in which
+        of the pair is the key and how each filters."""
         if not self.data:
-            return out
+            return
         for data in self.data.get("faces", {}).values():
             for block in ("chosenGuiLight", "effectiveGuiLight"):
                 face_data = data.get(block, {}) or {}
                 for attr in ("foreground", "background", "distantForeground"):
-                    name = face_data.get(attr)
-                    hex_value = face_data.get(attr + "Hex")
-                    if name and hex_value:
-                        out[str(name).lower().replace(" ", "")] = hex_value
+                    yield face_data.get(attr), face_data.get(attr + "Hex")
+
+    def _build_color_hex(self) -> dict[str, str]:
+        out: dict[str, str] = {}
+        for name, hex_value in self._iter_color_pairs():
+            if name and hex_value:
+                out[str(name).lower().replace(" ", "")] = hex_value
         return out
 
     def _build_color_names(self) -> dict[str, str]:
         out: dict[str, str] = {}
-        if not self.data:
-            return out
-        for data in self.data.get("faces", {}).values():
-            for block in ("chosenGuiLight", "effectiveGuiLight"):
-                face_data = data.get(block, {}) or {}
-                for attr in ("foreground", "background", "distantForeground"):
-                    hex_value = face_data.get(attr + "Hex")
-                    name = face_data.get(attr)
-                    if hex_value and name and not str(name).startswith("#"):
-                        out.setdefault(hex_value.lower(), str(name).lower().replace(" ", "-"))
+        for name, hex_value in self._iter_color_pairs():
+            if hex_value and name and not str(name).startswith("#"):
+                out.setdefault(hex_value.lower(), str(name).lower().replace(" ", "-"))
         return out
 
 
