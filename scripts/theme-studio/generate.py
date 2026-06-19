@@ -2,7 +2,7 @@ import json, os, re
 from app_inventory import add_inventory_apps, apply_default_face_seeds, apply_package_overrides, face_rows
 from default_faces import DefaultFaces
 from face_data import *
-from face_specs import face_spec, ui_face_spec
+from face_specs import face_spec, ui_face_spec, migrate_legacy
 HERE=os.path.dirname(os.path.abspath(__file__))
 
 def read_text(name):
@@ -100,11 +100,11 @@ def initial_maps(cols,defaults):
 
 def apply_builtin_fallback_styles(uimap):
     """Fill the small set of style defaults used when no Emacs snapshot exists."""
-    uimap["link"]["underline"]=True
+    uimap["link"]["underline"]={"style":"line","color":None}
     for face in ("lazy-highlight","show-paren-match"):
-        uimap[face]["underline"]=True
+        uimap[face]["underline"]={"style":"line","color":None}
     for face in ("error","warning","success"):
-        uimap[face]["bold"]=True
+        uimap[face]["weight"]="bold"
     for face in ("mode-line","mode-line-inactive"):
         uimap[face]["box"]={"style":"released","width":1,"color":None}
 
@@ -148,7 +148,7 @@ def apply_seed_basics(data,palette,uimap,locks):
         palette=data['palette']
     if data.get('ui'):
         for key,value in data['ui'].items():
-            uimap[key]=value
+            uimap[key]=migrate_legacy(value)
     if 'locks' in data:
         locks=data['locks']
     return palette,uimap,locks

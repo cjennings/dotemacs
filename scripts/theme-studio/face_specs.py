@@ -5,20 +5,20 @@ from __future__ import annotations
 from typing import Any
 
 
-# The full per-face attribute model. inherit and height live here (every tier
-# can set them now, not just packages). bold/italic/underline/strike stay as the
-# legacy booleans for this phase; the weight/slant/underline-object cutover lands
-# with the editor widgets that force it. distant-fg, family, overline, inverse,
-# and extend are added in their final shape (no legacy form to migrate).
+# The full per-face attribute model, in its final shape. weight and slant replace
+# the legacy bold/italic booleans (weight is one of light/normal/medium/semibold/
+# bold/heavy; slant is normal/italic/oblique). underline and strike are objects:
+# underline is {style: line|wave, color} and strike is {color}; null means unset.
+# inherit and height are no longer package-only — every tier can set them.
 STYLE_DEFAULTS: dict[str, Any] = {
     "fg": None,
     "bg": None,
     "distant-fg": None,
     "family": None,
-    "bold": False,
-    "italic": False,
-    "underline": False,
-    "strike": False,
+    "weight": None,
+    "slant": None,
+    "underline": None,
+    "strike": None,
     "overline": None,
     "box": None,
     "inverse": False,
@@ -32,10 +32,43 @@ STYLE_DEFAULTS: dict[str, Any] = {
 PACKAGE_DEFAULTS: dict[str, Any] = dict(STYLE_DEFAULTS)
 
 
+def migrate_legacy(spec: dict[str, Any]) -> dict[str, Any]:
+    """Convert a face spec's legacy boolean style fields to the new shape.
+
+    bold -> weight "bold", italic -> slant "italic", underline true ->
+    {style: line, color: null}, strike true -> {color: null}. An explicit
+    weight/slant already present wins over the legacy flag. Specs already in the
+    new shape pass through unchanged, so this is safe to apply to any input. The
+    JS side mirrors this in app-core.js migrateLegacyFace; keep them in step.
+    """
+    out = dict(spec)
+    if "bold" in out:
+        bold = out.pop("bold")
+        if bold and not out.get("weight"):
+            out["weight"] = "bold"
+    if "italic" in out:
+        italic = out.pop("italic")
+        if italic and not out.get("slant"):
+            out["slant"] = "italic"
+    if "underline" in out:
+        underline = out["underline"]
+        if underline is True:
+            out["underline"] = {"style": "line", "color": None}
+        elif underline is False:
+            out["underline"] = None
+    if "strike" in out:
+        strike = out["strike"]
+        if strike is True:
+            out["strike"] = {"color": None}
+        elif strike is False:
+            out["strike"] = None
+    return out
+
+
 def face_spec(spec: dict[str, Any] | None = None, *, package: bool = False) -> dict[str, Any]:
     out = dict(PACKAGE_DEFAULTS if package else STYLE_DEFAULTS)
     if spec:
-        out.update(spec)
+        out.update(migrate_legacy(spec))
     return out
 
 

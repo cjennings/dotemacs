@@ -192,15 +192,16 @@ class FacesHelper(unittest.TestCase):
 
 class FaceSpecDefaults(unittest.TestCase):
     def test_ui_face_spec_fills_style_fields(self):
+        # The legacy "bold" migrates to weight "bold" through face_spec.
         self.assertEqual(ui_face_spec({"bg": "#ffffff", "bold": True}), {
             "fg": None,
             "bg": "#ffffff",
             "distant-fg": None,
             "family": None,
-            "bold": True,
-            "italic": False,
-            "underline": False,
-            "strike": False,
+            "weight": "bold",
+            "slant": None,
+            "underline": None,
+            "strike": None,
             "overline": None,
             "box": None,
             "inverse": False,
@@ -215,16 +216,24 @@ class FaceSpecDefaults(unittest.TestCase):
         self.assertEqual(spec["inherit"], "shadow")
         self.assertEqual(spec["height"], 1.3)
 
+    def test_face_spec_migrates_legacy_style_booleans(self):
+        spec = ui_face_spec({"italic": True, "underline": True, "strike": True})
+        self.assertEqual(spec["slant"], "italic")
+        self.assertEqual(spec["underline"], {"style": "line", "color": None})
+        self.assertEqual(spec["strike"], {"color": None})
+        self.assertNotIn("bold", spec)
+        self.assertNotIn("italic", spec)
+
     def test_package_face_spec_fills_structure_fields(self):
         self.assertEqual(package_face_spec({"inherit": "base", "height": 1.2}), {
             "fg": None,
             "bg": None,
             "distant-fg": None,
             "family": None,
-            "bold": False,
-            "italic": False,
-            "underline": False,
-            "strike": False,
+            "weight": None,
+            "slant": None,
+            "underline": None,
+            "strike": None,
             "overline": None,
             "box": None,
             "inverse": False,
@@ -280,8 +289,8 @@ class GeneratorStateHelpers(unittest.TestCase):
             DefaultFaces(None),
         )
         self.assertEqual(syntax["kw"]["fg"], "#d3d3d3")
-        self.assertTrue(syntax["kw"]["bold"])
-        self.assertFalse(syntax["kw"]["italic"])
+        self.assertEqual(syntax["kw"]["weight"], "bold")
+        self.assertIsNone(syntax["kw"]["slant"])
 
     def test_builtin_fallback_styles_fill_known_emacs_styles(self):
         uimap = {
@@ -293,12 +302,13 @@ class GeneratorStateHelpers(unittest.TestCase):
             )
         }
         generate.apply_builtin_fallback_styles(uimap)
-        self.assertTrue(uimap["link"]["underline"])
-        self.assertTrue(uimap["lazy-highlight"]["underline"])
-        self.assertTrue(uimap["show-paren-match"]["underline"])
-        self.assertTrue(uimap["error"]["bold"])
-        self.assertTrue(uimap["warning"]["bold"])
-        self.assertTrue(uimap["success"]["bold"])
+        line_underline = {"style": "line", "color": None}
+        self.assertEqual(uimap["link"]["underline"], line_underline)
+        self.assertEqual(uimap["lazy-highlight"]["underline"], line_underline)
+        self.assertEqual(uimap["show-paren-match"]["underline"], line_underline)
+        self.assertEqual(uimap["error"]["weight"], "bold")
+        self.assertEqual(uimap["warning"]["weight"], "bold")
+        self.assertEqual(uimap["success"]["weight"], "bold")
         self.assertEqual(uimap["mode-line"]["box"], {"style": "released", "width": 1, "color": None})
         self.assertEqual(uimap["mode-line-inactive"]["box"], {"style": "released", "width": 1, "color": None})
 
@@ -334,7 +344,7 @@ class GeneratorStateHelpers(unittest.TestCase):
             }
         }, syntax, color_map)
         self.assertEqual(syntax["kw"]["fg"], "#222222")
-        self.assertTrue(syntax["kw"]["bold"])
+        self.assertEqual(syntax["kw"]["weight"], "bold")
         self.assertEqual(color_map["kw"], "#222222")
         self.assertNotIn("unknown", syntax)
 
@@ -418,9 +428,9 @@ class DefaultFaceAdapter(unittest.TestCase):
         self.assertEqual(self.defaults.seed("sample", effective=False), {
             "fg": "#333333",
             "bg": "#ffffff",
-            "bold": True,
-            "italic": True,
-            "underline": True,
+            "weight": "bold",
+            "slant": "italic",
+            "underline": {"style": "line", "color": None},
             "inherit": "parent",
             "box": {"style": "released", "width": 2, "color": None},
         })
@@ -544,11 +554,11 @@ class GeneratedDefaults(unittest.TestCase):
 
     def test_syntax_defaults_capture_font_lock_styles(self):
         self.assertEqual(generate.MAP["kw"], "#d3d3d3")
-        self.assertTrue(generate.SYNTAX["kw"]["bold"])
-        self.assertFalse(generate.SYNTAX["kw"]["italic"])
+        self.assertEqual(generate.SYNTAX["kw"]["weight"], "bold")
+        self.assertIsNone(generate.SYNTAX["kw"]["slant"])
         self.assertEqual(generate.MAP["str"], "#696969")
-        self.assertFalse(generate.SYNTAX["str"]["bold"])
-        self.assertTrue(generate.SYNTAX["str"]["italic"])
+        self.assertIsNone(generate.SYNTAX["str"]["weight"])
+        self.assertEqual(generate.SYNTAX["str"]["slant"], "italic")
 
 
 if __name__ == "__main__":

@@ -14,17 +14,48 @@ import { oklch2hex, srgb2oklab, oklab2oklch, oklab2lrgb, lrgb2hex, inGamut, cont
 // Resolve a palette name (or a raw #hex) to a hex; null when the name is unknown.
 function nameToHex(n,palette){if(!n)return null;if(/^#/.test(n))return n;const p=palette.find(p=>p[1]===n);return p?p[0]:null;}
 
+// Convert a face dict's legacy boolean style fields to the new shape: bold ->
+// weight "bold", italic -> slant "italic", underline true -> {style:line,color},
+// strike true -> {color}. An explicit weight/slant already set wins over the
+// legacy flag. Faces already in the new shape pass through, so this is safe on
+// any input. Mirrors migrate_legacy in face_specs.py; keep the two in step.
+function migrateLegacyFace(d){
+  const out=Object.assign({},d||{});
+  if('bold' in out){const b=out.bold;delete out.bold;if(b&&out.weight==null)out.weight='bold';}
+  if('italic' in out){const i=out.italic;delete out.italic;if(i&&out.slant==null)out.slant='italic';}
+  if('underline' in out){if(out.underline===true)out.underline={style:'line',color:null};else if(out.underline===false)out.underline=null;}
+  if('strike' in out){if(out.strike===true)out.strike={color:null};else if(out.strike===false)out.strike=null;}
+  return out;
+}
+
 function normalizePkgFace(d,source,palette){
-  d=d||{};
+  d=migrateLegacyFace(d||{});
   const resolve=(v)=>palette?nameToHex(v,palette):v;
-  return {fg:resolve(d.fg)??null,bg:resolve(d.bg)??null,'distant-fg':resolve(d['distant-fg'])??null,family:d.family??null,bold:!!d.bold,italic:!!d.italic,underline:!!d.underline,strike:!!d.strike,overline:d.overline??null,inherit:d.inherit??null,height:d.height||1,box:d.box??null,inverse:!!d.inverse,extend:!!d.extend,source:source||d.source||'user'};
+  return {fg:resolve(d.fg)??null,bg:resolve(d.bg)??null,'distant-fg':resolve(d['distant-fg'])??null,family:d.family??null,weight:d.weight??null,slant:d.slant??null,underline:d.underline??null,strike:d.strike??null,overline:d.overline??null,inherit:d.inherit??null,height:d.height||1,box:d.box??null,inverse:!!d.inverse,extend:!!d.extend,source:source||d.source||'user'};
+}
+
+// Transitional bridge for the legacy B/I/U/S toggle buttons (mkStyleButtons),
+// which the weight/slant dropdowns and underline/strike controls replace next.
+// The button reads on/off and flips a single attribute on the new-shape face.
+function legacyStyleOn(f,attr){
+  if(attr==='bold')return f.weight==='bold';
+  if(attr==='italic')return f.slant==='italic';
+  if(attr==='underline')return !!f.underline;
+  if(attr==='strike')return !!f.strike;
+  return false;
+}
+function toggleLegacyStyle(f,attr){
+  if(attr==='bold')f.weight=f.weight==='bold'?null:'bold';
+  else if(attr==='italic')f.slant=f.slant==='italic'?null:'italic';
+  else if(attr==='underline')f.underline=f.underline?null:{style:'line',color:null};
+  else if(attr==='strike')f.strike=f.strike?null:{color:null};
 }
 
 // Seed the package-face map from the app inventory's per-face defaults.
 function buildPkgmap(apps,palette){const m={};for(const app in apps){m[app]={};for(const row of apps[app].faces){m[app][row[0]]=normalizePkgFace(row[2],'default',palette);}}return m;}
 
 // The package faces worth exporting (anything seeded or user-touched), trimmed.
-function packagesForExport(map){const out={};for(const app in map){const faces={};for(const face in map[app]){const f=map[app][face];if(f.source==='default'||f.source==='user'||f.source==='cleared'){const o={fg:f.fg,bg:f.bg,bold:f.bold,italic:f.italic,underline:!!f.underline,strike:!!f.strike,inherit:f.inherit,source:f.source};if(f['distant-fg'])o['distant-fg']=f['distant-fg'];if(f.family)o.family=f.family;if(f.overline)o.overline=f.overline;if(f.inverse)o.inverse=true;if(f.extend)o.extend=true;if(f.height&&f.height!==1)o.height=f.height;if(f.box)o.box=f.box;faces[face]=o;}}if(Object.keys(faces).length)out[app]=faces;}return out;}
+function packagesForExport(map){const out={};for(const app in map){const faces={};for(const face in map[app]){const f=map[app][face];if(f.source==='default'||f.source==='user'||f.source==='cleared'){const o={fg:f.fg,bg:f.bg,inherit:f.inherit,source:f.source};if(f.weight)o.weight=f.weight;if(f.slant)o.slant=f.slant;if(f.underline)o.underline=f.underline;if(f.strike)o.strike=f.strike;if(f['distant-fg'])o['distant-fg']=f['distant-fg'];if(f.family)o.family=f.family;if(f.overline)o.overline=f.overline;if(f.inverse)o.inverse=true;if(f.extend)o.extend=true;if(f.height&&f.height!==1)o.height=f.height;if(f.box)o.box=f.box;faces[face]=o;}}if(Object.keys(faces).length)out[app]=faces;}return out;}
 
 // Merge an imported package block into a face map, filling missing fields.
 function mergePackagesInto(map,pkgs){if(!pkgs)return;for(const app in pkgs){if(!map[app])map[app]={};for(const face in pkgs[app]){const f=pkgs[app][face]||{};map[app][face]=normalizePkgFace(f,f.source||'user');}}}
@@ -436,11 +467,11 @@ function faceBoxNonDefaults(cur,def){
   return {
     fg: !eq(cur.fg,def.fg),
     bg: !eq(cur.bg,def.bg),
-    style: ['bold','italic','underline','strike'].some(a=>!!cur[a]!==!!def[a]),
+    style: ['weight','slant','underline','strike'].some(a=>JSON.stringify(cur[a]??null)!==JSON.stringify(def[a]??null)),
     inherit: !eq(cur.inherit,def.inherit),
     height: (cur.height||1)!==(def.height||1),
     box: JSON.stringify(cur.box??null)!==JSON.stringify(def.box??null),
   };
 }
 
-export { nameToHex, normalizePkgFace, buildPkgmap, packagesForExport, mergePackagesInto, effResolve, resolveSyntaxFg, resolveUiAttr, dropdownRowTextColor, paletteOptionList, galleryModel, appViewKeysSorted, faceBoxNonDefaults, stepViewIndex, spanNeighborHex, slugify, fgSetFor, floor, lMax, COVERED_FACES, columnsFromPalette, usedPaletteHexes, paletteUsages, regenColumn, rankByLightness, stepRepointPlan, sortColumns, sortColumnMembers, groundRoleOfEntry, groundColumnMembersFromPalette, clearPalettePlan, deletePaletteColumnPlan, areAllLocked, lockToggleLabel, toggleLockSet };
+export { nameToHex, migrateLegacyFace, legacyStyleOn, toggleLegacyStyle, normalizePkgFace, buildPkgmap, packagesForExport, mergePackagesInto, effResolve, resolveSyntaxFg, resolveUiAttr, dropdownRowTextColor, paletteOptionList, galleryModel, appViewKeysSorted, faceBoxNonDefaults, stepViewIndex, spanNeighborHex, slugify, fgSetFor, floor, lMax, COVERED_FACES, columnsFromPalette, usedPaletteHexes, paletteUsages, regenColumn, rankByLightness, stepRepointPlan, sortColumns, sortColumnMembers, groundRoleOfEntry, groundColumnMembersFromPalette, clearPalettePlan, deletePaletteColumnPlan, areAllLocked, lockToggleLabel, toggleLockSet };

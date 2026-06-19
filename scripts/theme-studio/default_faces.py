@@ -44,14 +44,19 @@ class DefaultFaces:
             out["fg"] = fg
         if bg:
             out["bg"] = bg
+        # Representation-only cutover: the snapshot's bold/italic become the new
+        # weight/slant shape, and underline/strike become objects. The same
+        # narrowing as before (only "bold"/"italic" survive; richer weights and
+        # underline colors wait for the snapshot refresh), so the emitted theme
+        # is byte-identical.
         if data.get("weight") == "bold":
-            out["bold"] = True
+            out["weight"] = "bold"
         if data.get("slant") == "italic":
-            out["italic"] = True
+            out["slant"] = "italic"
         if data.get("underline"):
-            out["underline"] = True
+            out["underline"] = {"style": "line", "color": None}
         if data.get("strike"):
-            out["strike"] = True
+            out["strike"] = {"color": None}
         if data.get("inherit"):
             out["inherit"] = data.get("inherit")
         if data.get("height") and data.get("height") != 1:

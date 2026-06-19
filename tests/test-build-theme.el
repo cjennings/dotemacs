@@ -181,6 +181,19 @@ drift the way Craig's downloaded exports under scripts/theme-studio/ can.")
   (should (equal (build-theme/--attrs '((strike . ((color . "#cb6b4d")))))
                  '(:strike-through "#cb6b4d"))))
 
+(ert-deftest test-build-theme-attrs-migrated-shapes-match-legacy ()
+  "Boundary: the shapes the import migration produces emit identically to the
+legacy booleans they replace, so the cutover keeps generated themes byte-identical.
+Mirrors migrateLegacyFace (app-core.js) / migrate_legacy (face_specs.py)."
+  (should (equal (build-theme/--attrs '((weight . "bold")))
+                 (build-theme/--attrs '((bold . t)))))
+  (should (equal (build-theme/--attrs '((slant . "italic")))
+                 (build-theme/--attrs '((italic . t)))))
+  (should (equal (build-theme/--attrs '((underline . ((style . "line") (color . nil)))))
+                 (build-theme/--attrs '((underline . t)))))
+  (should (equal (build-theme/--attrs '((strike . ((color . nil)))))
+                 (build-theme/--attrs '((strike . t))))))
+
 (ert-deftest test-build-theme-attrs-overline ()
   "Normal/Boundary: overline emits t for no color, the color otherwise, nil when unset."
   (should (equal (build-theme/--attrs '((overline . ((color . nil))))) '(:overline t)))

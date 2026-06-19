@@ -1,7 +1,7 @@
 // Phase-1 self-test (open with #selftest): seed -> export -> import -> compare.
 function pkgSelftest(){
   const seeded=seedPkgmap();
-  seeded['org-mode']['org-level-2']={fg:'#e8bd30',bg:null,bold:false,italic:false,inherit:'org-level-1',height:1.2,source:'user'};
+  seeded['org-mode']['org-level-2']={fg:'#e8bd30',bg:null,weight:null,slant:null,inherit:'org-level-1',height:1.2,source:'user'};
   const exp=packagesForExport(seeded);
   const round=seedPkgmap();mergePackagesInto(round,exp);
   const roundtrip=JSON.stringify(exp)===JSON.stringify(packagesForExport(round));
@@ -9,11 +9,11 @@ function pkgSelftest(){
   const l2=exp['org-mode']['org-level-2'];
   const inherited=l2.inherit==='org-level-1'&&l2.source==='user';
   const height=l2.height===1.2 && !('height' in (exp['org-mode']['org-todo']));
-  const sc=seedPkgmap();sc['org-mode']['org-todo']={fg:null,bg:null,bold:false,italic:false,inherit:null,height:1,source:'cleared'};
+  const sc=seedPkgmap();sc['org-mode']['org-todo']={fg:null,bg:null,weight:null,slant:null,inherit:null,height:1,source:'cleared'};
   const cleared='org-todo' in packagesForExport(sc)['org-mode'];
   const su=seedPkgmap();mergePackagesInto(su,{'zzz-pkg':{'zzz-face':{fg:'#112233',source:'user'}}});
   const unknown=!!(su['zzz-pkg']&&su['zzz-pkg']['zzz-face'].fg==='#112233');
-  PKGMAP['__cyc']={a:{fg:null,bg:null,bold:false,italic:false,inherit:'b',height:1,source:'user'},b:{fg:null,bg:null,bold:false,italic:false,inherit:'a',height:1,source:'user'}};
+  PKGMAP['__cyc']={a:{fg:null,bg:null,weight:null,slant:null,inherit:'b',height:1,source:'user'},b:{fg:null,bg:null,weight:null,slant:null,inherit:'a',height:1,source:'user'}};
   let cyc=true;try{pkgEffFg('__cyc','a');}catch(e){cyc=false;}delete PKGMAP['__cyc'];
   const verdict=(roundtrip&&oldjson&&inherited&&height&&cleared&&unknown&&cyc)?'PASS':'FAIL';
   document.title='SELFTEST '+verdict;
@@ -123,13 +123,13 @@ if(location.hash==='#mocktest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c
  A(Q('[data-face="region"] [data-k]'),'region-keeps-token-colors');
  const curCell=Q('[data-face="cursor"]');
  A(curCell&&curCell.textContent.trim().length===1,'cursor-on-glyph');
- UIMAP['cursor']={fg:'#112233',bg:'#aabbcc',bold:false,italic:false,underline:false,strike:false,box:null};buildMockFrame();
+ UIMAP['cursor']={fg:'#112233',bg:'#aabbcc',weight:null,slant:null,underline:null,strike:null,box:null};buildMockFrame();
  const curStyled=Q('[data-face="cursor"]'),curSt=curStyled&&curStyled.getAttribute('style')||'';
  A(curSt.includes('#112233')&&curSt.includes('#aabbcc'),'cursor preview honors fg and bg: '+curSt);
- UIMAP['hl-line']={fg:'#112233',bg:'#aabbcc',bold:false,italic:false,underline:false,strike:false,box:null};buildMockFrame();
+ UIMAP['hl-line']={fg:'#112233',bg:'#aabbcc',weight:null,slant:null,underline:null,strike:null,box:null};buildMockFrame();
  const hlStyled=Q('[data-face="hl-line"]'),hlSt=hlStyled&&hlStyled.getAttribute('style')||'';
  A(hlSt.includes('#112233')&&hlSt.includes('#aabbcc'),'hl-line preview honors fg and bg: '+hlSt);
- UIMAP['link']={fg:'#112233',bg:'#aabbcc',bold:false,italic:false,underline:true,strike:false,box:null};buildMockFrame();
+ UIMAP['link']={fg:'#112233',bg:'#aabbcc',weight:null,slant:null,underline:{style:'line',color:null},strike:null,box:null};buildMockFrame();
  const linkStyled=Q('[data-face="link"]'),linkSt=linkStyled&&linkStyled.getAttribute('style')||'';
  A(linkSt.includes('#112233')&&linkSt.includes('#aabbcc'),'inline UI face preview honors fg and bg: '+linkSt);
  const missing=UI_FACES.map(f=>f[0]).filter(f=>!Q('[data-face="'+f+'"]'));
@@ -150,21 +150,21 @@ if(location.hash==='#mocktest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c
    const ch=parseFloat(getComputedStyle(textBox).fontSize)*0.65;
    A(br.left-tr.right<=ch*4.8,'vertical-border-near-text');
  }else A(false,'vertical-border-layout-elements-present');
- UIMAP['line-number-current-line'].bold=true;buildMockFrame();
+ UIMAP['line-number-current-line'].weight='bold';buildMockFrame();
  const curNum=Q('[data-face="line-number-current-line"]');
- A(curNum&&/font-weight:\s*bold/.test(curNum.getAttribute('style')||''),'line-number-honors-weight');
- UIMAP['region'].bold=false;buildUITable();
+ A(curNum&&/font-weight:\s*700/.test(curNum.getAttribute('style')||''),'line-number-honors-weight');
+ UIMAP['region'].weight=null;buildUITable();
  const uiBold=[...document.querySelectorAll('#uibody tr')].find(r=>r.dataset.face==='region').querySelector('.sbtn[title="bold"]');
- A(uiBold&&!uiBold.classList.contains('on'),'ui style button starts off when model is false');
+ A(uiBold&&!uiBold.classList.contains('on'),'ui style button starts off when model is unset');
  uiBold.click();
- A(uiBold.classList.contains('on')&&UIMAP['region'].bold===true,'ui style button visual state turns on with model');
+ A(uiBold.classList.contains('on')&&UIMAP['region'].weight==='bold','ui style button visual state turns on with model');
  uiBold.click();
- A(!uiBold.classList.contains('on')&&UIMAP['region'].bold===false,'ui style button visual state turns off with model');
- const app=curApp(),face=APPS[app].faces[0][0];PKGMAP[app][face].bold=false;buildPkgTable();
+ A(!uiBold.classList.contains('on')&&UIMAP['region'].weight===null,'ui style button visual state turns off with model');
+ const app=curApp(),face=APPS[app].faces[0][0];PKGMAP[app][face].weight=null;buildPkgTable();
  const pkgBtn=()=>document.querySelector('#pkgbody tr[data-face="'+face+'"] .sbtn[title="bold"]');
- A(pkgBtn()&&!pkgBtn().classList.contains('on'),'pkg style button starts off when model is false');
+ A(pkgBtn()&&!pkgBtn().classList.contains('on'),'pkg style button starts off when model is unset');
  pkgBtn().click();
- A(pkgBtn()&&pkgBtn().classList.contains('on')&&PKGMAP[app][face].bold===true,'pkg style button visual state turns on after rebuild');
+ A(pkgBtn()&&pkgBtn().classList.contains('on')&&PKGMAP[app][face].weight==='bold','pkg style button visual state turns on after rebuild');
  document.title='MOCKTEST '+(ok?'PASS':'FAIL');
  const d=document.createElement('div');d.id='mocktest';d.textContent='MOCKTEST '+(ok?'PASS':'FAIL')+(notes.length?' | '+notes.join(' ; '):'');document.body.appendChild(d);}
 // Palette-generator gate (open with #generatortest): previewing is non-mutating,
@@ -296,7 +296,7 @@ if(location.hash==='#contrasttest'){let ok=true;const notes=[];const A=(c,n)=>{i
  const saveMAP=Object.assign({},MAP),saveUI=JSON.parse(JSON.stringify(UIMAP));
  CATS.forEach(c=>{if(c[0]!=='bg'&&c[0]!=='p')setSyntaxFg(c[0],'');});
  setSyntaxFg('p','#f0fef0');setSyntaxFg('kw','#67809c');setSyntaxFg('str','#a3b18a');setSyntaxFg('bg','#000000');
- UIMAP['region']={fg:null,bg:'#202830',bold:false,italic:false,underline:false,strike:false};
+ UIMAP['region']={fg:null,bg:'#202830',weight:null,slant:null,underline:null,strike:null};
  buildUITable();
  const cell=document.getElementById('uicr-region');
  A(cell&&/^\d+\.\d (PASS|FAIL)$/.test(cell.textContent.trim()),'region shows compact worst-case readout: '+(cell&&cell.textContent));
@@ -310,7 +310,7 @@ if(location.hash==='#contrasttest'){let ok=true;const notes=[];const A=(c,n)=>{i
  const fl=floor('#202830',fgSetForFace('region').set);
  A(fl.limitingHex==='#67809c','floor limiting is blue, got '+fl.limitingHex);
  A(Math.abs(fl.ratio-contrast('#67809c','#202830'))<1e-9,'floor ratio matches blue-on-bg');
- UIMAP['region']={fg:'#f0fef0',bg:'#202830',bold:false,italic:false,underline:false,strike:false};
+ UIMAP['region']={fg:'#f0fef0',bg:'#202830',weight:null,slant:null,underline:null,strike:null};
  buildUITable();
  const pairCell=document.getElementById('uicr-region'),pairWant=contrast('#f0fef0','#202830');
  A(pairCell&&Math.abs(parseFloat(pairCell.textContent)-pairWant)<0.06,'region with explicit fg rates its own fg/bg pair: got '+(pairCell&&pairCell.textContent.trim())+' want '+pairWant.toFixed(1));
@@ -319,12 +319,12 @@ if(location.hash==='#contrasttest'){let ok=true;const notes=[];const A=(c,n)=>{i
  const ml=document.getElementById('uicr-mode-line');
  A(worstCellHtml('mode-line')===null,'mode-line is out of scope (single-pair)');
  A(ml&&/^\d/.test(ml.textContent.trim()),'mode-line cell is a numeric ratio: '+(ml&&ml.textContent));
- UIMAP['region']={fg:null,bg:'#202830',bold:false,italic:false,underline:false,strike:false};
+ UIMAP['region']={fg:null,bg:'#202830',weight:null,slant:null,underline:null,strike:null};
  setSyntaxFg('p','');CATS.forEach(c=>{if(c[0]!=='bg')setSyntaxFg(c[0],'');});buildUITable();
  const empty=document.getElementById('uicr-region');
  A(empty&&empty.textContent.trim()==='no fg set','empty set reads the no-set message: '+(empty&&empty.textContent));
  // A two-color face (own fg AND own bg) rates its own pair, never the ground bg.
- UIMAP['mode-line']={fg:'#112233',bg:'#aabbcc',bold:false,italic:false,underline:false,strike:false};
+ UIMAP['mode-line']={fg:'#112233',bg:'#aabbcc',weight:null,slant:null,underline:null,strike:null};
  buildUITable();
  const two=document.getElementById('uicr-mode-line'),twoWant=contrast('#112233','#aabbcc');
  A(two&&Math.abs(parseFloat(two.textContent)-twoWant)<0.06,'ui two-color face rates own fg-on-bg: got '+(two&&two.textContent.trim())+' want '+twoWant.toFixed(1));
@@ -335,7 +335,7 @@ if(location.hash==='#contrasttest'){let ok=true;const notes=[];const A=(c,n)=>{i
  PKGMAP[tApp][tFace]=savePF;buildPkgTable();
  // A ground-bg change must not clobber a face's own preview bg, must leave a
  // two-color ratio alone, and must re-rate a ground-dependent face's cell.
- UIMAP['fringe']={fg:'#ddeeff',bg:null,bold:false,italic:false,underline:false,strike:false};
+ UIMAP['fringe']={fg:'#ddeeff',bg:null,weight:null,slant:null,underline:null,strike:null};
  buildUITable();
  setSyntaxFg('bg','#440000');applyGround();
  const pv=document.getElementById('uiprev-mode-line');
@@ -346,7 +346,7 @@ if(location.hash==='#contrasttest'){let ok=true;const notes=[];const A=(c,n)=>{i
  A(frc&&Math.abs(parseFloat(frc.textContent)-frWant)<0.06,'ground change re-rates a ground-dependent face: got '+(frc&&frc.textContent.trim())+' want '+frWant.toFixed(1));
  // A default-fg (p) change through the real syntax dropdown re-rates a face
  // whose fg falls back to it. Drives the DOM so the handler wiring is pinned.
- UIMAP['fringe']={fg:null,bg:'#aabbcc',bold:false,italic:false,underline:false,strike:false};
+ UIMAP['fringe']={fg:null,bg:'#aabbcc',weight:null,slant:null,underline:null,strike:null};
  buildUITable();
  const pLocked=LOCKED.has('p');if(pLocked){LOCKED.delete('p');buildTable();}
  const pdd=document.querySelector('#legbody tr[data-kind="p"] .cdd');
@@ -366,7 +366,7 @@ if(location.hash==='#contrasttest'){let ok=true;const notes=[];const A=(c,n)=>{i
 // algorithm, and pressed draws the shadow edge first.
 if(location.hash==='#beveltest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c){ok=false;notes.push(n);}};
  const saveUI=JSON.parse(JSON.stringify(UIMAP)),saveP=PALETTE.slice(),savePK=JSON.parse(JSON.stringify(PKGMAP));
- UIMAP['mode-line']={fg:'#d8dee9',bg:'#30343c',bold:false,italic:false,underline:false,strike:false,box:{style:'released',width:1,color:null}};
+ UIMAP['mode-line']={fg:'#d8dee9',bg:'#30343c',weight:null,slant:null,underline:null,strike:null,box:{style:'released',width:1,color:null}};
  buildUITable();
  const pv=document.getElementById('uiprev-mode-line');
  const bs=pv&&pv.style.boxShadow;
@@ -594,8 +594,8 @@ if(location.hash==='#counttest'){let ok=true;const notes=[];const A=(c,n)=>{if(!
  regenColumn('#67809c',2,{ground:groundPair()}).members.forEach(m=>PALETTE.push([m.hex,m.offset===0?'blue':'blue'+(m.offset>0?'+'+m.offset:m.offset)]));
  const innerOld=regenColumn('#67809c',2,{ground:groundPair()}).members.find(m=>m.offset===1).hex; // survives a count change
  const outerOld=regenColumn('#67809c',2,{ground:groundPair()}).members.find(m=>m.offset===2).hex; // dropped on count-down
- UIMAP['region']={fg:null,bg:innerOld,bold:false,italic:false,underline:false,strike:false};
- UIMAP['highlight']={fg:null,bg:outerOld,bold:false,italic:false,underline:false,strike:false};
+ UIMAP['region']={fg:null,bg:innerOld,weight:null,slant:null,underline:null,strike:null};
+ UIMAP['highlight']={fg:null,bg:outerOld,weight:null,slant:null,underline:null,strike:null};
  selectedIdx=null;renderPalette();
  const blueSpanInput=document.querySelector('#pals .fstrip[data-column="blue"] .fcount input');
  A(blueSpanInput&&blueSpanInput.max==='8','normal column span control allows up to 8 per side');
@@ -623,7 +623,7 @@ if(location.hash==='#baseedittest'){let ok=true;const notes=[];const A=(c,n)=>{i
  setSyntaxFg('bg','#0d0b0a');setSyntaxFg('p','#f0fef0');
  PALETTE=[['#0d0b0a','ground'],['#f0fef0','fg']];
  regenColumn('#67809c',2,{ground:groundPair()}).members.forEach(m=>PALETTE.push([m.hex,m.offset===0?'blue':'blue'+(m.offset>0?'+'+m.offset:m.offset)]));
- UIMAP['region']={fg:null,bg:'#67809c',bold:false,italic:false,underline:false,strike:false};
+ UIMAP['region']={fg:null,bg:'#67809c',weight:null,slant:null,underline:null,strike:null};
  renderPalette();buildUITable();
  selectedIdx=PALETTE.findIndex(p=>p[0].toLowerCase()==='#67809c');
  document.getElementById('newhexstr').value='#3a8a8a';document.getElementById('newname').value='teal';
@@ -713,9 +713,9 @@ if(location.hash==='#ndtest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c){
  const tr1=document.querySelector('#pkgbody tr[data-face="'+face+'"]');
  A(tr1.cells[7].classList.contains('nd'),'nondefault-height-marks-size-box');
  A(!tr1.cells[4].classList.contains('nd'),'unchanged-style-box-stays-unmarked');
- PKGMAP[app][face].height=(row[2]&&row[2].height)||1;PKGMAP[app][face].bold=!((row[2]&&row[2].bold));buildPkgTable();
+ PKGMAP[app][face].height=(row[2]&&row[2].height)||1;PKGMAP[app][face].weight=seedFace(row[2]||{}).weight==='bold'?null:'bold';buildPkgTable();
  const tr2=document.querySelector('#pkgbody tr[data-face="'+face+'"]');
- A(tr2.cells[4].classList.contains('nd'),'toggled-bold-marks-style-box');
+ A(tr2.cells[4].classList.contains('nd'),'toggled-weight-marks-style-box');
  A(!tr2.cells[7].classList.contains('nd'),'restored-height-unmarks-size-box');
  PKGMAP[app][face]=seedFace(row[2]||{});buildPkgTable();
  document.title='NDTEST '+(ok?'PASS':'FAIL');
@@ -877,7 +877,7 @@ if(location.hash==='#unusedtest'){let ok=true;const notes=[];const A=(c,n)=>{if(
  const saveP=PALETTE.slice(),saveM=Object.assign({},MAP),saveSyn=JSON.parse(JSON.stringify(SYNTAX)),saveU=JSON.parse(JSON.stringify(UIMAP));
  setSyntaxFg('bg','#101010');setSyntaxFg('p','#f0f0f0');
  PALETTE=[['#101010','bg','ground'],['#f0f0f0','fg','ground'],['#67809c','blue','blue'],['#123456','teal','teal']];
- for(const f in UIMAP)UIMAP[f]={fg:null,bg:null,bold:false,italic:false,underline:false,strike:false};
+ for(const f in UIMAP)UIMAP[f]={fg:null,bg:null,weight:null,slant:null,underline:null,strike:null};
  setSyntaxFg('kw','#67809c');
  renderPalette();
  const tealStrip=document.querySelector('#pals .fstrip[data-column="teal"]');
@@ -898,8 +898,8 @@ if(location.hash==='#gonetest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c
  const saveP=PALETTE.slice(),saveM=Object.assign({},MAP),saveU=JSON.parse(JSON.stringify(UIMAP));
  setSyntaxFg('bg','#101010');setSyntaxFg('p','#f0f0f0');
  PALETTE=[['#101010','bg','ground'],['#f0f0f0','fg','ground'],['#67809c','blue','blue']];
- UIMAP['region']={fg:null,bg:'#deadbe',bold:false,italic:false,underline:false,strike:false};
- UIMAP['highlight']={fg:null,bg:'#67809c',bold:false,italic:false,underline:false,strike:false};
+ UIMAP['region']={fg:null,bg:'#deadbe',weight:null,slant:null,underline:null,strike:null};
+ UIMAP['highlight']={fg:null,bg:'#67809c',weight:null,slant:null,underline:null,strike:null};
  buildUITable();
  const goneDd=document.querySelector('#uibody tr[data-face="region"]').cells[3].querySelector('.cdd');
  const okDd=document.querySelector('#uibody tr[data-face="highlight"]').cells[3].querySelector('.cdd');
@@ -915,8 +915,8 @@ if(location.hash==='#usagetest'){let ok=true;const notes=[];const A=(c,n)=>{if(!
  setSyntaxFg('bg','#101010');setSyntaxFg('p','#f0f0f0');
  PALETTE=[['#101010','bg','ground'],['#f0f0f0','fg','ground'],['#67809c','blue','blue']];
  const f0=UI_FACES[0][0],f0label=UI_FACES[0][1]||f0;
- for(const f in UIMAP)UIMAP[f]={fg:null,bg:null,bold:false,italic:false,underline:false,strike:false};
- UIMAP[f0]={fg:null,bg:'#67809c',bold:false,italic:false,underline:false,strike:false};
+ for(const f in UIMAP)UIMAP[f]={fg:null,bg:null,weight:null,slant:null,underline:null,strike:null};
+ UIMAP[f0]={fg:null,bg:'#67809c',weight:null,slant:null,underline:null,strike:null};
  renderPalette();
  const blueChip=document.querySelector('#pals .fstrip[data-column="blue"] .pchip');
  A(blueChip&&blueChip.title.includes('ui faces > '+f0label),'hover-title-lists-ui-face-usage');

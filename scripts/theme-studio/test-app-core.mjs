@@ -7,7 +7,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import {
-  nameToHex, normalizePkgFace, buildPkgmap, packagesForExport, mergePackagesInto, effResolve, resolveSyntaxFg, resolveUiAttr, dropdownRowTextColor, paletteOptionList, spanNeighborHex, slugify,
+  nameToHex, migrateLegacyFace, legacyStyleOn, toggleLegacyStyle, normalizePkgFace, buildPkgmap, packagesForExport, mergePackagesInto, effResolve, resolveSyntaxFg, resolveUiAttr, dropdownRowTextColor, paletteOptionList, spanNeighborHex, slugify,
   clearPalettePlan, deletePaletteColumnPlan, groundColumnMembersFromPalette, areAllLocked, lockToggleLabel, toggleLockSet,
   galleryModel, appViewKeysSorted, faceBoxNonDefaults, stepViewIndex,
 } from './app-core.js';
@@ -621,7 +621,7 @@ test('buildPkgmap: Normal — seeds faces, resolving names and applying defaults
   ] } };
   const m = buildPkgmap(apps, PAL);
   assert.equal(m['org-mode']['org-todo'].fg, '#67809c');
-  assert.equal(m['org-mode']['org-todo'].bold, true);
+  assert.equal(m['org-mode']['org-todo'].weight, 'bold'); // legacy bold migrated on seed
   assert.equal(m['org-mode']['org-todo'].source, 'default');
   assert.equal(m['org-mode']['org-todo'].height, 1);
   assert.equal(m['org-mode']['org-done'].inherit, 'org-todo');
@@ -630,11 +630,51 @@ test('buildPkgmap: Normal — seeds faces, resolving names and applying defaults
 
 test('normalizePkgFace: Normal — fills every package face field', () => {
   assert.deepEqual(normalizePkgFace({ fg: 'blue', bold: true, inherit: 'base' }, 'default', PAL), {
-    fg: '#67809c', bg: null, 'distant-fg': null, family: null, bold: true,
-    italic: false, underline: false, strike: false, overline: null,
+    fg: '#67809c', bg: null, 'distant-fg': null, family: null, weight: 'bold',
+    slant: null, underline: null, strike: null, overline: null,
     inherit: 'base', height: 1, box: null, inverse: false, extend: false,
     source: 'default',
   });
+});
+
+test('migrateLegacyFace: Normal — legacy booleans become the new shape', () => {
+  assert.deepEqual(
+    migrateLegacyFace({ bold: true, italic: true, underline: true, strike: true }),
+    { weight: 'bold', slant: 'italic', underline: { style: 'line', color: null }, strike: { color: null } },
+  );
+});
+
+test('migrateLegacyFace: Boundary — false booleans clear, explicit weight/slant win', () => {
+  const m = migrateLegacyFace({ bold: false, italic: false, underline: false, strike: false });
+  assert.ok(!('weight' in m), 'bold:false sets no weight');
+  assert.ok(!('slant' in m), 'italic:false sets no slant');
+  assert.equal(m.underline, null);
+  assert.equal(m.strike, null);
+  assert.ok(!('bold' in m) && !('italic' in m), 'legacy booleans are removed');
+  // an explicit weight/slant already set is not overwritten by the legacy flag
+  assert.equal(migrateLegacyFace({ bold: true, weight: 'light' }).weight, 'light');
+  assert.equal(migrateLegacyFace({ italic: true, slant: 'oblique' }).slant, 'oblique');
+});
+
+test('migrateLegacyFace: Boundary — a new-shape face passes through unchanged (idempotent)', () => {
+  const f = { weight: 'semibold', slant: 'oblique', underline: { style: 'wave', color: '#abcdef' }, strike: { color: null } };
+  assert.deepEqual(migrateLegacyFace(f), f);
+  assert.deepEqual(migrateLegacyFace(migrateLegacyFace(f)), f);
+});
+
+test('legacyStyleOn / toggleLegacyStyle: Normal — bridge the B/I/U/S buttons to the model', () => {
+  const f = { weight: null, slant: null, underline: null, strike: null };
+  assert.equal(legacyStyleOn(f, 'bold'), false);
+  toggleLegacyStyle(f, 'bold'); assert.equal(f.weight, 'bold'); assert.equal(legacyStyleOn(f, 'bold'), true);
+  toggleLegacyStyle(f, 'bold'); assert.equal(f.weight, null);
+  toggleLegacyStyle(f, 'italic'); assert.equal(f.slant, 'italic');
+  toggleLegacyStyle(f, 'underline'); assert.deepEqual(f.underline, { style: 'line', color: null });
+  toggleLegacyStyle(f, 'underline'); assert.equal(f.underline, null);
+  toggleLegacyStyle(f, 'strike'); assert.deepEqual(f.strike, { color: null });
+});
+
+test('legacyStyleOn: Boundary — a non-bold weight reads the bold button as off', () => {
+  assert.equal(legacyStyleOn({ weight: 'semibold' }, 'bold'), false);
 });
 
 test('normalizePkgFace: Normal — carries the additive attribute model', () => {
@@ -658,8 +698,8 @@ test('normalizePkgFace: Boundary — distant-fg resolves through the palette', (
 test('buildPkgmap: Boundary — a face with no default dict still seeds blank', () => {
   const m = buildPkgmap({ a: { faces: [['f', 'f']] } }, PAL);
   assert.deepEqual(m.a.f, {
-    fg: null, bg: null, 'distant-fg': null, family: null, bold: false,
-    italic: false, underline: false, strike: false, overline: null,
+    fg: null, bg: null, 'distant-fg': null, family: null, weight: null,
+    slant: null, underline: null, strike: null, overline: null,
     inherit: null, height: 1, box: null, inverse: false, extend: false,
     source: 'default',
   });
@@ -692,13 +732,27 @@ test('effResolve: Error — an inherit cycle terminates at null, no overflow', (
 
 test('packagesForExport: Normal — exports sourced faces, omits height 1', () => {
   const m = { a: { f: {
-    fg: '#67809c', bg: null, bold: true, italic: false, underline: false,
-    strike: false, inherit: null, height: 1, source: 'user',
+    fg: '#67809c', bg: null, weight: 'bold', slant: null, underline: null,
+    strike: null, inherit: null, height: 1, source: 'user',
   } } };
   const out = packagesForExport(m);
   assert.equal(out.a.f.fg, '#67809c');
+  assert.equal(out.a.f.weight, 'bold');
   assert.equal(out.a.f.source, 'user');
+  assert.ok(!('slant' in out.a.f), 'unset slant is omitted');
   assert.ok(!('height' in out.a.f), 'height 1 is omitted');
+});
+
+test('packagesForExport: Normal — emits weight/slant/underline/strike only when set', () => {
+  const m = { a: { f: normalizePkgFace({
+    fg: '#67809c', weight: 'semibold', slant: 'oblique',
+    underline: { style: 'wave', color: '#abcdef' }, strike: { color: null },
+  }, 'user') } };
+  const o = packagesForExport(m).a.f;
+  assert.equal(o.weight, 'semibold');
+  assert.equal(o.slant, 'oblique');
+  assert.deepEqual(o.underline, { style: 'wave', color: '#abcdef' });
+  assert.deepEqual(o.strike, { color: null });
 });
 
 test('packagesForExport: Boundary — keeps a non-default height', () => {
@@ -736,11 +790,20 @@ test('mergePackagesInto: Normal — fills missing fields with defaults', () => {
   const m = {};
   mergePackagesInto(m, { a: { f: { fg: '#112233' } } });
   assert.deepEqual(m.a.f, {
-    fg: '#112233', bg: null, 'distant-fg': null, family: null, bold: false,
-    italic: false, underline: false, strike: false, overline: null,
+    fg: '#112233', bg: null, 'distant-fg': null, family: null, weight: null,
+    slant: null, underline: null, strike: null, overline: null,
     inherit: null, height: 1, box: null, inverse: false, extend: false,
     source: 'user',
   });
+});
+
+test('mergePackagesInto: Normal — migrates a legacy preset face on import', () => {
+  const m = {};
+  mergePackagesInto(m, { a: { f: { fg: '#112233', bold: true, italic: true, underline: true } } });
+  assert.equal(m.a.f.weight, 'bold');
+  assert.equal(m.a.f.slant, 'italic');
+  assert.deepEqual(m.a.f.underline, { style: 'line', color: null });
+  assert.ok(!('bold' in m.a.f) && !('italic' in m.a.f), 'legacy booleans dropped');
 });
 
 test('mergePackagesInto: Boundary — undefined pkgs is a no-op', () => {
@@ -910,9 +973,10 @@ test('faceBoxNonDefaults: a set fg over an empty default flags fg', () => {
   assert.equal(faceBoxNonDefaults({}, {}).fg, false);
 });
 test('faceBoxNonDefaults: any style attr differing flags the style box once', () => {
-  assert.equal(faceBoxNonDefaults({ bold: true }, { bold: false }).style, true);
-  assert.equal(faceBoxNonDefaults({ strike: true }, {}).style, true);
-  assert.equal(faceBoxNonDefaults({ bold: true }, { bold: true }).style, false);
+  assert.equal(faceBoxNonDefaults({ weight: 'bold' }, { weight: null }).style, true);
+  assert.equal(faceBoxNonDefaults({ slant: 'italic' }, {}).style, true);
+  assert.equal(faceBoxNonDefaults({ underline: { style: 'line', color: null } }, {}).style, true);
+  assert.equal(faceBoxNonDefaults({ weight: 'bold' }, { weight: 'bold' }).style, false);
 });
 test('faceBoxNonDefaults: inherit and box differences are flagged', () => {
   assert.equal(faceBoxNonDefaults({ inherit: 'bold' }, { inherit: null }).inherit, true);
