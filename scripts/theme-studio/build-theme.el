@@ -198,28 +198,27 @@ Each category fans out to the font-lock faces in
                 (push spec specs)))))))
     (nreverse specs)))
 
+(defun build-theme/--specs-from-entries (entries)
+  "Build face specs from ENTRIES, an alist of (face . attribute-alist).
+Empty-attr entries emit nothing (cleared faces drop out)."
+  (let (specs)
+    (dolist (entry entries)
+      (when-let ((spec (build-theme/--face-spec
+                        (car entry)
+                        (build-theme/--attrs (cdr entry)))))
+        (push spec specs)))
+    (nreverse specs)))
+
 (defun build-theme/--ui-face-specs (ui)
   "Build UI-tier face specs from the UI alist (face -> attribute alist)."
-  (let (specs)
-    (dolist (entry ui)
-      (let* ((face (car entry))
-             (obj (cdr entry))
-             (attrs (build-theme/--attrs obj)))
-        (when-let ((spec (build-theme/--face-spec face attrs)))
-          (push spec specs))))
-    (nreverse specs)))
+  (build-theme/--specs-from-entries ui))
 
 (defun build-theme/--package-face-specs (packages)
   "Build package-tier face specs from the PACKAGES alist (app -> face -> spec)."
   (let (specs)
     (dolist (app packages)
-      (dolist (entry (cdr app))
-        (let* ((face (car entry))
-               (obj (cdr entry))
-               (attrs (build-theme/--attrs obj)))
-          (when-let ((spec (build-theme/--face-spec face attrs)))
-            (push spec specs)))))
-    (nreverse specs)))
+      (setq specs (nconc specs (build-theme/--specs-from-entries (cdr app)))))
+    specs))
 
 (defun build-theme/--all-specs (data)
   "Build the full ordered face-spec list from parsed theme.json DATA."
