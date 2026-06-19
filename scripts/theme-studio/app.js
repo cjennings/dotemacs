@@ -172,6 +172,41 @@ function mkStyleControls(face,onChange,opts={}){
   const u=mkUnderlineControl(()=>face.underline,v=>{face.underline=v;onChange();},opts);
   const k=mkStrikeControl(()=>face.strike,v=>{face.strike=v;onChange();},opts);
   return [w,s,u,k];}
+function mkOverlineControl(get,set,opts={}){
+  return mkLineStyleControl([['','no overline',''],['on','overline','O']],get,set,Object.assign({styled:false},opts));}
+function mkCheck(get,set){const c=document.createElement('input');c.type='checkbox';c.className='detailcheck';c.checked=!!get();c.onchange=()=>set(c.checked);return c;}
+// The per-row attribute editor revealed by the expander: distant-fg, family,
+// overline, inverse, extend, and (for ui/syntax, where inherit/height have no
+// inline column) inherit + height. Each control mutates FACE and calls onChange.
+// Returns the element plus the interactive controls so the row's lock cell can
+// disable them. opts.inheritOptions and opts.showInheritHeight gate the last two.
+function mkDetailEditor(face,onChange,opts={}){
+  const wrap=document.createElement('div');wrap.className='detailedit';const locks=[];
+  const add=(label,el)=>{const g=document.createElement('label');g.className='detailfield';const s=document.createElement('span');s.textContent=label;g.append(s,el);wrap.appendChild(g);locks.push(el);};
+  const df=mkColorDropdown(ddList(face['distant-fg']||''),face['distant-fg']||'',h=>{face['distant-fg']=h||null;onChange();},{compact:true,defaultHex:opts.defaultHex});
+  add('distant fg',df);
+  const fam=document.createElement('input');fam.type='text';fam.className='detailinput';fam.placeholder='font family';fam.value=face.family||'';fam.onchange=()=>{face.family=fam.value.trim()||null;onChange();};
+  add('family',fam);
+  add('overline',mkOverlineControl(()=>face.overline,v=>{face.overline=v;onChange();},opts));
+  add('inverse',mkCheck(()=>face.inverse,v=>{face.inverse=v;onChange();}));
+  add('extend',mkCheck(()=>face.extend,v=>{face.extend=v;onChange();}));
+  if(opts.showInheritHeight){
+    const isel=document.createElement('select');isel.className='chip detailsel';
+    (opts.inheritOptions||['']).forEach(o=>{const op=document.createElement('option');op.value=o;op.textContent=o||'— none —';isel.appendChild(op);});
+    isel.value=face.inherit||'';isel.onchange=()=>{face.inherit=isel.value||null;onChange();};add('inherit',isel);
+    const hin=document.createElement('input');hin.type='number';hin.min='0.8';hin.max='2.5';hin.step='0.05';hin.className='hstep';hin.value=face.height||1;hin.onchange=()=>{face.height=parseFloat(hin.value)||null;onChange();};add('height',hin);
+  }
+  return {el:wrap,locks};}
+// Wire a per-row expander: a toggle button plus a hidden detail row (colspan
+// across the table) holding mkDetailEditor. The caller drops the button into a
+// cell, adds the returned locks to the row's lock cell, and inserts detailRow
+// right after the main row.
+function mkExpander(face,colspan,onChange,opts={}){
+  const detail=document.createElement('tr');detail.className='detailrow';detail.style.display='none';
+  const td=document.createElement('td');td.colSpan=colspan;const {el,locks}=mkDetailEditor(face,onChange,opts);td.appendChild(el);detail.appendChild(td);
+  const btn=document.createElement('button');btn.className='exptoggle';btn.textContent='⋯';btn.title='more attributes';
+  btn.onclick=()=>{const open=detail.style.display==='none';detail.style.display=open?'':'none';btn.classList.toggle('on',open);};
+  return {btn,detail,locks};}
 // Apply a batch action to every editable row in a tier. keyFn maps a row entry to
 // its lock key, or null to skip the row entirely (syntax bg and the default fg);
 // resetFn does the actual clearing. Locked rows are left untouched.
@@ -246,10 +281,13 @@ function buildTable(){
     const c0=document.createElement('td');c0.appendChild(dd);
     const cB=document.createElement('td');cB.appendChild(bgd);
     const cX=document.createElement('td');const boxCtl=mkBoxControl(()=>syntaxFace(kind).box,b=>{syntaxFace(kind).box=b;styleEx();renderCode();},{compact:true});cX.appendChild(boxCtl);
-    const lkTd=mkLockCell(kind,[dd,bgd,...stCtls,boxCtl]);
-    const c2=document.createElement('td');c2.className='cat';c2.textContent=label;c2.style.cursor='pointer';c2.title='flash this category in the code';c2.onclick=()=>flashTokens(kind);
+    const exp=mkExpander(syntaxFace(kind),8,()=>{styleEx();renderCode();},{showInheritHeight:true,inheritOptions:[''].concat(BASE_INHERITS),defaultHex:rowFg()});
+    exp.detail.dataset.detailFor=kind;
+    const lkTd=mkLockCell(kind,[dd,bgd,...stCtls,boxCtl,...exp.locks]);
+    const c2=document.createElement('td');c2.className='cat';c2.appendChild(exp.btn);
+    const c2lbl=document.createElement('span');c2lbl.textContent=' '+label;c2lbl.style.cursor='pointer';c2lbl.title='flash this category in the code';c2lbl.onclick=()=>flashTokens(kind);c2.appendChild(c2lbl);
     tr.appendChild(c2);tr.appendChild(lkTd);tr.appendChild(c0);tr.appendChild(cB);tr.appendChild(stTd);tr.appendChild(cX);tr.appendChild(crTd);tr.appendChild(exTd);
-    tb.appendChild(tr);}
+    tb.appendChild(tr);tb.appendChild(exp.detail);}
   updateLockToggle('syntax');
 }
 PALETTE_ACTIONS_J
@@ -585,7 +623,10 @@ function buildPkgTable(){
     const nd=faceBoxNonDefaults(
       {fg:nameToHex(f.fg,PALETTE),bg:nameToHex(f.bg,PALETTE),weight:f.weight,slant:f.slant,underline:f.underline,strike:f.strike,inherit:f.inherit,height:f.height,box:f.box},
       {fg:nameToHex(def.fg,PALETTE),bg:nameToHex(def.bg,PALETTE),weight:def.weight,slant:def.slant,underline:def.underline,strike:def.strike,inherit:def.inherit,height:def.height,box:def.box});
-    const c0=document.createElement('td');c0.className='cat';c0.textContent=label;c0.title=face;c0.style.cursor='pointer';c0.onclick=()=>flashPkgPreview(face);
+    const exp=mkExpander(f,9,()=>{f.source='user';pkgChanged();},{defaultHex:effFg(pkgEffFg(app,face))});
+    exp.detail.dataset.detailFor=face;
+    const c0=document.createElement('td');c0.className='cat';c0.title=face;c0.appendChild(exp.btn);
+    const c0lbl=document.createElement('span');c0lbl.textContent=' '+label;c0lbl.style.cursor='pointer';c0lbl.onclick=()=>flashPkgPreview(face);c0.appendChild(c0lbl);
     const fgd=mkColorDropdown(ddList(f.fg||''),f.fg||'',h=>{f.fg=h||null;f.source='user';pkgChanged();},{compact:true,defaultHex:effFg(pkgEffFg(app,face))}),
           bgd=mkColorDropdown(ddList(f.bg||''),f.bg||'',h=>{f.bg=h||null;f.source='user';pkgChanged();},{compact:true,defaultHex:effBg(pkgEffBg(app,face))});
     const cf=document.createElement('td');cf.appendChild(fgd);
@@ -597,10 +638,10 @@ function buildPkgTable(){
     const ch=document.createElement('td');const hin=document.createElement('input');hin.type='number';hin.min='0.8';hin.max='2.5';hin.step='0.05';hin.value=f.height||1;hin.className='hstep';hin.onchange=()=>{f.height=parseFloat(hin.value)||1;f.source='user';pkgChanged();};ch.appendChild(hin);
     const cc=document.createElement('td');cc.style.fontSize='10pt';cc.style.whiteSpace='nowrap';const efg=effFg(pkgEffFg(app,face)),ebg=effBg(pkgEffBg(app,face)),r=contrast(efg,ebg);cc.innerHTML=crHtml(r);
     const cx=document.createElement('td');const boxCtl=mkBoxControl(()=>f.box,b=>{f.box=b;f.source='user';pkgChanged();},{compact:true});cx.appendChild(boxCtl);
-    const cL=mkLockCell('pkg:'+app+':'+face,[fgd,bgd,...pkCtls,isel,hin,boxCtl]);
+    const cL=mkLockCell('pkg:'+app+':'+face,[fgd,bgd,...pkCtls,isel,hin,boxCtl,...exp.locks]);
     if(nd.fg)cf.classList.add('nd');if(nd.bg)cb.classList.add('nd');if(nd.style)cw.classList.add('nd');
     if(nd.inherit)ci.classList.add('nd');if(nd.height)ch.classList.add('nd');if(nd.box)cx.classList.add('nd');
-    tr.append(c0,cL,cf,cb,cw,cc,ci,ch,cx);tb.appendChild(tr);
+    tr.append(c0,cL,cf,cb,cw,cc,ci,ch,cx);tb.appendChild(tr);tb.appendChild(exp.detail);
   }
   applyTableSort('pkgbody');
   updateLockToggle('pkg');
@@ -1133,7 +1174,10 @@ function buildUITable(){
   const tb=document.getElementById('uibody');tb.innerHTML='';
   for(const [face,label,ex] of UI_FACES){
     const tr=document.createElement('tr');tr.dataset.face=face;
-    const c0=document.createElement('td');c0.className='cat';c0.textContent=label;c0.style.cursor='pointer';c0.title='flash this face in the live preview';c0.onclick=()=>flashUiPreview(face);
+    const exp=mkExpander(UIMAP[face],8,()=>{paintUI(face);buildMockFrame();},{showInheritHeight:true,inheritOptions:[''].concat(BASE_INHERITS),defaultHex:effFg(UIMAP[face].fg)});
+    exp.detail.dataset.detailFor=face;
+    const c0=document.createElement('td');c0.className='cat';c0.appendChild(exp.btn);
+    const c0lbl=document.createElement('span');c0lbl.textContent=' '+label;c0lbl.style.cursor='pointer';c0lbl.title='flash this face in the live preview';c0lbl.onclick=()=>flashUiPreview(face);c0.appendChild(c0lbl);
     const fgSel=uiSelect(face,'fg'),bgSel=uiSelect(face,'bg');
     const cF=document.createElement('td');cF.appendChild(fgSel);
     const cB=document.createElement('td');cB.appendChild(bgSel);
@@ -1143,8 +1187,8 @@ function buildUITable(){
     const cC=document.createElement('td');cC.id='uicr-'+face;cC.style.whiteSpace='nowrap';cC.style.fontSize='10pt';
     const cP=document.createElement('td');cP.className='ex';cP.id='uiprev-'+face;cP.textContent=ex;cP.style.padding='4px 10px';cP.style.borderRadius='4px';
     const cX=document.createElement('td');const boxCtl=mkBoxControl(()=>UIMAP[face].box,b=>{UIMAP[face].box=b;paintUI(face);buildMockFrame();},{compact:true});cX.appendChild(boxCtl);
-    const cL=mkLockCell('ui:'+face,[fgSel,bgSel,...stCtls,boxCtl]);
-    tr.appendChild(c0);tr.appendChild(cL);tr.appendChild(cF);tr.appendChild(cB);tr.appendChild(cS);tr.appendChild(cC);tr.appendChild(cP);tr.appendChild(cX);tb.appendChild(tr);paintUI(face);
+    const cL=mkLockCell('ui:'+face,[fgSel,bgSel,...stCtls,boxCtl,...exp.locks]);
+    tr.appendChild(c0);tr.appendChild(cL);tr.appendChild(cF);tr.appendChild(cB);tr.appendChild(cS);tr.appendChild(cC);tr.appendChild(cP);tr.appendChild(cX);tb.appendChild(tr);tb.appendChild(exp.detail);paintUI(face);
   }
   applyTableSort('uibody');
   updateLockToggle('ui');
@@ -1157,7 +1201,13 @@ function buildUITable(){
 let tableSort={};
 function cellVal(td){if(!td)return '';const dd=td.querySelector('.cdd');if(dd)return (dd.dataset.val||'').toLowerCase();const s=td.querySelector('select');if(s)return s.value.toLowerCase();const i=td.querySelector('input');if(i)return parseFloat(i.value)||0;const t=td.innerText.trim();const n=parseFloat(t);return (!isNaN(n)&&/^[-\d.]/.test(t))?n:t.toLowerCase();}
 function srtTable(tbId,col){tableSort[tbId]={col,asc:!(tableSort[tbId]&&tableSort[tbId].col===col&&tableSort[tbId].asc)};applyTableSort(tbId);}
-function applyTableSort(tbId){const s=tableSort[tbId];if(!s)return;const tb=document.getElementById(tbId);if(!tb)return;const dir=s.asc?1:-1;const r=[...tb.rows];r.sort((a,b)=>{const x=cellVal(a.cells[s.col]),y=cellVal(b.cells[s.col]);return ((typeof x==='number'&&typeof y==='number')?x-y:(x<y?-1:x>y?1:0))*dir;});r.forEach(x=>tb.appendChild(x));}
+function applyTableSort(tbId){const s=tableSort[tbId];if(!s)return;const tb=document.getElementById(tbId);if(!tb)return;const dir=s.asc?1:-1;
+  // Sort only the main rows; each expander detail row rides along right after its
+  // parent (matched by data-detail-for) so a sort never separates the pair.
+  const details={};[...tb.rows].forEach(x=>{if(x.classList.contains('detailrow'))details[x.dataset.detailFor]=x;});
+  const mains=[...tb.rows].filter(x=>!x.classList.contains('detailrow'));
+  mains.sort((a,b)=>{const x=cellVal(a.cells[s.col]),y=cellVal(b.cells[s.col]);return ((typeof x==='number'&&typeof y==='number')?x-y:(x<y?-1:x>y?1:0))*dir;});
+  mains.forEach(x=>{tb.appendChild(x);const key=x.dataset.face||x.dataset.kind;if(key&&details[key])tb.appendChild(details[key]);});}
 function initApp(){
   paletteShowFull=false;  // open collapsed to base colors; the arrow expands the spans
   buildLangSel();buildViewSel();renderPalette();rebuildColorTables();renderCode();applyGround();

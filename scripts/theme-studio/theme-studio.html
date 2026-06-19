@@ -23,6 +23,16 @@
  .boxbtn:disabled{opacity:.3;cursor:default}
  .stylecluster{display:flex;flex-wrap:wrap;align-items:center;gap:4px;width:max-content;max-width:210px}
  select.stylesel{width:78px;padding:2px 4px;font:11px monospace;font-weight:normal}
+ .exptoggle{width:18px;height:18px;padding:0;border:1px solid #3a3a3a;border-radius:3px;background:#1f1c19;color:#8a9496;font:12px monospace;line-height:1;cursor:pointer;vertical-align:middle}
+ .exptoggle.on{background:#3a3320;border-color:#e8bd30;color:#e8bd30}
+ .exptoggle:disabled{opacity:.3;cursor:default}
+ tr.detailrow>td{background:#15120f;border-top:1px solid #2a2a2a;padding:8px 14px}
+ .detailedit{display:flex;flex-wrap:wrap;align-items:center;gap:14px}
+ .detailfield{display:flex;align-items:center;gap:5px;font:11px monospace;color:#b4b1a2}
+ .detailfield>span{white-space:nowrap}
+ input.detailinput{width:120px;padding:3px 5px;font:11px monospace;background:#1f1c19;color:#cdced1;border:1px solid #3a3a3a;border-radius:4px}
+ select.detailsel{width:130px;font:10pt monospace}
+ input.detailcheck{width:15px;height:15px;cursor:pointer}
  table.leg th:hover{color:#e8bd30}
  select.chip{appearance:none;border:1px solid #00000060;border-radius:5px;padding:5px 10px;font:bold 14px monospace;width:160px;cursor:pointer}
  /* Prev/next arrows flanking the view dropdown: step the selection without reopening it.
@@ -1555,6 +1565,41 @@ function mkStyleControls(face,onChange,opts={}){
   const u=mkUnderlineControl(()=>face.underline,v=>{face.underline=v;onChange();},opts);
   const k=mkStrikeControl(()=>face.strike,v=>{face.strike=v;onChange();},opts);
   return [w,s,u,k];}
+function mkOverlineControl(get,set,opts={}){
+  return mkLineStyleControl([['','no overline',''],['on','overline','O']],get,set,Object.assign({styled:false},opts));}
+function mkCheck(get,set){const c=document.createElement('input');c.type='checkbox';c.className='detailcheck';c.checked=!!get();c.onchange=()=>set(c.checked);return c;}
+// The per-row attribute editor revealed by the expander: distant-fg, family,
+// overline, inverse, extend, and (for ui/syntax, where inherit/height have no
+// inline column) inherit + height. Each control mutates FACE and calls onChange.
+// Returns the element plus the interactive controls so the row's lock cell can
+// disable them. opts.inheritOptions and opts.showInheritHeight gate the last two.
+function mkDetailEditor(face,onChange,opts={}){
+  const wrap=document.createElement('div');wrap.className='detailedit';const locks=[];
+  const add=(label,el)=>{const g=document.createElement('label');g.className='detailfield';const s=document.createElement('span');s.textContent=label;g.append(s,el);wrap.appendChild(g);locks.push(el);};
+  const df=mkColorDropdown(ddList(face['distant-fg']||''),face['distant-fg']||'',h=>{face['distant-fg']=h||null;onChange();},{compact:true,defaultHex:opts.defaultHex});
+  add('distant fg',df);
+  const fam=document.createElement('input');fam.type='text';fam.className='detailinput';fam.placeholder='font family';fam.value=face.family||'';fam.onchange=()=>{face.family=fam.value.trim()||null;onChange();};
+  add('family',fam);
+  add('overline',mkOverlineControl(()=>face.overline,v=>{face.overline=v;onChange();},opts));
+  add('inverse',mkCheck(()=>face.inverse,v=>{face.inverse=v;onChange();}));
+  add('extend',mkCheck(()=>face.extend,v=>{face.extend=v;onChange();}));
+  if(opts.showInheritHeight){
+    const isel=document.createElement('select');isel.className='chip detailsel';
+    (opts.inheritOptions||['']).forEach(o=>{const op=document.createElement('option');op.value=o;op.textContent=o||'— none —';isel.appendChild(op);});
+    isel.value=face.inherit||'';isel.onchange=()=>{face.inherit=isel.value||null;onChange();};add('inherit',isel);
+    const hin=document.createElement('input');hin.type='number';hin.min='0.8';hin.max='2.5';hin.step='0.05';hin.className='hstep';hin.value=face.height||1;hin.onchange=()=>{face.height=parseFloat(hin.value)||null;onChange();};add('height',hin);
+  }
+  return {el:wrap,locks};}
+// Wire a per-row expander: a toggle button plus a hidden detail row (colspan
+// across the table) holding mkDetailEditor. The caller drops the button into a
+// cell, adds the returned locks to the row's lock cell, and inserts detailRow
+// right after the main row.
+function mkExpander(face,colspan,onChange,opts={}){
+  const detail=document.createElement('tr');detail.className='detailrow';detail.style.display='none';
+  const td=document.createElement('td');td.colSpan=colspan;const {el,locks}=mkDetailEditor(face,onChange,opts);td.appendChild(el);detail.appendChild(td);
+  const btn=document.createElement('button');btn.className='exptoggle';btn.textContent='⋯';btn.title='more attributes';
+  btn.onclick=()=>{const open=detail.style.display==='none';detail.style.display=open?'':'none';btn.classList.toggle('on',open);};
+  return {btn,detail,locks};}
 // Apply a batch action to every editable row in a tier. keyFn maps a row entry to
 // its lock key, or null to skip the row entirely (syntax bg and the default fg);
 // resetFn does the actual clearing. Locked rows are left untouched.
@@ -1629,10 +1674,13 @@ function buildTable(){
     const c0=document.createElement('td');c0.appendChild(dd);
     const cB=document.createElement('td');cB.appendChild(bgd);
     const cX=document.createElement('td');const boxCtl=mkBoxControl(()=>syntaxFace(kind).box,b=>{syntaxFace(kind).box=b;styleEx();renderCode();},{compact:true});cX.appendChild(boxCtl);
-    const lkTd=mkLockCell(kind,[dd,bgd,...stCtls,boxCtl]);
-    const c2=document.createElement('td');c2.className='cat';c2.textContent=label;c2.style.cursor='pointer';c2.title='flash this category in the code';c2.onclick=()=>flashTokens(kind);
+    const exp=mkExpander(syntaxFace(kind),8,()=>{styleEx();renderCode();},{showInheritHeight:true,inheritOptions:[''].concat(BASE_INHERITS),defaultHex:rowFg()});
+    exp.detail.dataset.detailFor=kind;
+    const lkTd=mkLockCell(kind,[dd,bgd,...stCtls,boxCtl,...exp.locks]);
+    const c2=document.createElement('td');c2.className='cat';c2.appendChild(exp.btn);
+    const c2lbl=document.createElement('span');c2lbl.textContent=' '+label;c2lbl.style.cursor='pointer';c2lbl.title='flash this category in the code';c2lbl.onclick=()=>flashTokens(kind);c2.appendChild(c2lbl);
     tr.appendChild(c2);tr.appendChild(lkTd);tr.appendChild(c0);tr.appendChild(cB);tr.appendChild(stTd);tr.appendChild(cX);tr.appendChild(crTd);tr.appendChild(exTd);
-    tb.appendChild(tr);}
+    tb.appendChild(tr);tb.appendChild(exp.detail);}
   updateLockToggle('syntax');
 }
 function clearPalette(){
@@ -2219,7 +2267,10 @@ function buildPkgTable(){
     const nd=faceBoxNonDefaults(
       {fg:nameToHex(f.fg,PALETTE),bg:nameToHex(f.bg,PALETTE),weight:f.weight,slant:f.slant,underline:f.underline,strike:f.strike,inherit:f.inherit,height:f.height,box:f.box},
       {fg:nameToHex(def.fg,PALETTE),bg:nameToHex(def.bg,PALETTE),weight:def.weight,slant:def.slant,underline:def.underline,strike:def.strike,inherit:def.inherit,height:def.height,box:def.box});
-    const c0=document.createElement('td');c0.className='cat';c0.textContent=label;c0.title=face;c0.style.cursor='pointer';c0.onclick=()=>flashPkgPreview(face);
+    const exp=mkExpander(f,9,()=>{f.source='user';pkgChanged();},{defaultHex:effFg(pkgEffFg(app,face))});
+    exp.detail.dataset.detailFor=face;
+    const c0=document.createElement('td');c0.className='cat';c0.title=face;c0.appendChild(exp.btn);
+    const c0lbl=document.createElement('span');c0lbl.textContent=' '+label;c0lbl.style.cursor='pointer';c0lbl.onclick=()=>flashPkgPreview(face);c0.appendChild(c0lbl);
     const fgd=mkColorDropdown(ddList(f.fg||''),f.fg||'',h=>{f.fg=h||null;f.source='user';pkgChanged();},{compact:true,defaultHex:effFg(pkgEffFg(app,face))}),
           bgd=mkColorDropdown(ddList(f.bg||''),f.bg||'',h=>{f.bg=h||null;f.source='user';pkgChanged();},{compact:true,defaultHex:effBg(pkgEffBg(app,face))});
     const cf=document.createElement('td');cf.appendChild(fgd);
@@ -2231,10 +2282,10 @@ function buildPkgTable(){
     const ch=document.createElement('td');const hin=document.createElement('input');hin.type='number';hin.min='0.8';hin.max='2.5';hin.step='0.05';hin.value=f.height||1;hin.className='hstep';hin.onchange=()=>{f.height=parseFloat(hin.value)||1;f.source='user';pkgChanged();};ch.appendChild(hin);
     const cc=document.createElement('td');cc.style.fontSize='10pt';cc.style.whiteSpace='nowrap';const efg=effFg(pkgEffFg(app,face)),ebg=effBg(pkgEffBg(app,face)),r=contrast(efg,ebg);cc.innerHTML=crHtml(r);
     const cx=document.createElement('td');const boxCtl=mkBoxControl(()=>f.box,b=>{f.box=b;f.source='user';pkgChanged();},{compact:true});cx.appendChild(boxCtl);
-    const cL=mkLockCell('pkg:'+app+':'+face,[fgd,bgd,...pkCtls,isel,hin,boxCtl]);
+    const cL=mkLockCell('pkg:'+app+':'+face,[fgd,bgd,...pkCtls,isel,hin,boxCtl,...exp.locks]);
     if(nd.fg)cf.classList.add('nd');if(nd.bg)cb.classList.add('nd');if(nd.style)cw.classList.add('nd');
     if(nd.inherit)ci.classList.add('nd');if(nd.height)ch.classList.add('nd');if(nd.box)cx.classList.add('nd');
-    tr.append(c0,cL,cf,cb,cw,cc,ci,ch,cx);tb.appendChild(tr);
+    tr.append(c0,cL,cf,cb,cw,cc,ci,ch,cx);tb.appendChild(tr);tb.appendChild(exp.detail);
   }
   applyTableSort('pkgbody');
   updateLockToggle('pkg');
@@ -2767,7 +2818,10 @@ function buildUITable(){
   const tb=document.getElementById('uibody');tb.innerHTML='';
   for(const [face,label,ex] of UI_FACES){
     const tr=document.createElement('tr');tr.dataset.face=face;
-    const c0=document.createElement('td');c0.className='cat';c0.textContent=label;c0.style.cursor='pointer';c0.title='flash this face in the live preview';c0.onclick=()=>flashUiPreview(face);
+    const exp=mkExpander(UIMAP[face],8,()=>{paintUI(face);buildMockFrame();},{showInheritHeight:true,inheritOptions:[''].concat(BASE_INHERITS),defaultHex:effFg(UIMAP[face].fg)});
+    exp.detail.dataset.detailFor=face;
+    const c0=document.createElement('td');c0.className='cat';c0.appendChild(exp.btn);
+    const c0lbl=document.createElement('span');c0lbl.textContent=' '+label;c0lbl.style.cursor='pointer';c0lbl.title='flash this face in the live preview';c0lbl.onclick=()=>flashUiPreview(face);c0.appendChild(c0lbl);
     const fgSel=uiSelect(face,'fg'),bgSel=uiSelect(face,'bg');
     const cF=document.createElement('td');cF.appendChild(fgSel);
     const cB=document.createElement('td');cB.appendChild(bgSel);
@@ -2777,8 +2831,8 @@ function buildUITable(){
     const cC=document.createElement('td');cC.id='uicr-'+face;cC.style.whiteSpace='nowrap';cC.style.fontSize='10pt';
     const cP=document.createElement('td');cP.className='ex';cP.id='uiprev-'+face;cP.textContent=ex;cP.style.padding='4px 10px';cP.style.borderRadius='4px';
     const cX=document.createElement('td');const boxCtl=mkBoxControl(()=>UIMAP[face].box,b=>{UIMAP[face].box=b;paintUI(face);buildMockFrame();},{compact:true});cX.appendChild(boxCtl);
-    const cL=mkLockCell('ui:'+face,[fgSel,bgSel,...stCtls,boxCtl]);
-    tr.appendChild(c0);tr.appendChild(cL);tr.appendChild(cF);tr.appendChild(cB);tr.appendChild(cS);tr.appendChild(cC);tr.appendChild(cP);tr.appendChild(cX);tb.appendChild(tr);paintUI(face);
+    const cL=mkLockCell('ui:'+face,[fgSel,bgSel,...stCtls,boxCtl,...exp.locks]);
+    tr.appendChild(c0);tr.appendChild(cL);tr.appendChild(cF);tr.appendChild(cB);tr.appendChild(cS);tr.appendChild(cC);tr.appendChild(cP);tr.appendChild(cX);tb.appendChild(tr);tb.appendChild(exp.detail);paintUI(face);
   }
   applyTableSort('uibody');
   updateLockToggle('ui');
@@ -2791,7 +2845,13 @@ function buildUITable(){
 let tableSort={};
 function cellVal(td){if(!td)return '';const dd=td.querySelector('.cdd');if(dd)return (dd.dataset.val||'').toLowerCase();const s=td.querySelector('select');if(s)return s.value.toLowerCase();const i=td.querySelector('input');if(i)return parseFloat(i.value)||0;const t=td.innerText.trim();const n=parseFloat(t);return (!isNaN(n)&&/^[-\d.]/.test(t))?n:t.toLowerCase();}
 function srtTable(tbId,col){tableSort[tbId]={col,asc:!(tableSort[tbId]&&tableSort[tbId].col===col&&tableSort[tbId].asc)};applyTableSort(tbId);}
-function applyTableSort(tbId){const s=tableSort[tbId];if(!s)return;const tb=document.getElementById(tbId);if(!tb)return;const dir=s.asc?1:-1;const r=[...tb.rows];r.sort((a,b)=>{const x=cellVal(a.cells[s.col]),y=cellVal(b.cells[s.col]);return ((typeof x==='number'&&typeof y==='number')?x-y:(x<y?-1:x>y?1:0))*dir;});r.forEach(x=>tb.appendChild(x));}
+function applyTableSort(tbId){const s=tableSort[tbId];if(!s)return;const tb=document.getElementById(tbId);if(!tb)return;const dir=s.asc?1:-1;
+  // Sort only the main rows; each expander detail row rides along right after its
+  // parent (matched by data-detail-for) so a sort never separates the pair.
+  const details={};[...tb.rows].forEach(x=>{if(x.classList.contains('detailrow'))details[x.dataset.detailFor]=x;});
+  const mains=[...tb.rows].filter(x=>!x.classList.contains('detailrow'));
+  mains.sort((a,b)=>{const x=cellVal(a.cells[s.col]),y=cellVal(b.cells[s.col]);return ((typeof x==='number'&&typeof y==='number')?x-y:(x<y?-1:x>y?1:0))*dir;});
+  mains.forEach(x=>{tb.appendChild(x);const key=x.dataset.face||x.dataset.kind;if(key&&details[key])tb.appendChild(details[key]);});}
 function initApp(){
   paletteShowFull=false;  // open collapsed to base colors; the arrow expands the spans
   buildLangSel();buildViewSel();renderPalette();rebuildColorTables();renderCode();applyGround();
@@ -2904,8 +2964,8 @@ if(location.hash==='#locktest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c
 // value and by element name, that a repeat click reverses, and that the UI and
 // package tables still sort. Guards the unified sort for the later stages.
 if(location.hash==='#sorttest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c){ok=false;notes.push(n);}};
- const ddVals=tb=>[...document.querySelectorAll('#'+tb+' tr')].map(tr=>{const dd=tr.cells[2].querySelector('.cdd');return dd?(dd.dataset.val||''):'';});
- const txtVals=tb=>[...document.querySelectorAll('#'+tb+' tr')].map(tr=>tr.cells[0].innerText.trim().toLowerCase());
+ const ddVals=tb=>[...document.querySelectorAll('#'+tb+' tr:not(.detailrow)')].map(tr=>{const dd=tr.cells[2].querySelector('.cdd');return dd?(dd.dataset.val||''):'';});
+ const txtVals=tb=>[...document.querySelectorAll('#'+tb+' tr:not(.detailrow)')].map(tr=>tr.cells[0].innerText.trim().toLowerCase());
  const asc=a=>a.every((v,i)=>i===0||a[i-1]<=v),desc=a=>a.every((v,i)=>i===0||a[i-1]>=v);
  buildTable();
  srtTable('legbody',2);A(asc(ddVals('legbody')),'legbody-color-asc');
@@ -3649,6 +3709,37 @@ if(location.hash==='#styletest'){let ok=true;const notes=[];const A=(c,n)=>{if(!
  A(cluster&&cluster.querySelectorAll('.boxctl').length===2,'underline-and-strike-controls-present');
  document.title='STYLETEST '+(ok?'PASS':'FAIL');
  const d=document.createElement('div');d.id='styletest';d.textContent='STYLETEST '+(ok?'PASS':'FAIL')+(notes.length?' fails='+notes.join(','):'');document.body.appendChild(d);}
+// Expander gate (open with #expandtest): the per-row "more" toggle reveals a
+// detail row with the overflow attribute editor, and its controls write the model.
+if(location.hash==='#expandtest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c){ok=false;notes.push(n);}};
+ buildUITable();
+ const row=document.querySelector('#uibody tr[data-face="region"]');
+ const detail=document.querySelector('#uibody tr.detailrow[data-detail-for="region"]');
+ A(!!detail,'detail-row-present');
+ A(detail&&detail.style.display==='none','detail-row-hidden-by-default');
+ const btn=row.querySelector('.exptoggle');
+ A(!!btn,'expander-toggle-present');
+ btn&&btn.click();
+ A(detail&&detail.style.display!=='none','toggle-reveals-detail-row');
+ const ed=detail&&detail.querySelector('.detailedit');
+ A(ed&&ed.querySelectorAll('.detailfield').length>=5,'detail-editor-has-the-overflow-fields');
+ // ui faces also expose inherit + height in the expander
+ A(ed&&ed.querySelector('select.detailsel'),'ui-expander-offers-inherit');
+ A(ed&&ed.querySelector('input.hstep'),'ui-expander-offers-height');
+ // family text input writes the model
+ const fam=ed&&ed.querySelector('input.detailinput');
+ if(fam){fam.value='Iosevka';fam.dispatchEvent(new Event('change'));}
+ A(UIMAP['region'].family==='Iosevka','family-input-writes-the-model');
+ // inverse checkbox writes the model
+ const inv=ed&&ed.querySelector('input.detailcheck');
+ if(inv){inv.checked=true;inv.dispatchEvent(new Event('change'));}
+ A(UIMAP['region'].inverse===true,'inverse-checkbox-writes-the-model');
+ // package expander omits inherit/height (they have inline columns)
+ buildPkgTable();const pface=APPS[curApp()].faces[0][0];
+ const pdetail=document.querySelector('#pkgbody tr.detailrow[data-detail-for="'+pface+'"]');
+ A(pdetail&&!pdetail.querySelector('select.detailsel'),'package-expander-omits-inherit');
+ document.title='EXPANDTEST '+(ok?'PASS':'FAIL');
+ const d=document.createElement('div');d.id='expandtest';d.textContent='EXPANDTEST '+(ok?'PASS':'FAIL')+(notes.length?' fails='+notes.join(','):'');document.body.appendChild(d);}
 // Palette default-state gate (open with #paldefaulttest): the studio opens with
 // the palette collapsed to base colors so the span tints don't crowd the first
 // view. initApp() ran at page load, so the live toggle reflects the opening state.

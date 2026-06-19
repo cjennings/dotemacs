@@ -21,6 +21,16 @@
  .boxbtn:disabled{opacity:.3;cursor:default}
  .stylecluster{display:flex;flex-wrap:wrap;align-items:center;gap:4px;width:max-content;max-width:210px}
  select.stylesel{width:78px;padding:2px 4px;font:11px monospace;font-weight:normal}
+ .exptoggle{width:18px;height:18px;padding:0;border:1px solid #3a3a3a;border-radius:3px;background:#1f1c19;color:#8a9496;font:12px monospace;line-height:1;cursor:pointer;vertical-align:middle}
+ .exptoggle.on{background:#3a3320;border-color:#e8bd30;color:#e8bd30}
+ .exptoggle:disabled{opacity:.3;cursor:default}
+ tr.detailrow>td{background:#15120f;border-top:1px solid #2a2a2a;padding:8px 14px}
+ .detailedit{display:flex;flex-wrap:wrap;align-items:center;gap:14px}
+ .detailfield{display:flex;align-items:center;gap:5px;font:11px monospace;color:#b4b1a2}
+ .detailfield>span{white-space:nowrap}
+ input.detailinput{width:120px;padding:3px 5px;font:11px monospace;background:#1f1c19;color:#cdced1;border:1px solid #3a3a3a;border-radius:4px}
+ select.detailsel{width:130px;font:10pt monospace}
+ input.detailcheck{width:15px;height:15px;cursor:pointer}
  table.leg th:hover{color:#e8bd30}
  select.chip{appearance:none;border:1px solid #00000060;border-radius:5px;padding:5px 10px;font:bold 14px monospace;width:160px;cursor:pointer}
  /* Prev/next arrows flanking the view dropdown: step the selection without reopening it.

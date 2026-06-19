@@ -101,8 +101,8 @@ if(location.hash==='#locktest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c
 // value and by element name, that a repeat click reverses, and that the UI and
 // package tables still sort. Guards the unified sort for the later stages.
 if(location.hash==='#sorttest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c){ok=false;notes.push(n);}};
- const ddVals=tb=>[...document.querySelectorAll('#'+tb+' tr')].map(tr=>{const dd=tr.cells[2].querySelector('.cdd');return dd?(dd.dataset.val||''):'';});
- const txtVals=tb=>[...document.querySelectorAll('#'+tb+' tr')].map(tr=>tr.cells[0].innerText.trim().toLowerCase());
+ const ddVals=tb=>[...document.querySelectorAll('#'+tb+' tr:not(.detailrow)')].map(tr=>{const dd=tr.cells[2].querySelector('.cdd');return dd?(dd.dataset.val||''):'';});
+ const txtVals=tb=>[...document.querySelectorAll('#'+tb+' tr:not(.detailrow)')].map(tr=>tr.cells[0].innerText.trim().toLowerCase());
  const asc=a=>a.every((v,i)=>i===0||a[i-1]<=v),desc=a=>a.every((v,i)=>i===0||a[i-1]>=v);
  buildTable();
  srtTable('legbody',2);A(asc(ddVals('legbody')),'legbody-color-asc');
@@ -846,6 +846,37 @@ if(location.hash==='#styletest'){let ok=true;const notes=[];const A=(c,n)=>{if(!
  A(cluster&&cluster.querySelectorAll('.boxctl').length===2,'underline-and-strike-controls-present');
  document.title='STYLETEST '+(ok?'PASS':'FAIL');
  const d=document.createElement('div');d.id='styletest';d.textContent='STYLETEST '+(ok?'PASS':'FAIL')+(notes.length?' fails='+notes.join(','):'');document.body.appendChild(d);}
+// Expander gate (open with #expandtest): the per-row "more" toggle reveals a
+// detail row with the overflow attribute editor, and its controls write the model.
+if(location.hash==='#expandtest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c){ok=false;notes.push(n);}};
+ buildUITable();
+ const row=document.querySelector('#uibody tr[data-face="region"]');
+ const detail=document.querySelector('#uibody tr.detailrow[data-detail-for="region"]');
+ A(!!detail,'detail-row-present');
+ A(detail&&detail.style.display==='none','detail-row-hidden-by-default');
+ const btn=row.querySelector('.exptoggle');
+ A(!!btn,'expander-toggle-present');
+ btn&&btn.click();
+ A(detail&&detail.style.display!=='none','toggle-reveals-detail-row');
+ const ed=detail&&detail.querySelector('.detailedit');
+ A(ed&&ed.querySelectorAll('.detailfield').length>=5,'detail-editor-has-the-overflow-fields');
+ // ui faces also expose inherit + height in the expander
+ A(ed&&ed.querySelector('select.detailsel'),'ui-expander-offers-inherit');
+ A(ed&&ed.querySelector('input.hstep'),'ui-expander-offers-height');
+ // family text input writes the model
+ const fam=ed&&ed.querySelector('input.detailinput');
+ if(fam){fam.value='Iosevka';fam.dispatchEvent(new Event('change'));}
+ A(UIMAP['region'].family==='Iosevka','family-input-writes-the-model');
+ // inverse checkbox writes the model
+ const inv=ed&&ed.querySelector('input.detailcheck');
+ if(inv){inv.checked=true;inv.dispatchEvent(new Event('change'));}
+ A(UIMAP['region'].inverse===true,'inverse-checkbox-writes-the-model');
+ // package expander omits inherit/height (they have inline columns)
+ buildPkgTable();const pface=APPS[curApp()].faces[0][0];
+ const pdetail=document.querySelector('#pkgbody tr.detailrow[data-detail-for="'+pface+'"]');
+ A(pdetail&&!pdetail.querySelector('select.detailsel'),'package-expander-omits-inherit');
+ document.title='EXPANDTEST '+(ok?'PASS':'FAIL');
+ const d=document.createElement('div');d.id='expandtest';d.textContent='EXPANDTEST '+(ok?'PASS':'FAIL')+(notes.length?' fails='+notes.join(','):'');document.body.appendChild(d);}
 // Palette default-state gate (open with #paldefaulttest): the studio opens with
 // the palette collapsed to base colors so the span tints don't crowd the first
 // view. initApp() ran at page load, so the live toggle reflects the opening state.
