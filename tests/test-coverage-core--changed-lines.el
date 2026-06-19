@@ -227,5 +227,106 @@ Binary files a/image.png and b/image.png differ
   (should-error (cj/--coverage-changed-lines 'bogus-scope)
                 :type 'user-error))
 
+;;; Boundary cases — parser, /dev/null and orphan hunks
+
+(ert-deftest test-coverage-parse-diff-dev-null-resets-current-file ()
+  "Boundary: a \"+++ /dev/null\" target resets state so a following hunk is
+not misattributed to the previous file."
+  (let* ((input (concat "diff --git a/keep.el b/keep.el\n"
+                        "--- a/keep.el\n"
+                        "+++ b/keep.el\n"
+                        "@@ -1,0 +1,2 @@\n"
+                        "+k1\n+k2\n"
+                        "diff --git a/gone.el b/gone.el\n"
+                        "--- a/gone.el\n"
+                        "+++ /dev/null\n"
+                        "@@ -1,0 +5,2 @@\n"
+                        "+orphan1\n+orphan2\n"))
+         (result (cj/--coverage-parse-diff-output input))
+         (keep (gethash "keep.el" result)))
+    (should (= 1 (hash-table-count result)))   ; gone.el never recorded
+    (should (= 2 (hash-table-count keep)))
+    (should (gethash 1 keep))
+    (should (gethash 2 keep))
+    (should-not (gethash 5 keep))              ; not misattributed
+    (should-not (gethash 6 keep))))
+
+(ert-deftest test-coverage-parse-diff-hunk-before-any-file-marker ()
+  "Boundary: a hunk header before any file marker is ignored, not crashed on."
+  (let* ((input (concat "@@ -1,0 +1,2 @@\n"
+                        "+orphan1\n+orphan2\n"
+                        "diff --git a/real.el b/real.el\n"
+                        "--- a/real.el\n"
+                        "+++ b/real.el\n"
+                        "@@ -1,0 +1,1 @@\n"
+                        "+r1\n"))
+         (result (cj/--coverage-parse-diff-output input))
+         (real (gethash "real.el" result)))
+    (should (= 1 (hash-table-count result)))
+    (should (= 1 (hash-table-count real)))
+    (should (gethash 1 real))))
+
+;;; merge-base (stubbed git invocation)
+
+(ert-deftest test-coverage-git-merge-base-returns-trimmed-sha ()
+  "Normal: a SHA with trailing newline is trimmed and returned."
+  (cl-letf (((symbol-function 'process-file)
+             (lambda (_program _infile destination _display &rest _args)
+               (with-current-buffer destination (insert "abc123\n"))
+               0)))
+    (should (equal (cj/--coverage-git-merge-base "main") "abc123"))))
+
+(ert-deftest test-coverage-git-merge-base-empty-output-errors ()
+  "Error: empty merge-base output signals user-error (no common commit)."
+  (cl-letf (((symbol-function 'process-file)
+             (lambda (_program _infile destination _display &rest _args)
+               (with-current-buffer destination (insert ""))
+               0)))
+    (should-error (cj/--coverage-git-merge-base "main") :type 'user-error)))
+
+(ert-deftest test-coverage-git-merge-base-whitespace-output-errors ()
+  "Error: whitespace-only output trims to empty and signals user-error."
+  (cl-letf (((symbol-function 'process-file)
+             (lambda (_program _infile destination _display &rest _args)
+               (with-current-buffer destination (insert "   \n"))
+               0)))
+    (should-error (cj/--coverage-git-merge-base "main") :type 'user-error)))
+
+;;; changed-lines — remaining scopes (stubbed git invocation)
+
+(ert-deftest test-coverage-changed-lines-staged-stubbed ()
+  "Normal: staged scope invokes git diff --cached via argv."
+  (let (seen-calls)
+    (cl-letf (((symbol-function 'process-file)
+               (lambda (program _infile destination _display &rest args)
+                 (push (cons program args) seen-calls)
+                 (with-current-buffer destination
+                   (insert test-coverage-diff--simple-single-file))
+                 0)))
+      (let ((result (cj/--coverage-changed-lines 'staged)))
+        (should (equal (nreverse seen-calls)
+                       '(("git" "diff" "--cached" "--unified=0"))))
+        (should (= 3 (hash-table-count (gethash "foo.el" result))))))))
+
+(ert-deftest test-coverage-changed-lines-branch-vs-main-stubbed ()
+  "Normal: branch-vs-main computes merge-base against main, then diffs."
+  (let (seen-calls)
+    (cl-letf (((symbol-function 'process-file)
+               (lambda (program _infile destination _display &rest args)
+                 (push (cons program args) seen-calls)
+                 (with-current-buffer destination
+                   (insert
+                    (pcase args
+                      (`("merge-base" "HEAD" "main") "abc123\n")
+                      (`("diff" "abc123..HEAD" "--unified=0")
+                       test-coverage-diff--simple-single-file)
+                      (_ ""))))
+                 0)))
+      (let ((result (cj/--coverage-changed-lines 'branch-vs-main)))
+        (should (equal (nreverse seen-calls)
+                       '(("git" "merge-base" "HEAD" "main")
+                         ("git" "diff" "abc123..HEAD" "--unified=0"))))
+        (should (= 3 (hash-table-count (gethash "foo.el" result))))))))
+
 (provide 'test-coverage-core--changed-lines)
 ;;; test-coverage-core--changed-lines.el ends here

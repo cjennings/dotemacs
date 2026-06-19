@@ -65,5 +65,49 @@
       (should-error (cj/youtube-to-elfeed-feed-format "https://youtube.com/@t" 'channel))
       (should-not (buffer-live-p url-buf)))))
 
+;;; Playlist branch
+
+(ert-deftest test-elfeed-youtube-playlist-parses-id-and-title ()
+  "Normal: a playlist URL yields the playlist feed line and the og:title."
+  (cl-letf (((symbol-function 'url-retrieve-synchronously)
+             (lambda (&rest _)
+               (test-elfeed--url-buffer
+                "<meta property=\"og:title\" content=\"My Playlist\">"))))
+    (let ((result (cj/youtube-to-elfeed-feed-format
+                   "https://www.youtube.com/playlist?list=PLabc123" 'playlist)))
+      (should (string-match-p "playlist_id=PLabc123" result))
+      (should (string-match-p "My Playlist" result)))))
+
+(ert-deftest test-elfeed-youtube-playlist-id-stops-at-ampersand ()
+  "Boundary: extra query params after list= are not captured into the id."
+  (cl-letf (((symbol-function 'url-retrieve-synchronously)
+             (lambda (&rest _)
+               (test-elfeed--url-buffer
+                "<meta property=\"og:title\" content=\"X\">"))))
+    (let ((result (cj/youtube-to-elfeed-feed-format
+                   "https://www.youtube.com/playlist?list=PLxyz&index=2" 'playlist)))
+      (should (string-match-p "playlist_id=PLxyz" result))
+      (should-not (string-match-p "index=2" result)))))
+
+(ert-deftest test-elfeed-youtube-playlist-no-list-param-errors ()
+  "Error: a playlist URL with no list= parameter signals an extraction error."
+  (cl-letf (((symbol-function 'url-retrieve-synchronously)
+             (lambda (&rest _) (test-elfeed--url-buffer ""))))
+    (should-error (cj/youtube-to-elfeed-feed-format
+                   "https://www.youtube.com/watch?v=abc" 'playlist))))
+
+(ert-deftest test-elfeed-youtube-playlist-decodes-html-entities-in-title ()
+  "Normal: HTML entities in the og:title are decoded in the feed comment."
+  (cl-letf (((symbol-function 'url-retrieve-synchronously)
+             (lambda (&rest _)
+               (test-elfeed--url-buffer
+                (concat "<meta property=\"og:title\" content=\""
+                        "Rock &amp; Roll &#39;n&#x27; &lt;Test&gt; &quot;X&quot;"
+                        "\">")))))
+    (let ((result (cj/youtube-to-elfeed-feed-format
+                   "https://www.youtube.com/playlist?list=PLe" 'playlist)))
+      (should (string-match-p (regexp-quote "Rock & Roll 'n' <Test> \"X\"")
+                              result)))))
+
 (provide 'test-elfeed-config-youtube-feed-format)
 ;;; test-elfeed-config-youtube-feed-format.el ends here

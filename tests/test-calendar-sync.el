@@ -693,5 +693,22 @@ Valid events should be parsed, invalid ones skipped."
       (should retrieved)
       (should (eq 'ok (plist-get retrieved :status))))))
 
+;;; Tests: calendar-sync--parse-ics — boundary inputs
+
+(ert-deftest test-calendar-sync--parse-ics-nil-content-returns-nil ()
+  "Boundary: nil ICS content is handled gracefully and returns nil."
+  (should (null (calendar-sync--parse-ics nil))))
+
+(ert-deftest test-calendar-sync--parse-ics-drops-out-of-range-event ()
+  "Boundary: a non-recurring event outside the date range is dropped."
+  (let* ((far (test-calendar-sync-make-vevent
+               "OutOfRangeEvent"
+               (test-calendar-sync-time-days-from-now 3650 10 0)
+               (test-calendar-sync-time-days-from-now 3650 11 0)))
+         (ics (test-calendar-sync-make-ics far))
+         (org-content (calendar-sync--parse-ics ics)))
+    (should-not (and org-content
+                     (string-match-p "OutOfRangeEvent" org-content)))))
+
 (provide 'test-calendar-sync)
 ;;; test-calendar-sync.el ends here

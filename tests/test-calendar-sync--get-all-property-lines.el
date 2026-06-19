@@ -57,5 +57,23 @@
   "Test empty event string returns nil."
   (should (null (calendar-sync--get-all-property-lines "" "ATTENDEE"))))
 
+;;; Boundary Cases — position advancement
+
+(ert-deftest test-calendar-sync--get-all-property-lines-property-at-end-no-newline ()
+  "Boundary: a match at end of string with no trailing newline still returns it.
+Exercises the end-equals-length branch of position advancement."
+  (let ((result (calendar-sync--get-all-property-lines
+                 "ATTENDEE:foo@example.com" "ATTENDEE")))
+    (should (= 1 (length result)))
+    (should (string-match-p "foo@example.com" (car result)))))
+
+(ert-deftest test-calendar-sync--get-all-property-lines-second-match-after-continuation ()
+  "Boundary: a first match with a continuation does not hide the second match."
+  (let ((result (calendar-sync--get-all-property-lines
+                 "ATTENDEE:a\n more\nATTENDEE:b\nSUMMARY:x" "ATTENDEE")))
+    (should (= 2 (length result)))
+    (should (string-match-p "more" (nth 0 result)))
+    (should (string-match-p "ATTENDEE:b" (nth 1 result)))))
+
 (provide 'test-calendar-sync--get-all-property-lines)
 ;;; test-calendar-sync--get-all-property-lines.el ends here

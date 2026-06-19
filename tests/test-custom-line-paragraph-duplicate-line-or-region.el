@@ -447,5 +447,19 @@
         (should (string-match-p "line\u000Cwith\u000Dcontrol\nline\u000Cwith\u000Dcontrol" (buffer-string))))
     (test-duplicate-line-or-region-teardown)))
 
+;;; Error Cases
+
+(ert-deftest test-duplicate-line-or-region-comment-without-syntax-errors ()
+  "Error: requesting a comment in a mode with no comment syntax signals
+user-error rather than producing malformed output."
+  (test-duplicate-line-or-region-setup)
+  (unwind-protect
+      (with-temp-buffer
+        (fundamental-mode)  ; no comment-start defined
+        (insert "line one")
+        (goto-char (point-min))
+        (should-error (cj/duplicate-line-or-region t) :type 'user-error))
+    (test-duplicate-line-or-region-teardown)))
+
 (provide 'test-custom-line-paragraph-duplicate-line-or-region)
 ;;; test-custom-line-paragraph-duplicate-line-or-region.el ends here

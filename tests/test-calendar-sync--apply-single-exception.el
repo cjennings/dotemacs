@@ -63,5 +63,47 @@
     (let ((result (calendar-sync--apply-single-exception occ exc)))
       (should (equal "Keep" (plist-get result :summary))))))
 
+;;; Normal Cases — remaining overridable fields
+
+(ert-deftest test-calendar-sync--apply-single-exception-overrides-description ()
+  "Normal: an exception :description overrides the occurrence's."
+  (let ((occ (list :start '(2026 3 15 14 0) :description "old"))
+        (exc (list :start '(2026 3 15 14 0) :description "new")))
+    (should (equal "new"
+                   (plist-get (calendar-sync--apply-single-exception occ exc)
+                              :description)))))
+
+(ert-deftest test-calendar-sync--apply-single-exception-overrides-location ()
+  "Normal: an exception :location overrides the occurrence's."
+  (let ((occ (list :start '(2026 3 15 14 0) :location "Room A"))
+        (exc (list :start '(2026 3 15 14 0) :location "Room B")))
+    (should (equal "Room B"
+                   (plist-get (calendar-sync--apply-single-exception occ exc)
+                              :location)))))
+
+(ert-deftest test-calendar-sync--apply-single-exception-overrides-attendees ()
+  "Normal: an exception :attendees overrides the occurrence's."
+  (let ((occ (list :start '(2026 3 15 14 0) :attendees '("a")))
+        (exc (list :start '(2026 3 15 14 0) :attendees '("b" "c"))))
+    (should (equal '("b" "c")
+                   (plist-get (calendar-sync--apply-single-exception occ exc)
+                              :attendees)))))
+
+(ert-deftest test-calendar-sync--apply-single-exception-overrides-organizer ()
+  "Normal: an exception :organizer overrides the occurrence's."
+  (let ((occ (list :start '(2026 3 15 14 0) :organizer "old@x"))
+        (exc (list :start '(2026 3 15 14 0) :organizer "new@x")))
+    (should (equal "new@x"
+                   (plist-get (calendar-sync--apply-single-exception occ exc)
+                              :organizer)))))
+
+(ert-deftest test-calendar-sync--apply-single-exception-overrides-url ()
+  "Normal: an exception :url overrides the occurrence's."
+  (let ((occ (list :start '(2026 3 15 14 0) :url "http://old"))
+        (exc (list :start '(2026 3 15 14 0) :url "http://new")))
+    (should (equal "http://new"
+                   (plist-get (calendar-sync--apply-single-exception occ exc)
+                              :url)))))
+
 (provide 'test-calendar-sync--apply-single-exception)
 ;;; test-calendar-sync--apply-single-exception.el ends here

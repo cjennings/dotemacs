@@ -55,5 +55,28 @@
   "Truncated datetime returns nil."
   (should (null (calendar-sync--parse-timestamp "2026031"))))
 
+;;; Boundary / Error — second capture, TZID fallback, leap day
+
+(ert-deftest test-calendar-sync--parse-timestamp-utc-passes-nonzero-seconds ()
+  "Boundary: the seconds field is captured and passed to the UTC converter."
+  (cl-letf (((symbol-function 'calendar-sync--convert-utc-to-local)
+             (lambda (y mo d h mi s) (list 'utc y mo d h mi s))))
+    (should (equal (calendar-sync--parse-timestamp "20260315T180045Z")
+                   '(utc 2026 3 15 18 0 45)))))
+
+(ert-deftest test-calendar-sync--parse-timestamp-tzid-fallback-on-failure ()
+  "Error: when TZID conversion fails, the raw 5-tuple is returned."
+  (cl-letf (((symbol-function 'calendar-sync--convert-tz-to-local)
+             (lambda (&rest _) nil)))
+    (should (equal (calendar-sync--parse-timestamp "20260315T180000" "Fake/Zone")
+                   '(2026 3 15 18 0)))))
+
+(ert-deftest test-calendar-sync--parse-timestamp-leap-day-components ()
+  "Boundary: a valid leap day (2024-02-29) is parsed into its components."
+  (cl-letf (((symbol-function 'calendar-sync--convert-utc-to-local)
+             (lambda (y mo d h mi s) (list y mo d h mi s))))
+    (should (equal (calendar-sync--parse-timestamp "20240229T120000Z")
+                   '(2024 2 29 12 0 0)))))
+
 (provide 'test-calendar-sync--parse-timestamp)
 ;;; test-calendar-sync--parse-timestamp.el ends here

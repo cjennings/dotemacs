@@ -74,5 +74,30 @@ contents primitives."
             ((symbol-function 'file-symlink-p) (lambda (_) nil)))
     (should-not (cj/detect-system-timezone))))
 
+(ert-deftest test-host-environment-detect-tz-symlink-target-extracts-zone ()
+  "Boundary: with methods 1-3 nil, a /etc/localtime symlink into zoneinfo
+yields the zone after the /zoneinfo/ segment."
+  (cl-letf (((symbol-function 'cj/match-localtime-to-zoneinfo)
+             (lambda () nil))
+            ((symbol-function 'getenv) (lambda (_) nil))
+            ((symbol-function 'file-exists-p) (lambda (_) nil))
+            ((symbol-function 'file-symlink-p)
+             (lambda (path) (string= path "/etc/localtime")))
+            ((symbol-function 'file-truename)
+             (lambda (_) "/usr/share/zoneinfo/America/Denver")))
+    (should (equal (cj/detect-system-timezone) "America/Denver"))))
+
+(ert-deftest test-host-environment-detect-tz-symlink-without-zoneinfo-is-nil ()
+  "Error: a symlink target with no /zoneinfo/ segment yields nil."
+  (cl-letf (((symbol-function 'cj/match-localtime-to-zoneinfo)
+             (lambda () nil))
+            ((symbol-function 'getenv) (lambda (_) nil))
+            ((symbol-function 'file-exists-p) (lambda (_) nil))
+            ((symbol-function 'file-symlink-p)
+             (lambda (path) (string= path "/etc/localtime")))
+            ((symbol-function 'file-truename)
+             (lambda (_) "/var/lib/elsewhere/localtime")))
+    (should-not (cj/detect-system-timezone))))
+
 (provide 'test-host-environment--detect-system-timezone)
 ;;; test-host-environment--detect-system-timezone.el ends here

@@ -120,5 +120,48 @@ The whole point of the split — a bare require must not touch the filesystem."
           (should (eq (nth 1 warn-args) :error)))
       (delete-directory dir t))))
 
+;;; verify-or-create no-op branches (target already present)
+
+(ert-deftest test-user-constants-verify-dir-existing-is-noop ()
+  "Boundary: an existing directory is a no-op — make-directory is not called."
+  (test-user-constants--load)
+  (let ((dir (make-temp-file "uc-exdir-" t)))
+    (unwind-protect
+        (cl-letf (((symbol-function 'make-directory)
+                   (lambda (&rest _) (error "should not create an existing dir"))))
+          (cj/verify-or-create-dir dir)   ; must not error
+          (should (file-directory-p dir)))
+      (delete-directory dir t))))
+
+(ert-deftest test-user-constants-verify-file-existing-is-noop ()
+  "Boundary: an existing file is left untouched — write-region is not called."
+  (test-user-constants--load)
+  (let* ((dir (make-temp-file "uc-exfile-" t))
+         (file (expand-file-name "keep.org" dir)))
+    (unwind-protect
+        (progn
+          (with-temp-file file (insert "original"))
+          (cl-letf (((symbol-function 'write-region)
+                     (lambda (&rest _) (error "should not overwrite an existing file"))))
+            (cj/verify-or-create-file file)
+            (should (equal (with-temp-buffer
+                             (insert-file-contents file) (buffer-string))
+                           "original"))))
+      (delete-directory dir t))))
+
+(ert-deftest test-user-constants-verify-file-optional-failure-logs ()
+  "Error: an optional file failure is logged, never warned or signalled."
+  (test-user-constants--load)
+  (let ((dir (make-temp-file "uc-optfile-" t))
+        (warned nil) (messaged nil))
+    (unwind-protect
+        (cl-letf (((symbol-function 'write-region) (lambda (&rest _) (error "boom")))
+                  ((symbol-function 'display-warning) (lambda (&rest _) (setq warned t)))
+                  ((symbol-function 'message) (lambda (&rest _) (setq messaged t))))
+          (cj/verify-or-create-file (expand-file-name "optional.org" dir))
+          (should messaged)
+          (should-not warned))
+      (delete-directory dir t))))
+
 (provide 'test-user-constants)
 ;;; test-user-constants.el ends here
