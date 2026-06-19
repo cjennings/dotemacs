@@ -371,7 +371,11 @@ def main() -> None:
 A defface form is self-contained, so registering a face this way avoids
 loading the whole package (and its dependencies / side effects), which in
 batch -Q is fragile: a missing dependency or mid-load error would silently
-drop every face in the file. Each form is evaluated independently."
+drop every face in the file. Each form is evaluated independently.
+
+Catch any error from `read', not just `end-of-file': a reader-level error
+(unrecognized syntax) otherwise propagates out and aborts the whole pass,
+dropping every face in every later file. Stop reading this file instead."
   (when (file-readable-p file)
     (with-temp-buffer
       (insert-file-contents file)
@@ -381,7 +385,7 @@ drop every face in the file. Each form is evaluated independently."
             (let ((form (read (current-buffer))))
               (when (and (consp form) (eq (car form) 'defface))
                 (ignore-errors (eval form t)))))
-        (end-of-file nil)))))
+        (error nil)))))
 ;; Pass 1: best-effort full load. Registers faces that are defined by a macro
 ;; or loop rather than a literal defface (e.g. rainbow-delimiters depth faces,
 ;; markdown header faces), which pass 2 cannot see. Failures are swallowed.
