@@ -71,6 +71,17 @@ independently is not possible without clobbering types.")
   "Non-nil when S is a \"#rrggbb\" hex color string."
   (and (stringp s) (string-match-p "\\`#[0-9a-fA-F]\\{6\\}\\'" s)))
 
+(defun build-theme/--obj-get (obj key)
+  "Value of KEY in alist OBJ, or nil."
+  (cdr (assq key obj)))
+
+(defun build-theme/--inherit-symbol (value)
+  "Coerce an inherit VALUE (a face-name string, symbol, or nil) to a symbol."
+  (cond ((null value) nil)
+        ((symbolp value) value)
+        ((stringp value) (intern value))
+        (t nil)))
+
 (defun build-theme/--box (box)
   "Convert a box spec alist (style/color/width) to an Emacs `:box' value, or nil.
 STYLE is \"line\", \"released\", or \"pressed\"; WIDTH defaults to 1; COLOR (a hex
@@ -88,23 +99,72 @@ unset."
                                     (list :line-width width)))
             (t nil)))))
 
-(defun build-theme/--attrs (inherit fg bg bold italic underline strike height &optional box)
-  "Build a face-attribute plist from the given fields, in canonical order.
-INHERIT is a face symbol or nil.  FG and BG are hex strings or nil.  BOLD,
-ITALIC, UNDERLINE, and STRIKE are booleans.  HEIGHT is a float multiplier; 1.0
-(or nil) is omitted as the default.  BOX is a box spec alist or nil.  Only set
-attributes are written, so a fully-nil face yields an empty plist."
-  (let ((plist nil) (bx (build-theme/--box box)))
-    (when bx (setq plist (list :box bx)))
-    (when (and height (numberp height) (/= height 1.0))
-      (setq plist (append (list :height height) plist)))
-    (when strike (setq plist (append (list :strike-through t) plist)))
-    (when underline (setq plist (append (list :underline t) plist)))
-    (when italic (setq plist (append (list :slant 'italic) plist)))
-    (when bold (setq plist (append (list :weight 'bold) plist)))
-    (when bg (setq plist (append (list :background bg) plist)))
-    (when fg (setq plist (append (list :foreground fg) plist)))
-    (when inherit (setq plist (append (list :inherit inherit) plist)))
+(defun build-theme/--weight (obj)
+  "Weight symbol for OBJ: explicit `weight' string, else the legacy `bold' flag."
+  (let ((w (build-theme/--obj-get obj 'weight)))
+    (cond ((and (stringp w) (> (length w) 0)) (intern w))
+          ((build-theme/--obj-get obj 'bold) 'bold))))
+
+(defun build-theme/--slant (obj)
+  "Slant symbol for OBJ: explicit `slant' string, else the legacy `italic' flag."
+  (let ((s (build-theme/--obj-get obj 'slant)))
+    (cond ((and (stringp s) (> (length s) 0)) (intern s))
+          ((build-theme/--obj-get obj 'italic) 'italic))))
+
+(defun build-theme/--line-attr (val)
+  "Coerce an overline/strike-through VAL to an Emacs attribute value.
+nil and t pass through; a {color: C} alist becomes C, or t when COLOR is unset.
+Tolerates the legacy boolean form."
+  (cond ((null val) nil)
+        ((eq val t) t)
+        ((consp val) (or (build-theme/--obj-get val 'color) t))
+        (t t)))
+
+(defun build-theme/--underline (obj)
+  "Underline attribute value for OBJ.
+nil when unset.  t is a plain line in the face color.  A color or wave style
+yields a (:color C :style S) plist.  Tolerates the legacy boolean form."
+  (let ((u (build-theme/--obj-get obj 'underline)))
+    (cond ((null u) nil)
+          ((eq u t) t)
+          ((consp u)
+           (let* ((color (build-theme/--obj-get u 'color))
+                  (style (build-theme/--obj-get u 'style))
+                  (wave  (and (stringp style) (not (equal style "line")) (intern style))))
+             (cond ((and color wave) (list :color color :style wave))
+                   (color            (list :color color))
+                   (wave             (list :style wave))
+                   (t                t))))
+          (t t))))
+
+(defun build-theme/--attrs (obj)
+  "Build a face-attribute plist from face-spec alist OBJ, in canonical order.
+Reads the full attribute model -- inherit, family, fg/bg, distant-foreground,
+weight, slant, height, underline, overline, strike-through, box, inverse-video,
+extend -- and tolerates the older boolean bold/italic/underline/strike fields.
+Only attributes that are set appear, so a blank face yields nil."
+  (let* ((height (build-theme/--obj-get obj 'height))
+         (family (build-theme/--obj-get obj 'family))
+         (pairs
+          (list
+           (cons :inherit            (build-theme/--inherit-symbol (build-theme/--obj-get obj 'inherit)))
+           (cons :family             (and (stringp family) (> (length family) 0) family))
+           (cons :foreground         (build-theme/--obj-get obj 'fg))
+           (cons :background         (build-theme/--obj-get obj 'bg))
+           (cons :distant-foreground (build-theme/--obj-get obj 'distant-fg))
+           (cons :weight             (build-theme/--weight obj))
+           (cons :slant              (build-theme/--slant obj))
+           (cons :height             (and (numberp height) (/= height 1.0) height))
+           (cons :underline          (build-theme/--underline obj))
+           (cons :overline           (build-theme/--line-attr (build-theme/--obj-get obj 'overline)))
+           (cons :strike-through     (build-theme/--line-attr (build-theme/--obj-get obj 'strike)))
+           (cons :box                (build-theme/--box (build-theme/--obj-get obj 'box)))
+           (cons :inverse-video      (and (build-theme/--obj-get obj 'inverse) t))
+           (cons :extend             (and (build-theme/--obj-get obj 'extend) t))))
+         (plist nil))
+    (dolist (pair pairs)
+      (when (cdr pair)
+        (setq plist (nconc plist (list (car pair) (cdr pair))))))
     plist))
 
 (defun build-theme/--face-spec (face attrs)
@@ -113,17 +173,6 @@ Return nil when ATTRS is empty, so cleared faces emit nothing."
   (when attrs
     (list face (list (list t attrs)))))
 
-(defun build-theme/--obj-get (obj key)
-  "Value of KEY in alist OBJ, or nil."
-  (cdr (assq key obj)))
-
-(defun build-theme/--inherit-symbol (value)
-  "Coerce an inherit VALUE (a face-name string, symbol, or nil) to a symbol."
-  (cond ((null value) nil)
-        ((symbolp value) value)
-        ((stringp value) (intern value))
-        (t nil)))
-
 ;;; ---------------------------------------------------------------------------
 ;;; Tiers
 
@@ -131,7 +180,7 @@ Return nil when ATTRS is empty, so cleared faces emit nothing."
   "Build the `default' face spec from SYNTAX bg / p entries."
   (let ((bg (build-theme/--obj-get (build-theme/--obj-get syntax 'bg) 'fg))
         (fg (build-theme/--obj-get (build-theme/--obj-get syntax 'p) 'fg)))
-    (build-theme/--face-spec 'default (build-theme/--attrs nil fg bg nil nil nil nil nil))))
+    (build-theme/--face-spec 'default (build-theme/--attrs (list (cons 'fg fg) (cons 'bg bg))))))
 
 (defun build-theme/--syntax-face-specs (syntax)
   "Build syntax-tier face specs from SYNTAX.
@@ -143,35 +192,19 @@ Each category fans out to the font-lock faces in
              (faces (cdr pair))
              (obj (build-theme/--obj-get syntax cat)))
         (when obj
-          (let ((attrs (build-theme/--attrs nil
-                                            (build-theme/--obj-get obj 'fg)
-                                            (build-theme/--obj-get obj 'bg)
-                                            (build-theme/--obj-get obj 'bold)
-                                            (build-theme/--obj-get obj 'italic)
-                                            (build-theme/--obj-get obj 'underline)
-                                            (build-theme/--obj-get obj 'strike)
-                                            nil
-                                            (build-theme/--obj-get obj 'box))))
+          (let ((attrs (build-theme/--attrs obj)))
             (dolist (face faces)
               (when-let ((spec (build-theme/--face-spec face attrs)))
                 (push spec specs)))))))
     (nreverse specs)))
 
 (defun build-theme/--ui-face-specs (ui)
-  "Build UI-tier face specs from the UI alist (face -> {fg,bg,bold,italic})."
+  "Build UI-tier face specs from the UI alist (face -> attribute alist)."
   (let (specs)
     (dolist (entry ui)
       (let* ((face (car entry))
              (obj (cdr entry))
-             (attrs (build-theme/--attrs nil
-                                         (build-theme/--obj-get obj 'fg)
-                                         (build-theme/--obj-get obj 'bg)
-                                         (build-theme/--obj-get obj 'bold)
-                                         (build-theme/--obj-get obj 'italic)
-                                         (build-theme/--obj-get obj 'underline)
-                                         (build-theme/--obj-get obj 'strike)
-                                         nil
-                                         (build-theme/--obj-get obj 'box))))
+             (attrs (build-theme/--attrs obj)))
         (when-let ((spec (build-theme/--face-spec face attrs)))
           (push spec specs))))
     (nreverse specs)))
@@ -183,16 +216,7 @@ Each category fans out to the font-lock faces in
       (dolist (entry (cdr app))
         (let* ((face (car entry))
                (obj (cdr entry))
-               (attrs (build-theme/--attrs
-                       (build-theme/--inherit-symbol (build-theme/--obj-get obj 'inherit))
-                       (build-theme/--obj-get obj 'fg)
-                       (build-theme/--obj-get obj 'bg)
-                       (build-theme/--obj-get obj 'bold)
-                       (build-theme/--obj-get obj 'italic)
-                       (build-theme/--obj-get obj 'underline)
-                       (build-theme/--obj-get obj 'strike)
-                       (build-theme/--obj-get obj 'height)
-                       (build-theme/--obj-get obj 'box))))
+               (attrs (build-theme/--attrs obj)))
           (when-let ((spec (build-theme/--face-spec face attrs)))
             (push spec specs)))))
     (nreverse specs)))
@@ -248,8 +272,8 @@ Signal a `file-missing' error when JSON-FILE does not exist."
   "Convert JSON-FILE (a theme.json export) into a deftheme file.
 Write themes/<name>-theme.el, where <name> is JSON-FILE's basename, into
 OUT-DIR (default: the themes/ directory of this repo).  The basename names the
-theme so each export lands under its own file (sterling.json -> sterling-theme.el),
-rather than colliding on whatever the JSON's internal name field happens to be.
+theme so each export lands under its own file (sterling.json becomes
+sterling-theme.el), not the name field inside the JSON.
 Return the written path."
   (let* ((data (build-theme/--parse json-file))
          (name (file-name-base json-file))

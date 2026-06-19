@@ -95,43 +95,162 @@ drift the way Craig's downloaded exports under scripts/theme-studio/ can.")
 
 ;;; ---------------------------------------------------------------------------
 ;;; build-theme/--attrs (the core attribute builder)
+;;
+;; `--attrs' takes one face-spec alist and emits a face-attribute plist.  It
+;; reads the full attribute model and tolerates the legacy boolean
+;; bold/italic/underline/strike fields that older theme.json exports carry.
 
-(ert-deftest test-build-theme-attrs-fg-and-bold ()
-  "Normal: a foreground plus bold yields :foreground and :weight bold."
-  (should (equal (build-theme/--attrs nil "#67809c" nil t nil nil nil nil)
+;; --- Legacy boolean fields still work (back-compat with committed presets) ---
+
+(ert-deftest test-build-theme-attrs-legacy-fg-and-bold ()
+  "Normal: legacy bold flag yields :weight bold."
+  (should (equal (build-theme/--attrs '((fg . "#67809c") (bold . t)))
                  '(:foreground "#67809c" :weight bold))))
 
-(ert-deftest test-build-theme-attrs-full-ordering ()
-  "Normal: every attribute present, in canonical order."
-  (should (equal (build-theme/--attrs 'org-level-1 "#e8bd30" "#1a1714" t t t t 1.3)
-                 '(:inherit org-level-1 :foreground "#e8bd30" :background "#1a1714"
-                            :weight bold :slant italic :underline t :strike-through t :height 1.3))))
-
-(ert-deftest test-build-theme-attrs-underline-and-strike ()
-  "Normal: underline and strike yield :underline t and :strike-through t."
-  (should (equal (build-theme/--attrs nil "#67809c" nil nil nil t t nil)
-                 '(:foreground "#67809c" :underline t :strike-through t)))
-  ;; either alone
-  (should (equal (build-theme/--attrs nil nil nil nil nil t nil nil)
-                 '(:underline t)))
-  (should (equal (build-theme/--attrs nil nil nil nil nil nil t nil)
-                 '(:strike-through t))))
+(ert-deftest test-build-theme-attrs-legacy-italic-underline-strike ()
+  "Normal: legacy italic/underline/strike booleans map to their attributes."
+  (should (equal (build-theme/--attrs '((italic . t))) '(:slant italic)))
+  (should (equal (build-theme/--attrs '((underline . t))) '(:underline t)))
+  (should (equal (build-theme/--attrs '((strike . t))) '(:strike-through t))))
 
 (ert-deftest test-build-theme-attrs-empty-is-nil ()
-  "Boundary: a fully-cleared face (all nil) yields an empty plist."
-  (should (equal (build-theme/--attrs nil nil nil nil nil nil nil nil) '())))
+  "Boundary: a blank face (empty alist, or all-nil fields) yields an empty plist."
+  (should (equal (build-theme/--attrs '()) '()))
+  (should (equal (build-theme/--attrs '((fg) (bg) (bold) (italic) (underline) (strike))) '())))
 
 (ert-deftest test-build-theme-attrs-bold-false-omits-weight ()
-  "Boundary: bold false produces no :weight key (only overrides are written)."
-  (should (equal (build-theme/--attrs nil "#cdced1" nil nil nil nil nil nil)
-                 '(:foreground "#cdced1"))))
+  "Boundary: bold false (or absent) writes no :weight -- only overrides appear."
+  (should (equal (build-theme/--attrs '((fg . "#cdced1") (bold . nil)))
+                 '(:foreground "#cdced1")))
+  (should (equal (build-theme/--attrs '((fg . "#cdced1"))) '(:foreground "#cdced1"))))
 
 (ert-deftest test-build-theme-attrs-height-one-omitted ()
-  "Boundary: a height of exactly 1.0 is omitted (the default multiplier)."
-  (should (equal (build-theme/--attrs nil "#cdced1" nil nil nil nil nil 1.0)
-                 '(:foreground "#cdced1")))
-  (should (equal (build-theme/--attrs nil "#cdced1" nil nil nil nil nil 1)
-                 '(:foreground "#cdced1"))))
+  "Boundary: a height of exactly 1.0 (or integer 1) is omitted as the default."
+  (should (equal (build-theme/--attrs '((fg . "#cdced1") (height . 1.0))) '(:foreground "#cdced1")))
+  (should (equal (build-theme/--attrs '((fg . "#cdced1") (height . 1))) '(:foreground "#cdced1")))
+  (should (equal (build-theme/--attrs '((height . 1.2))) '(:height 1.2))))
+
+;; --- New attributes ---
+
+(ert-deftest test-build-theme-attrs-family ()
+  "Normal/Boundary: a non-empty family string emits :family; empty is omitted."
+  (should (equal (build-theme/--attrs '((family . "Iosevka"))) '(:family "Iosevka")))
+  (should (equal (build-theme/--attrs '((family . ""))) '()))
+  (should (equal (build-theme/--attrs '((family . nil))) '())))
+
+(ert-deftest test-build-theme-attrs-distant-foreground ()
+  "Normal: distant-fg emits :distant-foreground."
+  (should (equal (build-theme/--attrs '((distant-fg . "#ffffff")))
+                 '(:distant-foreground "#ffffff"))))
+
+(ert-deftest test-build-theme-attrs-weight-range ()
+  "Normal: an explicit weight string emits that weight symbol."
+  (should (equal (build-theme/--attrs '((weight . "light"))) '(:weight light)))
+  (should (equal (build-theme/--attrs '((weight . "semibold"))) '(:weight semibold)))
+  (should (equal (build-theme/--attrs '((weight . "heavy"))) '(:weight heavy))))
+
+(ert-deftest test-build-theme-attrs-weight-overrides-legacy-bold ()
+  "Boundary: an explicit weight wins over a legacy bold flag on the same face."
+  (should (equal (build-theme/--attrs '((weight . "light") (bold . t)))
+                 '(:weight light))))
+
+(ert-deftest test-build-theme-attrs-slant-range ()
+  "Normal: an explicit slant string emits that slant; it wins over legacy italic."
+  (should (equal (build-theme/--attrs '((slant . "oblique"))) '(:slant oblique)))
+  (should (equal (build-theme/--attrs '((slant . "normal"))) '(:slant normal)))
+  (should (equal (build-theme/--attrs '((slant . "oblique") (italic . t))) '(:slant oblique))))
+
+(ert-deftest test-build-theme-attrs-underline-object ()
+  "Normal/Boundary: the structured underline form covers line/wave and color."
+  ;; plain line in the face color collapses to t
+  (should (equal (build-theme/--attrs '((underline . ((style . "line") (color . nil)))))
+                 '(:underline t)))
+  ;; wave alone -> a :style plist
+  (should (equal (build-theme/--attrs '((underline . ((style . "wave") (color . nil)))))
+                 '(:underline (:style wave))))
+  ;; colored line -> a :color plist
+  (should (equal (build-theme/--attrs '((underline . ((style . "line") (color . "#cb6b4d")))))
+                 '(:underline (:color "#cb6b4d"))))
+  ;; colored wave -> both
+  (should (equal (build-theme/--attrs '((underline . ((style . "wave") (color . "#cb6b4d")))))
+                 '(:underline (:color "#cb6b4d" :style wave)))))
+
+(ert-deftest test-build-theme-attrs-strike-object ()
+  "Normal: structured strike emits t for no color, or the color string."
+  (should (equal (build-theme/--attrs '((strike . ((color . nil))))) '(:strike-through t)))
+  (should (equal (build-theme/--attrs '((strike . ((color . "#cb6b4d")))))
+                 '(:strike-through "#cb6b4d"))))
+
+(ert-deftest test-build-theme-attrs-overline ()
+  "Normal/Boundary: overline emits t for no color, the color otherwise, nil when unset."
+  (should (equal (build-theme/--attrs '((overline . ((color . nil))))) '(:overline t)))
+  (should (equal (build-theme/--attrs '((overline . ((color . "#a9b2bb")))))
+                 '(:overline "#a9b2bb")))
+  (should (equal (build-theme/--attrs '((overline . nil))) '())))
+
+(ert-deftest test-build-theme-attrs-inverse-and-extend ()
+  "Normal/Boundary: inverse and extend emit t when set, nothing when nil."
+  (should (equal (build-theme/--attrs '((inverse . t))) '(:inverse-video t)))
+  (should (equal (build-theme/--attrs '((extend . t))) '(:extend t)))
+  (should (equal (build-theme/--attrs '((inverse . t) (extend . t)))
+                 '(:inverse-video t :extend t)))
+  (should (equal (build-theme/--attrs '((inverse . nil) (extend . nil))) '())))
+
+(ert-deftest test-build-theme-attrs-inherit-any-tier ()
+  "Normal: inherit coerces a face-name string to a symbol (now allowed on every tier)."
+  (should (equal (build-theme/--attrs '((inherit . "shadow"))) '(:inherit shadow)))
+  (should (equal (build-theme/--attrs '((inherit . shadow))) '(:inherit shadow)))
+  (should (equal (build-theme/--attrs '((inherit . nil))) '())))
+
+(ert-deftest test-build-theme-attrs-full-ordering ()
+  "Normal: every attribute present, emitted in canonical order."
+  (should (equal (build-theme/--attrs
+                  '((inherit . "org-level-1") (family . "Iosevka")
+                    (fg . "#e8bd30") (bg . "#1a1714") (distant-fg . "#ffffff")
+                    (weight . "semibold") (slant . "italic") (height . 1.3)
+                    (underline . ((style . "wave") (color . "#cb6b4d")))
+                    (overline . ((color . "#a9b2bb")))
+                    (strike . ((color . nil)))
+                    (box . ((style . "line") (color . "#67809c")))
+                    (inverse . t) (extend . t)))
+                 '(:inherit org-level-1 :family "Iosevka"
+                   :foreground "#e8bd30" :background "#1a1714" :distant-foreground "#ffffff"
+                   :weight semibold :slant italic :height 1.3
+                   :underline (:color "#cb6b4d" :style wave) :overline "#a9b2bb"
+                   :strike-through t :box (:line-width 1 :color "#67809c")
+                   :inverse-video t :extend t))))
+
+;; --- Attribute-helper edge cases (the coercion functions in isolation) ---
+
+(ert-deftest test-build-theme-weight-helper ()
+  "Boundary: weight prefers explicit string, falls back to bold, else nil."
+  (should (eq (build-theme/--weight '((weight . "bold"))) 'bold))
+  (should (eq (build-theme/--weight '((weight . "light") (bold . t))) 'light))
+  (should (eq (build-theme/--weight '((bold . t))) 'bold))
+  (should (null (build-theme/--weight '((weight . "") (bold . nil)))))
+  (should (null (build-theme/--weight '()))))
+
+(ert-deftest test-build-theme-slant-helper ()
+  "Boundary: slant prefers explicit string, falls back to italic, else nil."
+  (should (eq (build-theme/--slant '((slant . "oblique"))) 'oblique))
+  (should (eq (build-theme/--slant '((italic . t))) 'italic))
+  (should (null (build-theme/--slant '((slant . "")))))
+  (should (null (build-theme/--slant '()))))
+
+(ert-deftest test-build-theme-underline-helper ()
+  "Boundary: underline coercion across nil / legacy t / structured forms."
+  (should (null (build-theme/--underline '((underline . nil)))))
+  (should (eq (build-theme/--underline '((underline . t))) t))
+  (should (eq (build-theme/--underline '((underline . ((style . "line") (color . nil))))) t))
+  (should (equal (build-theme/--underline '((underline . ((style . "wave"))))) '(:style wave)))
+  (should (equal (build-theme/--underline '((underline . ((color . "#aa0000"))))) '(:color "#aa0000"))))
+
+(ert-deftest test-build-theme-line-attr-helper ()
+  "Boundary: the overline/strike coercion: nil / t / {color} forms."
+  (should (null (build-theme/--line-attr nil)))
+  (should (eq (build-theme/--line-attr t) t))
+  (should (eq (build-theme/--line-attr '((color . nil))) t))
+  (should (equal (build-theme/--line-attr '((color . "#abcdef"))) "#abcdef")))
 
 ;;; ---------------------------------------------------------------------------
 ;;; build-theme/--face-spec (skips empty faces)
@@ -354,6 +473,47 @@ parse -> spec -> file -> face pipeline preserves the designed contrast."
                     (bg (face-attribute 'default :background nil t)))
                 (should (>= (test-build-theme--contrast fg bg) 4.5))))
           (disable-theme 'dupre-fixture))))))
+
+(ert-deftest test-build-theme-convert-file-new-attributes-round-trip ()
+  "Integration: the new attribute model survives parse -> spec -> file -> face.
+Components integrated:
+- build-theme/convert-file (entry point, real)
+- json parsing of the inline fixture (real)
+- custom-theme-set-faces / load-theme / face-attribute (real)
+Exercises extend, structured underline (wave + color), overline, inverse-video,
+distant-foreground, family, and the weight/slant ranges across the UI and
+package tiers."
+  (test-build-theme--with-sandbox out
+    (let* ((json "{\"name\":\"newattrs\",\"palette\":[[\"#000000\",\"ground\"]],
+ \"syntax\":{\"bg\":{\"fg\":\"#000000\"},\"p\":{\"fg\":\"#ffffff\"}},
+ \"ui\":{
+   \"region\":{\"bg\":\"#264364\",\"extend\":true},
+   \"highlight\":{\"fg\":\"#eddba7\",\"underline\":{\"style\":\"wave\",\"color\":\"#cb6b4d\"},\"overline\":{\"color\":\"#a9b2bb\"}},
+   \"secondary-selection\":{\"bg\":\"#333333\",\"inverse\":true,\"distant-fg\":\"#ffffff\"}
+ },
+ \"packages\":{
+   \"misc\":{
+     \"shadow\":{\"fg\":\"#cdced1\",\"family\":\"Iosevka\",\"weight\":\"light\",\"slant\":\"oblique\",\"source\":\"user\"}
+   }
+ }}")
+           (in (expand-file-name "newattrs.json" out)))
+      (with-temp-file in (insert json))
+      (build-theme/convert-file in out)
+      (let ((custom-theme-load-path (cons out custom-theme-load-path))
+            (load-path (cons out load-path)))
+        (unwind-protect
+            (progn
+              (load-theme 'newattrs t)
+              (should (eq (face-attribute 'region :extend nil t) t))
+              (should (equal (face-attribute 'highlight :underline nil t)
+                             '(:color "#cb6b4d" :style wave)))
+              (should (string= (face-attribute 'highlight :overline nil t) "#a9b2bb"))
+              (should (eq (face-attribute 'secondary-selection :inverse-video nil t) t))
+              (should (string= (face-attribute 'secondary-selection :distant-foreground nil t) "#ffffff"))
+              (should (string= (face-attribute 'shadow :family nil t) "Iosevka"))
+              (should (eq (face-attribute 'shadow :weight nil t) 'light))
+              (should (eq (face-attribute 'shadow :slant nil t) 'oblique)))
+          (disable-theme 'newattrs))))))
 
 (provide 'test-build-theme)
 ;;; test-build-theme.el ends here
