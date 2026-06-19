@@ -9,7 +9,7 @@ import { fileURLToPath } from 'node:url';
 import {
   nameToHex, migrateLegacyFace, normalizePkgFace, buildPkgmap, packagesForExport, mergePackagesInto, effResolve, resolveSyntaxFg, resolveUiAttr, dropdownRowTextColor, paletteOptionList, spanNeighborHex, slugify,
   clearPalettePlan, deletePaletteColumnPlan, groundColumnMembersFromPalette, areAllLocked, lockToggleLabel, toggleLockSet,
-  galleryModel, appViewKeysSorted, faceBoxNonDefaults, stepViewIndex,
+  galleryModel, appViewKeysSorted, faceBoxNonDefaults, overflowNonDefault, stepViewIndex,
 } from './app-core.js';
 import { planPaletteGenerator, entriesForGeneratedColumn } from './palette-generator-core.js';
 import { oklch2hex, deltaE } from './colormath.js';
@@ -957,11 +957,36 @@ test('faceBoxNonDefaults: a set fg over an empty default flags fg', () => {
   assert.equal(faceBoxNonDefaults({ fg: '#8ea85e' }, {}).fg, true);
   assert.equal(faceBoxNonDefaults({}, {}).fg, false);
 });
-test('faceBoxNonDefaults: any style attr differing flags the style box once', () => {
+test('faceBoxNonDefaults: an in-row style attr differing flags the style box once', () => {
   assert.equal(faceBoxNonDefaults({ weight: 'bold' }, { weight: null }).style, true);
   assert.equal(faceBoxNonDefaults({ slant: 'italic' }, {}).style, true);
-  assert.equal(faceBoxNonDefaults({ underline: { style: 'line', color: null } }, {}).style, true);
+  assert.equal(faceBoxNonDefaults({ strike: { color: null } }, {}).style, true);
+  // underline lives in the expander now, so it does not flag the in-row style box
+  assert.equal(faceBoxNonDefaults({ underline: { style: 'line', color: null } }, {}).style, false);
   assert.equal(faceBoxNonDefaults({ weight: 'bold' }, { weight: 'bold' }).style, false);
+});
+
+test('overflowNonDefault: Normal — flags an expander attr that differs from default', () => {
+  assert.equal(overflowNonDefault({ family: 'Iosevka' }, {}, false), true);
+  assert.equal(overflowNonDefault({ underline: { style: 'wave', color: null } }, {}, false), true);
+  assert.equal(overflowNonDefault({ inverse: true }, {}, false), true);
+  assert.equal(overflowNonDefault({ 'distant-fg': '#222222' }, {}, false), true);
+});
+
+test('overflowNonDefault: Boundary — matching attrs and in-row attrs do not flag', () => {
+  // identical overflow attrs -> no flag
+  const f = { family: 'Iosevka', overline: { color: '#abc' }, inverse: true };
+  assert.equal(overflowNonDefault(f, f, false), false);
+  // weight/slant/strike are in-row, not the expander's concern
+  assert.equal(overflowNonDefault({ weight: 'bold', slant: 'italic', strike: { color: null } }, {}, false), false);
+});
+
+test('overflowNonDefault: Boundary — inherit/height only count when shown in the expander', () => {
+  // packages keep inherit/height inline (showInheritHeight false) -> not flagged here
+  assert.equal(overflowNonDefault({ inherit: 'shadow', height: 1.4 }, {}, false), false);
+  // ui/syntax expose them in the expander (showInheritHeight true) -> flagged
+  assert.equal(overflowNonDefault({ inherit: 'shadow' }, {}, true), true);
+  assert.equal(overflowNonDefault({ height: 1.4 }, {}, true), true);
 });
 test('faceBoxNonDefaults: inherit and box differences are flagged', () => {
   assert.equal(faceBoxNonDefaults({ inherit: 'bold' }, { inherit: null }).inherit, true);

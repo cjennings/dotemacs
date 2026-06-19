@@ -159,9 +159,6 @@ if(location.hash==='#mocktest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c
  A(uiWeight&&uiWeight.value==='','ui weight select starts empty when model is unset');
  uiWeight.value='bold';uiWeight.dispatchEvent(new Event('change'));
  A(UIMAP['region'].weight==='bold','ui weight select writes the model');
- const uiUnder=regionRow.querySelector('.boxctl .boxbtn[data-style="wave"]');
- uiUnder.click();
- A(UIMAP['region'].underline&&UIMAP['region'].underline.style==='wave','ui underline control writes a wavy underline object');
  const app=curApp(),face=APPS[app].faces[0][0];PKGMAP[app][face].weight=null;buildPkgTable();
  const pkgWeight=()=>document.querySelector('#pkgbody tr[data-face="'+face+'"] select.stylesel');
  A(pkgWeight()&&pkgWeight().value==='','pkg weight select starts empty when model is unset');
@@ -843,7 +840,7 @@ if(location.hash==='#styletest'){let ok=true;const notes=[];const A=(c,n)=>{if(!
  A(sels.length===2,'weight-and-slant-selectors-present');
  A(sels[0]&&[...sels[0].options].some(o=>o.value==='semibold'),'weight-selector-offers-the-curated-range');
  A(sels[1]&&[...sels[1].options].some(o=>o.value==='oblique'),'slant-selector-offers-oblique');
- A(cluster&&cluster.querySelectorAll('.boxctl').length===2,'underline-and-strike-controls-present');
+ A(cluster&&cluster.querySelectorAll('.boxctl').length===1,'strike-control-in-row-underline-moved-to-expander');
  document.title='STYLETEST '+(ok?'PASS':'FAIL');
  const d=document.createElement('div');d.id='styletest';d.textContent='STYLETEST '+(ok?'PASS':'FAIL')+(notes.length?' fails='+notes.join(','):'');document.body.appendChild(d);}
 // Expander gate (open with #expandtest): the per-row "more" toggle reveals a
@@ -859,10 +856,15 @@ if(location.hash==='#expandtest'){let ok=true;const notes=[];const A=(c,n)=>{if(
  btn&&btn.click();
  A(detail&&detail.style.display!=='none','toggle-reveals-detail-row');
  const ed=detail&&detail.querySelector('.detailedit');
- A(ed&&ed.querySelectorAll('.detailfield').length>=5,'detail-editor-has-the-overflow-fields');
+ A(ed&&ed.querySelectorAll('.detailfield').length>=6,'detail-editor-has-the-overflow-fields');
  // ui faces also expose inherit + height in the expander
  A(ed&&ed.querySelector('select.detailsel'),'ui-expander-offers-inherit');
  A(ed&&ed.querySelector('input.hstep'),'ui-expander-offers-height');
+ // underline moved into the expander; its wave style writes a styled object
+ const uiUnder=ed&&ed.querySelector('.boxctl .boxbtn[data-style="wave"]');
+ A(!!uiUnder,'underline-control-in-expander');
+ uiUnder&&uiUnder.click();
+ A(UIMAP['region'].underline&&UIMAP['region'].underline.style==='wave','underline-control-writes-a-wavy-object');
  // family text input writes the model
  const fam=ed&&ed.querySelector('input.detailinput');
  if(fam){fam.value='Iosevka';fam.dispatchEvent(new Event('change'));}
@@ -871,6 +873,14 @@ if(location.hash==='#expandtest'){let ok=true;const notes=[];const A=(c,n)=>{if(
  const inv=ed&&ed.querySelector('input.detailcheck');
  if(inv){inv.checked=true;inv.dispatchEvent(new Event('change'));}
  A(UIMAP['region'].inverse===true,'inverse-checkbox-writes-the-model');
+ // a hidden non-default attribute flags the collapsed toggle (reset region to its
+ // default first, since the edits above left several overflow attrs changed)
+ UIMAP['region']=JSON.parse(JSON.stringify(DEFAULT_UIMAP['region']));buildUITable();
+ const cleanbtn=document.querySelector('#uibody tr[data-face="region"] .exptoggle');
+ A(cleanbtn&&!cleanbtn.classList.contains('exp-nd'),'toggle-unflagged-when-overflow-matches-default');
+ UIMAP['region']=JSON.parse(JSON.stringify(DEFAULT_UIMAP['region']));UIMAP['region'].overline={color:null};buildUITable();
+ const ndbtn=document.querySelector('#uibody tr[data-face="region"] .exptoggle');
+ A(ndbtn&&ndbtn.classList.contains('exp-nd'),'collapsed-toggle-flags-a-hidden-non-default-attr');
  // package expander omits inherit/height (they have inline columns)
  buildPkgTable();const pface=APPS[curApp()].faces[0][0];
  const pdetail=document.querySelector('#pkgbody tr.detailrow[data-detail-for="'+pface+'"]');

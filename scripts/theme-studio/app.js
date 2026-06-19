@@ -166,12 +166,14 @@ function mkUnderlineControl(get,set,opts={}){
   return mkLineStyleControl([['','no underline',''],['line','underline','_'],['wave','wavy underline','~']],get,set,Object.assign({styled:true},opts));}
 function mkStrikeControl(get,set,opts={}){
   return mkLineStyleControl([['','no strike',''],['on','strike-through','S']],get,set,Object.assign({styled:false},opts));}
+// In-row style controls: weight + slant selectors and a strike control. The
+// underline control lives in the per-row expander (it carries the wave/color
+// detail), keeping the row compact.
 function mkStyleControls(face,onChange,opts={}){
   const w=mkEnumSelect(WEIGHT_OPTS,()=>face.weight,v=>{face.weight=v;onChange();},'font weight');
   const s=mkEnumSelect(SLANT_OPTS,()=>face.slant,v=>{face.slant=v;onChange();},'font slant');
-  const u=mkUnderlineControl(()=>face.underline,v=>{face.underline=v;onChange();},opts);
   const k=mkStrikeControl(()=>face.strike,v=>{face.strike=v;onChange();},opts);
-  return [w,s,u,k];}
+  return [w,s,k];}
 function mkOverlineControl(get,set,opts={}){
   return mkLineStyleControl([['','no overline',''],['on','overline','O']],get,set,Object.assign({styled:false},opts));}
 function mkCheck(get,set){const c=document.createElement('input');c.type='checkbox';c.className='detailcheck';c.checked=!!get();c.onchange=()=>set(c.checked);return c;}
@@ -187,6 +189,7 @@ function mkDetailEditor(face,onChange,opts={}){
   add('distant fg',df);
   const fam=document.createElement('input');fam.type='text';fam.className='detailinput';fam.placeholder='font family';fam.value=face.family||'';fam.onchange=()=>{face.family=fam.value.trim()||null;onChange();};
   add('family',fam);
+  add('underline',mkUnderlineControl(()=>face.underline,v=>{face.underline=v;onChange();},opts));
   add('overline',mkOverlineControl(()=>face.overline,v=>{face.overline=v;onChange();},opts));
   add('inverse',mkCheck(()=>face.inverse,v=>{face.inverse=v;onChange();}));
   add('extend',mkCheck(()=>face.extend,v=>{face.extend=v;onChange();}));
@@ -203,10 +206,20 @@ function mkDetailEditor(face,onChange,opts={}){
 // right after the main row.
 function mkExpander(face,colspan,onChange,opts={}){
   const detail=document.createElement('tr');detail.className='detailrow';detail.style.display='none';
-  const td=document.createElement('td');td.colSpan=colspan;const {el,locks}=mkDetailEditor(face,onChange,opts);td.appendChild(el);detail.appendChild(td);
-  const btn=document.createElement('button');btn.className='exptoggle';btn.textContent='⋯';btn.title='more attributes';
+  const btn=document.createElement('button');btn.className='exptoggle';btn.textContent='⋯';
+  // Flag the toggle when collapsed and at least one hidden attribute differs from
+  // the default, so a non-default attribute is never invisible. ndCheck re-runs
+  // after every edit (for tiers whose onChange does not rebuild the row).
+  const ndCheck=opts.ndCheck||(()=>false);
+  const refreshNd=()=>{const nd=ndCheck();btn.classList.toggle('exp-nd',nd);btn.title=nd?'more attributes (some differ from default)':'more attributes';};
+  const wrapped=()=>{onChange();refreshNd();};
+  const td=document.createElement('td');td.colSpan=colspan;const {el,locks}=mkDetailEditor(face,wrapped,opts);td.appendChild(el);detail.appendChild(td);
   btn.onclick=()=>{const open=detail.style.display==='none';detail.style.display=open?'':'none';btn.classList.toggle('on',open);};
+  refreshNd();
   return {btn,detail,locks};}
+// Column count for a table's detail-row colspan, read from its header so the
+// expander never hardcodes a width that drifts when a column is added.
+function tableColCount(tableId){const h=document.querySelector('#'+tableId+' thead tr');return h?h.cells.length:1;}
 // Apply a batch action to every editable row in a tier. keyFn maps a row entry to
 // its lock key, or null to skip the row entirely (syntax bg and the default fg);
 // resetFn does the actual clearing. Locked rows are left untouched.
@@ -281,7 +294,7 @@ function buildTable(){
     const c0=document.createElement('td');c0.appendChild(dd);
     const cB=document.createElement('td');cB.appendChild(bgd);
     const cX=document.createElement('td');const boxCtl=mkBoxControl(()=>syntaxFace(kind).box,b=>{syntaxFace(kind).box=b;styleEx();renderCode();},{compact:true});cX.appendChild(boxCtl);
-    const exp=mkExpander(syntaxFace(kind),8,()=>{styleEx();renderCode();},{showInheritHeight:true,inheritOptions:[''].concat(BASE_INHERITS),defaultHex:rowFg()});
+    const exp=mkExpander(syntaxFace(kind),tableColCount('legtable'),()=>{styleEx();renderCode();},{showInheritHeight:true,inheritOptions:[''].concat(BASE_INHERITS),defaultHex:rowFg(),ndCheck:()=>overflowNonDefault(syntaxFace(kind),DEFAULT_SYNTAX[kind],true)});
     exp.detail.dataset.detailFor=kind;
     const lkTd=mkLockCell(kind,[dd,bgd,...stCtls,boxCtl,...exp.locks]);
     const c2=document.createElement('td');c2.className='cat';c2.appendChild(exp.btn);
@@ -623,7 +636,7 @@ function buildPkgTable(){
     const nd=faceBoxNonDefaults(
       {fg:nameToHex(f.fg,PALETTE),bg:nameToHex(f.bg,PALETTE),weight:f.weight,slant:f.slant,underline:f.underline,strike:f.strike,inherit:f.inherit,height:f.height,box:f.box},
       {fg:nameToHex(def.fg,PALETTE),bg:nameToHex(def.bg,PALETTE),weight:def.weight,slant:def.slant,underline:def.underline,strike:def.strike,inherit:def.inherit,height:def.height,box:def.box});
-    const exp=mkExpander(f,9,()=>{f.source='user';pkgChanged();},{defaultHex:effFg(pkgEffFg(app,face))});
+    const exp=mkExpander(f,tableColCount('pkgtable'),()=>{f.source='user';pkgChanged();},{defaultHex:effFg(pkgEffFg(app,face)),ndCheck:()=>overflowNonDefault(f,def,false)});
     exp.detail.dataset.detailFor=face;
     const c0=document.createElement('td');c0.className='cat';c0.title=face;c0.appendChild(exp.btn);
     const c0lbl=document.createElement('span');c0lbl.textContent=' '+label;c0lbl.style.cursor='pointer';c0lbl.onclick=()=>flashPkgPreview(face);c0.appendChild(c0lbl);
@@ -1174,7 +1187,7 @@ function buildUITable(){
   const tb=document.getElementById('uibody');tb.innerHTML='';
   for(const [face,label,ex] of UI_FACES){
     const tr=document.createElement('tr');tr.dataset.face=face;
-    const exp=mkExpander(UIMAP[face],8,()=>{paintUI(face);buildMockFrame();},{showInheritHeight:true,inheritOptions:[''].concat(BASE_INHERITS),defaultHex:effFg(UIMAP[face].fg)});
+    const exp=mkExpander(UIMAP[face],tableColCount('uitable'),()=>{paintUI(face);buildMockFrame();},{showInheritHeight:true,inheritOptions:[''].concat(BASE_INHERITS),defaultHex:effFg(UIMAP[face].fg),ndCheck:()=>overflowNonDefault(UIMAP[face],DEFAULT_UIMAP[face],true)});
     exp.detail.dataset.detailFor=face;
     const c0=document.createElement('td');c0.className='cat';c0.appendChild(exp.btn);
     const c0lbl=document.createElement('span');c0lbl.textContent=' '+label;c0lbl.style.cursor='pointer';c0lbl.title='flash this face in the live preview';c0lbl.onclick=()=>flashUiPreview(face);c0.appendChild(c0lbl);

@@ -451,11 +451,29 @@ function faceBoxNonDefaults(cur,def){
   return {
     fg: !eq(cur.fg,def.fg),
     bg: !eq(cur.bg,def.bg),
-    style: ['weight','slant','underline','strike'].some(a=>JSON.stringify(cur[a]??null)!==JSON.stringify(def[a]??null)),
+    style: ['weight','slant','strike'].some(a=>JSON.stringify(cur[a]??null)!==JSON.stringify(def[a]??null)),
     inherit: !eq(cur.inherit,def.inherit),
     height: (cur.height||1)!==(def.height||1),
     box: JSON.stringify(cur.box??null)!==JSON.stringify(def.box??null),
   };
 }
 
-export { nameToHex, migrateLegacyFace, normalizePkgFace, buildPkgmap, packagesForExport, mergePackagesInto, effResolve, resolveSyntaxFg, resolveUiAttr, dropdownRowTextColor, paletteOptionList, galleryModel, appViewKeysSorted, faceBoxNonDefaults, stepViewIndex, spanNeighborHex, slugify, fgSetFor, floor, lMax, COVERED_FACES, columnsFromPalette, usedPaletteHexes, paletteUsages, regenColumn, rankByLightness, stepRepointPlan, sortColumns, sortColumnMembers, groundRoleOfEntry, groundColumnMembersFromPalette, clearPalettePlan, deletePaletteColumnPlan, areAllLocked, lockToggleLabel, toggleLockSet };
+// True when the per-row expander hides at least one attribute that differs from
+// the face's default, so the collapsed toggle can flag it. Covers exactly the
+// attributes the expander holds: distant-fg, family, underline, overline,
+// inverse, extend, and (for ui/syntax) inherit + height. The in-row controls
+// (fg/bg/weight/slant/strike/box) have their own cell markers and are excluded.
+function overflowNonDefault(cur,def,showInheritHeight){
+  cur=cur||{}; def=def||{};
+  const eq=(a,b)=>JSON.stringify(a??null)===JSON.stringify(b??null);
+  if(['distant-fg','family','underline','overline'].some(a=>!eq(cur[a],def[a])))return true;
+  if((!!cur.inverse)!==(!!def.inverse))return true;
+  if((!!cur.extend)!==(!!def.extend))return true;
+  if(showInheritHeight){
+    if(!eq(cur.inherit,def.inherit))return true;
+    if((cur.height||1)!==(def.height||1))return true;
+  }
+  return false;
+}
+
+export { nameToHex, migrateLegacyFace, normalizePkgFace, buildPkgmap, packagesForExport, mergePackagesInto, effResolve, resolveSyntaxFg, resolveUiAttr, dropdownRowTextColor, paletteOptionList, galleryModel, appViewKeysSorted, faceBoxNonDefaults, overflowNonDefault, stepViewIndex, spanNeighborHex, slugify, fgSetFor, floor, lMax, COVERED_FACES, columnsFromPalette, usedPaletteHexes, paletteUsages, regenColumn, rankByLightness, stepRepointPlan, sortColumns, sortColumnMembers, groundRoleOfEntry, groundColumnMembersFromPalette, clearPalettePlan, deletePaletteColumnPlan, areAllLocked, lockToggleLabel, toggleLockSet };
