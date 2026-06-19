@@ -153,7 +153,7 @@ function mkEnumSelect(opts,get,set,title){
 function mkLineStyleControl(states,get,set,opts={}){const wrap=document.createElement('div');wrap.className='boxctl';
   const cluster=document.createElement('div');cluster.className='boxcluster';const btns={};
   states.forEach(([v,title,glyph])=>{const b=document.createElement('button');b.className='boxbtn';b.dataset.style=v;b.textContent=glyph;b.title=title;
-    b.onclick=()=>{const cur=get();set(v?Object.assign({color:(cur&&cur.color)||null},opts.styled?{style:v}:{}):null);paint();};
+    b.onclick=()=>{const cur=get();set(v?(opts.toState?opts.toState(v,cur):Object.assign({color:(cur&&cur.color)||null},opts.styled?{style:v}:{})):null);paint();};
     cluster.appendChild(b);btns[v]=b;});
   const dd=mkColorDropdown(ddList((get()&&get().color)||''),(get()&&get().color)||'',h=>{const cur=get();if(!cur)return;set(Object.assign({},cur,{color:h||null}));paint();},{compact:true,defaultHex:opts.defaultHex});
   function paint(){const cur=get(),active=opts.styled?(cur&&cur.style?cur.style:''):(cur?'on':'');
@@ -470,22 +470,15 @@ function syntaxStyle(k){const s=syntaxFace(k),fg=(k==='bg'?MAP['p']:resolveSynta
 // Box control: a 2x2 cluster of radio buttons for the four box styles (no box /
 // line / pressed / raised), plus a compact color swatch shown only while a box
 // style is active. Replaces the old wide select+swatch to reclaim column width.
-function mkBoxControl(get,set,opts={}){const wrap=document.createElement('div');wrap.className='boxctl';
-  const cluster=document.createElement('div');cluster.className='boxcluster';
-  const states=[['','no box',''],['line','line box','□'],['pressed','pressed','▼'],['released','raised','▲']];
-  const btns={};
-  states.forEach(([v,title,glyph])=>{const b=document.createElement('button');b.className='boxbtn';b.dataset.style=v;b.textContent=glyph;b.title=title;
-    b.onclick=()=>{const cur=get();set(v?{style:v,width:(cur&&cur.width)||1,color:(cur&&cur.color)||null}:null);paint();};
-    cluster.appendChild(b);btns[v]=b;});
-  const dd=mkColorDropdown(ddList((get()&&get().color)||''),(get()&&get().color)||'',h=>{const cur=get();if(!cur)return;set(Object.assign({},cur,{color:h||null}));paint();},{compact:true,defaultHex:opts.defaultHex});
-  function paint(){const cur=get(),style=cur&&cur.style?cur.style:'';
-    for(const v in btns)btns[v].classList.toggle('on',v===style);
-    dd.style.display=style?'':'none';dd.setValue(cur&&cur.color?cur.color:'');
-    const locked=wrap.dataset.locked==='1';
-    for(const v in btns)btns[v].disabled=locked;
-    const ddoff=locked||!style;dd.dataset.locked=ddoff?'1':'';dd.classList.toggle('locked',ddoff);if(dd.syncLocked)dd.syncLocked();}
-  wrap.syncLocked=()=>paint();
-  wrap.append(cluster,dd);paint();return wrap;}
+// Box control: a 2x2 cluster of the four box styles (no box / line / pressed /
+// raised) plus a compact color swatch shown while a style is active. Shares the
+// cluster/dropdown/paint machinery with mkLineStyleControl; it differs only in
+// that its state object carries `width`, so it passes a toState builder.
+function mkBoxControl(get,set,opts={}){
+  return mkLineStyleControl(
+    [['','no box',''],['line','line box','□'],['pressed','pressed','▼'],['released','raised','▲']],
+    get,set,
+    Object.assign({styled:true,toState:(v,cur)=>({style:v,width:(cur&&cur.width)||1,color:(cur&&cur.color)||null})},opts));}
 function flashRow(tr){if(!tr)return;tr.scrollIntoView({block:'center',behavior:'smooth'});tr.classList.remove('flash');void tr.offsetWidth;tr.classList.add('flash');}
 function flashEl(el){if(!el)return;el.scrollIntoView({block:'nearest',inline:'nearest',behavior:'smooth'});el.classList.remove('flashtok');void el.offsetWidth;el.classList.add('flashtok');}
 // Flash every matching element but scroll only the first into view, so a face
