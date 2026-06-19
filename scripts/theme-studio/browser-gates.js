@@ -153,18 +153,20 @@ if(location.hash==='#mocktest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c
  UIMAP['line-number-current-line'].weight='bold';buildMockFrame();
  const curNum=Q('[data-face="line-number-current-line"]');
  A(curNum&&/font-weight:\s*700/.test(curNum.getAttribute('style')||''),'line-number-honors-weight');
- UIMAP['region'].weight=null;buildUITable();
- const uiBold=[...document.querySelectorAll('#uibody tr')].find(r=>r.dataset.face==='region').querySelector('.sbtn[title="bold"]');
- A(uiBold&&!uiBold.classList.contains('on'),'ui style button starts off when model is unset');
- uiBold.click();
- A(uiBold.classList.contains('on')&&UIMAP['region'].weight==='bold','ui style button visual state turns on with model');
- uiBold.click();
- A(!uiBold.classList.contains('on')&&UIMAP['region'].weight===null,'ui style button visual state turns off with model');
+ UIMAP['region'].weight=null;UIMAP['region'].slant=null;UIMAP['region'].underline=null;buildUITable();
+ const regionRow=[...document.querySelectorAll('#uibody tr')].find(r=>r.dataset.face==='region');
+ const uiWeight=regionRow.querySelector('select.stylesel');
+ A(uiWeight&&uiWeight.value==='','ui weight select starts empty when model is unset');
+ uiWeight.value='bold';uiWeight.dispatchEvent(new Event('change'));
+ A(UIMAP['region'].weight==='bold','ui weight select writes the model');
+ const uiUnder=regionRow.querySelector('.boxctl .boxbtn[data-style="wave"]');
+ uiUnder.click();
+ A(UIMAP['region'].underline&&UIMAP['region'].underline.style==='wave','ui underline control writes a wavy underline object');
  const app=curApp(),face=APPS[app].faces[0][0];PKGMAP[app][face].weight=null;buildPkgTable();
- const pkgBtn=()=>document.querySelector('#pkgbody tr[data-face="'+face+'"] .sbtn[title="bold"]');
- A(pkgBtn()&&!pkgBtn().classList.contains('on'),'pkg style button starts off when model is unset');
- pkgBtn().click();
- A(pkgBtn()&&pkgBtn().classList.contains('on')&&PKGMAP[app][face].weight==='bold','pkg style button visual state turns on after rebuild');
+ const pkgWeight=()=>document.querySelector('#pkgbody tr[data-face="'+face+'"] select.stylesel');
+ A(pkgWeight()&&pkgWeight().value==='','pkg weight select starts empty when model is unset');
+ pkgWeight().value='heavy';pkgWeight().dispatchEvent(new Event('change'));
+ A(PKGMAP[app][face].weight==='heavy'&&PKGMAP[app][face].source==='user','pkg weight select writes the model and marks the face edited');
  document.title='MOCKTEST '+(ok?'PASS':'FAIL');
  const d=document.createElement('div');d.id='mocktest';d.textContent='MOCKTEST '+(ok?'PASS':'FAIL')+(notes.length?' | '+notes.join(' ; '):'');document.body.appendChild(d);}
 // Palette-generator gate (open with #generatortest): previewing is non-mutating,
@@ -830,14 +832,18 @@ if(location.hash==='#boxtest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c)
  UIMAP[f].box=saveBox;buildUITable();
  document.title='BOXTEST '+(ok?'PASS':'FAIL');
  const d=document.createElement('div');d.id='boxtest';d.textContent='BOXTEST '+(ok?'PASS':'FAIL')+(notes.length?' fails='+notes.join(','):'');document.body.appendChild(d);}
-// Style-cluster gate (open with #styletest): the B/I/U/S style buttons sit in a
-// 2x2 cluster (multi-toggle), mirroring the box cluster's square layout.
+// Style-cluster gate (open with #styletest): the style cell holds a weight
+// selector, a slant selector, and box-like underline and strike controls.
 if(location.hash==='#styletest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c){ok=false;notes.push(n);}};
  buildUITable();const f=UI_FACES[0][0];
  const cell=document.querySelector('#uibody tr[data-face="'+f+'"]').cells[4];
  const cluster=cell.querySelector('.stylecluster');
  A(!!cluster,'style-cluster-present');
- A(cluster&&cluster.querySelectorAll('.sbtn').length===4,'four-style-buttons-in-cluster');
+ const sels=cluster?cluster.querySelectorAll('select.stylesel'):[];
+ A(sels.length===2,'weight-and-slant-selectors-present');
+ A(sels[0]&&[...sels[0].options].some(o=>o.value==='semibold'),'weight-selector-offers-the-curated-range');
+ A(sels[1]&&[...sels[1].options].some(o=>o.value==='oblique'),'slant-selector-offers-oblique');
+ A(cluster&&cluster.querySelectorAll('.boxctl').length===2,'underline-and-strike-controls-present');
  document.title='STYLETEST '+(ok?'PASS':'FAIL');
  const d=document.createElement('div');d.id='styletest';d.textContent='STYLETEST '+(ok?'PASS':'FAIL')+(notes.length?' fails='+notes.join(','):'');document.body.appendChild(d);}
 // Palette default-state gate (open with #paldefaulttest): the studio opens with

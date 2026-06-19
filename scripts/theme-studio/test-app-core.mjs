@@ -7,7 +7,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import {
-  nameToHex, migrateLegacyFace, legacyStyleOn, toggleLegacyStyle, normalizePkgFace, buildPkgmap, packagesForExport, mergePackagesInto, effResolve, resolveSyntaxFg, resolveUiAttr, dropdownRowTextColor, paletteOptionList, spanNeighborHex, slugify,
+  nameToHex, migrateLegacyFace, normalizePkgFace, buildPkgmap, packagesForExport, mergePackagesInto, effResolve, resolveSyntaxFg, resolveUiAttr, dropdownRowTextColor, paletteOptionList, spanNeighborHex, slugify,
   clearPalettePlan, deletePaletteColumnPlan, groundColumnMembersFromPalette, areAllLocked, lockToggleLabel, toggleLockSet,
   galleryModel, appViewKeysSorted, faceBoxNonDefaults, stepViewIndex,
 } from './app-core.js';
@@ -660,21 +660,6 @@ test('migrateLegacyFace: Boundary — a new-shape face passes through unchanged 
   const f = { weight: 'semibold', slant: 'oblique', underline: { style: 'wave', color: '#abcdef' }, strike: { color: null } };
   assert.deepEqual(migrateLegacyFace(f), f);
   assert.deepEqual(migrateLegacyFace(migrateLegacyFace(f)), f);
-});
-
-test('legacyStyleOn / toggleLegacyStyle: Normal — bridge the B/I/U/S buttons to the model', () => {
-  const f = { weight: null, slant: null, underline: null, strike: null };
-  assert.equal(legacyStyleOn(f, 'bold'), false);
-  toggleLegacyStyle(f, 'bold'); assert.equal(f.weight, 'bold'); assert.equal(legacyStyleOn(f, 'bold'), true);
-  toggleLegacyStyle(f, 'bold'); assert.equal(f.weight, null);
-  toggleLegacyStyle(f, 'italic'); assert.equal(f.slant, 'italic');
-  toggleLegacyStyle(f, 'underline'); assert.deepEqual(f.underline, { style: 'line', color: null });
-  toggleLegacyStyle(f, 'underline'); assert.equal(f.underline, null);
-  toggleLegacyStyle(f, 'strike'); assert.deepEqual(f.strike, { color: null });
-});
-
-test('legacyStyleOn: Boundary — a non-bold weight reads the bold button as off', () => {
-  assert.equal(legacyStyleOn({ weight: 'semibold' }, 'bold'), false);
 });
 
 test('normalizePkgFace: Normal — carries the additive attribute model', () => {

@@ -137,15 +137,41 @@ function mkLockCell(lockKey,els){
       else{el.dataset.locked=on?'1':'';el.classList.toggle('locked',on);if(el.syncLocked)el.syncLocked();}});}
   lk.onclick=()=>{LOCKED.has(lockKey)?LOCKED.delete(lockKey):LOCKED.add(lockKey);paint();updateLockToggles();};
   paint();td.appendChild(lk);return td;}
-// B/I/U/S style buttons shared by the UI and package tables. isOn(attr) reads the
-// current state of an attribute, onToggle(attr) flips it and repaints. Returns
-// the button list so the caller appends them and hands them to mkLockCell.
-function mkStyleButtons(isOn,onToggle){
-  return ['bold','italic','underline','strike'].map(at=>{
-    const b=document.createElement('button');b.className='sbtn'+(isOn(at)?' on':'');b.textContent='a';
-    b.style.fontWeight=at==='bold'?'bold':'normal';b.style.fontStyle=at==='italic'?'italic':'normal';
-    b.style.textDecoration=at==='underline'?'underline':at==='strike'?'line-through':'none';b.title=at;
-    b.onclick=()=>{onToggle(at);b.classList.toggle('on',!!isOn(at));};return b;});}
+// The in-row style controls, shared by the syntax / UI / package tables: a weight
+// selector, a slant selector, and box-like underline and strike controls. Each
+// edit mutates the face object and calls onChange to repaint. Returns the control
+// elements so the caller lays them out and hands them to mkLockCell.
+const WEIGHT_OPTS=[['','wt'],['light','light'],['normal','normal'],['medium','medium'],['semibold','semi'],['bold','bold'],['heavy','heavy']];
+const SLANT_OPTS=[['','sl'],['normal','normal'],['italic','italic'],['oblique','oblique']];
+function mkEnumSelect(opts,get,set,title){
+  const s=document.createElement('select');s.className='chip stylesel';s.title=title;
+  for(const [v,label] of opts){const o=document.createElement('option');o.value=v;o.textContent=label;s.appendChild(o);}
+  s.value=get()||'';s.onchange=()=>set(s.value||null);return s;}
+// Underline control: none / line / wave glyph buttons plus a color swatch shown
+// while a style is active. Mirrors mkBoxControl; get()/set() read and write the
+// underline object ({style,color}) or null.
+function mkLineStyleControl(states,get,set,opts={}){const wrap=document.createElement('div');wrap.className='boxctl';
+  const cluster=document.createElement('div');cluster.className='boxcluster';const btns={};
+  states.forEach(([v,title,glyph])=>{const b=document.createElement('button');b.className='boxbtn';b.dataset.style=v;b.textContent=glyph;b.title=title;
+    b.onclick=()=>{const cur=get();set(v?Object.assign({color:(cur&&cur.color)||null},opts.styled?{style:v}:{}):null);paint();};
+    cluster.appendChild(b);btns[v]=b;});
+  const dd=mkColorDropdown(ddList((get()&&get().color)||''),(get()&&get().color)||'',h=>{const cur=get();if(!cur)return;set(Object.assign({},cur,{color:h||null}));paint();},{compact:true,defaultHex:opts.defaultHex});
+  function paint(){const cur=get(),active=opts.styled?(cur&&cur.style?cur.style:''):(cur?'on':'');
+    for(const v in btns)btns[v].classList.toggle('on',v===active);
+    dd.style.display=active?'':'none';dd.setValue(cur&&cur.color?cur.color:'');
+    const locked=wrap.dataset.locked==='1';for(const v in btns)btns[v].disabled=locked;
+    const ddoff=locked||!active;dd.dataset.locked=ddoff?'1':'';dd.classList.toggle('locked',ddoff);if(dd.syncLocked)dd.syncLocked();}
+  wrap.syncLocked=()=>paint();wrap.append(cluster,dd);paint();return wrap;}
+function mkUnderlineControl(get,set,opts={}){
+  return mkLineStyleControl([['','no underline',''],['line','underline','_'],['wave','wavy underline','~']],get,set,Object.assign({styled:true},opts));}
+function mkStrikeControl(get,set,opts={}){
+  return mkLineStyleControl([['','no strike',''],['on','strike-through','S']],get,set,Object.assign({styled:false},opts));}
+function mkStyleControls(face,onChange,opts={}){
+  const w=mkEnumSelect(WEIGHT_OPTS,()=>face.weight,v=>{face.weight=v;onChange();},'font weight');
+  const s=mkEnumSelect(SLANT_OPTS,()=>face.slant,v=>{face.slant=v;onChange();},'font slant');
+  const u=mkUnderlineControl(()=>face.underline,v=>{face.underline=v;onChange();},opts);
+  const k=mkStrikeControl(()=>face.strike,v=>{face.strike=v;onChange();},opts);
+  return [w,s,u,k];}
 // Apply a batch action to every editable row in a tier. keyFn maps a row entry to
 // its lock key, or null to skip the row entirely (syntax bg and the default fg);
 // resetFn does the actual clearing. Locked rows are left untouched.
@@ -215,12 +241,12 @@ function buildTable(){
     const bgd=mkColorDropdown(ddList(sf.bg||''),sf.bg||'',hex=>{const s=syntaxFace(kind);s.bg=hex||null;styleEx();styleCr();renderCode();repaintCovered();},{compact:true,defaultHex:rowBg()});
     styleEx();styleCr();
     const stTd=document.createElement('td');
-    const stBtns=mkStyleButtons(at=>legacyStyleOn(syntaxFace(kind),at),at=>{toggleLegacyStyle(syntaxFace(kind),at);styleEx();renderCode();});
-    const stCluster=document.createElement('div');stCluster.className='stylecluster';stBtns.forEach(b=>stCluster.appendChild(b));stTd.appendChild(stCluster);
+    const stCtls=mkStyleControls(syntaxFace(kind),()=>{styleEx();renderCode();},{defaultHex:rowFg()});
+    const stCluster=document.createElement('div');stCluster.className='stylecluster';stCtls.forEach(c=>stCluster.appendChild(c));stTd.appendChild(stCluster);
     const c0=document.createElement('td');c0.appendChild(dd);
     const cB=document.createElement('td');cB.appendChild(bgd);
     const cX=document.createElement('td');const boxCtl=mkBoxControl(()=>syntaxFace(kind).box,b=>{syntaxFace(kind).box=b;styleEx();renderCode();},{compact:true});cX.appendChild(boxCtl);
-    const lkTd=mkLockCell(kind,[dd,bgd,...stBtns,boxCtl]);
+    const lkTd=mkLockCell(kind,[dd,bgd,...stCtls,boxCtl]);
     const c2=document.createElement('td');c2.className='cat';c2.textContent=label;c2.style.cursor='pointer';c2.title='flash this category in the code';c2.onclick=()=>flashTokens(kind);
     tr.appendChild(c2);tr.appendChild(lkTd);tr.appendChild(c0);tr.appendChild(cB);tr.appendChild(stTd);tr.appendChild(cX);tr.appendChild(crTd);tr.appendChild(exTd);
     tb.appendChild(tr);}
@@ -565,13 +591,13 @@ function buildPkgTable(){
     const cf=document.createElement('td');cf.appendChild(fgd);
     const cb=document.createElement('td');cb.appendChild(bgd);
     const cw=document.createElement('td');
-    const pkBtns=mkStyleButtons(at=>legacyStyleOn(f,at),at=>{toggleLegacyStyle(f,at);f.source='user';pkgChanged();});
-    const pkCluster=document.createElement('div');pkCluster.className='stylecluster';pkBtns.forEach(b=>pkCluster.appendChild(b));cw.appendChild(pkCluster);
+    const pkCtls=mkStyleControls(f,()=>{f.source='user';pkgChanged();},{defaultHex:effFg(pkgEffFg(app,face))});
+    const pkCluster=document.createElement('div');pkCluster.className='stylecluster';pkCtls.forEach(c=>pkCluster.appendChild(c));cw.appendChild(pkCluster);
     const ci=document.createElement('td');const isel=document.createElement('select');isel.className='chip';isel.style.cssText='width:150px;font:10pt monospace';inh.forEach(o=>{const op=document.createElement('option');op.value=o;op.textContent=o||'— none —';isel.appendChild(op);});isel.value=f.inherit||'';isel.onchange=()=>{f.inherit=isel.value||null;f.source='user';pkgChanged();};ci.appendChild(isel);
     const ch=document.createElement('td');const hin=document.createElement('input');hin.type='number';hin.min='0.8';hin.max='2.5';hin.step='0.05';hin.value=f.height||1;hin.className='hstep';hin.onchange=()=>{f.height=parseFloat(hin.value)||1;f.source='user';pkgChanged();};ch.appendChild(hin);
     const cc=document.createElement('td');cc.style.fontSize='10pt';cc.style.whiteSpace='nowrap';const efg=effFg(pkgEffFg(app,face)),ebg=effBg(pkgEffBg(app,face)),r=contrast(efg,ebg);cc.innerHTML=crHtml(r);
     const cx=document.createElement('td');const boxCtl=mkBoxControl(()=>f.box,b=>{f.box=b;f.source='user';pkgChanged();},{compact:true});cx.appendChild(boxCtl);
-    const cL=mkLockCell('pkg:'+app+':'+face,[fgd,bgd,...pkBtns,isel,hin,boxCtl]);
+    const cL=mkLockCell('pkg:'+app+':'+face,[fgd,bgd,...pkCtls,isel,hin,boxCtl]);
     if(nd.fg)cf.classList.add('nd');if(nd.bg)cb.classList.add('nd');if(nd.style)cw.classList.add('nd');
     if(nd.inherit)ci.classList.add('nd');if(nd.height)ch.classList.add('nd');if(nd.box)cx.classList.add('nd');
     tr.append(c0,cL,cf,cb,cw,cc,ci,ch,cx);tb.appendChild(tr);
@@ -1112,12 +1138,12 @@ function buildUITable(){
     const cF=document.createElement('td');cF.appendChild(fgSel);
     const cB=document.createElement('td');cB.appendChild(bgSel);
     const cS=document.createElement('td');
-    const stBtns=mkStyleButtons(at=>legacyStyleOn(UIMAP[face],at),at=>{toggleLegacyStyle(UIMAP[face],at);paintUI(face);buildMockFrame();});
-    const uiCluster=document.createElement('div');uiCluster.className='stylecluster';stBtns.forEach(b=>uiCluster.appendChild(b));cS.appendChild(uiCluster);
+    const stCtls=mkStyleControls(UIMAP[face],()=>{paintUI(face);buildMockFrame();},{defaultHex:effFg(UIMAP[face].fg)});
+    const uiCluster=document.createElement('div');uiCluster.className='stylecluster';stCtls.forEach(c=>uiCluster.appendChild(c));cS.appendChild(uiCluster);
     const cC=document.createElement('td');cC.id='uicr-'+face;cC.style.whiteSpace='nowrap';cC.style.fontSize='10pt';
     const cP=document.createElement('td');cP.className='ex';cP.id='uiprev-'+face;cP.textContent=ex;cP.style.padding='4px 10px';cP.style.borderRadius='4px';
     const cX=document.createElement('td');const boxCtl=mkBoxControl(()=>UIMAP[face].box,b=>{UIMAP[face].box=b;paintUI(face);buildMockFrame();},{compact:true});cX.appendChild(boxCtl);
-    const cL=mkLockCell('ui:'+face,[fgSel,bgSel,...stBtns,boxCtl]);
+    const cL=mkLockCell('ui:'+face,[fgSel,bgSel,...stCtls,boxCtl]);
     tr.appendChild(c0);tr.appendChild(cL);tr.appendChild(cF);tr.appendChild(cB);tr.appendChild(cS);tr.appendChild(cC);tr.appendChild(cP);tr.appendChild(cX);tb.appendChild(tr);paintUI(face);
   }
   applyTableSort('uibody');

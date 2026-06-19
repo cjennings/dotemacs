@@ -34,22 +34,6 @@ function normalizePkgFace(d,source,palette){
   return {fg:resolve(d.fg)??null,bg:resolve(d.bg)??null,'distant-fg':resolve(d['distant-fg'])??null,family:d.family??null,weight:d.weight??null,slant:d.slant??null,underline:d.underline??null,strike:d.strike??null,overline:d.overline??null,inherit:d.inherit??null,height:d.height||1,box:d.box??null,inverse:!!d.inverse,extend:!!d.extend,source:source||d.source||'user'};
 }
 
-// Transitional bridge for the legacy B/I/U/S toggle buttons (mkStyleButtons),
-// which the weight/slant dropdowns and underline/strike controls replace next.
-// The button reads on/off and flips a single attribute on the new-shape face.
-function legacyStyleOn(f,attr){
-  if(attr==='bold')return f.weight==='bold';
-  if(attr==='italic')return f.slant==='italic';
-  if(attr==='underline')return !!f.underline;
-  if(attr==='strike')return !!f.strike;
-  return false;
-}
-function toggleLegacyStyle(f,attr){
-  if(attr==='bold')f.weight=f.weight==='bold'?null:'bold';
-  else if(attr==='italic')f.slant=f.slant==='italic'?null:'italic';
-  else if(attr==='underline')f.underline=f.underline?null:{style:'line',color:null};
-  else if(attr==='strike')f.strike=f.strike?null:{color:null};
-}
 
 // Seed the package-face map from the app inventory's per-face defaults.
 function buildPkgmap(apps,palette){const m={};for(const app in apps){m[app]={};for(const row of apps[app].faces){m[app][row[0]]=normalizePkgFace(row[2],'default',palette);}}return m;}
@@ -474,4 +458,4 @@ function faceBoxNonDefaults(cur,def){
   };
 }
 
-export { nameToHex, migrateLegacyFace, legacyStyleOn, toggleLegacyStyle, normalizePkgFace, buildPkgmap, packagesForExport, mergePackagesInto, effResolve, resolveSyntaxFg, resolveUiAttr, dropdownRowTextColor, paletteOptionList, galleryModel, appViewKeysSorted, faceBoxNonDefaults, stepViewIndex, spanNeighborHex, slugify, fgSetFor, floor, lMax, COVERED_FACES, columnsFromPalette, usedPaletteHexes, paletteUsages, regenColumn, rankByLightness, stepRepointPlan, sortColumns, sortColumnMembers, groundRoleOfEntry, groundColumnMembersFromPalette, clearPalettePlan, deletePaletteColumnPlan, areAllLocked, lockToggleLabel, toggleLockSet };
+export { nameToHex, migrateLegacyFace, normalizePkgFace, buildPkgmap, packagesForExport, mergePackagesInto, effResolve, resolveSyntaxFg, resolveUiAttr, dropdownRowTextColor, paletteOptionList, galleryModel, appViewKeysSorted, faceBoxNonDefaults, stepViewIndex, spanNeighborHex, slugify, fgSetFor, floor, lMax, COVERED_FACES, columnsFromPalette, usedPaletteHexes, paletteUsages, regenColumn, rankByLightness, stepRepointPlan, sortColumns, sortColumnMembers, groundRoleOfEntry, groundColumnMembersFromPalette, clearPalettePlan, deletePaletteColumnPlan, areAllLocked, lockToggleLabel, toggleLockSet };
