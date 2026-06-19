@@ -523,6 +523,11 @@ function reliefColors(bgHex) {
   };
   return { hl: one(1.2, 0x8000), sh: one(0.6, 0x4000) };
 }
+
+// OKLCH of a hex, and the pure black/white endpoint test. Shared by app-core
+// and palette-generator-core (both previously kept their own identical copies).
+function oklchOf(hex){return oklab2oklch(srgb2oklab(hex));}
+function isPureEndpointHex(hex){const h=(hex||'').toLowerCase();return h==='#ffffff'||h==='#000000';}
 // Pure package-model + dropdown logic, inlined verbatim from app-core.js. The
 // wrappers above (pname/seedPkgmap/ddList/pkgEffFg/pkgEffBg) delegate here.
 // Pure app logic — the package-face model and the dropdown option list — with no
@@ -729,9 +734,7 @@ function lMax(hue,chroma,fgSet,target){
 // the editable truth; these pure functions group it, regenerate a ramp, and plan
 // assignment re-point across a regenerate.
 
-function oklchOf(hex){return oklab2oklch(srgb2oklab(hex));}
 function isReservedGroundLikeName(name){return /^(bg|fg)(?:[-_+].+|\d.*)$/i.test(name||'');}
-function isPureEndpointHex(hex){const h=(hex||'').toLowerCase();return h==='#ffffff'||h==='#000000';}
 function interpOklabHex(a,b,t,offset){
   const lab={L:a.L+(b.L-a.L)*t,a:a.a+(b.a-a.a)*t,b:a.b+(b.b-a.b)*t};
   const lrgb=oklab2lrgb(lab.L,lab.a,lab.b);
@@ -1069,8 +1072,6 @@ function contrastTitle(r){
 // from app-core.js, but owns candidate hue selection, naming, contrast filtering,
 // and conversion from preview columns to palette entries.
 
-function oklchOf(hex){return oklab2oklch(srgb2oklab(hex));}
-function isPureEndpointHex(hex){const h=(hex||'').toLowerCase();return h==='#ffffff'||h==='#000000';}
 function generatedExistingNames(palette){
   return new Set((palette||[]).map(p=>(p&&p[1]||'').toLowerCase()).filter(Boolean));
 }
@@ -1091,7 +1092,7 @@ function uniqueGeneratedName(base,used){
 function hueOfHex(hex,fallback){
   const h=typeof hex==='string'?normHex(hex):null;
   if(!h)return fallback;
-  const lch=oklab2oklch(srgb2oklab(h));
+  const lch=oklchOf(h);
   return Number.isFinite(lch.H)?lch.H:fallback;
 }
 function generatorSourceHue(palette,ground,cfg){

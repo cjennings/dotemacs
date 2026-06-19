@@ -9,7 +9,7 @@
 // where normHex (app-util.js) and the colormath helpers are already present from
 // the bodies inlined above this one.
 import { normHex } from './app-util.js';
-import { oklch2hex, srgb2oklab, oklab2oklch, oklab2lrgb, lrgb2hex, inGamut, contrast } from './colormath.js';
+import { oklch2hex, srgb2oklab, oklab2lrgb, lrgb2hex, inGamut, contrast, oklchOf, isPureEndpointHex } from './colormath.js';
 
 // Resolve a palette name (or a raw #hex) to a hex; null when the name is unknown.
 function nameToHex(n,palette){if(!n)return null;if(/^#/.test(n))return n;const p=palette.find(p=>p[1]===n);return p?p[0]:null;}
@@ -204,9 +204,7 @@ function lMax(hue,chroma,fgSet,target){
 // the editable truth; these pure functions group it, regenerate a ramp, and plan
 // assignment re-point across a regenerate.
 
-function oklchOf(hex){return oklab2oklch(srgb2oklab(hex));}
 function isReservedGroundLikeName(name){return /^(bg|fg)(?:[-_+].+|\d.*)$/i.test(name||'');}
-function isPureEndpointHex(hex){const h=(hex||'').toLowerCase();return h==='#ffffff'||h==='#000000';}
 function interpOklabHex(a,b,t,offset){
   const lab={L:a.L+(b.L-a.L)*t,a:a.a+(b.a-a.a)*t,b:a.b+(b.b-a.b)*t};
   const lrgb=oklab2lrgb(lab.L,lab.a,lab.b);

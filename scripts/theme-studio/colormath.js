@@ -217,4 +217,9 @@ function reliefColors(bgHex) {
   return { hl: one(1.2, 0x8000), sh: one(0.6, 0x4000) };
 }
 
-export { srgb2oklab, oklab2oklch, oklch2oklab, oklch2hex, apca, deltaE, hex2rgb, lin, rl, contrast, rating, hsv2rgb, rgb2hsv, rgb2hex, oklab2lrgb, inGamut, lrgb2hex, planeCell, paletteWarnings, reliefColors };
+// OKLCH of a hex, and the pure black/white endpoint test. Shared by app-core
+// and palette-generator-core (both previously kept their own identical copies).
+function oklchOf(hex){return oklab2oklch(srgb2oklab(hex));}
+function isPureEndpointHex(hex){const h=(hex||'').toLowerCase();return h==='#ffffff'||h==='#000000';}
+
+export { srgb2oklab, oklab2oklch, oklch2oklab, oklch2hex, apca, deltaE, hex2rgb, lin, rl, contrast, rating, hsv2rgb, rgb2hsv, rgb2hex, oklab2lrgb, inGamut, lrgb2hex, planeCell, paletteWarnings, reliefColors, oklchOf, isPureEndpointHex };

@@ -2,11 +2,9 @@
 // from app-core.js, but owns candidate hue selection, naming, contrast filtering,
 // and conversion from preview columns to palette entries.
 import { normHex } from './app-util.js';
-import { oklch2hex, srgb2oklab, oklab2oklch, contrast, deltaE } from './colormath.js';
+import { oklch2hex, contrast, deltaE, oklchOf, isPureEndpointHex } from './colormath.js';
 import { columnsFromPalette } from './app-core.js';
 
-function oklchOf(hex){return oklab2oklch(srgb2oklab(hex));}
-function isPureEndpointHex(hex){const h=(hex||'').toLowerCase();return h==='#ffffff'||h==='#000000';}
 function generatedExistingNames(palette){
   return new Set((palette||[]).map(p=>(p&&p[1]||'').toLowerCase()).filter(Boolean));
 }
@@ -27,7 +25,7 @@ function uniqueGeneratedName(base,used){
 function hueOfHex(hex,fallback){
   const h=typeof hex==='string'?normHex(hex):null;
   if(!h)return fallback;
-  const lch=oklab2oklch(srgb2oklab(h));
+  const lch=oklchOf(h);
   return Number.isFinite(lch.H)?lch.H:fallback;
 }
 function generatorSourceHue(palette,ground,cfg){
