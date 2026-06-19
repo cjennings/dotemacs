@@ -241,35 +241,10 @@ PALETTE,UIMAP,LOCKS=apply_seed_basics(_d,PALETTE,UIMAP,LOCKS)
 PALETTE=normalize_palette(PALETTE)
 SYNTAX=build_syntax(COLS,MAP,BOLD,ITALIC_MAP,DEFAULTS)
 apply_syntax_seed(_d if _seed else {},SYNTAX,MAP)
-# Bespoke package face lists and seed defaults live in face_data.py. Each entry
-# is (key, label, preview, FACES, prefix, SEED); add an app by adding one row.
-_BESPOKE_APPS=[
- ("org-mode","org-mode","org",ORG_FACES,"org-",ORG_SEED),
- ("magit","magit","magit",MAGIT_FACES,"magit-",MAGIT_SEED),
- ("elfeed","elfeed","elfeed",ELFEED_FACES,"elfeed-",ELFEED_SEED),
- ("mu4e","mu4e","mu4e",MU4E_FACES,"mu4e-",MU4E_SEED),
- ("gnus","gnus (mu4e article view)","gnus",GNUS_FACES,"gnus-",GNUS_SEED),
- ("org-faces","org-faces","orgfaces",ORGFACES_FACES,"org-faces-",ORGFACES_SEED),
- ("ghostel","ghostel","ghostel",GHOSTEL_FACES,"ghostel-",GHOSTEL_SEED),
- ("auto-dim-other-buffers","auto-dim","autodim",AUTODIM_FACES,"auto-dim-other-buffers-",AUTODIM_SEED),
- ("dashboard","dashboard","dashboard",DASHBOARD_FACES,"dashboard-",DASHBOARD_SEED),
- ("lsp-mode","lsp-mode","lsp",LSP_FACES,"lsp-",LSP_SEED),
- ("git-gutter","git-gutter","gitgutter",GITGUTTER_FACES,"git-gutter:",GITGUTTER_SEED),
- ("flycheck","flycheck","flycheck",FLYCHECK_FACES,"flycheck-",FLYCHECK_SEED),
- ("dired","dired","dired",DIRED_FACES,"dired-",DIRED_SEED),
- ("dirvish","dirvish","dirvish",DIRVISH_FACES,"dirvish-",DIRVISH_SEED),
- ("calibredb","calibredb","calibredb",CALIBREDB_FACES,"calibredb-",CALIBREDB_SEED),
- ("erc","erc","erc",ERC_FACES,"erc-",ERC_SEED),
- ("org-drill","org-drill","orgdrill",ORGDRILL_FACES,"org-drill-",ORGDRILL_SEED),
- ("org-noter","org-noter","orgnoter",ORGNOTER_FACES,"org-noter-",ORGNOTER_SEED),
- ("signel","signel","signel",SIGNEL_FACES,"signel-",SIGNEL_SEED),
- ("pearl","pearl","pearl",PEARL_FACES,"pearl-",PEARL_SEED),
- ("slack","slack","slack",SLACK_FACES,"slack-",SLACK_SEED),
- ("telega","telega","telega",TELEGA_FACES,"telega-",TELEGA_SEED),
- ("shr","shr (HTML: nov/eww/mail)","shr",SHR_FACES,"shr-",SHR_SEED),
-]
+# Bespoke apps are single-sourced as BESPOKE_APP_SPECS in face_data.py (one
+# row per app: key, label, preview, FACES, prefix, SEED).
 APPS={key:{"label":label,"preview":preview,"faces":face_rows(faces,prefix,seed)}
-      for key,label,preview,faces,prefix,seed in _BESPOKE_APPS}
+      for key,label,preview,faces,prefix,seed in BESPOKE_APP_SPECS}
 # Phase 6: merge the generated all-package inventory (refresh with build-inventory.el).
 # Bespoke apps stay; every other installed package becomes an editable generic app.
 _inv_path=os.path.join(HERE,"package-inventory.json")

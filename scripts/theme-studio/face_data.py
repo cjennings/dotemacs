@@ -328,3 +328,33 @@ GNUS_SEED={
  "gnus-cite-1":{"fg":"sage"},"gnus-cite-2":{"fg":"steel"},"gnus-cite-3":{"fg":"gold"},"gnus-cite-4":{"fg":"blue"},"gnus-cite-5":{"fg":"sage"},"gnus-cite-6":{"fg":"steel"},"gnus-cite-7":{"fg":"gold"},"gnus-cite-8":{"fg":"blue"},"gnus-cite-9":{"fg":"sage"},"gnus-cite-10":{"fg":"steel"},"gnus-cite-11":{"fg":"gold"},"gnus-cite-attribution":{"fg":"silver","italic":True},
  "gnus-signature":{"fg":"pewter","italic":True},"gnus-button":{"fg":"blue","underline":True},
  "gnus-emphasis-bold":{"bold":True},"gnus-emphasis-italic":{"italic":True},"gnus-emphasis-underline":{"underline":True},"gnus-emphasis-strikethru":{"fg":"pewter","strike":True},"gnus-emphasis-highlight-words":{"fg":"gold","bold":True}}
+
+# The bespoke package apps, single-sourced here. Each row is
+# (key, label, preview, FACES, prefix, SEED); add an app by adding one row.
+# generate.py builds APPS from this, and app_inventory derives the set of
+# bespoke keys (to exclude them from the generic-inventory path) from it too.
+BESPOKE_APP_SPECS=[
+ ("org-mode","org-mode","org",ORG_FACES,"org-",ORG_SEED),
+ ("magit","magit","magit",MAGIT_FACES,"magit-",MAGIT_SEED),
+ ("elfeed","elfeed","elfeed",ELFEED_FACES,"elfeed-",ELFEED_SEED),
+ ("mu4e","mu4e","mu4e",MU4E_FACES,"mu4e-",MU4E_SEED),
+ ("gnus","gnus (mu4e article view)","gnus",GNUS_FACES,"gnus-",GNUS_SEED),
+ ("org-faces","org-faces","orgfaces",ORGFACES_FACES,"org-faces-",ORGFACES_SEED),
+ ("ghostel","ghostel","ghostel",GHOSTEL_FACES,"ghostel-",GHOSTEL_SEED),
+ ("auto-dim-other-buffers","auto-dim","autodim",AUTODIM_FACES,"auto-dim-other-buffers-",AUTODIM_SEED),
+ ("dashboard","dashboard","dashboard",DASHBOARD_FACES,"dashboard-",DASHBOARD_SEED),
+ ("lsp-mode","lsp-mode","lsp",LSP_FACES,"lsp-",LSP_SEED),
+ ("git-gutter","git-gutter","gitgutter",GITGUTTER_FACES,"git-gutter:",GITGUTTER_SEED),
+ ("flycheck","flycheck","flycheck",FLYCHECK_FACES,"flycheck-",FLYCHECK_SEED),
+ ("dired","dired","dired",DIRED_FACES,"dired-",DIRED_SEED),
+ ("dirvish","dirvish","dirvish",DIRVISH_FACES,"dirvish-",DIRVISH_SEED),
+ ("calibredb","calibredb","calibredb",CALIBREDB_FACES,"calibredb-",CALIBREDB_SEED),
+ ("erc","erc","erc",ERC_FACES,"erc-",ERC_SEED),
+ ("org-drill","org-drill","orgdrill",ORGDRILL_FACES,"org-drill-",ORGDRILL_SEED),
+ ("org-noter","org-noter","orgnoter",ORGNOTER_FACES,"org-noter-",ORGNOTER_SEED),
+ ("signel","signel","signel",SIGNEL_FACES,"signel-",SIGNEL_SEED),
+ ("pearl","pearl","pearl",PEARL_FACES,"pearl-",PEARL_SEED),
+ ("slack","slack","slack",SLACK_FACES,"slack-",SLACK_SEED),
+ ("telega","telega","telega",TELEGA_FACES,"telega-",TELEGA_SEED),
+ ("shr","shr (HTML: nov/eww/mail)","shr",SHR_FACES,"shr-",SHR_SEED),
+]

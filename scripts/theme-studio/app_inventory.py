@@ -7,33 +7,14 @@ import os
 from collections.abc import Sequence
 from typing import Any
 
+from face_data import BESPOKE_APP_SPECS
 
-BESPOKE_APPS = {
-    "magit",
-    "elfeed",
-    "org",
-    "org-mode",
-    "mu4e",
-    "gnus",
-    "org-faces",
-    "ghostel",
-    "auto-dim-other-buffers",
-    "dashboard",
-    "lsp-mode",
-    "git-gutter",
-    "flycheck",
-    "dired",
-    "dirvish",
-    "calibredb",
-    "erc",
-    "org-drill",
-    "org-noter",
-    "signel",
-    "pearl",
-    "slack",
-    "telega",
-    "shr",
-}
+
+# Keys of the bespoke apps (single-sourced in face_data), excluded from the
+# generic-inventory path so they aren't also emitted as plain inventory apps.
+# "org" is an explicit alias of the "org-mode" bespoke app, so an inventory
+# package literally named "org" never gets a duplicate generic entry.
+BESPOKE_APPS = {spec[0] for spec in BESPOKE_APP_SPECS} | {"org"}
 
 
 # Inventory apps (not in BESPOKE_APPS) default to the generic preview. A few have
