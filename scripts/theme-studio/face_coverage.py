@@ -109,7 +109,31 @@ def load_managed():
     return managed, fontlock, ui, pkg, inv
 
 
-def make_group_of(families):
+# Built-in source files whose faces are core display faces, not a subsystem;
+# an unrecognized face from one of these stays in emacs-core rather than
+# spawning an odd subsystem bucket under emacs-general.
+CORE_FILES = {'faces', 'frame'}
+
+
+def bucket_from_source(path):
+    """Derive a bucket name from a face's defface file, for faces that match no
+    known family. elpa -> the package dir name (version stripped); built-in ->
+    the source file basename; otherwise emacs-core (can't tell)."""
+    if not path:
+        return 'emacs-core'
+    if '/elpa/' in path:
+        pkgdir = path.split('/elpa/', 1)[1].split('/', 1)[0]
+        return re.sub(r'-[0-9].*$', '', pkgdir) or 'emacs-core'
+    if '/.emacs.d/modules' in path:
+        return 'user-config'
+    if path.startswith('/usr/share/emacs') or path.startswith('/usr/lib/emacs'):
+        base = os.path.basename(path)
+        base = base[:-3] if base.endswith('.el') else base
+        return 'emacs-core' if base in CORE_FILES else base
+    return 'emacs-core'
+
+
+def make_group_of(families, src):
     fams = sorted(families, key=len, reverse=True)
 
     def group_of(f):
@@ -124,7 +148,9 @@ def make_group_of(families):
                 return p
         if f.lower().startswith('info-'):
             return 'info'
-        return 'emacs-core'
+        # Unrecognized: route by where the defface lives so a newly-loaded
+        # package buckets itself instead of falling into emacs-core.
+        return bucket_from_source(src.get(f, ''))
     return group_of
 
 
@@ -189,7 +215,7 @@ def build(data, today):
     universe = sorted(set(docs.keys()) | managed)
 
     families = set(inv.keys()) | EXTRA_FAMILIES
-    group_of = make_group_of(families)
+    group_of = make_group_of(families, src)
     groups = collections.defaultdict(list)
     for f in universe:
         groups[group_of(f)].append(f)
