@@ -15,7 +15,6 @@
 ;; No external packages = no buffer issues, no native-comp errors.
 
 ;; Features:
-;; - Buffer status (modified, read-only)
 ;; - Buffer name
 ;; - Major mode
 ;; - Version control status
@@ -75,11 +74,9 @@ Example: `my-very-long-name.el' → `my-ver...me.el'"
 ;; -------------------------- Modeline Segments --------------------------------
 
 (defvar-local cj/modeline-buffer-name
-  '(:eval (let* ((color (cj/buffer-status-color (cj/buffer-status-state)))
-                 (name (buffer-name))
+  '(:eval (let* ((name (buffer-name))
                  (truncated-name (cj/modeline-string-cut-middle name)))
             (propertize truncated-name
-                        'face `(:foreground ,color)
                         'mouse-face 'mode-line-highlight
                         'help-echo (concat
                                     name "\n"
@@ -89,8 +86,7 @@ Example: `my-very-long-name.el' → `my-ver...me.el'"
                                      (define-key map [mode-line mouse-1] 'previous-buffer)
                                      (define-key map [mode-line mouse-3] 'next-buffer)
                                      map))))
-  "Buffer name colored by modification and read-only status.
-White = unmodified, Green = modified, Red = read-only, Gold = overwrite.
+  "Buffer name in the mode line.
 Truncates in narrow windows.  Click to switch buffers.")
 
 (defvar-local cj/modeline-position

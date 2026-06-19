@@ -17,14 +17,6 @@
 ;; Add modules directory to load path
 (add-to-list 'load-path (expand-file-name "modules" user-emacs-directory))
 
-;; Stub dependencies before loading the module
-(unless (boundp 'cj/buffer-status-colors)
-  (defvar cj/buffer-status-colors
-    '((unmodified . "#FFFFFF")
-      (modified   . "#00FF00")
-      (read-only  . "#FF0000")
-      (overwrite  . "#FFD700"))))
-
 (require 'modeline-config)
 
 ;;; Test Helpers

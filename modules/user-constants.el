@@ -53,47 +53,6 @@ mail, chime, etc."
 (defvar user-mail-address "c@cjennings.net"
   "The user's email address.")
 
-;; ---------------------------- Buffer Status Colors ---------------------------
-
-(defconst cj/buffer-status-faces
-  '((read-only  . error)     ; can't edit
-    (overwrite  . warning)   ; overwrite mode
-    (modified   . warning)   ; writeable, with unsaved changes
-    (unmodified . success))  ; clean and writeable
-  "Alist mapping a buffer state to the theme face whose foreground colors it.
-Shared by the cursor color (ui-config.el) and the modeline buffer-status
-indicator (modeline-config.el) so the two stay in sync and follow the active
-theme, rather than hard-coding hex colors.")
-
-(defun cj/buffer-status-state ()
-  "Return the buffer-state symbol for the current buffer.
-One of `read-only', `overwrite', `modified', or `unmodified' -- the keys of
-`cj/buffer-status-faces'.
-
-A live ghostel terminal (in `ghostel-mode' and an input mode that forwards keys
--- semi-char / char / line) reports `unmodified' even though the buffer is
-read-only: keystrokes go to the terminal process, so from the user's side it is
-writeable and the read-only state would be misleading.  ghostel's `copy' and
-`emacs' input modes are the exception -- there the buffer really is a read-only
-Emacs buffer the user navigates, so it falls through to `read-only'."
-  (cond
-   ((and (eq major-mode 'ghostel-mode)
-         (not (memq (bound-and-true-p ghostel--input-mode) '(copy emacs))))
-    'unmodified)
-   (buffer-read-only    'read-only)
-   (overwrite-mode      'overwrite)
-   ((buffer-modified-p) 'modified)
-   (t                   'unmodified)))
-
-(defun cj/buffer-status-color (state)
-  "Return the foreground color of the theme face mapped to buffer STATE.
-Resolves STATE through `cj/buffer-status-faces' against the active theme.  Nil
-when the state is unknown or its face has no concrete foreground (face-attribute
-returns the symbol `unspecified' there), so callers can skip cleanly."
-  (when-let* ((face (alist-get state cj/buffer-status-faces))
-              (fg (face-attribute face :foreground nil t)))
-    (and (stringp fg) fg)))
-
 ;; --------------------------- Media File Extensions ---------------------------
 
 (defvar cj/audio-file-extensions

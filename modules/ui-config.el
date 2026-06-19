@@ -94,10 +94,9 @@ When `cj/enable-transparency' is nil, reset alpha to fully opaque."
 		   (if cj/enable-transparency "enabled" "disabled")))
 
 ;; ----------------------------------- Cursor ----------------------------------
-;; The cursor uses the theme's cursor face. Buffer-state cursor coloring was
-;; removed -- a cursor that changed color by buffer state was confusing. The
-;; cj/buffer-status-state / cj/buffer-status-color classifier stays in
-;; user-constants.el; the modeline buffer-name indicator still uses it.
+;; The cursor uses the theme's cursor face. Buffer-state coloring (both the
+;; cursor and the modeline buffer-name) was removed -- changing color by buffer
+;; write state was more confusing than useful.
 
 ;; Don’t show a cursor in non-selected windows:
 (setq cursor-in-non-selected-windows nil)
