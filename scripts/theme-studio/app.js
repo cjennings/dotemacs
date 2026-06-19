@@ -439,7 +439,7 @@ function syncMockHeight(){const t=document.getElementById('uitable'),m=document.
 function buildMockFrame(){
   const fr=document.getElementById('mockframe');if(!fr)return;
   const bg=MAP['bg'],fg=MAP['p'];
-  const ln=uf('line-number'),lnc=uf('line-number-current-line'),hl=uf('hl-line'),hil=uf('highlight'),reg=uf('region'),isr=uf('isearch'),isf=uf('isearch-fail'),laz=uf('lazy-highlight'),par=uf('show-paren-match'),parx=uf('show-paren-mismatch'),cur=uf('cursor'),ml=uf('mode-line'),mli=uf('mode-line-inactive'),mb=uf('minibuffer-prompt'),frng=uf('fringe'),vb=uf('vertical-border'),lnk=uf('link'),err=uf('error'),wrn=uf('warning'),suc=uf('success');
+  const ln=uf('line-number'),lnc=uf('line-number-current-line'),hl=uf('hl-line'),hil=uf('highlight'),reg=uf('region'),isr=uf('isearch'),isf=uf('isearch-fail'),laz=uf('lazy-highlight'),par=uf('show-paren-match'),parx=uf('show-paren-mismatch'),cur=uf('cursor'),ml=uf('mode-line'),mli=uf('mode-line-inactive'),mlh=uf('mode-line-highlight'),mb=uf('minibuffer-prompt'),frng=uf('fringe'),vb=uf('vertical-border'),lnk=uf('link'),err=uf('error'),wrn=uf('warning'),suc=uf('success');
   const lines=[
     {t:[['cmd',';; '],['cm','init.el - your config']]},
     {t:[['punc','('],['kw','require'],['p',' '],['con',"'cl-lib"],['punc',')']]},
@@ -500,7 +500,8 @@ function buildMockFrame(){
     buf+=`<div class="ln" ${rowFace?'data-face="hl-line" ':''}style="${rowStyle}"><span class="fr" data-face="fringe" style="${uiCss(frng,frng.fg||fg,frng.bg||bg)};text-align:center;font-size:10px;overflow:hidden" title="fringe">${L.cont?'&#8618;':''}</span><span class="num" data-face="${nFace}" style="${uiCss(isc?lnc:ln,nFg,nBg)}">${i+1}</span><span class="cd">${cd||'&nbsp;'}</span></div>`;
   });
   let html=`<div class="mbuf" style="background:${bg}"><div class="mbuftext">${buf}</div><div class="vborder" data-face="vertical-border" title="vertical-border" style="background:${vb.fg||vb.bg||'#2f343a'}"></div></div>`;
-  html+=`<div class="bar" data-face="mode-line" style="${uiCss(ml,ml.fg||bg,ml.bg||fg)}">  init.el      (Emacs Lisp)      L5      git:main  </div>`;
+  const mlhStyle=uiCss(mlh,mlh.fg||ml.fg||bg,mlh.bg||ml.bg||fg);
+  html+=`<div class="bar" data-face="mode-line" style="${uiCss(ml,ml.fg||bg,ml.bg||fg)}">  init.el      (Emacs Lisp)      L5      <span data-face="mode-line-highlight" title="mode-line-highlight (mode-line hover)" style="${mlhStyle}">git:main</span>  </div>`;
   html+=`<div class="bar" data-face="mode-line-inactive" style="${uiCss(mli,resolveUiAttr('mode-line-inactive','fg',UIMAP)||fg,resolveUiAttr('mode-line-inactive','bg',UIMAP)||bg)}">  *Messages*      (Fundamental)</div>`;
   html+=`<div class="echo" style="color:${fg}"><span data-face="minibuffer-prompt" style="${uiCss(mb,mb.fg||fg,mb.bg||null)}">I-search:</span> count   <span data-face="isearch-fail" style="${uiCss(isf,isf.fg||fg,isf.bg||'transparent')}">zzz [no match]</span></div>`;
   html+=`<div class="echo"><span data-face="link" style="${uiCss(lnk,lnk.fg||fg,lnk.bg||null)}">https://gnu.org</span>   <span data-face="error" style="${uiCss(err,err.fg||fg,err.bg||null)}">error</span>   <span data-face="warning" style="${uiCss(wrn,wrn.fg||fg,wrn.bg||null)}">warning</span>   <span data-face="success" style="${uiCss(suc,suc.fg||fg,suc.bg||null)}">ok</span></div>`;

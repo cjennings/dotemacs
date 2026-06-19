@@ -240,6 +240,19 @@ class GeneratorStateHelpers(unittest.TestCase):
         self.assertTrue(uimap["link"]["underline"])
         self.assertEqual(uimap["mode-line"]["box"], {"style": "released", "width": 1, "color": None})
 
+    def test_mode_line_highlight_defaults_to_raised_box(self):
+        # The face is absent from the snapshot, so it must get the raised box in
+        # both the with-snapshot and no-snapshot branches.
+        raised = {"style": "released", "width": 1, "color": None}
+        self.assertEqual(generate.UIMAP["mode-line-highlight"]["box"], raised)
+        no_snapshot = generate.build_uimap(generate.UI_FACES, DefaultFaces(None))
+        self.assertEqual(no_snapshot["mode-line-highlight"]["box"], raised)
+
+    def test_hover_box_default_yields_to_existing_box(self):
+        uimap = {"mode-line-highlight": ui_face_spec({"box": {"style": "line", "width": 2, "color": "#abcdef"}})}
+        generate.apply_hover_box_default(uimap)
+        self.assertEqual(uimap["mode-line-highlight"]["box"], {"style": "line", "width": 2, "color": "#abcdef"})
+
     def test_build_syntax_uses_map_and_style_fallbacks_without_defaults_snapshot(self):
         syntax = generate.build_syntax(
             {"kw": [None, True]},

@@ -108,11 +108,26 @@ def apply_builtin_fallback_styles(uimap):
     for face in ("mode-line","mode-line-inactive"):
         uimap[face]["box"]={"style":"released","width":1,"color":None}
 
+def apply_hover_box_default(uimap):
+    """Seed the mode-line hover face's box.
+
+    `mode-line-highlight` (applied via mouse-face to the clickable mode-line
+    segments) is absent from the captured Emacs snapshot, so seed() returns
+    blank for it in both branches below. Emacs's stock default is a raised
+    released-button box; default to that so the studio reflects current
+    behavior, then let the user flatten or recolor it. A future snapshot that
+    captures the face wins (the box-already-set guard leaves it alone)."""
+    face=uimap.get("mode-line-highlight")
+    if face and not face.get("box"):
+        face["box"]={"style":"released","width":1,"color":None}
+
 def build_uimap(ui_faces,defaults):
     if defaults.available:
-        return {face[0]:ui_face_spec(defaults.seed(face[0],False)) for face in ui_faces}
-    uimap={face[0]:ui_face_spec() for face in ui_faces}
-    apply_builtin_fallback_styles(uimap)
+        uimap={face[0]:ui_face_spec(defaults.seed(face[0],False)) for face in ui_faces}
+    else:
+        uimap={face[0]:ui_face_spec() for face in ui_faces}
+        apply_builtin_fallback_styles(uimap)
+    apply_hover_box_default(uimap)
     return uimap
 
 def build_syntax(cols,map_,bold,italic,defaults):
@@ -197,7 +212,9 @@ CATS=[["bg","bg (ground)","Aa Bb 123"],["p","fg","other / whitespace"],["kw","ke
  ["punc","punctuation","{ }  ( )  ;"]]
 UI_FACES=[["cursor","cursor","Aa|"],["region","region (selection)","selected text"],
  ["hl-line","hl-line (current line)","current line"],["highlight","highlight","hover"],
- ["mode-line","mode-line","status active"],["mode-line-inactive","mode-line-inactive","status idle"],
+ ["mode-line","mode-line","status active"],
+ ["mode-line-highlight","mode-line-highlight (mode-line hover)","git:main"],
+ ["mode-line-inactive","mode-line-inactive","status idle"],
  ["fringe","fringe","| |"],["line-number","line-number","  42"],
  ["line-number-current-line","line-number-current-line","> 42"],["minibuffer-prompt","minibuffer-prompt","M-x "],
  ["isearch","isearch (match)","match"],["lazy-highlight","lazy-highlight","other match"],
