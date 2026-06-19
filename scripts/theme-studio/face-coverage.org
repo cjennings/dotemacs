@@ -3,18 +3,21 @@
 #+TODO: TODO DOING | DONE
 #+STARTUP: overview
 
-Every known face (live Emacs face-list union everything theme-studio manages), grouped
-by package/subsystem. DONE = theme-studio already themes it; TODO = not yet. A group
-is DONE when all its faces are covered, DOING when some are, TODO when none are. The line
-under each face is its Emacs docstring (first line), where one exists.
+Every known face (live Emacs face-list union everything theme-studio manages). DONE = the
+studio already themes it; TODO = not yet. Three top-level tiers:
+- emacs-core: the standalone built-in faces (frame chrome, cursor, region, mode line, search).
+- emacs-general: built-in Emacs subsystems (org, gnus, erc, diff, vc, custom, ...), one child each.
+- one heading per third-party package installed from elpa (magit, vertico, consult, ...).
+Tier is decided by where each face's defface lives: /usr/share/emacs = built-in, elpa = package.
+The line under each face is its Emacs docstring (first line), where one exists.
 
-Totals: 690 / 1293 faces covered across 108 groups; 1129 carry a docstring.
-Coverage tiers: syntax font-lock=23, UI tier=21, package inventory=643 (39 packages).
+Totals: 690 / 1293 faces covered; 1129 carry a docstring. Tiers: core 1, general 73, packages 38.
+Coverage tiers in the studio: syntax font-lock=23, UI tier=21, package inventory=643 (39 packages).
 
-Mechanism to close a TODO: core/UI faces -> UI_FACES in generate.py; package faces ->
-package-inventory.json (regenerable via build-inventory.el / app_inventory.py).
+Mechanism to close a TODO: core/UI faces -> UI_FACES in generate.py; package + subsystem faces
+-> package-inventory.json (regenerable via build-inventory.el / app_inventory.py).
 
-* DOING emacs-core [111/170]
+* DOING emacs-core [54/107]
 ** TODO abbrev-table-name
    Face used for displaying the abbrev table name in 'edit-abbrevs-mode'.
 ** TODO blink-matching-paren-offscreen
@@ -29,16 +32,10 @@ package-inventory.json (regenerable via build-inventory.el / app_inventory.py).
    Default face used for buttons.
 ** TODO child-frame-border
    Basic face for the internal border of child frames.
-** TODO completions-annotations
-   Face to use for annotations in the *Completions* buffer.
 ** TODO completions-common-part
    Face for the parts of completions which matched the pattern.
 ** TODO completions-first-difference
    Face for the first character after point in completions.
-** TODO completions-group-title
-   Face used for the title text of the candidate group headlines.
-** TODO completions-highlight
-   Default face for highlighting the current completion candidate.
 ** DONE cursor
    Basic face for the cursor color under X.
 ** DONE default
@@ -126,120 +123,6 @@ package-inventory.json (regenerable via build-inventory.el / app_inventory.py).
    Basic face for unvisited links.
 ** TODO link-visited
    Basic face for visited links.
-** DONE lsp-details-face
-   Used to display additional information throughout 'lsp'.
-** DONE lsp-face-highlight-read
-   Face used for highlighting symbols being read.
-** DONE lsp-face-highlight-textual
-   Face used for textual occurrences of symbols.
-** DONE lsp-face-highlight-write
-   Face used for highlighting symbols being written to.
-** DONE lsp-face-rename
-   Face used to highlight the identifier being renamed.
-** DONE lsp-inlay-hint-face
-   The face to use for the JavaScript inlays.
-** DONE lsp-inlay-hint-parameter-face
-   Face for inlay parameter hints (e.g. function parameter names at
-** DONE lsp-inlay-hint-type-face
-   Face for inlay type hints (e.g. inferred variable types).
-** DONE lsp-installation-buffer-face
-   Face used for installation buffers still in progress.
-** DONE lsp-installation-finished-buffer-face
-   Face used for finished installation buffers.
-** DONE lsp-rename-placeholder-face
-   Face used to display the rename placeholder in.
-** DONE lsp-signature-face
-   Used to display signatures in 'imenu', ....
-** DONE lsp-signature-highlight-function-argument
-   The face to use to highlight function arguments in signatures.
-** DONE lsp-signature-posframe
-   Background and foreground for 'lsp-signature-posframe'.
-** DONE markdown-blockquote-face
-   Face for blockquote sections.
-** DONE markdown-bold-face
-   Face for bold text.
-** DONE markdown-code-face
-   Face for inline code, pre blocks, and fenced code blocks.
-** DONE markdown-comment-face
-   Face for HTML comments.
-** DONE markdown-footnote-marker-face
-   Face for footnote markers.
-** DONE markdown-footnote-text-face
-   Face for footnote text.
-** DONE markdown-gfm-checkbox-face
-   Face for GFM checkboxes.
-** DONE markdown-header-delimiter-face
-   Base face for headers hash delimiter.
-** DONE markdown-header-face
-   Base face for headers.
-** DONE markdown-header-face-1
-   Face for level 1 headers.
-** DONE markdown-header-face-2
-   Face for level 2 headers.
-** DONE markdown-header-face-3
-   Face for level 3 headers.
-** DONE markdown-header-face-4
-   Face for level 4 headers.
-** DONE markdown-header-face-5
-   Face for level 5 headers.
-** DONE markdown-header-face-6
-   Face for level 6 headers.
-** DONE markdown-header-rule-face
-   Base face for headers rules.
-** DONE markdown-highlight-face
-   Face for mouse highlighting.
-** DONE markdown-highlighting-face
-   Face for highlighting.
-** DONE markdown-hr-face
-   Face for horizontal rules.
-** DONE markdown-html-attr-name-face
-   Face for HTML attribute names.
-** DONE markdown-html-attr-value-face
-   Face for HTML attribute values.
-** DONE markdown-html-entity-face
-   Face for HTML entities.
-** DONE markdown-html-tag-delimiter-face
-   Face for HTML tag delimiters.
-** DONE markdown-html-tag-name-face
-   Face for HTML tag names.
-** DONE markdown-inline-code-face
-   Face for inline code.
-** DONE markdown-italic-face
-   Face for italic text.
-** DONE markdown-language-info-face
-   Face for programming language info strings.
-** DONE markdown-language-keyword-face
-   Face for programming language identifiers.
-** DONE markdown-line-break-face
-   Face for hard line breaks.
-** DONE markdown-link-face
-   Face for link text, ie the alias portion of a link.
-** DONE markdown-link-title-face
-   Face for reference link titles.
-** DONE markdown-list-face
-   Face for list item markers.
-** DONE markdown-markup-face
-   Face for markup elements.
-** DONE markdown-math-face
-   Face for LaTeX expressions.
-** DONE markdown-metadata-key-face
-   Face for metadata keys.
-** DONE markdown-metadata-value-face
-   Face for metadata values.
-** DONE markdown-missing-link-face
-   Face for the link text if the link points to a missing file.
-** DONE markdown-plain-url-face
-   Face for URLs that are also links.
-** DONE markdown-pre-face
-   Face for preformatted text.
-** DONE markdown-reference-face
-   Face for link references.
-** DONE markdown-strike-through-face
-   Face for strike-through text.
-** DONE markdown-table-face
-   Face for tables.
-** DONE markdown-url-face
-   Face for URLs that are part of markup.
 ** TODO match
    Face used to highlight matches permanently.
 ** TODO menu
@@ -264,16 +147,12 @@ package-inventory.json (regenerable via build-inventory.el / app_inventory.py).
    Face to highlight original text during dragging.
 ** TODO next-error
    Face used to highlight next error locus.
-** TODO next-error-message
-   Face used to highlight the current error message in the 'next-error' buffer.
 ** TODO nobreak-hyphen
    Face for displaying nobreak hyphens.
 ** TODO nobreak-space
    Face for displaying nobreak space.
 ** TODO query-replace
    Face for highlighting query replacement matches.
-** TODO read-multiple-choice-face
-   Face for the symbol name in 'read-multiple-choice' output.
 ** DONE region
    Basic face for highlighting the region.
 ** TODO scroll-bar
@@ -292,8 +171,6 @@ package-inventory.json (regenerable via build-inventory.el / app_inventory.py).
    Face used for a mismatching paren.
 ** DONE success
    Basic face used to indicate successful operation.
-** TODO tab-bar
-   Tab bar face.
 ** TODO tool-bar
    Basic tool-bar face.
 ** TODO tooltip
@@ -350,6 +227,1203 @@ package-inventory.json (regenerable via build-inventory.el / app_inventory.py).
    The face used for debugging some overlays normally hidden
 ** DONE yas-field-highlight-face
    The face used to highlight the currently active field of a snippet
+
+* DOING emacs-general [23/561]
+** TODO ansi-color [0/23]
+*** TODO ansi-color-black
+    Face used to render black color code.
+*** TODO ansi-color-blue
+    Face used to render blue color code.
+*** TODO ansi-color-bold
+    Face used to render bold text.
+*** TODO ansi-color-bright-black
+    Face used to render bright black color code.
+*** TODO ansi-color-bright-blue
+    Face used to render bright blue color code.
+*** TODO ansi-color-bright-cyan
+    Face used to render bright cyan color code.
+*** TODO ansi-color-bright-green
+    Face used to render bright green color code.
+*** TODO ansi-color-bright-magenta
+    Face used to render bright magenta color code.
+*** TODO ansi-color-bright-red
+    Face used to render bright red color code.
+*** TODO ansi-color-bright-white
+    Face used to render bright white color code.
+*** TODO ansi-color-bright-yellow
+    Face used to render bright yellow color code.
+*** TODO ansi-color-cyan
+    Face used to render cyan color code.
+*** TODO ansi-color-faint
+    Face used to render faint text.
+*** TODO ansi-color-fast-blink
+    Face used to render rapidly blinking text.
+*** TODO ansi-color-green
+    Face used to render green color code.
+*** TODO ansi-color-inverse
+    Face used to render inverted video text.
+*** TODO ansi-color-italic
+    Face used to render italic text.
+*** TODO ansi-color-magenta
+    Face used to render magenta color code.
+*** TODO ansi-color-red
+    Face used to render red color code.
+*** TODO ansi-color-slow-blink
+    Face used to render slowly blinking text.
+*** TODO ansi-color-underline
+    Face used to render underlined text.
+*** TODO ansi-color-white
+    Face used to render white color code.
+*** TODO ansi-color-yellow
+    Face used to render yellow color code.
+** TODO apropos [0/8]
+*** TODO apropos-button
+    Face for buttons that indicate a face in Apropos.
+*** TODO apropos-function-button
+    Button face indicating a function, macro, or command in Apropos.
+*** TODO apropos-keybinding
+    Face for lists of keybinding in Apropos output.
+*** TODO apropos-misc-button
+    Button face indicating a miscellaneous object type in Apropos.
+*** TODO apropos-property
+    Face for property name in Apropos output, or nil for none.
+*** TODO apropos-symbol
+    Face for the symbol name in Apropos output.
+*** TODO apropos-user-option-button
+    Button face indicating a user option in Apropos.
+*** TODO apropos-variable-button
+    Button face indicating a variable in Apropos.
+** TODO bookmark [0/2]
+*** TODO bookmark-face
+    Face used to highlight current line.
+*** TODO bookmark-menu-bookmark
+    Face used to highlight bookmark names in bookmark menu buffers.
+** TODO breakpoint [0/2]
+*** TODO breakpoint-disabled
+    Face for disabled breakpoint icon in fringe.
+*** TODO breakpoint-enabled
+    Face for enabled breakpoint icon in fringe.
+** TODO browse [0/1]
+*** TODO browse-url-button
+    Face for 'browse-url' buttons (i.e., links).
+** TODO buffer [0/1]
+*** TODO buffer-menu-buffer
+    Face for buffer names in the Buffer Menu.
+** TODO calendar [0/4]
+*** TODO calendar-month-header
+    Face used for month headers in the calendar.
+*** TODO calendar-today
+    Face for indicating today's date in the calendar.
+*** TODO calendar-weekday-header
+    Face used for weekday column headers in the calendar.
+*** TODO calendar-weekend-header
+    Face used for weekend column headers in the calendar.
+** TODO change-log [0/8]
+*** TODO change-log-acknowledgment
+    Face for highlighting acknowledgments.
+*** TODO change-log-conditionals
+    Face for highlighting conditionals of the form '[...]'.
+*** TODO change-log-date
+    Face used to highlight dates in date lines.
+*** TODO change-log-email
+    Face for highlighting author email addresses.
+*** TODO change-log-file
+    Face for highlighting file names.
+*** TODO change-log-function
+    Face for highlighting items of the form '<....>'.
+*** TODO change-log-list
+    Face for highlighting parenthesized lists of functions or variables.
+*** TODO change-log-name
+    Face for highlighting author names.
+** TODO comint [0/2]
+*** TODO comint-highlight-input
+    Face to use to highlight user input.
+*** TODO comint-highlight-prompt
+    Face to use to highlight prompts.
+** TODO compilation [0/8]
+*** TODO compilation-column-number
+    Face for displaying column numbers in compiler messages.
+*** TODO compilation-error
+    Face used to highlight compiler errors.
+*** TODO compilation-info
+    Face used to highlight compiler information.
+*** TODO compilation-line-number
+    Face for displaying line numbers in compiler messages.
+*** TODO compilation-mode-line-exit
+    Face for Compilation mode's "exit" mode line indicator.
+*** TODO compilation-mode-line-fail
+    Face for Compilation mode's "error" mode line indicator.
+*** TODO compilation-mode-line-run
+    Face for Compilation mode's "running" mode line indicator.
+*** TODO compilation-warning
+    Face used to highlight compiler warnings.
+** TODO completions [0/4]
+*** TODO completions-annotations
+    Face to use for annotations in the *Completions* buffer.
+*** TODO completions-group-separator
+    Face used for the separator lines between the candidate groups.
+*** TODO completions-group-title
+    Face used for the title text of the candidate group headlines.
+*** TODO completions-highlight
+    Default face for highlighting the current completion candidate.
+** TODO confusingly [0/1]
+*** TODO confusingly-reordered
+    Face for highlighting text that was bidi-reordered in confusing ways.
+** TODO custom [0/25]
+*** TODO custom-button
+    Face for custom buffer buttons if 'custom-raised-buttons' is non-nil.
+*** TODO custom-button-mouse
+    Mouse face for custom buffer buttons if 'custom-raised-buttons' is non-nil.
+*** TODO custom-button-pressed
+    Face for pressed custom buttons if 'custom-raised-buttons' is non-nil.
+*** TODO custom-button-pressed-unraised
+    Face for pressed custom buttons if 'custom-raised-buttons' is nil.
+*** TODO custom-button-unraised
+    Face for custom buffer buttons if 'custom-raised-buttons' is nil.
+*** TODO custom-changed
+    Face used when the customize item has been changed.
+*** TODO custom-comment
+    Face used for comments on variables or faces.
+*** TODO custom-comment-tag
+    Face used for the comment tag on variables or faces.
+*** TODO custom-documentation
+    Face used for documentation strings in customization buffers.
+*** TODO custom-face-tag
+    Face used for face tags.
+*** TODO custom-group-subtitle
+    Face for the "Subgroups:" subtitle in Custom buffers.
+*** TODO custom-group-tag
+    Face for low level group tags.
+*** TODO custom-group-tag-1
+    Face for group tags.
+*** TODO custom-invalid
+    Face used when the customize item is invalid.
+*** TODO custom-link
+    Face for links in customization buffers.
+*** TODO custom-modified
+    Face used when the customize item has been modified.
+*** TODO custom-rogue
+    Face used when the customize item is not defined for customization.
+*** TODO custom-saved
+    Face used when the customize item has been saved.
+*** TODO custom-set
+    Face used when the customize item has been set.
+*** TODO custom-state
+    Face used for State descriptions in the customize buffer.
+*** TODO custom-themed
+    Face used when the customize item has been set by a theme.
+*** TODO custom-variable-button
+    Face used for pushable variable tags.
+*** TODO custom-variable-obsolete
+    Face used for obsolete variables.
+*** TODO custom-variable-tag
+    Face used for unpushable variable tags.
+*** TODO custom-visibility
+    Face for the 'custom-visibility' widget.
+** TODO diary [0/1]
+*** TODO diary
+    Face for highlighting diary entries.
+** TODO diff [0/18]
+*** TODO diff-added
+    'diff-mode' face used to highlight added lines.
+*** TODO diff-changed
+    'diff-mode' face used to highlight changed lines.
+*** TODO diff-changed-unspecified
+    'diff-mode' face used to highlight changed lines.
+*** TODO diff-context
+    'diff-mode' face used to highlight context and other side-information.
+*** TODO diff-error
+    'diff-mode' face for error messages from diff.
+*** TODO diff-file-header
+    'diff-mode' face used to highlight file header lines.
+*** TODO diff-function
+    'diff-mode' face used to highlight function names produced by "diff -p".
+*** TODO diff-header
+    'diff-mode' face inherited by hunk and index header faces.
+*** TODO diff-hunk-header
+    'diff-mode' face used to highlight hunk header lines.
+*** TODO diff-index
+    'diff-mode' face used to highlight index header lines.
+*** TODO diff-indicator-added
+    'diff-mode' face used to highlight indicator of added lines (+, >).
+*** TODO diff-indicator-changed
+    'diff-mode' face used to highlight indicator of changed lines.
+*** TODO diff-indicator-removed
+    'diff-mode' face used to highlight indicator of removed lines (-, <).
+*** TODO diff-nonexistent
+    'diff-mode' face used to highlight nonexistent files in recursive diffs.
+*** TODO diff-refine-added
+    Face used for added characters shown by 'diff-refine-hunk'.
+*** TODO diff-refine-changed
+    Face used for char-based changes shown by 'diff-refine-hunk'.
+*** TODO diff-refine-removed
+    Face used for removed characters shown by 'diff-refine-hunk'.
+*** TODO diff-removed
+    'diff-mode' face used to highlight removed lines.
+** TODO dired [0/12]
+*** TODO dired-broken-symlink
+    Face used for broken symbolic links.
+*** TODO dired-directory
+    Face used for subdirectories.
+*** TODO dired-flagged
+    Face used for files flagged for deletion.
+*** TODO dired-header
+    Face used for directory headers.
+*** TODO dired-ignored
+    Face used for files suffixed with 'completion-ignored-extensions'.
+*** TODO dired-mark
+    Face used for Dired marks.
+*** TODO dired-marked
+    Face used for marked files.
+*** TODO dired-perm-write
+    Face used to highlight permissions of group- and world-writable files.
+*** TODO dired-set-id
+    Face used to highlight permissions of suid and guid files.
+*** TODO dired-special
+    Face used for sockets, pipes, block devices and char devices.
+*** TODO dired-symlink
+    Face used for symbolic links.
+*** TODO dired-warning
+    Face used to highlight a part of a buffer that needs user attention.
+** TODO doc [0/1]
+*** TODO doc-view-svg-face
+    Face used for SVG images.
+** TODO edmacro [0/1]
+*** TODO edmacro-label
+    Face used for labels in 'edit-kbd-macro'.
+** TODO eldoc [0/1]
+*** TODO eldoc-highlight-function-argument
+    Face used for the argument at point in a function's argument list.
+** TODO elisp [0/1]
+*** TODO elisp-shorthand-font-lock-face
+    Face for highlighting shorthands in Emacs Lisp.
+** TODO epa [0/8]
+*** TODO epa-field-body
+    Face for the body of the attribute field.
+*** TODO epa-field-name
+    Face for the name of the attribute field.
+*** TODO epa-mark
+    Face used for displaying the high validity.
+*** TODO epa-string
+    Face used for displaying the string.
+*** TODO epa-validity-disabled
+    Face used for displaying the disabled validity.
+*** TODO epa-validity-high
+    Face for high validity EPA information.
+*** TODO epa-validity-low
+    Face used for displaying the low validity.
+*** TODO epa-validity-medium
+    Face for medium validity EPA information.
+** TODO erc [0/31]
+*** TODO erc-action-face
+    ERC face for actions generated by /ME.
+*** TODO erc-bold-face
+    ERC bold face.
+*** TODO erc-button
+    ERC button face.
+*** TODO erc-button-nick-default-face
+    Default face for a buttonized nickname.
+*** TODO erc-command-indicator-face
+    Face for echoed command lines, including the prompt.
+*** TODO erc-current-nick-face
+    ERC face for occurrences of your current nickname.
+*** TODO erc-dangerous-host-face
+    ERC face for people on dangerous hosts.
+*** TODO erc-default-face
+    ERC default face.
+*** TODO erc-direct-msg-face
+    ERC face used for messages you receive in the main erc buffer.
+*** TODO erc-error-face
+    ERC face for errors.
+*** TODO erc-fill-wrap-merge-indicator-face
+    ERC 'fill-wrap' merge-indicator face.
+*** TODO erc-fool-face
+    ERC face for fools on the channel.
+*** TODO erc-header-line
+    ERC face used for the header line.
+*** TODO erc-information
+    Face for local administrative messages of low to moderate importance.
+*** TODO erc-input-face
+    ERC face used for your input.
+*** TODO erc-inverse-face
+    ERC inverse face.
+*** TODO erc-italic-face
+    ERC italic face.
+*** TODO erc-keep-place-indicator-arrow
+    Face for arrow value of option 'erc-keep-place-indicator-style'.
+*** TODO erc-keep-place-indicator-line
+    Face for option 'erc-keep-place-indicator-style'.
+*** TODO erc-keyword-face
+    ERC face for your keywords.
+*** TODO erc-my-nick-face
+    ERC face for your current nickname in messages sent by you.
+*** TODO erc-my-nick-prefix-face
+    ERC face used for my user mode prefix.
+*** TODO erc-nick-default-face
+    ERC nickname default face.
+*** TODO erc-nick-msg-face
+    ERC nickname face for private messages.
+*** TODO erc-nick-prefix-face
+    ERC face used for user mode prefix.
+*** TODO erc-notice-face
+    ERC face for notices.
+*** TODO erc-pal-face
+    ERC face for your pals.
+*** TODO erc-prompt-face
+    ERC face for the prompt.
+*** TODO erc-spoiler-face
+    ERC spoiler face.
+*** TODO erc-timestamp-face
+    ERC timestamp face.
+*** TODO erc-underline-face
+    ERC underline face.
+** TODO erc-ansi [0/32]
+*** TODO bg:erc-color-face0
+    ERC face.
+*** TODO bg:erc-color-face1
+    ERC face.
+*** TODO bg:erc-color-face10
+    ERC face.
+*** TODO bg:erc-color-face11
+    ERC face.
+*** TODO bg:erc-color-face12
+    ERC face.
+*** TODO bg:erc-color-face13
+    ERC face.
+*** TODO bg:erc-color-face14
+    ERC face.
+*** TODO bg:erc-color-face15
+    ERC face.
+*** TODO bg:erc-color-face2
+    ERC face.
+*** TODO bg:erc-color-face3
+    ERC face.
+*** TODO bg:erc-color-face4
+    ERC face.
+*** TODO bg:erc-color-face5
+    ERC face.
+*** TODO bg:erc-color-face6
+    ERC face.
+*** TODO bg:erc-color-face7
+    ERC face.
+*** TODO bg:erc-color-face8
+    ERC face.
+*** TODO bg:erc-color-face9
+    ERC face.
+*** TODO fg:erc-color-face0
+    ERC face.
+*** TODO fg:erc-color-face1
+    ERC face.
+*** TODO fg:erc-color-face10
+    ERC face.
+*** TODO fg:erc-color-face11
+    ERC face.
+*** TODO fg:erc-color-face12
+    ERC face.
+*** TODO fg:erc-color-face13
+    ERC face.
+*** TODO fg:erc-color-face14
+    ERC face.
+*** TODO fg:erc-color-face15
+    ERC face.
+*** TODO fg:erc-color-face2
+    ERC face.
+*** TODO fg:erc-color-face3
+    ERC face.
+*** TODO fg:erc-color-face4
+    ERC face.
+*** TODO fg:erc-color-face5
+    ERC face.
+*** TODO fg:erc-color-face6
+    ERC face.
+*** TODO fg:erc-color-face7
+    ERC face.
+*** TODO fg:erc-color-face8
+    ERC face.
+*** TODO fg:erc-color-face9
+    ERC face.
+** TODO ert [0/2]
+*** TODO ert-test-result-expected
+    Face used for expected results in the ERT results buffer.
+*** TODO ert-test-result-unexpected
+    Face used for unexpected results in the ERT results buffer.
+** TODO eww [0/8]
+*** TODO eww-form-checkbox
+    Face for eww buffer buttons.
+*** TODO eww-form-file
+    Face for eww buffer buttons.
+*** TODO eww-form-select
+    Face for eww buffer buttons.
+*** TODO eww-form-submit
+    Face for eww buffer buttons.
+*** TODO eww-form-text
+    Face for eww text inputs.
+*** TODO eww-form-textarea
+    Face for eww textarea inputs.
+*** TODO eww-invalid-certificate
+    Face for web pages with invalid certificates.
+*** TODO eww-valid-certificate
+    Face for web pages with valid certificates.
+** TODO ffap [0/1]
+*** TODO ffap
+    Face used to highlight the current buffer substring.
+** TODO file [0/1]
+*** TODO file-name-shadow
+    Face used by 'file-name-shadow-mode' for the shadow.
+** DOING font-lock [23/28]
+*** DONE font-lock-bracket-face
+    Font Lock mode face used to highlight brackets, braces, and parens.
+*** DONE font-lock-builtin-face
+    Font Lock mode face used to highlight builtins.
+*** DONE font-lock-comment-delimiter-face
+    Font Lock mode face used to highlight comment delimiters.
+*** DONE font-lock-comment-face
+    Font Lock mode face used to highlight comments.
+*** DONE font-lock-constant-face
+    Font Lock mode face used to highlight constants and labels.
+*** DONE font-lock-delimiter-face
+    Font Lock mode face used to highlight delimiters.
+*** DONE font-lock-doc-face
+    Font Lock mode face used to highlight documentation embedded in program code.
+*** TODO font-lock-doc-markup-face
+    Font Lock mode face used to highlight embedded documentation mark-up.
+*** DONE font-lock-escape-face
+    Font Lock mode face used to highlight escape sequences in strings.
+*** DONE font-lock-function-call-face
+    Font Lock mode face used to highlight function calls.
+*** DONE font-lock-function-name-face
+    Font Lock mode face used to highlight function names.
+*** DONE font-lock-keyword-face
+    Font Lock mode face used to highlight keywords.
+*** DONE font-lock-misc-punctuation-face
+    Font Lock mode face used to highlight miscellaneous punctuation.
+*** TODO font-lock-negation-char-face
+    Font Lock mode face used to highlight easy to overlook negation.
+*** DONE font-lock-number-face
+    Font Lock mode face used to highlight numbers.
+*** DONE font-lock-operator-face
+    Font Lock mode face used to highlight operators.
+*** DONE font-lock-preprocessor-face
+    Font Lock mode face used to highlight preprocessor directives.
+*** DONE font-lock-property-name-face
+    Font Lock mode face used to highlight properties of an object.
+*** DONE font-lock-property-use-face
+    Font Lock mode face used to highlight property references.
+*** DONE font-lock-punctuation-face
+    Font Lock mode face used to highlight punctuation characters.
+*** DONE font-lock-regexp-face
+    Font Lock mode face used to highlight regexp literals.
+*** TODO font-lock-regexp-grouping-backslash
+    Font Lock mode face for backslashes in Lisp regexp grouping constructs.
+*** TODO font-lock-regexp-grouping-construct
+    Font Lock mode face used to highlight grouping constructs in Lisp regexps.
+*** DONE font-lock-string-face
+    Font Lock mode face used to highlight strings.
+*** DONE font-lock-type-face
+    Font Lock mode face used to highlight type and class names.
+*** DONE font-lock-variable-name-face
+    Font Lock mode face used to highlight variable names.
+*** DONE font-lock-variable-use-face
+    Font Lock mode face used to highlight variable references.
+*** TODO font-lock-warning-face
+    Font Lock mode face used to highlight warnings.
+** TODO gnus-button [0/1]
+*** TODO gnus-button
+    Face used for highlighting a button in the article buffer.
+** TODO gnus-emphasis [0/9]
+*** TODO gnus-emphasis-bold
+    Face used for displaying strong emphasized text (*word*).
+*** TODO gnus-emphasis-bold-italic
+    Face used for displaying bold italic emphasized text (/*word*/).
+*** TODO gnus-emphasis-highlight-words
+    Face used for displaying highlighted words.
+*** TODO gnus-emphasis-italic
+    Face used for displaying italic emphasized text (/word/).
+*** TODO gnus-emphasis-strikethru
+    Face used for displaying strike-through text (-word-).
+*** TODO gnus-emphasis-underline
+    Face used for displaying underlined emphasized text (_word_).
+*** TODO gnus-emphasis-underline-bold
+    Face used for displaying underlined bold emphasized text (_*word*_).
+*** TODO gnus-emphasis-underline-bold-italic
+    Face used for displaying underlined bold italic emphasized text.
+*** TODO gnus-emphasis-underline-italic
+    Face used for displaying underlined italic emphasized text (_/word/_).
+** TODO gnus-group [0/22]
+*** TODO gnus-group-mail-1
+    Level 1 mailgroup face.
+*** TODO gnus-group-mail-1-empty
+    Level 1 empty mailgroup face.
+*** TODO gnus-group-mail-2
+    Level 2 mailgroup face.
+*** TODO gnus-group-mail-2-empty
+    Level 2 empty mailgroup face.
+*** TODO gnus-group-mail-3
+    Level 3 mailgroup face.
+*** TODO gnus-group-mail-3-empty
+    Level 3 empty mailgroup face.
+*** TODO gnus-group-mail-low
+    Low level mailgroup face.
+*** TODO gnus-group-mail-low-empty
+    Low level empty mailgroup face.
+*** TODO gnus-group-news-1
+    Level 1 newsgroup face.
+*** TODO gnus-group-news-1-empty
+    Level 1 empty newsgroup face.
+*** TODO gnus-group-news-2
+    Level 2 newsgroup face.
+*** TODO gnus-group-news-2-empty
+    Level 2 empty newsgroup face.
+*** TODO gnus-group-news-3
+    Level 3 newsgroup face.
+*** TODO gnus-group-news-3-empty
+    Level 3 empty newsgroup face.
+*** TODO gnus-group-news-4
+    Level 4 newsgroup face.
+*** TODO gnus-group-news-4-empty
+    Level 4 empty newsgroup face.
+*** TODO gnus-group-news-5
+    Level 5 newsgroup face.
+*** TODO gnus-group-news-5-empty
+    Level 5 empty newsgroup face.
+*** TODO gnus-group-news-6
+    Level 6 newsgroup face.
+*** TODO gnus-group-news-6-empty
+    Level 6 empty newsgroup face.
+*** TODO gnus-group-news-low
+    Low level newsgroup face.
+*** TODO gnus-group-news-low-empty
+    Low level empty newsgroup face.
+** TODO gnus-header [0/6]
+*** TODO gnus-header
+    Base face used for all Gnus header faces.
+*** TODO gnus-header-content
+    Face used for displaying header content.
+*** TODO gnus-header-from
+    Face used for displaying from headers.
+*** TODO gnus-header-name
+    Face used for displaying header names.
+*** TODO gnus-header-newsgroups
+    Face used for displaying newsgroups headers.
+*** TODO gnus-header-subject
+    Face used for displaying subject headers.
+** TODO gnus-signature [0/1]
+*** TODO gnus-signature
+    Face used for highlighting a signature in the article buffer.
+** TODO gnus-splash [0/1]
+*** TODO gnus-splash
+    Face for the splash screen.
+** TODO gnus-summary [0/17]
+*** TODO gnus-summary-cancelled
+    Face used for canceled articles.
+*** TODO gnus-summary-high-ancient
+    Face used for high interest ancient articles.
+*** TODO gnus-summary-high-read
+    Face used for high interest read articles.
+*** TODO gnus-summary-high-ticked
+    Face used for high interest ticked articles.
+*** TODO gnus-summary-high-undownloaded
+    Face used for high interest uncached articles.
+*** TODO gnus-summary-high-unread
+    Face used for high interest unread articles.
+*** TODO gnus-summary-low-ancient
+    Face used for low interest ancient articles.
+*** TODO gnus-summary-low-read
+    Face used for low interest read articles.
+*** TODO gnus-summary-low-ticked
+    Face used for low interest ticked articles.
+*** TODO gnus-summary-low-undownloaded
+    Face used for low interest uncached articles.
+*** TODO gnus-summary-low-unread
+    Face used for low interest unread articles.
+*** TODO gnus-summary-normal-ancient
+    Face used for normal interest ancient articles.
+*** TODO gnus-summary-normal-read
+    Face used for normal interest read articles.
+*** TODO gnus-summary-normal-ticked
+    Face used for normal interest ticked articles.
+*** TODO gnus-summary-normal-undownloaded
+    Face used for normal interest uncached articles.
+*** TODO gnus-summary-normal-unread
+    Face used for normal interest unread articles.
+*** TODO gnus-summary-selected
+    Face used for selected articles.
+** TODO grep [0/1]
+*** TODO grep-heading
+    Face of headings when 'grep-use-headings' is non-nil.
+** TODO gud [0/1]
+*** TODO gud-highlight-current-line-face
+    Face for highlighting the source code line being executed.
+** TODO help [0/2]
+*** TODO help-argument-name
+    Face to highlight argument names in *Help* buffers.
+*** TODO help-for-help-header
+    Face used for headers in the 'help-for-help' buffer.
+** TODO holiday [0/1]
+*** TODO holiday
+    Face for indicating in the calendar dates that have holidays.
+** TODO ibuffer [0/1]
+*** TODO ibuffer-locked-buffer
+    Face used for locked buffers in Ibuffer.
+** TODO icon [0/2]
+*** TODO icon
+    Face for buttons.
+*** TODO icon-button
+    Face for buttons.
+** TODO image-dired [0/6]
+*** TODO image-dired-thumb-flagged
+    Face for images flagged for deletion in thumbnail buffer.
+*** TODO image-dired-thumb-header-directory-name
+    Face for the directory name in the header line of the thumbnail buffer.
+*** TODO image-dired-thumb-header-file-name
+    Face for the file name in the header line of the thumbnail buffer.
+*** TODO image-dired-thumb-header-file-size
+    Face for the file size in the header line of the thumbnail buffer.
+*** TODO image-dired-thumb-header-image-count
+    Face for the image count in the header line of the thumbnail buffer.
+*** TODO image-dired-thumb-mark
+    Face for marked images in thumbnail buffer.
+** TODO info [0/13]
+*** TODO Info-quoted
+    Face used for quoted elements.
+*** TODO info-header-node
+    Face for Info nodes in a node header.
+*** TODO info-header-xref
+    Face for Info cross-references in a node header.
+*** TODO info-index-match
+    Face used to highlight matches in an index entry.
+*** TODO info-menu-header
+    Face for headers in Info menus.
+*** TODO info-menu-star
+    Face used to emphasize '*' in an Info menu.
+*** TODO info-node
+    Face for Info node names.
+*** TODO info-title-1
+    Face for info titles at level 1.
+*** TODO info-title-2
+    Face for info titles at level 2.
+*** TODO info-title-3
+    Face for info titles at level 3.
+*** TODO info-title-4
+    Face for info titles at level 4.
+*** TODO info-xref
+    Face for unvisited Info cross-references.
+*** TODO info-xref-visited
+    Face for visited Info cross-references.
+** TODO kmacro [0/3]
+*** TODO kmacro-menu-flagged
+    Face used for keyboard macros flagged for deletion.
+*** TODO kmacro-menu-mark
+    Face used for the Keyboard Macro Menu marks.
+*** TODO kmacro-menu-marked
+    Face used for keyboard macros marked for duplication.
+** TODO log [0/4]
+*** TODO log-edit-header
+    Face for the headers in 'log-edit-mode' buffers.
+*** TODO log-edit-headers-separator
+    Face for the separator line in 'log-edit-mode' buffers.
+*** TODO log-edit-summary
+    Face for the summary in 'log-edit-mode' buffers.
+*** TODO log-edit-unknown-header
+    Face for unknown headers in 'log-edit-mode' buffers.
+** TODO makefile [0/4]
+*** TODO makefile-makepp-perl
+    Face to use for additionally highlighting Perl code in Font-Lock mode.
+*** TODO makefile-shell
+    Face to use for additionally highlighting Shell commands in Font-Lock mode.
+*** TODO makefile-space
+    Face to use for highlighting leading spaces in Font-Lock mode.
+*** TODO makefile-targets
+    Face to use for additionally highlighting rule targets in Font-Lock mode.
+** TODO message [0/7]
+*** TODO message-cited-text-1
+    Face used for displaying 1st-level cited text.
+*** TODO message-cited-text-2
+    Face used for displaying 2nd-level cited text.
+*** TODO message-cited-text-3
+    Face used for displaying 3rd-level cited text.
+*** TODO message-cited-text-4
+    Face used for displaying 4th-level cited text.
+*** TODO message-mml
+    Face used for displaying MML.
+*** TODO message-separator
+    Face used for displaying the separator.
+*** TODO message-signature-separator
+    Face used for displaying the signature separator.
+** TODO message-header [0/7]
+*** TODO message-header-cc
+    Face used for displaying Cc headers.
+*** TODO message-header-name
+    Face used for displaying header names.
+*** TODO message-header-newsgroups
+    Face used for displaying Newsgroups headers.
+*** TODO message-header-other
+    Face used for displaying other headers.
+*** TODO message-header-subject
+    Face used for displaying Subject headers.
+*** TODO message-header-to
+    Face used for displaying To headers.
+*** TODO message-header-xheader
+    Face used for displaying X-Header headers.
+** TODO mm [0/2]
+*** TODO mm-command-output
+    Face used for displaying output from commands.
+*** TODO mm-uu-extract
+    Face for extracted buffers.
+** TODO next [0/1]
+*** TODO next-error-message
+    Face used to highlight the current error message in the 'next-error' buffer.
+** TODO org [0/88]
+*** TODO org-archived
+    Face for headline with the ARCHIVE tag.
+*** TODO org-checkbox
+    Face for checkboxes.
+*** TODO org-checkbox-statistics-done
+    Face used for finished checkbox statistics.
+*** TODO org-checkbox-statistics-todo
+    Face used for unfinished checkbox statistics.
+*** TODO org-cite
+    Face for citations.
+*** TODO org-cite-key
+    Face for citation keys.
+*** TODO org-clock-overlay
+    Basic face for displaying the secondary selection.
+*** TODO org-code
+    Face for fixed-width text like code snippets.
+*** TODO org-column
+    Face for column display of entry properties.
+*** TODO org-column-title
+    Face for column display of entry properties.
+*** TODO org-date
+    Face for date/time stamps.
+*** TODO org-date-selected
+    Face for highlighting the calendar day when using 'org-read-date'.
+*** TODO org-default
+    Face used for default text.
+*** TODO org-dispatcher-highlight
+    Face for highlighted keys in the dispatcher.
+*** TODO org-done
+    Face used for todo keywords that indicate DONE items.
+*** TODO org-drawer
+    Face used for drawers.
+*** TODO org-drill-hidden-cloze-face
+    The face used to hide the contents of cloze phrases.
+*** TODO org-drill-visible-cloze-face
+    The face used to hide the contents of cloze phrases.
+*** TODO org-drill-visible-cloze-hint-face
+    The face used to hide the contents of cloze phrases.
+*** TODO org-ellipsis
+    Face for the ellipsis in folded text.
+*** TODO org-faces-cancelled
+    Face for the CANCELLED keyword.
+*** TODO org-faces-cancelled-dim
+    Dimmed CANCELLED keyword for non-selected windows.
+*** TODO org-faces-delegated
+    Face for the DELEGATED keyword.
+*** TODO org-faces-delegated-dim
+    Dimmed DELEGATED keyword for non-selected windows.
+*** TODO org-faces-doing
+    Face for the DOING keyword.
+*** TODO org-faces-doing-dim
+    Dimmed DOING keyword for non-selected windows.
+*** TODO org-faces-done
+    Face for the DONE keyword.
+*** TODO org-faces-done-dim
+    Dimmed DONE keyword for non-selected windows.
+*** TODO org-faces-failed
+    Face for the FAILED keyword.
+*** TODO org-faces-failed-dim
+    Dimmed FAILED keyword for non-selected windows.
+*** TODO org-faces-priority-a
+    Face for the [#A] priority cookie.
+*** TODO org-faces-priority-a-dim
+    Dimmed [#A] priority cookie for non-selected windows.
+*** TODO org-faces-priority-b
+    Face for the [#B] priority cookie.
+*** TODO org-faces-priority-b-dim
+    Dimmed [#B] priority cookie for non-selected windows.
+*** TODO org-faces-priority-c
+    Face for the [#C] priority cookie.
+*** TODO org-faces-priority-c-dim
+    Dimmed [#C] priority cookie for non-selected windows.
+*** TODO org-faces-priority-d
+    Face for the [#D] priority cookie.
+*** TODO org-faces-priority-d-dim
+    Dimmed [#D] priority cookie for non-selected windows.
+*** TODO org-faces-project
+    Face for the PROJECT keyword.
+*** TODO org-faces-project-dim
+    Dimmed PROJECT keyword for non-selected windows.
+*** TODO org-faces-stalled
+    Face for the STALLED keyword.
+*** TODO org-faces-stalled-dim
+    Dimmed STALLED keyword for non-selected windows.
+*** TODO org-faces-todo
+    Face for the TODO keyword.
+*** TODO org-faces-todo-dim
+    Dimmed TODO keyword for non-selected windows.
+*** TODO org-faces-verify
+    Face for the VERIFY keyword.
+*** TODO org-faces-verify-dim
+    Dimmed VERIFY keyword for non-selected windows.
+*** TODO org-faces-waiting
+    Face for the WAITING keyword.
+*** TODO org-faces-waiting-dim
+    Dimmed WAITING keyword for non-selected windows.
+*** TODO org-footnote
+    Face for footnotes.
+*** TODO org-formula
+    Face for formulas.
+*** TODO org-headline-done
+    Face used to indicate that a headline is DONE.
+*** TODO org-headline-todo
+    Face used to indicate that a headline is marked as TODO.
+*** TODO org-hide
+    Face used to hide leading stars in headlines.
+*** TODO org-imminent-deadline
+    Face for current deadlines in the agenda.
+*** TODO org-indent
+    Face for outline indentation.
+*** TODO org-inline-src-block
+    Face used for inline source blocks as a whole.
+*** TODO org-latex-and-related
+    Face used to highlight LaTeX data, entities and sub/superscript.
+*** TODO org-level-1
+    Face used for level 1 headlines.
+*** TODO org-level-2
+    Face used for level 2 headlines.
+*** TODO org-level-3
+    Face used for level 3 headlines.
+*** TODO org-level-4
+    Face used for level 4 headlines.
+*** TODO org-level-5
+    Face used for level 5 headlines.
+*** TODO org-level-6
+    Face used for level 6 headlines.
+*** TODO org-level-7
+    Face used for level 7 headlines.
+*** TODO org-level-8
+    Face used for level 8 headlines.
+*** TODO org-link
+    Face for links.
+*** TODO org-list-dt
+    Default face for definition terms in lists.
+*** TODO org-macro
+    Face for macros.
+*** TODO org-meta-line
+    Face for meta lines starting with "#+".
+*** TODO org-mode-line-clock
+    Face used for clock display in mode line.
+*** TODO org-mode-line-clock-overrun
+    Face used for clock display for overrun tasks in mode line.
+*** TODO org-property-value
+    Face used for the value of a property.
+*** TODO org-quote
+    Face for #+BEGIN_QUOTE ... #+END_QUOTE blocks.
+*** TODO org-scheduled
+    Face for items scheduled for a certain day.
+*** TODO org-scheduled-previously
+    Face for items scheduled previously, and not yet done.
+*** TODO org-scheduled-today
+    Face for items scheduled for a certain day.
+*** TODO org-sexp-date
+    Face for diary-like sexp date specifications.
+*** TODO org-special-keyword
+    Face used for special keywords.
+*** TODO org-tag
+    Default face for tags.
+*** TODO org-tag-group
+    Face for group tags.
+*** TODO org-target
+    Face for link targets.
+*** TODO org-time-grid
+    Face used for time grids.
+*** TODO org-todo
+    Face for TODO keywords.
+*** TODO org-upcoming-deadline
+    Face for items scheduled previously, and not yet done.
+*** TODO org-upcoming-distant-deadline
+    Face for items scheduled previously, not done, and have a distant deadline.
+*** TODO org-verbatim
+    Face for fixed-with text like code snippets.
+*** TODO org-verse
+    Face for #+BEGIN_VERSE ... #+END_VERSE blocks.
+*** TODO org-warning
+    Face for deadlines and TODO keywords.
+** TODO org-agenda [0/21]
+*** TODO org-agenda-calendar-daterange
+    Face used to show entries with a date range in the agenda.
+*** TODO org-agenda-calendar-event
+    Face used to show events and appointments in the agenda.
+*** TODO org-agenda-calendar-sexp
+    Face used to show events computed from a S-expression.
+*** TODO org-agenda-clocking
+    Face marking the current clock item in the agenda.
+*** TODO org-agenda-column-dateline
+    Face used in agenda column view for datelines with summaries.
+*** TODO org-agenda-current-time
+    Face used to show the current time in the time grid.
+*** TODO org-agenda-date
+    Face used in agenda for normal days.
+*** TODO org-agenda-date-today
+    Face used in agenda for today.
+*** TODO org-agenda-date-weekend
+    Face used in agenda for weekend days.
+*** TODO org-agenda-date-weekend-today
+    Face used in agenda for today during weekends.
+*** TODO org-agenda-diary
+    Face used for agenda entries that come from the Emacs diary.
+*** TODO org-agenda-dimmed-todo-face
+    Face used to dim blocked tasks in the agenda.
+*** TODO org-agenda-done
+    Face used in agenda, to indicate lines switched to DONE.
+*** TODO org-agenda-filter-category
+    Face for categories in the mode-line when filtering the agenda.
+*** TODO org-agenda-filter-effort
+    Face for effort in the mode-line when filtering the agenda.
+*** TODO org-agenda-filter-regexp
+    Face for regexp(s) in the mode-line when filtering the agenda.
+*** TODO org-agenda-filter-tags
+    Face for tag(s) in the mode-line when filtering the agenda.
+*** TODO org-agenda-restriction-lock
+    Face for showing the agenda restriction lock.
+*** TODO org-agenda-structure
+    Face used in agenda for captions and dates.
+*** TODO org-agenda-structure-filter
+    Face used for the current type of task filter in the agenda.
+*** TODO org-agenda-structure-secondary
+    Face used for secondary information in agenda block headers.
+** TODO org-block [0/3]
+*** TODO org-block
+    Face used for text inside various blocks.
+*** TODO org-block-begin-line
+    Face used for the line delimiting the begin of source blocks.
+*** TODO org-block-end-line
+    Face used for the line delimiting the end of source blocks.
+** TODO org-document [0/3]
+*** TODO org-document-info
+    Face for document information such as the author and date.
+*** TODO org-document-info-keyword
+    Face for document information keywords.
+*** TODO org-document-title
+    Face for document title, i.e. that which follows the #+TITLE: keyword.
+** TODO org-priority [0/1]
+*** TODO org-priority
+    Face used for priority cookies.
+** TODO org-table [0/3]
+*** TODO org-table
+    Face used for tables.
+*** TODO org-table-header
+    Face for table header.
+*** TODO org-table-row
+    Face used to fontify whole table rows (including newlines and indentation).
+** TODO outline [0/8]
+*** TODO outline-1
+    Level 1.
+*** TODO outline-2
+    Level 2.
+*** TODO outline-3
+    Level 3.
+*** TODO outline-4
+    Level 4.
+*** TODO outline-5
+    Level 5.
+*** TODO outline-6
+    Level 6.
+*** TODO outline-7
+    Level 7.
+*** TODO outline-8
+    Level 8.
+** TODO package [0/15]
+*** TODO package-description
+    Face used on package description summaries in the package menu.
+*** TODO package-help-section-name
+    Face used on section names in package description buffers.
+*** TODO package-name
+    Face used on package names in the package menu.
+*** TODO package-status-avail-obso
+    Face used on the status and version of avail-obso packages.
+*** TODO package-status-available
+    Face used on the status and version of available packages.
+*** TODO package-status-built-in
+    Face used on the status and version of built-in packages.
+*** TODO package-status-dependency
+    Face used on the status and version of dependency packages.
+*** TODO package-status-disabled
+    Face used on the status and version of disabled packages.
+*** TODO package-status-external
+    Face used on the status and version of external packages.
+*** TODO package-status-from-source
+    Face used on the status and version of installed packages.
+*** TODO package-status-held
+    Face used on the status and version of held packages.
+*** TODO package-status-incompat
+    Face used on the status and version of incompat packages.
+*** TODO package-status-installed
+    Face used on the status and version of installed packages.
+*** TODO package-status-new
+    Face used on the status and version of new packages.
+*** TODO package-status-unsigned
+    Face used on the status and version of unsigned packages.
+** TODO read [0/1]
+*** TODO read-multiple-choice-face
+    Face for the symbol name in 'read-multiple-choice' output.
+** TODO rectangle [0/1]
+*** TODO rectangle-preview
+    The face to use for the 'string-rectangle' preview.
+** TODO sh [0/3]
+*** TODO sh-escaped-newline
+    Face used for (non-escaped) backslash at end of a line in Shell-script mode.
+*** TODO sh-heredoc
+    Face to show a here-document.
+*** TODO sh-quoted-exec
+    Face to show quoted execs like `blabla`.
+** TODO shell [0/3]
+*** TODO shell-highlight-undef-alias-face
+    Face used for shell command aliases.
+*** TODO shell-highlight-undef-defined-face
+    Face used for existing shell commands.
+*** TODO shell-highlight-undef-undefined-face
+    Face used for non-existent shell commands.
+** TODO shr [0/15]
+*** TODO shr-abbreviation
+    Face for <abbr> elements.
+*** TODO shr-code
+    Face used for rendering <code> blocks.
+*** TODO shr-h1
+    Face for <h1> elements.
+*** TODO shr-h2
+    Face for <h2> elements.
+*** TODO shr-h3
+    Face for <h3> elements.
+*** TODO shr-h4
+    Face for <h4> elements.
+*** TODO shr-h5
+    Face for <h5> elements.
+*** TODO shr-h6
+    Face for <h6> elements.
+*** TODO shr-link
+    Face for link elements.
+*** TODO shr-mark
+    Face used for <mark> elements.
+*** TODO shr-selected-link
+    Temporary face for externally visited link elements.
+*** TODO shr-sliced-image
+    Face used for sliced images.
+*** TODO shr-strike-through
+    Face for <s> elements.
+*** TODO shr-sup
+    Face for <sup> and <sub> elements.
+*** TODO shr-text
+    Face used for rendering text.
+** TODO smerge [0/7]
+*** TODO smerge-base
+    Face for the base code.
+*** TODO smerge-lower
+    Face for the 'lower' version of a conflict.
+*** TODO smerge-markers
+    Face for the conflict markers.
+*** TODO smerge-refined-added
+    Face used for added characters shown by 'smerge-refine'.
+*** TODO smerge-refined-changed
+    Face used for char-based changes shown by 'smerge-refine'.
+*** TODO smerge-refined-removed
+    Face used for removed characters shown by 'smerge-refine'.
+*** TODO smerge-upper
+    Face for the 'upper' version of a conflict.
+** TODO tab-bar [0/6]
+*** TODO tab-bar
+    Tab bar face.
+*** TODO tab-bar-tab
+    Tab bar face for selected tab.
+*** TODO tab-bar-tab-group-current
+    Tab bar face for current group tab.
+*** TODO tab-bar-tab-group-inactive
+    Tab bar face for inactive group tab.
+*** TODO tab-bar-tab-inactive
+    Tab bar face for non-selected tab.
+*** TODO tab-bar-tab-ungrouped
+    Tab bar face for ungrouped tab when tab groups are used.
+** TODO tab-line [0/1]
+*** TODO tab-line
+    Tab line face.
+** TODO table [0/1]
+*** TODO table-cell
+    Face used for table cell contents.
+** TODO tabulated-list [0/1]
+*** TODO tabulated-list-fake-header
+    Face used on fake header lines.
+** TODO treesit [0/2]
+*** TODO treesit-explorer-anonymous-node
+    Face for anonymous nodes in tree-sitter explorer.
+*** TODO treesit-explorer-field-name
+    Face for field names in tree-sitter explorer.
+** TODO vc [0/12]
+*** TODO vc-conflict-state
+    Face for VC modeline state when the file contains merge conflicts.
+*** TODO vc-edited-state
+    Face for VC modeline state when the file is edited.
+*** TODO vc-git-log-edit-summary-max-warning
+    Face for Git commit summary lines beyond the maximum length.
+*** TODO vc-git-log-edit-summary-target-warning
+    Face for Git commit summary lines beyond the target length.
+*** TODO vc-ignored-state
+    Face for VC modeline state when the file is registered, but ignored.
+*** TODO vc-locally-added-state
+    Face for VC modeline state when the file is locally added.
+*** TODO vc-locked-state
+    Face for VC modeline state when the file locked.
+*** TODO vc-missing-state
+    Face for VC modeline state when the file is missing from the file system.
+*** TODO vc-needs-update-state
+    Face for VC modeline state when the file needs update.
+*** TODO vc-removed-state
+    Face for VC modeline state when the file was removed from the VC system.
+*** TODO vc-state-base
+    Base face for VC state indicator.
+*** TODO vc-up-to-date-state
+    Face for VC modeline state when the file is up to date.
+** TODO which-key [0/9]
+*** TODO which-key-command-description-face
+    Face for the key description when it is a command.
+*** TODO which-key-docstring-face
+    Face for docstrings.
+*** TODO which-key-group-description-face
+    Face for the key description when it is a group or prefix.
+*** TODO which-key-highlighted-command-face
+    Default face for highlighted command descriptions.
+*** TODO which-key-key-face
+    Face for which-key keys.
+*** TODO which-key-local-map-description-face
+    Face for the key description when it is found in 'current-local-map'.
+*** TODO which-key-note-face
+    Face for notes or hints occasionally provided.
+*** TODO which-key-separator-face
+    Face for the separator (default separator is an arrow).
+*** TODO which-key-special-key-face
+    Face for special keys (SPC, TAB, RET).
+** TODO widget [0/7]
+*** TODO widget-button
+    Face used for widget buttons.
+*** TODO widget-button-pressed
+    Face used for pressed buttons.
+*** TODO widget-documentation
+    Face used for documentation text.
+*** TODO widget-field
+    Face used for editable fields.
+*** TODO widget-inactive
+    Face used for inactive widgets.
+*** TODO widget-single-line-field
+    Face used for editable fields spanning only a single line.
+*** TODO widget-unselected
+    Face used for unselected widgets.
+** TODO xref [0/3]
+*** TODO xref-file-header
+    Face used to highlight file header in the xref buffer.
+*** TODO xref-line-number
+    Face for displaying line numbers in the xref buffer.
+*** TODO xref-match
+    Face used to highlight matches in the xref buffer.
 
 * TODO adob [0/1]
 ** TODO adob--hack
@@ -441,131 +1515,11 @@ package-inventory.json (regenerable via build-inventory.el / app_inventory.py).
 ** DONE all-the-icons-yellow
    Face for yellow icons
 
-* TODO ansi-color [0/23]
-** TODO ansi-color-black
-   Face used to render black color code.
-** TODO ansi-color-blue
-   Face used to render blue color code.
-** TODO ansi-color-bold
-   Face used to render bold text.
-** TODO ansi-color-bright-black
-   Face used to render bright black color code.
-** TODO ansi-color-bright-blue
-   Face used to render bright blue color code.
-** TODO ansi-color-bright-cyan
-   Face used to render bright cyan color code.
-** TODO ansi-color-bright-green
-   Face used to render bright green color code.
-** TODO ansi-color-bright-magenta
-   Face used to render bright magenta color code.
-** TODO ansi-color-bright-red
-   Face used to render bright red color code.
-** TODO ansi-color-bright-white
-   Face used to render bright white color code.
-** TODO ansi-color-bright-yellow
-   Face used to render bright yellow color code.
-** TODO ansi-color-cyan
-   Face used to render cyan color code.
-** TODO ansi-color-faint
-   Face used to render faint text.
-** TODO ansi-color-fast-blink
-   Face used to render rapidly blinking text.
-** TODO ansi-color-green
-   Face used to render green color code.
-** TODO ansi-color-inverse
-   Face used to render inverted video text.
-** TODO ansi-color-italic
-   Face used to render italic text.
-** TODO ansi-color-magenta
-   Face used to render magenta color code.
-** TODO ansi-color-red
-   Face used to render red color code.
-** TODO ansi-color-slow-blink
-   Face used to render slowly blinking text.
-** TODO ansi-color-underline
-   Face used to render underlined text.
-** TODO ansi-color-white
-   Face used to render white color code.
-** TODO ansi-color-yellow
-   Face used to render yellow color code.
-
-* TODO apropos [0/8]
-** TODO apropos-button
-   Face for buttons that indicate a face in Apropos.
-** TODO apropos-function-button
-   Button face indicating a function, macro, or command in Apropos.
-** TODO apropos-keybinding
-   Face for lists of keybinding in Apropos output.
-** TODO apropos-misc-button
-   Button face indicating a miscellaneous object type in Apropos.
-** TODO apropos-property
-   Face for property name in Apropos output, or nil for none.
-** TODO apropos-symbol
-   Face for the symbol name in Apropos output.
-** TODO apropos-user-option-button
-   Button face indicating a user option in Apropos.
-** TODO apropos-variable-button
-   Button face indicating a variable in Apropos.
-
 * TODO auto [0/2]
 ** TODO auto-dim-other-buffers
    Face with a (presumably) dimmed background for non-selected window.
 ** TODO auto-dim-other-buffers-hide
    Face with a (presumably) dimmed background and matching foreground.
-
-* TODO bookmark [0/2]
-** TODO bookmark-face
-   Face used to highlight current line.
-** TODO bookmark-menu-bookmark
-   Face used to highlight bookmark names in bookmark menu buffers.
-
-* TODO breakpoint [0/2]
-** TODO breakpoint-disabled
-   Face for disabled breakpoint icon in fringe.
-** TODO breakpoint-enabled
-   Face for enabled breakpoint icon in fringe.
-
-* TODO browse [0/1]
-** TODO browse-url-button
-   Face for 'browse-url' buttons (i.e., links).
-
-* TODO buffer [0/1]
-** TODO buffer-menu-buffer
-   Face for buffer names in the Buffer Menu.
-
-* TODO calendar [0/4]
-** TODO calendar-month-header
-   Face used for month headers in the calendar.
-** TODO calendar-today
-   Face for indicating today's date in the calendar.
-** TODO calendar-weekday-header
-   Face used for weekday column headers in the calendar.
-** TODO calendar-weekend-header
-   Face used for weekend column headers in the calendar.
-
-* TODO change-log [0/8]
-** TODO change-log-acknowledgment
-   Face for highlighting acknowledgments.
-** TODO change-log-conditionals
-   Face for highlighting conditionals of the form '[...]'.
-** TODO change-log-date
-   Face used to highlight dates in date lines.
-** TODO change-log-email
-   Face for highlighting author email addresses.
-** TODO change-log-file
-   Face for highlighting file names.
-** TODO change-log-function
-   Face for highlighting items of the form '<....>'.
-** TODO change-log-list
-   Face for highlighting parenthesized lists of functions or variables.
-** TODO change-log-name
-   Face for highlighting author names.
-
-* TODO comint [0/2]
-** TODO comint-highlight-input
-   Face to use to highlight user input.
-** TODO comint-highlight-prompt
-   Face to use to highlight prompts.
 
 * DONE company [19/19]
 ** DONE company-echo
@@ -621,32 +1575,6 @@ package-inventory.json (regenerable via build-inventory.el / app_inventory.py).
 ** DONE company-box-selection
    company-box-selection is an alias for the face `company-tooltip-selection'.
 
-* TODO compilation [0/8]
-** TODO compilation-column-number
-   Face for displaying column numbers in compiler messages.
-** TODO compilation-error
-   Face used to highlight compiler errors.
-** TODO compilation-info
-   Face used to highlight compiler information.
-** TODO compilation-line-number
-   Face for displaying line numbers in compiler messages.
-** TODO compilation-mode-line-exit
-   Face for Compilation mode's "exit" mode line indicator.
-** TODO compilation-mode-line-fail
-   Face for Compilation mode's "error" mode line indicator.
-** TODO compilation-mode-line-run
-   Face for Compilation mode's "running" mode line indicator.
-** TODO compilation-warning
-   Face used to highlight compiler warnings.
-
-* TODO completions [0/1]
-** TODO completions-group-separator
-   Face used for the separator lines between the candidate groups.
-
-* TODO confusingly [0/1]
-** TODO confusingly-reordered
-   Face for highlighting text that was bidi-reordered in confusing ways.
-
 * DOING consult [20/21]
 ** DONE consult-async-failed
    Face used if asynchronous process has failed.
@@ -690,58 +1618,6 @@ package-inventory.json (regenerable via build-inventory.el / app_inventory.py).
    Face used for match previews, e.g., in 'consult-line'.
 ** DONE consult-separator
 
-* TODO custom [0/25]
-** TODO custom-button
-   Face for custom buffer buttons if 'custom-raised-buttons' is non-nil.
-** TODO custom-button-mouse
-   Mouse face for custom buffer buttons if 'custom-raised-buttons' is non-nil.
-** TODO custom-button-pressed
-   Face for pressed custom buttons if 'custom-raised-buttons' is non-nil.
-** TODO custom-button-pressed-unraised
-   Face for pressed custom buttons if 'custom-raised-buttons' is nil.
-** TODO custom-button-unraised
-   Face for custom buffer buttons if 'custom-raised-buttons' is nil.
-** TODO custom-changed
-   Face used when the customize item has been changed.
-** TODO custom-comment
-   Face used for comments on variables or faces.
-** TODO custom-comment-tag
-   Face used for the comment tag on variables or faces.
-** TODO custom-documentation
-   Face used for documentation strings in customization buffers.
-** TODO custom-face-tag
-   Face used for face tags.
-** TODO custom-group-subtitle
-   Face for the "Subgroups:" subtitle in Custom buffers.
-** TODO custom-group-tag
-   Face for low level group tags.
-** TODO custom-group-tag-1
-   Face for group tags.
-** TODO custom-invalid
-   Face used when the customize item is invalid.
-** TODO custom-link
-   Face for links in customization buffers.
-** TODO custom-modified
-   Face used when the customize item has been modified.
-** TODO custom-rogue
-   Face used when the customize item is not defined for customization.
-** TODO custom-saved
-   Face used when the customize item has been saved.
-** TODO custom-set
-   Face used when the customize item has been set.
-** TODO custom-state
-   Face used for State descriptions in the customize buffer.
-** TODO custom-themed
-   Face used when the customize item has been set by a theme.
-** TODO custom-variable-button
-   Face used for pushable variable tags.
-** TODO custom-variable-obsolete
-   Face used for obsolete variables.
-** TODO custom-variable-tag
-   Face used for unpushable variable tags.
-** TODO custom-visibility
-   Face for the 'custom-visibility' widget.
-
 * DONE dashboard [8/8]
 ** DONE dashboard-banner-logo-title
    Face used for the banner title.
@@ -759,74 +1635,6 @@ package-inventory.json (regenerable via build-inventory.el / app_inventory.py).
    Face used for no items.
 ** DONE dashboard-text-banner
    Face used for text banners.
-
-* TODO diary [0/1]
-** TODO diary
-   Face for highlighting diary entries.
-
-* TODO diff [0/18]
-** TODO diff-added
-   'diff-mode' face used to highlight added lines.
-** TODO diff-changed
-   'diff-mode' face used to highlight changed lines.
-** TODO diff-changed-unspecified
-   'diff-mode' face used to highlight changed lines.
-** TODO diff-context
-   'diff-mode' face used to highlight context and other side-information.
-** TODO diff-error
-   'diff-mode' face for error messages from diff.
-** TODO diff-file-header
-   'diff-mode' face used to highlight file header lines.
-** TODO diff-function
-   'diff-mode' face used to highlight function names produced by "diff -p".
-** TODO diff-header
-   'diff-mode' face inherited by hunk and index header faces.
-** TODO diff-hunk-header
-   'diff-mode' face used to highlight hunk header lines.
-** TODO diff-index
-   'diff-mode' face used to highlight index header lines.
-** TODO diff-indicator-added
-   'diff-mode' face used to highlight indicator of added lines (+, >).
-** TODO diff-indicator-changed
-   'diff-mode' face used to highlight indicator of changed lines.
-** TODO diff-indicator-removed
-   'diff-mode' face used to highlight indicator of removed lines (-, <).
-** TODO diff-nonexistent
-   'diff-mode' face used to highlight nonexistent files in recursive diffs.
-** TODO diff-refine-added
-   Face used for added characters shown by 'diff-refine-hunk'.
-** TODO diff-refine-changed
-   Face used for char-based changes shown by 'diff-refine-hunk'.
-** TODO diff-refine-removed
-   Face used for removed characters shown by 'diff-refine-hunk'.
-** TODO diff-removed
-   'diff-mode' face used to highlight removed lines.
-
-* TODO dired [0/12]
-** TODO dired-broken-symlink
-   Face used for broken symbolic links.
-** TODO dired-directory
-   Face used for subdirectories.
-** TODO dired-flagged
-   Face used for files flagged for deletion.
-** TODO dired-header
-   Face used for directory headers.
-** TODO dired-ignored
-   Face used for files suffixed with 'completion-ignored-extensions'.
-** TODO dired-mark
-   Face used for Dired marks.
-** TODO dired-marked
-   Face used for marked files.
-** TODO dired-perm-write
-   Face used to highlight permissions of group- and world-writable files.
-** TODO dired-set-id
-   Face used to highlight permissions of suid and guid files.
-** TODO dired-special
-   Face used for sockets, pipes, block devices and char devices.
-** TODO dired-symlink
-   Face used for symbolic links.
-** TODO dired-warning
-   Face used to highlight a part of a buffer that needs user attention.
 
 * DONE dirvish [38/38]
 ** DONE dirvish-collapse-dir-face
@@ -895,18 +1703,6 @@ package-inventory.json (regenerable via build-inventory.el / app_inventory.py).
 ** DONE dirvish-vc-unregistered-face
    Face used for 'unregistered' vc state in the Dirvish buffer.
 
-* TODO doc [0/1]
-** TODO doc-view-svg-face
-   Face used for SVG images.
-
-* TODO edmacro [0/1]
-** TODO edmacro-label
-   Face used for labels in 'edit-kbd-macro'.
-
-* TODO eldoc [0/1]
-** TODO eldoc-highlight-function-argument
-   Face used for the argument at point in a function's argument list.
-
 * DONE elfeed [13/13]
 ** DONE elfeed-log-date-face
    Face for showing the date in the elfeed log buffer.
@@ -934,10 +1730,6 @@ package-inventory.json (regenerable via build-inventory.el / app_inventory.py).
    Face used in search mode for unread entry titles.
 ** DONE elfeed-search-unread-title-face
    Face used in search mode for unread entry titles.
-
-* TODO elisp [0/1]
-** TODO elisp-shorthand-font-lock-face
-   Face for highlighting shorthands in Emacs Lisp.
 
 * DONE embark [12/12]
 ** DONE embark-collect-annotation
@@ -978,186 +1770,6 @@ package-inventory.json (regenerable via build-inventory.el / app_inventory.py).
 ** DONE emms-playlist-selected-face
 ** DONE emms-playlist-track-face
 
-* TODO epa [0/8]
-** TODO epa-field-body
-   Face for the body of the attribute field.
-** TODO epa-field-name
-   Face for the name of the attribute field.
-** TODO epa-mark
-   Face used for displaying the high validity.
-** TODO epa-string
-   Face used for displaying the string.
-** TODO epa-validity-disabled
-   Face used for displaying the disabled validity.
-** TODO epa-validity-high
-   Face for high validity EPA information.
-** TODO epa-validity-low
-   Face used for displaying the low validity.
-** TODO epa-validity-medium
-   Face for medium validity EPA information.
-
-* TODO erc [0/31]
-** TODO erc-action-face
-   ERC face for actions generated by /ME.
-** TODO erc-bold-face
-   ERC bold face.
-** TODO erc-button
-   ERC button face.
-** TODO erc-button-nick-default-face
-   Default face for a buttonized nickname.
-** TODO erc-command-indicator-face
-   Face for echoed command lines, including the prompt.
-** TODO erc-current-nick-face
-   ERC face for occurrences of your current nickname.
-** TODO erc-dangerous-host-face
-   ERC face for people on dangerous hosts.
-** TODO erc-default-face
-   ERC default face.
-** TODO erc-direct-msg-face
-   ERC face used for messages you receive in the main erc buffer.
-** TODO erc-error-face
-   ERC face for errors.
-** TODO erc-fill-wrap-merge-indicator-face
-   ERC 'fill-wrap' merge-indicator face.
-** TODO erc-fool-face
-   ERC face for fools on the channel.
-** TODO erc-header-line
-   ERC face used for the header line.
-** TODO erc-information
-   Face for local administrative messages of low to moderate importance.
-** TODO erc-input-face
-   ERC face used for your input.
-** TODO erc-inverse-face
-   ERC inverse face.
-** TODO erc-italic-face
-   ERC italic face.
-** TODO erc-keep-place-indicator-arrow
-   Face for arrow value of option 'erc-keep-place-indicator-style'.
-** TODO erc-keep-place-indicator-line
-   Face for option 'erc-keep-place-indicator-style'.
-** TODO erc-keyword-face
-   ERC face for your keywords.
-** TODO erc-my-nick-face
-   ERC face for your current nickname in messages sent by you.
-** TODO erc-my-nick-prefix-face
-   ERC face used for my user mode prefix.
-** TODO erc-nick-default-face
-   ERC nickname default face.
-** TODO erc-nick-msg-face
-   ERC nickname face for private messages.
-** TODO erc-nick-prefix-face
-   ERC face used for user mode prefix.
-** TODO erc-notice-face
-   ERC face for notices.
-** TODO erc-pal-face
-   ERC face for your pals.
-** TODO erc-prompt-face
-   ERC face for the prompt.
-** TODO erc-spoiler-face
-   ERC spoiler face.
-** TODO erc-timestamp-face
-   ERC timestamp face.
-** TODO erc-underline-face
-   ERC underline face.
-
-* TODO erc-ansi [0/32]
-** TODO bg:erc-color-face0
-   ERC face.
-** TODO bg:erc-color-face1
-   ERC face.
-** TODO bg:erc-color-face10
-   ERC face.
-** TODO bg:erc-color-face11
-   ERC face.
-** TODO bg:erc-color-face12
-   ERC face.
-** TODO bg:erc-color-face13
-   ERC face.
-** TODO bg:erc-color-face14
-   ERC face.
-** TODO bg:erc-color-face15
-   ERC face.
-** TODO bg:erc-color-face2
-   ERC face.
-** TODO bg:erc-color-face3
-   ERC face.
-** TODO bg:erc-color-face4
-   ERC face.
-** TODO bg:erc-color-face5
-   ERC face.
-** TODO bg:erc-color-face6
-   ERC face.
-** TODO bg:erc-color-face7
-   ERC face.
-** TODO bg:erc-color-face8
-   ERC face.
-** TODO bg:erc-color-face9
-   ERC face.
-** TODO fg:erc-color-face0
-   ERC face.
-** TODO fg:erc-color-face1
-   ERC face.
-** TODO fg:erc-color-face10
-   ERC face.
-** TODO fg:erc-color-face11
-   ERC face.
-** TODO fg:erc-color-face12
-   ERC face.
-** TODO fg:erc-color-face13
-   ERC face.
-** TODO fg:erc-color-face14
-   ERC face.
-** TODO fg:erc-color-face15
-   ERC face.
-** TODO fg:erc-color-face2
-   ERC face.
-** TODO fg:erc-color-face3
-   ERC face.
-** TODO fg:erc-color-face4
-   ERC face.
-** TODO fg:erc-color-face5
-   ERC face.
-** TODO fg:erc-color-face6
-   ERC face.
-** TODO fg:erc-color-face7
-   ERC face.
-** TODO fg:erc-color-face8
-   ERC face.
-** TODO fg:erc-color-face9
-   ERC face.
-
-* TODO ert [0/2]
-** TODO ert-test-result-expected
-   Face used for expected results in the ERT results buffer.
-** TODO ert-test-result-unexpected
-   Face used for unexpected results in the ERT results buffer.
-
-* TODO eww [0/8]
-** TODO eww-form-checkbox
-   Face for eww buffer buttons.
-** TODO eww-form-file
-   Face for eww buffer buttons.
-** TODO eww-form-select
-   Face for eww buffer buttons.
-** TODO eww-form-submit
-   Face for eww buffer buttons.
-** TODO eww-form-text
-   Face for eww text inputs.
-** TODO eww-form-textarea
-   Face for eww textarea inputs.
-** TODO eww-invalid-certificate
-   Face for web pages with invalid certificates.
-** TODO eww-valid-certificate
-   Face for web pages with valid certificates.
-
-* TODO ffap [0/1]
-** TODO ffap
-   Face used to highlight the current buffer substring.
-
-* TODO file [0/1]
-** TODO file-name-shadow
-   Face used by 'file-name-shadow-mode' for the shadow.
-
 * DONE flycheck [20/20]
 ** DONE flycheck-delimited-error
 ** DONE flycheck-error
@@ -1182,64 +1794,6 @@ package-inventory.json (regenerable via build-inventory.el / app_inventory.py).
 
 * DONE flyspell-correct [1/1]
 ** DONE flyspell-correct-highlight-face
-
-* DOING font-lock [23/28]
-** DONE font-lock-bracket-face
-   Font Lock mode face used to highlight brackets, braces, and parens.
-** DONE font-lock-builtin-face
-   Font Lock mode face used to highlight builtins.
-** DONE font-lock-comment-delimiter-face
-   Font Lock mode face used to highlight comment delimiters.
-** DONE font-lock-comment-face
-   Font Lock mode face used to highlight comments.
-** DONE font-lock-constant-face
-   Font Lock mode face used to highlight constants and labels.
-** DONE font-lock-delimiter-face
-   Font Lock mode face used to highlight delimiters.
-** DONE font-lock-doc-face
-   Font Lock mode face used to highlight documentation embedded in program code.
-** TODO font-lock-doc-markup-face
-   Font Lock mode face used to highlight embedded documentation mark-up.
-** DONE font-lock-escape-face
-   Font Lock mode face used to highlight escape sequences in strings.
-** DONE font-lock-function-call-face
-   Font Lock mode face used to highlight function calls.
-** DONE font-lock-function-name-face
-   Font Lock mode face used to highlight function names.
-** DONE font-lock-keyword-face
-   Font Lock mode face used to highlight keywords.
-** DONE font-lock-misc-punctuation-face
-   Font Lock mode face used to highlight miscellaneous punctuation.
-** TODO font-lock-negation-char-face
-   Font Lock mode face used to highlight easy to overlook negation.
-** DONE font-lock-number-face
-   Font Lock mode face used to highlight numbers.
-** DONE font-lock-operator-face
-   Font Lock mode face used to highlight operators.
-** DONE font-lock-preprocessor-face
-   Font Lock mode face used to highlight preprocessor directives.
-** DONE font-lock-property-name-face
-   Font Lock mode face used to highlight properties of an object.
-** DONE font-lock-property-use-face
-   Font Lock mode face used to highlight property references.
-** DONE font-lock-punctuation-face
-   Font Lock mode face used to highlight punctuation characters.
-** DONE font-lock-regexp-face
-   Font Lock mode face used to highlight regexp literals.
-** TODO font-lock-regexp-grouping-backslash
-   Font Lock mode face for backslashes in Lisp regexp grouping constructs.
-** TODO font-lock-regexp-grouping-construct
-   Font Lock mode face used to highlight grouping constructs in Lisp regexps.
-** DONE font-lock-string-face
-   Font Lock mode face used to highlight strings.
-** DONE font-lock-type-face
-   Font Lock mode face used to highlight type and class names.
-** DONE font-lock-variable-name-face
-   Font Lock mode face used to highlight variable names.
-** DONE font-lock-variable-use-face
-   Font Lock mode face used to highlight variable references.
-** TODO font-lock-warning-face
-   Font Lock mode face used to highlight warnings.
 
 * DONE ghostel [19/19]
 ** DONE ghostel-color-black
@@ -1281,148 +1835,6 @@ package-inventory.json (regenerable via build-inventory.el / app_inventory.py).
 ** DONE ghostel-fake-cursor-box
    Face for the solid hint cursor drawn for box-style cursors.
 
-* TODO gnus-button [0/1]
-** TODO gnus-button
-   Face used for highlighting a button in the article buffer.
-
-* TODO gnus-emphasis [0/9]
-** TODO gnus-emphasis-bold
-   Face used for displaying strong emphasized text (*word*).
-** TODO gnus-emphasis-bold-italic
-   Face used for displaying bold italic emphasized text (/*word*/).
-** TODO gnus-emphasis-highlight-words
-   Face used for displaying highlighted words.
-** TODO gnus-emphasis-italic
-   Face used for displaying italic emphasized text (/word/).
-** TODO gnus-emphasis-strikethru
-   Face used for displaying strike-through text (-word-).
-** TODO gnus-emphasis-underline
-   Face used for displaying underlined emphasized text (_word_).
-** TODO gnus-emphasis-underline-bold
-   Face used for displaying underlined bold emphasized text (_*word*_).
-** TODO gnus-emphasis-underline-bold-italic
-   Face used for displaying underlined bold italic emphasized text.
-** TODO gnus-emphasis-underline-italic
-   Face used for displaying underlined italic emphasized text (_/word/_).
-
-* TODO gnus-group [0/22]
-** TODO gnus-group-mail-1
-   Level 1 mailgroup face.
-** TODO gnus-group-mail-1-empty
-   Level 1 empty mailgroup face.
-** TODO gnus-group-mail-2
-   Level 2 mailgroup face.
-** TODO gnus-group-mail-2-empty
-   Level 2 empty mailgroup face.
-** TODO gnus-group-mail-3
-   Level 3 mailgroup face.
-** TODO gnus-group-mail-3-empty
-   Level 3 empty mailgroup face.
-** TODO gnus-group-mail-low
-   Low level mailgroup face.
-** TODO gnus-group-mail-low-empty
-   Low level empty mailgroup face.
-** TODO gnus-group-news-1
-   Level 1 newsgroup face.
-** TODO gnus-group-news-1-empty
-   Level 1 empty newsgroup face.
-** TODO gnus-group-news-2
-   Level 2 newsgroup face.
-** TODO gnus-group-news-2-empty
-   Level 2 empty newsgroup face.
-** TODO gnus-group-news-3
-   Level 3 newsgroup face.
-** TODO gnus-group-news-3-empty
-   Level 3 empty newsgroup face.
-** TODO gnus-group-news-4
-   Level 4 newsgroup face.
-** TODO gnus-group-news-4-empty
-   Level 4 empty newsgroup face.
-** TODO gnus-group-news-5
-   Level 5 newsgroup face.
-** TODO gnus-group-news-5-empty
-   Level 5 empty newsgroup face.
-** TODO gnus-group-news-6
-   Level 6 newsgroup face.
-** TODO gnus-group-news-6-empty
-   Level 6 empty newsgroup face.
-** TODO gnus-group-news-low
-   Low level newsgroup face.
-** TODO gnus-group-news-low-empty
-   Low level empty newsgroup face.
-
-* TODO gnus-header [0/6]
-** TODO gnus-header
-   Base face used for all Gnus header faces.
-** TODO gnus-header-content
-   Face used for displaying header content.
-** TODO gnus-header-from
-   Face used for displaying from headers.
-** TODO gnus-header-name
-   Face used for displaying header names.
-** TODO gnus-header-newsgroups
-   Face used for displaying newsgroups headers.
-** TODO gnus-header-subject
-   Face used for displaying subject headers.
-
-* TODO gnus-signature [0/1]
-** TODO gnus-signature
-   Face used for highlighting a signature in the article buffer.
-
-* TODO gnus-splash [0/1]
-** TODO gnus-splash
-   Face for the splash screen.
-
-* TODO gnus-summary [0/17]
-** TODO gnus-summary-cancelled
-   Face used for canceled articles.
-** TODO gnus-summary-high-ancient
-   Face used for high interest ancient articles.
-** TODO gnus-summary-high-read
-   Face used for high interest read articles.
-** TODO gnus-summary-high-ticked
-   Face used for high interest ticked articles.
-** TODO gnus-summary-high-undownloaded
-   Face used for high interest uncached articles.
-** TODO gnus-summary-high-unread
-   Face used for high interest unread articles.
-** TODO gnus-summary-low-ancient
-   Face used for low interest ancient articles.
-** TODO gnus-summary-low-read
-   Face used for low interest read articles.
-** TODO gnus-summary-low-ticked
-   Face used for low interest ticked articles.
-** TODO gnus-summary-low-undownloaded
-   Face used for low interest uncached articles.
-** TODO gnus-summary-low-unread
-   Face used for low interest unread articles.
-** TODO gnus-summary-normal-ancient
-   Face used for normal interest ancient articles.
-** TODO gnus-summary-normal-read
-   Face used for normal interest read articles.
-** TODO gnus-summary-normal-ticked
-   Face used for normal interest ticked articles.
-** TODO gnus-summary-normal-undownloaded
-   Face used for normal interest uncached articles.
-** TODO gnus-summary-normal-unread
-   Face used for normal interest unread articles.
-** TODO gnus-summary-selected
-   Face used for selected articles.
-
-* TODO grep [0/1]
-** TODO grep-heading
-   Face of headings when 'grep-use-headings' is non-nil.
-
-* TODO gud [0/1]
-** TODO gud-highlight-current-line-face
-   Face for highlighting the source code line being executed.
-
-* TODO help [0/2]
-** TODO help-argument-name
-   Face to highlight argument names in *Help* buffers.
-** TODO help-for-help-header
-   Face used for headers in the 'help-for-help' buffer.
-
 * DONE highlight-indent-guides [9/9]
 ** DONE highlight-indent-guides-character-face
 ** DONE highlight-indent-guides-even-face
@@ -1440,72 +1852,8 @@ package-inventory.json (regenerable via build-inventory.el / app_inventory.py).
 ** DONE hl-todo-flymake-type
    Face used for the Flymake diagnostics type 'hl-todo-flymake'.
 
-* TODO holiday [0/1]
-** TODO holiday
-   Face for indicating in the calendar dates that have holidays.
-
-* TODO ibuffer [0/1]
-** TODO ibuffer-locked-buffer
-   Face used for locked buffers in Ibuffer.
-
-* TODO icon [0/2]
-** TODO icon
-   Face for buttons.
-** TODO icon-button
-   Face for buttons.
-
-* TODO image-dired [0/6]
-** TODO image-dired-thumb-flagged
-   Face for images flagged for deletion in thumbnail buffer.
-** TODO image-dired-thumb-header-directory-name
-   Face for the directory name in the header line of the thumbnail buffer.
-** TODO image-dired-thumb-header-file-name
-   Face for the file name in the header line of the thumbnail buffer.
-** TODO image-dired-thumb-header-file-size
-   Face for the file size in the header line of the thumbnail buffer.
-** TODO image-dired-thumb-header-image-count
-   Face for the image count in the header line of the thumbnail buffer.
-** TODO image-dired-thumb-mark
-   Face for marked images in thumbnail buffer.
-
-* TODO info [0/13]
-** TODO Info-quoted
-   Face used for quoted elements.
-** TODO info-header-node
-   Face for Info nodes in a node header.
-** TODO info-header-xref
-   Face for Info cross-references in a node header.
-** TODO info-index-match
-   Face used to highlight matches in an index entry.
-** TODO info-menu-header
-   Face for headers in Info menus.
-** TODO info-menu-star
-   Face used to emphasize '*' in an Info menu.
-** TODO info-node
-   Face for Info node names.
-** TODO info-title-1
-   Face for info titles at level 1.
-** TODO info-title-2
-   Face for info titles at level 2.
-** TODO info-title-3
-   Face for info titles at level 3.
-** TODO info-title-4
-   Face for info titles at level 4.
-** TODO info-xref
-   Face for unvisited Info cross-references.
-** TODO info-xref-visited
-   Face for visited Info cross-references.
-
 * DONE json-mode [1/1]
 ** DONE json-mode-object-name-face
-
-* TODO kmacro [0/3]
-** TODO kmacro-menu-flagged
-   Face used for keyboard macros flagged for deletion.
-** TODO kmacro-menu-mark
-   Face used for the Keyboard Macro Menu marks.
-** TODO kmacro-menu-marked
-   Face used for keyboard macros marked for duplication.
 
 * DONE llama [5/5]
 ** DONE llama-##-macro
@@ -1519,15 +1867,35 @@ package-inventory.json (regenerable via build-inventory.el / app_inventory.py).
 ** DONE llama-optional-argument
    Face used for optional arguments '&1' through '&9', '&' and '&*'.
 
-* TODO log [0/4]
-** TODO log-edit-header
-   Face for the headers in 'log-edit-mode' buffers.
-** TODO log-edit-headers-separator
-   Face for the separator line in 'log-edit-mode' buffers.
-** TODO log-edit-summary
-   Face for the summary in 'log-edit-mode' buffers.
-** TODO log-edit-unknown-header
-   Face for unknown headers in 'log-edit-mode' buffers.
+* DONE lsp [14/14]
+** DONE lsp-details-face
+   Used to display additional information throughout 'lsp'.
+** DONE lsp-face-highlight-read
+   Face used for highlighting symbols being read.
+** DONE lsp-face-highlight-textual
+   Face used for textual occurrences of symbols.
+** DONE lsp-face-highlight-write
+   Face used for highlighting symbols being written to.
+** DONE lsp-face-rename
+   Face used to highlight the identifier being renamed.
+** DONE lsp-inlay-hint-face
+   The face to use for the JavaScript inlays.
+** DONE lsp-inlay-hint-parameter-face
+   Face for inlay parameter hints (e.g. function parameter names at
+** DONE lsp-inlay-hint-type-face
+   Face for inlay type hints (e.g. inferred variable types).
+** DONE lsp-installation-buffer-face
+   Face used for installation buffers still in progress.
+** DONE lsp-installation-finished-buffer-face
+   Face used for finished installation buffers.
+** DONE lsp-rename-placeholder-face
+   Face used to display the rename placeholder in.
+** DONE lsp-signature-face
+   Used to display signatures in 'imenu', ....
+** DONE lsp-signature-highlight-function-argument
+   The face to use to highlight function arguments in signatures.
+** DONE lsp-signature-posframe
+   Background and foreground for 'lsp-signature-posframe'.
 
 * DONE lv [1/1]
 ** DONE lv-separator
@@ -1733,16 +2101,6 @@ package-inventory.json (regenerable via build-inventory.el / app_inventory.py).
 ** DONE magit-section-secondary-heading
    Face for section headings of some secondary headings.
 
-* TODO makefile [0/4]
-** TODO makefile-makepp-perl
-   Face to use for additionally highlighting Perl code in Font-Lock mode.
-** TODO makefile-shell
-   Face to use for additionally highlighting Shell commands in Font-Lock mode.
-** TODO makefile-space
-   Face to use for highlighting leading spaces in Font-Lock mode.
-** TODO makefile-targets
-   Face to use for additionally highlighting rule targets in Font-Lock mode.
-
 * DONE malyon [5/5]
 ** DONE malyon-face-bold
    Bold face for game text.
@@ -1821,43 +2179,93 @@ package-inventory.json (regenerable via build-inventory.el / app_inventory.py).
 ** DONE marginalia-version
    Face used to highlight package versions.
 
-* TODO message [0/7]
-** TODO message-cited-text-1
-   Face used for displaying 1st-level cited text.
-** TODO message-cited-text-2
-   Face used for displaying 2nd-level cited text.
-** TODO message-cited-text-3
-   Face used for displaying 3rd-level cited text.
-** TODO message-cited-text-4
-   Face used for displaying 4th-level cited text.
-** TODO message-mml
-   Face used for displaying MML.
-** TODO message-separator
-   Face used for displaying the separator.
-** TODO message-signature-separator
-   Face used for displaying the signature separator.
-
-* TODO message-header [0/7]
-** TODO message-header-cc
-   Face used for displaying Cc headers.
-** TODO message-header-name
-   Face used for displaying header names.
-** TODO message-header-newsgroups
-   Face used for displaying Newsgroups headers.
-** TODO message-header-other
-   Face used for displaying other headers.
-** TODO message-header-subject
-   Face used for displaying Subject headers.
-** TODO message-header-to
-   Face used for displaying To headers.
-** TODO message-header-xheader
-   Face used for displaying X-Header headers.
-
-* TODO mm [0/2]
-** TODO mm-command-output
-   Face used for displaying output from commands.
-** TODO mm-uu-extract
-   Face for extracted buffers.
+* DONE markdown [43/43]
+** DONE markdown-blockquote-face
+   Face for blockquote sections.
+** DONE markdown-bold-face
+   Face for bold text.
+** DONE markdown-code-face
+   Face for inline code, pre blocks, and fenced code blocks.
+** DONE markdown-comment-face
+   Face for HTML comments.
+** DONE markdown-footnote-marker-face
+   Face for footnote markers.
+** DONE markdown-footnote-text-face
+   Face for footnote text.
+** DONE markdown-gfm-checkbox-face
+   Face for GFM checkboxes.
+** DONE markdown-header-delimiter-face
+   Base face for headers hash delimiter.
+** DONE markdown-header-face
+   Base face for headers.
+** DONE markdown-header-face-1
+   Face for level 1 headers.
+** DONE markdown-header-face-2
+   Face for level 2 headers.
+** DONE markdown-header-face-3
+   Face for level 3 headers.
+** DONE markdown-header-face-4
+   Face for level 4 headers.
+** DONE markdown-header-face-5
+   Face for level 5 headers.
+** DONE markdown-header-face-6
+   Face for level 6 headers.
+** DONE markdown-header-rule-face
+   Base face for headers rules.
+** DONE markdown-highlight-face
+   Face for mouse highlighting.
+** DONE markdown-highlighting-face
+   Face for highlighting.
+** DONE markdown-hr-face
+   Face for horizontal rules.
+** DONE markdown-html-attr-name-face
+   Face for HTML attribute names.
+** DONE markdown-html-attr-value-face
+   Face for HTML attribute values.
+** DONE markdown-html-entity-face
+   Face for HTML entities.
+** DONE markdown-html-tag-delimiter-face
+   Face for HTML tag delimiters.
+** DONE markdown-html-tag-name-face
+   Face for HTML tag names.
+** DONE markdown-inline-code-face
+   Face for inline code.
+** DONE markdown-italic-face
+   Face for italic text.
+** DONE markdown-language-info-face
+   Face for programming language info strings.
+** DONE markdown-language-keyword-face
+   Face for programming language identifiers.
+** DONE markdown-line-break-face
+   Face for hard line breaks.
+** DONE markdown-link-face
+   Face for link text, ie the alias portion of a link.
+** DONE markdown-link-title-face
+   Face for reference link titles.
+** DONE markdown-list-face
+   Face for list item markers.
+** DONE markdown-markup-face
+   Face for markup elements.
+** DONE markdown-math-face
+   Face for LaTeX expressions.
+** DONE markdown-metadata-key-face
+   Face for metadata keys.
+** DONE markdown-metadata-value-face
+   Face for metadata values.
+** DONE markdown-missing-link-face
+   Face for the link text if the link points to a missing file.
+** DONE markdown-plain-url-face
+   Face for URLs that are also links.
+** DONE markdown-pre-face
+   Face for preformatted text.
+** DONE markdown-reference-face
+   Face for link references.
+** DONE markdown-strike-through-face
+   Face for strike-through text.
+** DONE markdown-table-face
+   Face for tables.
+** DONE markdown-url-face
+   Face for URLs that are part of markup.
 
 * DONE nerd-icons [34/34]
 ** DONE nerd-icons-blue
@@ -1943,248 +2351,6 @@ package-inventory.json (regenerable via build-inventory.el / app_inventory.py).
 ** DONE orderless-match-face-3
    Face for matches of components numbered 3 mod 4.
 
-* TODO org [0/88]
-** TODO org-archived
-   Face for headline with the ARCHIVE tag.
-** TODO org-checkbox
-   Face for checkboxes.
-** TODO org-checkbox-statistics-done
-   Face used for finished checkbox statistics.
-** TODO org-checkbox-statistics-todo
-   Face used for unfinished checkbox statistics.
-** TODO org-cite
-   Face for citations.
-** TODO org-cite-key
-   Face for citation keys.
-** TODO org-clock-overlay
-   Basic face for displaying the secondary selection.
-** TODO org-code
-   Face for fixed-width text like code snippets.
-** TODO org-column
-   Face for column display of entry properties.
-** TODO org-column-title
-   Face for column display of entry properties.
-** TODO org-date
-   Face for date/time stamps.
-** TODO org-date-selected
-   Face for highlighting the calendar day when using 'org-read-date'.
-** TODO org-default
-   Face used for default text.
-** TODO org-dispatcher-highlight
-   Face for highlighted keys in the dispatcher.
-** TODO org-done
-   Face used for todo keywords that indicate DONE items.
-** TODO org-drawer
-   Face used for drawers.
-** TODO org-drill-hidden-cloze-face
-   The face used to hide the contents of cloze phrases.
-** TODO org-drill-visible-cloze-face
-   The face used to hide the contents of cloze phrases.
-** TODO org-drill-visible-cloze-hint-face
-   The face used to hide the contents of cloze phrases.
-** TODO org-ellipsis
-   Face for the ellipsis in folded text.
-** TODO org-faces-cancelled
-   Face for the CANCELLED keyword.
-** TODO org-faces-cancelled-dim
-   Dimmed CANCELLED keyword for non-selected windows.
-** TODO org-faces-delegated
-   Face for the DELEGATED keyword.
-** TODO org-faces-delegated-dim
-   Dimmed DELEGATED keyword for non-selected windows.
-** TODO org-faces-doing
-   Face for the DOING keyword.
-** TODO org-faces-doing-dim
-   Dimmed DOING keyword for non-selected windows.
-** TODO org-faces-done
-   Face for the DONE keyword.
-** TODO org-faces-done-dim
-   Dimmed DONE keyword for non-selected windows.
-** TODO org-faces-failed
-   Face for the FAILED keyword.
-** TODO org-faces-failed-dim
-   Dimmed FAILED keyword for non-selected windows.
-** TODO org-faces-priority-a
-   Face for the [#A] priority cookie.
-** TODO org-faces-priority-a-dim
-   Dimmed [#A] priority cookie for non-selected windows.
-** TODO org-faces-priority-b
-   Face for the [#B] priority cookie.
-** TODO org-faces-priority-b-dim
-   Dimmed [#B] priority cookie for non-selected windows.
-** TODO org-faces-priority-c
-   Face for the [#C] priority cookie.
-** TODO org-faces-priority-c-dim
-   Dimmed [#C] priority cookie for non-selected windows.
-** TODO org-faces-priority-d
-   Face for the [#D] priority cookie.
-** TODO org-faces-priority-d-dim
-   Dimmed [#D] priority cookie for non-selected windows.
-** TODO org-faces-project
-   Face for the PROJECT keyword.
-** TODO org-faces-project-dim
-   Dimmed PROJECT keyword for non-selected windows.
-** TODO org-faces-stalled
-   Face for the STALLED keyword.
-** TODO org-faces-stalled-dim
-   Dimmed STALLED keyword for non-selected windows.
-** TODO org-faces-todo
-   Face for the TODO keyword.
-** TODO org-faces-todo-dim
-   Dimmed TODO keyword for non-selected windows.
-** TODO org-faces-verify
-   Face for the VERIFY keyword.
-** TODO org-faces-verify-dim
-   Dimmed VERIFY keyword for non-selected windows.
-** TODO org-faces-waiting
-   Face for the WAITING keyword.
-** TODO org-faces-waiting-dim
-   Dimmed WAITING keyword for non-selected windows.
-** TODO org-footnote
-   Face for footnotes.
-** TODO org-formula
-   Face for formulas.
-** TODO org-headline-done
-   Face used to indicate that a headline is DONE.
-** TODO org-headline-todo
-   Face used to indicate that a headline is marked as TODO.
-** TODO org-hide
-   Face used to hide leading stars in headlines.
-** TODO org-imminent-deadline
-   Face for current deadlines in the agenda.
-** TODO org-indent
-   Face for outline indentation.
-** TODO org-inline-src-block
-   Face used for inline source blocks as a whole.
-** TODO org-latex-and-related
-   Face used to highlight LaTeX data, entities and sub/superscript.
-** TODO org-level-1
-   Face used for level 1 headlines.
-** TODO org-level-2
-   Face used for level 2 headlines.
-** TODO org-level-3
-   Face used for level 3 headlines.
-** TODO org-level-4
-   Face used for level 4 headlines.
-** TODO org-level-5
-   Face used for level 5 headlines.
-** TODO org-level-6
-   Face used for level 6 headlines.
-** TODO org-level-7
-   Face used for level 7 headlines.
-** TODO org-level-8
-   Face used for level 8 headlines.
-** TODO org-link
-   Face for links.
-** TODO org-list-dt
-   Default face for definition terms in lists.
-** TODO org-macro
-   Face for macros.
-** TODO org-meta-line
-   Face for meta lines starting with "#+".
-** TODO org-mode-line-clock
-   Face used for clock display in mode line.
-** TODO org-mode-line-clock-overrun
-   Face used for clock display for overrun tasks in mode line.
-** TODO org-property-value
-   Face used for the value of a property.
-** TODO org-quote
-   Face for #+BEGIN_QUOTE ... #+END_QUOTE blocks.
-** TODO org-scheduled
-   Face for items scheduled for a certain day.
-** TODO org-scheduled-previously
-   Face for items scheduled previously, and not yet done.
-** TODO org-scheduled-today
-   Face for items scheduled for a certain day.
-** TODO org-sexp-date
-   Face for diary-like sexp date specifications.
-** TODO org-special-keyword
-   Face used for special keywords.
-** TODO org-tag
-   Default face for tags.
-** TODO org-tag-group
-   Face for group tags.
-** TODO org-target
-   Face for link targets.
-** TODO org-time-grid
-   Face used for time grids.
-** TODO org-todo
-   Face for TODO keywords.
-** TODO org-upcoming-deadline
-   Face for items scheduled previously, and not yet done.
-** TODO org-upcoming-distant-deadline
-   Face for items scheduled previously, not done, and have a distant deadline.
-** TODO org-verbatim
-   Face for fixed-with text like code snippets.
-** TODO org-verse
-   Face for #+BEGIN_VERSE ... #+END_VERSE blocks.
-** TODO org-warning
-   Face for deadlines and TODO keywords.
-
-* TODO org-agenda [0/21]
-** TODO org-agenda-calendar-daterange
-   Face used to show entries with a date range in the agenda.
-** TODO org-agenda-calendar-event
-   Face used to show events and appointments in the agenda.
-** TODO org-agenda-calendar-sexp
-   Face used to show events computed from a S-expression.
-** TODO org-agenda-clocking
-   Face marking the current clock item in the agenda.
-** TODO org-agenda-column-dateline
-   Face used in agenda column view for datelines with summaries.
-** TODO org-agenda-current-time
-   Face used to show the current time in the time grid.
-** TODO org-agenda-date
-   Face used in agenda for normal days.
-** TODO org-agenda-date-today
-   Face used in agenda for today.
-** TODO org-agenda-date-weekend
-   Face used in agenda for weekend days.
-** TODO org-agenda-date-weekend-today
-   Face used in agenda for today during weekends.
-** TODO org-agenda-diary
-   Face used for agenda entries that come from the Emacs diary.
-** TODO org-agenda-dimmed-todo-face
-   Face used to dim blocked tasks in the agenda.
-** TODO org-agenda-done
-   Face used in agenda, to indicate lines switched to DONE.
-** TODO org-agenda-filter-category
-   Face for categories in the mode-line when filtering the agenda.
-** TODO org-agenda-filter-effort
-   Face for effort in the mode-line when filtering the agenda.
-** TODO org-agenda-filter-regexp
-   Face for regexp(s) in the mode-line when filtering the agenda.
-** TODO org-agenda-filter-tags
-   Face for tag(s) in the mode-line when filtering the agenda.
-** TODO org-agenda-restriction-lock
-   Face for showing the agenda restriction lock.
-** TODO org-agenda-structure
-   Face used in agenda for captions and dates.
-** TODO org-agenda-structure-filter
-   Face used for the current type of task filter in the agenda.
-** TODO org-agenda-structure-secondary
-   Face used for secondary information in agenda block headers.
-
-* TODO org-block [0/3]
-** TODO org-block
-   Face used for text inside various blocks.
-** TODO org-block-begin-line
-   Face used for the line delimiting the begin of source blocks.
-** TODO org-block-end-line
-   Face used for the line delimiting the end of source blocks.
-
-* TODO org-document [0/3]
-** TODO org-document-info
-   Face for document information such as the author and date.
-** TODO org-document-info-keyword
-   Face for document information keywords.
-** TODO org-document-title
-   Face for document title, i.e. that which follows the #+TITLE: keyword.
-
-* TODO org-priority [0/1]
-** TODO org-priority
-   Face used for priority cookies.
-
 * DONE org-roam [9/9]
 ** DONE org-roam-dailies-calendar-note
    Face for dates with a daily-note in the calendar.
@@ -2217,64 +2383,6 @@ package-inventory.json (regenerable via build-inventory.el / app_inventory.py).
 ** TODO org-superstar-ordered-item
    Face used to display ordered list item bullets.
 
-* TODO org-table [0/3]
-** TODO org-table
-   Face used for tables.
-** TODO org-table-header
-   Face for table header.
-** TODO org-table-row
-   Face used to fontify whole table rows (including newlines and indentation).
-
-* TODO outline [0/8]
-** TODO outline-1
-   Level 1.
-** TODO outline-2
-   Level 2.
-** TODO outline-3
-   Level 3.
-** TODO outline-4
-   Level 4.
-** TODO outline-5
-   Level 5.
-** TODO outline-6
-   Level 6.
-** TODO outline-7
-   Level 7.
-** TODO outline-8
-   Level 8.
-
-* TODO package [0/15]
-** TODO package-description
-   Face used on package description summaries in the package menu.
-** TODO package-help-section-name
-   Face used on section names in package description buffers.
-** TODO package-name
-   Face used on package names in the package menu.
-** TODO package-status-avail-obso
-   Face used on the status and version of avail-obso packages.
-** TODO package-status-available
-   Face used on the status and version of available packages.
-** TODO package-status-built-in
-   Face used on the status and version of built-in packages.
-** TODO package-status-dependency
-   Face used on the status and version of dependency packages.
-** TODO package-status-disabled
-   Face used on the status and version of disabled packages.
-** TODO package-status-external
-   Face used on the status and version of external packages.
-** TODO package-status-from-source
-   Face used on the status and version of installed packages.
-** TODO package-status-held
-   Face used on the status and version of held packages.
-** TODO package-status-incompat
-   Face used on the status and version of incompat packages.
-** TODO package-status-installed
-   Face used on the status and version of installed packages.
-** TODO package-status-new
-   Face used on the status and version of new packages.
-** TODO package-status-unsigned
-   Face used on the status and version of unsigned packages.
-
 * DONE prescient [2/2]
 ** DONE prescient-primary-highlight
    Face used to highlight the parts of candidates that match the input.
@@ -2296,74 +2404,6 @@ package-inventory.json (regenerable via build-inventory.el / app_inventory.py).
 ** DONE rainbow-delimiters-mismatched-face
 ** DONE rainbow-delimiters-unmatched-face
 
-* TODO rectangle [0/1]
-** TODO rectangle-preview
-   The face to use for the 'string-rectangle' preview.
-
-* TODO sh [0/3]
-** TODO sh-escaped-newline
-   Face used for (non-escaped) backslash at end of a line in Shell-script mode.
-** TODO sh-heredoc
-   Face to show a here-document.
-** TODO sh-quoted-exec
-   Face to show quoted execs like `blabla`.
-
-* TODO shell [0/3]
-** TODO shell-highlight-undef-alias-face
-   Face used for shell command aliases.
-** TODO shell-highlight-undef-defined-face
-   Face used for existing shell commands.
-** TODO shell-highlight-undef-undefined-face
-   Face used for non-existent shell commands.
-
-* TODO shr [0/15]
-** TODO shr-abbreviation
-   Face for <abbr> elements.
-** TODO shr-code
-   Face used for rendering <code> blocks.
-** TODO shr-h1
-   Face for <h1> elements.
-** TODO shr-h2
-   Face for <h2> elements.
-** TODO shr-h3
-   Face for <h3> elements.
-** TODO shr-h4
-   Face for <h4> elements.
-** TODO shr-h5
-   Face for <h5> elements.
-** TODO shr-h6
-   Face for <h6> elements.
-** TODO shr-link
-   Face for link elements.
-** TODO shr-mark
-   Face used for <mark> elements.
-** TODO shr-selected-link
-   Temporary face for externally visited link elements.
-** TODO shr-sliced-image
-   Face used for sliced images.
-** TODO shr-strike-through
-   Face for <s> elements.
-** TODO shr-sup
-   Face for <sup> and <sub> elements.
-** TODO shr-text
-   Face used for rendering text.
-
-* TODO smerge [0/7]
-** TODO smerge-base
-   Face for the base code.
-** TODO smerge-lower
-   Face for the 'lower' version of a conflict.
-** TODO smerge-markers
-   Face for the conflict markers.
-** TODO smerge-refined-added
-   Face used for added characters shown by 'smerge-refine'.
-** TODO smerge-refined-changed
-   Face used for char-based changes shown by 'smerge-refine'.
-** TODO smerge-refined-removed
-   Face used for removed characters shown by 'smerge-refine'.
-** TODO smerge-upper
-   Face for the 'upper' version of a conflict.
-
 * DONE symbol-overlay [9/9]
 ** DONE symbol-overlay-default-face
 ** DONE symbol-overlay-face-1
@@ -2374,30 +2414,6 @@ package-inventory.json (regenerable via build-inventory.el / app_inventory.py).
 ** DONE symbol-overlay-face-6
 ** DONE symbol-overlay-face-7
 ** DONE symbol-overlay-face-8
-
-* TODO tab-bar [0/5]
-** TODO tab-bar-tab
-   Tab bar face for selected tab.
-** TODO tab-bar-tab-group-current
-   Tab bar face for current group tab.
-** TODO tab-bar-tab-group-inactive
-   Tab bar face for inactive group tab.
-** TODO tab-bar-tab-inactive
-   Tab bar face for non-selected tab.
-** TODO tab-bar-tab-ungrouped
-   Tab bar face for ungrouped tab when tab groups are used.
-
-* TODO tab-line [0/1]
-** TODO tab-line
-   Tab line face.
-
-* TODO table [0/1]
-** TODO table-cell
-   Face used for table cell contents.
-
-* TODO tabulated-list [0/1]
-** TODO tabulated-list-fake-header
-   Face used on fake header lines.
 
 * DOING tmr [12/17]
 ** DONE tmr-description
@@ -2482,38 +2498,6 @@ package-inventory.json (regenerable via build-inventory.el / app_inventory.py).
    Face used for keys unreachable from the current prefix sequence.
 ** DONE transient-value
    Face used for values.
-
-* TODO treesit [0/2]
-** TODO treesit-explorer-anonymous-node
-   Face for anonymous nodes in tree-sitter explorer.
-** TODO treesit-explorer-field-name
-   Face for field names in tree-sitter explorer.
-
-* TODO vc [0/12]
-** TODO vc-conflict-state
-   Face for VC modeline state when the file contains merge conflicts.
-** TODO vc-edited-state
-   Face for VC modeline state when the file is edited.
-** TODO vc-git-log-edit-summary-max-warning
-   Face for Git commit summary lines beyond the maximum length.
-** TODO vc-git-log-edit-summary-target-warning
-   Face for Git commit summary lines beyond the target length.
-** TODO vc-ignored-state
-   Face for VC modeline state when the file is registered, but ignored.
-** TODO vc-locally-added-state
-   Face for VC modeline state when the file is locally added.
-** TODO vc-locked-state
-   Face for VC modeline state when the file locked.
-** TODO vc-missing-state
-   Face for VC modeline state when the file is missing from the file system.
-** TODO vc-needs-update-state
-   Face for VC modeline state when the file needs update.
-** TODO vc-removed-state
-   Face for VC modeline state when the file was removed from the VC system.
-** TODO vc-state-base
-   Base face for VC state indicator.
-** TODO vc-up-to-date-state
-   Face for VC modeline state when the file is up to date.
 
 * DONE vertico [4/4]
 ** DONE vertico-current
@@ -2607,47 +2591,3 @@ package-inventory.json (regenerable via build-inventory.el / app_inventory.py).
 ** DONE web-mode-variable-name-face
 ** DONE web-mode-warning-face
 ** DONE web-mode-whitespace-face
-
-* TODO which-key [0/9]
-** TODO which-key-command-description-face
-   Face for the key description when it is a command.
-** TODO which-key-docstring-face
-   Face for docstrings.
-** TODO which-key-group-description-face
-   Face for the key description when it is a group or prefix.
-** TODO which-key-highlighted-command-face
-   Default face for highlighted command descriptions.
-** TODO which-key-key-face
-   Face for which-key keys.
-** TODO which-key-local-map-description-face
-   Face for the key description when it is found in 'current-local-map'.
-** TODO which-key-note-face
-   Face for notes or hints occasionally provided.
-** TODO which-key-separator-face
-   Face for the separator (default separator is an arrow).
-** TODO which-key-special-key-face
-   Face for special keys (SPC, TAB, RET).
-
-* TODO widget [0/7]
-** TODO widget-button
-   Face used for widget buttons.
-** TODO widget-button-pressed
-   Face used for pressed buttons.
-** TODO widget-documentation
-   Face used for documentation text.
-** TODO widget-field
-   Face used for editable fields.
-** TODO widget-inactive
-   Face used for inactive widgets.
-** TODO widget-single-line-field
-   Face used for editable fields spanning only a single line.
-** TODO widget-unselected
-   Face used for unselected widgets.
-
-* TODO xref [0/3]
-** TODO xref-file-header
-   Face used to highlight file header in the xref buffer.
-** TODO xref-line-number
-   Face for displaying line numbers in the xref buffer.
-** TODO xref-match
-   Face used to highlight matches in the xref buffer.
