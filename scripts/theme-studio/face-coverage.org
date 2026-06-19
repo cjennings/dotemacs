@@ -18,6 +18,7 @@ Mechanism to close a TODO: core/UI faces -> UI_FACES in generate.py; package + s
 -> package-inventory.json (regenerable via build-inventory.el / app_inventory.py).
 
 * DOING emacs-core [24/74]
+  Standalone built-in faces: frame chrome, cursor, region, mode line, search, line numbers, base typography.
 ** TODO blink-matching-paren-offscreen
    Face for showing in the echo area matched open paren that is off-screen.
 ** TODO bold
@@ -168,10 +169,13 @@ Mechanism to close a TODO: core/UI faces -> UI_FACES in generate.py; package + s
    Basic face for last pixel line/column of window dividers.
 
 * DOING emacs-general [23/563]
+  Built-in Emacs subsystems, one child per subsystem.
 ** TODO abbrev [0/1]
+   Abbreviation handling, typing shortcuts, macros.
 *** TODO abbrev-table-name
     Face used for displaying the abbrev table name in 'edit-abbrevs-mode'.
 ** TODO ansi-color [0/23]
+   Translating SGR control sequences to faces.
 *** TODO ansi-color-black
     Face used to render black color code.
 *** TODO ansi-color-blue
@@ -219,6 +223,7 @@ Mechanism to close a TODO: core/UI faces -> UI_FACES in generate.py; package + s
 *** TODO ansi-color-yellow
     Face used to render yellow color code.
 ** TODO apropos [0/8]
+   Apropos commands for users and programmers.
 *** TODO apropos-button
     Face for buttons that indicate a face in Apropos.
 *** TODO apropos-function-button
@@ -236,6 +241,7 @@ Mechanism to close a TODO: core/UI faces -> UI_FACES in generate.py; package + s
 *** TODO apropos-variable-button
     Button face indicating a variable in Apropos.
 ** TODO bookmark [0/2]
+   Setting, annotation and jumping to bookmarks.
 *** TODO bookmark-face
     Face used to highlight current line.
 *** TODO bookmark-menu-bookmark
@@ -252,6 +258,7 @@ Mechanism to close a TODO: core/UI faces -> UI_FACES in generate.py; package + s
 *** TODO buffer-menu-buffer
     Face for buffer names in the Buffer Menu.
 ** TODO calendar [0/4]
+   Calendar and time management support.
 *** TODO calendar-month-header
     Face used for month headers in the calendar.
 *** TODO calendar-today
@@ -261,6 +268,7 @@ Mechanism to close a TODO: core/UI faces -> UI_FACES in generate.py; package + s
 *** TODO calendar-weekend-header
     Face used for weekend column headers in the calendar.
 ** TODO change-log [0/8]
+   Change log maintenance.
 *** TODO change-log-acknowledgment
     Face for highlighting acknowledgments.
 *** TODO change-log-conditionals
@@ -278,11 +286,13 @@ Mechanism to close a TODO: core/UI faces -> UI_FACES in generate.py; package + s
 *** TODO change-log-name
     Face for highlighting author names.
 ** TODO comint [0/2]
+   General command interpreter in a window stuff.
 *** TODO comint-highlight-input
     Face to use to highlight user input.
 *** TODO comint-highlight-prompt
     Face to use to highlight prompts.
 ** TODO compilation [0/8]
+   Run compiler as inferior of Emacs, parse error messages.
 *** TODO compilation-column-number
     Face for displaying column numbers in compiler messages.
 *** TODO compilation-error
@@ -300,6 +310,7 @@ Mechanism to close a TODO: core/UI faces -> UI_FACES in generate.py; package + s
 *** TODO compilation-warning
     Face used to highlight compiler warnings.
 ** TODO completions [0/4]
+   Faces for the default *Completions* buffer.
 *** TODO completions-annotations
     Face to use for annotations in the *Completions* buffer.
 *** TODO completions-group-separator
@@ -312,6 +323,7 @@ Mechanism to close a TODO: core/UI faces -> UI_FACES in generate.py; package + s
 *** TODO confusingly-reordered
     Face for highlighting text that was bidi-reordered in confusing ways.
 ** TODO custom [0/25]
+   Faces used by customize.
 *** TODO custom-button
     Face for custom buffer buttons if 'custom-raised-buttons' is non-nil.
 *** TODO custom-button-mouse
@@ -363,9 +375,11 @@ Mechanism to close a TODO: core/UI faces -> UI_FACES in generate.py; package + s
 *** TODO custom-visibility
     Face for the 'custom-visibility' widget.
 ** TODO diary [0/1]
+   Faces for diary entries in the calendar.
 *** TODO diary
     Face for highlighting diary entries.
 ** TODO diff [0/18]
+   Comparing files with `diff'.
 *** TODO diff-added
     'diff-mode' face used to highlight added lines.
 *** TODO diff-changed
@@ -403,6 +417,7 @@ Mechanism to close a TODO: core/UI faces -> UI_FACES in generate.py; package + s
 *** TODO diff-removed
     'diff-mode' face used to highlight removed lines.
 ** TODO dired [0/12]
+   Directory editing.
 *** TODO dired-broken-symlink
     Face used for broken symbolic links.
 *** TODO dired-directory
@@ -428,18 +443,21 @@ Mechanism to close a TODO: core/UI faces -> UI_FACES in generate.py; package + s
 *** TODO dired-warning
     Face used to highlight a part of a buffer that needs user attention.
 ** TODO doc [0/1]
+   Support for Emacs documentation.
 *** TODO doc-view-svg-face
     Face used for SVG images.
 ** TODO edmacro [0/1]
 *** TODO edmacro-label
     Face used for labels in 'edit-kbd-macro'.
 ** TODO eldoc [0/1]
+   Show function arglist or variable docstring in echo area.
 *** TODO eldoc-highlight-function-argument
     Face used for the argument at point in a function's argument list.
 ** TODO elisp [0/1]
 *** TODO elisp-shorthand-font-lock-face
     Face for highlighting shorthands in Emacs Lisp.
 ** TODO epa [0/8]
+   The EasyPG Assistant.
 *** TODO epa-field-body
     Face for the body of the attribute field.
 *** TODO epa-field-name
@@ -457,6 +475,7 @@ Mechanism to close a TODO: core/UI faces -> UI_FACES in generate.py; package + s
 *** TODO epa-validity-medium
     Face for medium validity EPA information.
 ** TODO erc [0/31]
+   Emacs Internet Relay Chat client.
 *** TODO erc-action-face
     ERC face for actions generated by /ME.
 *** TODO erc-bold-face
@@ -520,6 +539,7 @@ Mechanism to close a TODO: core/UI faces -> UI_FACES in generate.py; package + s
 *** TODO erc-underline-face
     ERC underline face.
 ** TODO erc-ansi [0/32]
+   Emacs Internet Relay Chat client.
 *** TODO bg:erc-color-face0
     ERC face.
 *** TODO bg:erc-color-face1
@@ -585,11 +605,13 @@ Mechanism to close a TODO: core/UI faces -> UI_FACES in generate.py; package + s
 *** TODO fg:erc-color-face9
     ERC face.
 ** TODO ert [0/2]
+   ERT, the Emacs Lisp regression testing tool.
 *** TODO ert-test-result-expected
     Face used for expected results in the ERT results buffer.
 *** TODO ert-test-result-unexpected
     Face used for unexpected results in the ERT results buffer.
 ** TODO eww [0/8]
+   Emacs Web Wowser.
 *** TODO eww-form-checkbox
     Face for eww buffer buttons.
 *** TODO eww-form-file
@@ -607,12 +629,15 @@ Mechanism to close a TODO: core/UI faces -> UI_FACES in generate.py; package + s
 *** TODO eww-valid-certificate
     Face for web pages with valid certificates.
 ** TODO ffap [0/1]
+   Find file or URL at point.
 *** TODO ffap
     Face used to highlight the current buffer substring.
 ** TODO file [0/1]
+   Support for editing files.
 *** TODO file-name-shadow
     Face used by 'file-name-shadow-mode' for the shadow.
 ** DOING font-lock [23/28]
+   Font Lock mode text highlighting package.
 *** DONE font-lock-bracket-face
     Font Lock mode face used to highlight brackets, braces, and parens.
 *** DONE font-lock-builtin-face
@@ -670,9 +695,11 @@ Mechanism to close a TODO: core/UI faces -> UI_FACES in generate.py; package + s
 *** TODO font-lock-warning-face
     Font Lock mode face used to highlight warnings.
 ** TODO gnus-button [0/1]
+   The coffee-brewing, all singing, all dancing, kitchen sink newsreader.
 *** TODO gnus-button
     Face used for highlighting a button in the article buffer.
 ** TODO gnus-emphasis [0/9]
+   The coffee-brewing, all singing, all dancing, kitchen sink newsreader.
 *** TODO gnus-emphasis-bold
     Face used for displaying strong emphasized text (*word*).
 *** TODO gnus-emphasis-bold-italic
@@ -692,6 +719,7 @@ Mechanism to close a TODO: core/UI faces -> UI_FACES in generate.py; package + s
 *** TODO gnus-emphasis-underline-italic
     Face used for displaying underlined italic emphasized text (_/word/_).
 ** TODO gnus-group [0/22]
+   Group buffers.
 *** TODO gnus-group-mail-1
     Level 1 mailgroup face.
 *** TODO gnus-group-mail-1-empty
@@ -737,6 +765,7 @@ Mechanism to close a TODO: core/UI faces -> UI_FACES in generate.py; package + s
 *** TODO gnus-group-news-low-empty
     Low level empty newsgroup face.
 ** TODO gnus-header [0/6]
+   The coffee-brewing, all singing, all dancing, kitchen sink newsreader.
 *** TODO gnus-header
     Base face used for all Gnus header faces.
 *** TODO gnus-header-content
@@ -750,12 +779,15 @@ Mechanism to close a TODO: core/UI faces -> UI_FACES in generate.py; package + s
 *** TODO gnus-header-subject
     Face used for displaying subject headers.
 ** TODO gnus-signature [0/1]
+   The coffee-brewing, all singing, all dancing, kitchen sink newsreader.
 *** TODO gnus-signature
     Face used for highlighting a signature in the article buffer.
 ** TODO gnus-splash [0/1]
+   The coffee-brewing, all singing, all dancing, kitchen sink newsreader.
 *** TODO gnus-splash
     Face for the splash screen.
 ** TODO gnus-summary [0/17]
+   Summary buffers.
 *** TODO gnus-summary-cancelled
     Face used for canceled articles.
 *** TODO gnus-summary-high-ancient
@@ -791,20 +823,25 @@ Mechanism to close a TODO: core/UI faces -> UI_FACES in generate.py; package + s
 *** TODO gnus-summary-selected
     Face used for selected articles.
 ** TODO grep [0/1]
+   Run `grep' and display the results.
 *** TODO grep-heading
     Face of headings when 'grep-use-headings' is non-nil.
 ** TODO gud [0/1]
+   The "Grand Unified Debugger" interface.
 *** TODO gud-highlight-current-line-face
     Face for highlighting the source code line being executed.
 ** TODO help [0/2]
+   Support for Emacs help systems.
 *** TODO help-argument-name
     Face to highlight argument names in *Help* buffers.
 *** TODO help-for-help-header
     Face used for headers in the 'help-for-help' buffer.
 ** TODO holiday [0/1]
+   Faces for holidays in the calendar.
 *** TODO holiday
     Face for indicating in the calendar dates that have holidays.
 ** TODO ibuffer [0/1]
+   Advanced replacement for `buffer-menu'.
 *** TODO ibuffer-locked-buffer
     Face used for locked buffers in Ibuffer.
 ** TODO icon [0/2]
@@ -813,6 +850,7 @@ Mechanism to close a TODO: core/UI faces -> UI_FACES in generate.py; package + s
 *** TODO icon-button
     Face for buttons.
 ** TODO image-dired [0/6]
+   Use Dired to browse your images as thumbnails, and more.
 *** TODO image-dired-thumb-flagged
     Face for images flagged for deletion in thumbnail buffer.
 *** TODO image-dired-thumb-header-directory-name
@@ -826,6 +864,7 @@ Mechanism to close a TODO: core/UI faces -> UI_FACES in generate.py; package + s
 *** TODO image-dired-thumb-mark
     Face for marked images in thumbnail buffer.
 ** TODO info [0/13]
+   Info subsystem.
 *** TODO Info-quoted
     Face used for quoted elements.
 *** TODO info-header-node
@@ -853,6 +892,7 @@ Mechanism to close a TODO: core/UI faces -> UI_FACES in generate.py; package + s
 *** TODO info-xref-visited
     Face for visited Info cross-references.
 ** TODO kmacro [0/3]
+   Simplified keyboard macro user interface.
 *** TODO kmacro-menu-flagged
     Face used for keyboard macros flagged for deletion.
 *** TODO kmacro-menu-mark
@@ -869,6 +909,7 @@ Mechanism to close a TODO: core/UI faces -> UI_FACES in generate.py; package + s
 *** TODO log-edit-unknown-header
     Face for unknown headers in 'log-edit-mode' buffers.
 ** TODO makefile [0/4]
+   Makefile editing commands for Emacs.
 *** TODO makefile-makepp-perl
     Face to use for additionally highlighting Perl code in Font-Lock mode.
 *** TODO makefile-shell
@@ -878,6 +919,7 @@ Mechanism to close a TODO: core/UI faces -> UI_FACES in generate.py; package + s
 *** TODO makefile-targets
     Face to use for additionally highlighting rule targets in Font-Lock mode.
 ** TODO message [0/7]
+   Mail and news message composing.
 *** TODO message-cited-text-1
     Face used for displaying 1st-level cited text.
 *** TODO message-cited-text-2
@@ -893,6 +935,7 @@ Mechanism to close a TODO: core/UI faces -> UI_FACES in generate.py; package + s
 *** TODO message-signature-separator
     Face used for displaying the signature separator.
 ** TODO message-header [0/7]
+   Mail and news message composing.
 *** TODO message-header-cc
     Face used for displaying Cc headers.
 *** TODO message-header-name
@@ -908,6 +951,7 @@ Mechanism to close a TODO: core/UI faces -> UI_FACES in generate.py; package + s
 *** TODO message-header-xheader
     Face used for displaying X-Header headers.
 ** TODO mm [0/2]
+   MIME handling faces (gnus/mm).
 *** TODO mm-command-output
     Face used for displaying output from commands.
 *** TODO mm-uu-extract
@@ -916,6 +960,7 @@ Mechanism to close a TODO: core/UI faces -> UI_FACES in generate.py; package + s
 *** TODO next-error-message
     Face used to highlight the current error message in the 'next-error' buffer.
 ** TODO org [0/88]
+   Outline-based notes management and organizer.
 *** TODO org-archived
     Face for headline with the ARCHIVE tag.
 *** TODO org-checkbox
@@ -1093,6 +1138,7 @@ Mechanism to close a TODO: core/UI faces -> UI_FACES in generate.py; package + s
 *** TODO org-warning
     Face for deadlines and TODO keywords.
 ** TODO org-agenda [0/21]
+   Options concerning agenda views in Org mode.
 *** TODO org-agenda-calendar-daterange
     Face used to show entries with a date range in the agenda.
 *** TODO org-agenda-calendar-event
@@ -1136,6 +1182,7 @@ Mechanism to close a TODO: core/UI faces -> UI_FACES in generate.py; package + s
 *** TODO org-agenda-structure-secondary
     Face used for secondary information in agenda block headers.
 ** TODO org-block [0/3]
+   Outline-based notes management and organizer.
 *** TODO org-block
     Face used for text inside various blocks.
 *** TODO org-block-begin-line
@@ -1143,6 +1190,7 @@ Mechanism to close a TODO: core/UI faces -> UI_FACES in generate.py; package + s
 *** TODO org-block-end-line
     Face used for the line delimiting the end of source blocks.
 ** TODO org-document [0/3]
+   Outline-based notes management and organizer.
 *** TODO org-document-info
     Face for document information such as the author and date.
 *** TODO org-document-info-keyword
@@ -1150,9 +1198,11 @@ Mechanism to close a TODO: core/UI faces -> UI_FACES in generate.py; package + s
 *** TODO org-document-title
     Face for document title, i.e. that which follows the #+TITLE: keyword.
 ** TODO org-priority [0/1]
+   Outline-based notes management and organizer.
 *** TODO org-priority
     Face used for priority cookies.
 ** TODO org-table [0/3]
+   Options concerning tables in Org mode.
 *** TODO org-table
     Face used for tables.
 *** TODO org-table-header
@@ -1160,6 +1210,7 @@ Mechanism to close a TODO: core/UI faces -> UI_FACES in generate.py; package + s
 *** TODO org-table-row
     Face used to fontify whole table rows (including newlines and indentation).
 ** TODO outline [0/8]
+   Support for hierarchical outlining.
 *** TODO outline-1
     Level 1.
 *** TODO outline-2
@@ -1177,6 +1228,7 @@ Mechanism to close a TODO: core/UI faces -> UI_FACES in generate.py; package + s
 *** TODO outline-8
     Level 8.
 ** TODO package [0/15]
+   Manager for Emacs Lisp packages.
 *** TODO package-description
     Face used on package description summaries in the package menu.
 *** TODO package-help-section-name
@@ -1211,9 +1263,11 @@ Mechanism to close a TODO: core/UI faces -> UI_FACES in generate.py; package + s
 *** TODO read-multiple-choice-face
     Face for the symbol name in 'read-multiple-choice' output.
 ** TODO rectangle [0/1]
+   Operations on rectangles.
 *** TODO rectangle-preview
     The face to use for the 'string-rectangle' preview.
 ** TODO sh [0/3]
+   Shell programming utilities.
 *** TODO sh-escaped-newline
     Face used for (non-escaped) backslash at end of a line in Shell-script mode.
 *** TODO sh-heredoc
@@ -1221,6 +1275,7 @@ Mechanism to close a TODO: core/UI faces -> UI_FACES in generate.py; package + s
 *** TODO sh-quoted-exec
     Face to show quoted execs like `blabla`.
 ** TODO shell [0/3]
+   Running shell from within Emacs buffers.
 *** TODO shell-highlight-undef-alias-face
     Face used for shell command aliases.
 *** TODO shell-highlight-undef-defined-face
@@ -1228,6 +1283,7 @@ Mechanism to close a TODO: core/UI faces -> UI_FACES in generate.py; package + s
 *** TODO shell-highlight-undef-undefined-face
     Face used for non-existent shell commands.
 ** TODO shr [0/15]
+   Simple HTML Renderer.
 *** TODO shr-abbreviation
     Face for <abbr> elements.
 *** TODO shr-code
@@ -1259,6 +1315,7 @@ Mechanism to close a TODO: core/UI faces -> UI_FACES in generate.py; package + s
 *** TODO shr-text
     Face used for rendering text.
 ** TODO smerge [0/7]
+   Minor mode to highlight and resolve diff3 conflicts.
 *** TODO smerge-base
     Face for the base code.
 *** TODO smerge-lower
@@ -1274,6 +1331,7 @@ Mechanism to close a TODO: core/UI faces -> UI_FACES in generate.py; package + s
 *** TODO smerge-upper
     Face for the 'upper' version of a conflict.
 ** TODO tab-bar [0/6]
+   Frame-local tabs.
 *** TODO tab-bar
     Tab bar face.
 *** TODO tab-bar-tab
@@ -1287,20 +1345,25 @@ Mechanism to close a TODO: core/UI faces -> UI_FACES in generate.py; package + s
 *** TODO tab-bar-tab-ungrouped
     Tab bar face for ungrouped tab when tab groups are used.
 ** TODO tab-line [0/1]
+   Faces used in the tab line.
 *** TODO tab-line
     Tab line face.
 ** TODO table [0/1]
+   Text based table manipulation utilities.
 *** TODO table-cell
     Face used for table cell contents.
 ** TODO tabulated-list [0/1]
+   Tabulated-list customization group.
 *** TODO tabulated-list-fake-header
     Face used on fake header lines.
 ** TODO treesit [0/2]
+   Incremental parser.
 *** TODO treesit-explorer-anonymous-node
     Face for anonymous nodes in tree-sitter explorer.
 *** TODO treesit-explorer-field-name
     Face for field names in tree-sitter explorer.
 ** TODO vc [0/12]
+   Faces used in the mode line by the VC state indicator.
 *** TODO vc-conflict-state
     Face for VC modeline state when the file contains merge conflicts.
 *** TODO vc-edited-state
@@ -1326,9 +1389,11 @@ Mechanism to close a TODO: core/UI faces -> UI_FACES in generate.py; package + s
 *** TODO vc-up-to-date-state
     Face for VC modeline state when the file is up to date.
 ** TODO which-func [0/1]
+   Display the current function name in the mode line.
 *** TODO which-func
     Face used to highlight mode line function names.
 ** TODO which-key [0/9]
+   Customization options for `which-key-mode'.
 *** TODO which-key-command-description-face
     Face for the key description when it is a command.
 *** TODO which-key-docstring-face
@@ -1348,6 +1413,7 @@ Mechanism to close a TODO: core/UI faces -> UI_FACES in generate.py; package + s
 *** TODO which-key-special-key-face
     Face for special keys (SPC, TAB, RET).
 ** TODO widget [0/7]
+   Faces used by the widget library.
 *** TODO widget-button
     Face used for widget buttons.
 *** TODO widget-button-pressed
@@ -1363,6 +1429,7 @@ Mechanism to close a TODO: core/UI faces -> UI_FACES in generate.py; package + s
 *** TODO widget-unselected
     Face used for unselected widgets.
 ** TODO xref [0/3]
+   Cross-referencing commands.
 *** TODO xref-file-header
     Face used to highlight file header in the xref buffer.
 *** TODO xref-line-number
@@ -1371,10 +1438,12 @@ Mechanism to close a TODO: core/UI faces -> UI_FACES in generate.py; package + s
     Face used to highlight matches in the xref buffer.
 
 * TODO adob [0/1]
+  auto-dim-other-buffers: dimmed inactive windows.
 ** TODO adob--hack
    A hack to make fringe refresh work. Do not use.
 
 * DOING alert [6/8]
+  Notification system for Emacs similar to Growl
 ** DONE alert-high-face
    High alert face.
 ** DONE alert-low-face
@@ -1391,6 +1460,7 @@ Mechanism to close a TODO: core/UI faces -> UI_FACES in generate.py; package + s
    Urgent alert face.
 
 * DONE all-the-icons [34/34]
+  Manage how All The Icons formats icons.
 ** DONE all-the-icons-blue
    Face for blue icons
 ** DONE all-the-icons-blue-alt
@@ -1467,6 +1537,7 @@ Mechanism to close a TODO: core/UI faces -> UI_FACES in generate.py; package + s
    Face with a (presumably) dimmed background and matching foreground.
 
 * DONE company [19/19]
+  Extensible inline text completion mechanism.
 ** DONE company-echo
    Face used for completions in the echo area.
 ** DONE company-echo-common
@@ -1507,6 +1578,7 @@ Mechanism to close a TODO: core/UI faces -> UI_FACES in generate.py; package + s
    Face used for the selection in the tooltip.
 
 * DONE company-box [6/6]
+  Front-end for Company.
 ** DONE company-box-annotation
    company-box-annotation is an alias for the face `company-tooltip-annotation'.
 ** DONE company-box-background
@@ -1521,6 +1593,7 @@ Mechanism to close a TODO: core/UI faces -> UI_FACES in generate.py; package + s
    company-box-selection is an alias for the face `company-tooltip-selection'.
 
 * DOING consult [20/21]
+  Search and navigate via `completing-read'.
 ** DONE consult-async-failed
    Face used if asynchronous process has failed.
 ** DONE consult-async-finished
@@ -1564,6 +1637,7 @@ Mechanism to close a TODO: core/UI faces -> UI_FACES in generate.py; package + s
 ** DONE consult-separator
 
 * DONE dashboard [8/8]
+  Extensible startup screen.
 ** DONE dashboard-banner-logo-title
    Face used for the banner title.
 ** DONE dashboard-footer-face
@@ -1582,6 +1656,7 @@ Mechanism to close a TODO: core/UI faces -> UI_FACES in generate.py; package + s
    Face used for text banners.
 
 * DONE dirvish [38/38]
+  A better Dired.
 ** DONE dirvish-collapse-dir-face
    Face used for directories in 'collapse' attribute.
 ** DONE dirvish-collapse-empty-dir-face
@@ -1649,10 +1724,12 @@ Mechanism to close a TODO: core/UI faces -> UI_FACES in generate.py; package + s
    Face used for 'unregistered' vc state in the Dirvish buffer.
 
 * TODO edit-indirect [0/1]
+  Editing regions in separate buffers.
 ** TODO edit-indirect-edited-region
    Face used to highlight an indirectly edited region.
 
 * DONE elfeed [13/13]
+  An Emacs web feed reader.
 ** DONE elfeed-log-date-face
    Face for showing the date in the elfeed log buffer.
 ** DONE elfeed-log-debug-level-face
@@ -1681,6 +1758,7 @@ Mechanism to close a TODO: core/UI faces -> UI_FACES in generate.py; package + s
    Face used in search mode for unread entry titles.
 
 * DONE embark [12/12]
+  Emacs Mini-Buffer Actions Rooted in Keymaps.
 ** DONE embark-collect-annotation
    Face for annotations in Embark Collect.
 ** DONE embark-collect-candidate
@@ -1707,6 +1785,7 @@ Mechanism to close a TODO: core/UI faces -> UI_FACES in generate.py; package + s
    Face used by the verbose action indicator for the title.
 
 * DONE emms [11/11]
+  The Emacs Multimedia System
 ** DONE emms-browser-album-face
 ** DONE emms-browser-albumartist-face
 ** DONE emms-browser-artist-face
@@ -1720,6 +1799,7 @@ Mechanism to close a TODO: core/UI faces -> UI_FACES in generate.py; package + s
 ** DONE emms-playlist-track-face
 
 * DONE flycheck [20/20]
+  On-the-fly syntax checking
 ** DONE flycheck-delimited-error
 ** DONE flycheck-error
 ** DONE flycheck-error-delimiter
@@ -1742,9 +1822,11 @@ Mechanism to close a TODO: core/UI faces -> UI_FACES in generate.py; package + s
 ** DONE flycheck-warning
 
 * DONE flyspell-correct [1/1]
+  Correcting words with flyspell via custom interface.
 ** DONE flyspell-correct-highlight-face
 
 * DONE ghostel [19/19]
+  Terminal emulator powered by libghostty.
 ** DONE ghostel-color-black
    Face used to render black color code.
 ** DONE ghostel-color-blue
@@ -1785,6 +1867,7 @@ Mechanism to close a TODO: core/UI faces -> UI_FACES in generate.py; package + s
    Face for the solid hint cursor drawn for box-style cursors.
 
 * DONE git-commit [12/12]
+  Edit Git commit messages.
 ** DONE git-commit-comment-action
    Face used for actions in commit message comments.
 ** DONE git-commit-comment-branch-local
@@ -1811,6 +1894,7 @@ Mechanism to close a TODO: core/UI faces -> UI_FACES in generate.py; package + s
    Face used for Git trailer values in commit messages.
 
 * DONE git-gutter [5/5]
+  Port of Sublime Text plugin GitGutter.
 ** DONE git-gutter:added
 ** DONE git-gutter:deleted
 ** DONE git-gutter:modified
@@ -1818,6 +1902,7 @@ Mechanism to close a TODO: core/UI faces -> UI_FACES in generate.py; package + s
 ** DONE git-gutter:unchanged
 
 * DONE highlight-indent-guides [9/9]
+  Minor mode to highlight indentation.
 ** DONE highlight-indent-guides-character-face
 ** DONE highlight-indent-guides-even-face
 ** DONE highlight-indent-guides-odd-face
@@ -1829,15 +1914,18 @@ Mechanism to close a TODO: core/UI faces -> UI_FACES in generate.py; package + s
 ** DONE highlight-indent-guides-top-odd-face
 
 * DONE hl-todo [2/2]
+  Highlight TODO and similar keywords in comments and strings.
 ** DONE hl-todo
    Base face used to highlight TODO and similar keywords.
 ** DONE hl-todo-flymake-type
    Face used for the Flymake diagnostics type 'hl-todo-flymake'.
 
 * DONE json-mode [1/1]
+  Major mode for editing JSON.
 ** DONE json-mode-object-name-face
 
 * DONE llama [5/5]
+  Compact syntax for short lambda.
 ** DONE llama-##-macro
    Face used for the name of the '##' macro.
 ** DONE llama-deleted-argument
@@ -1850,6 +1938,7 @@ Mechanism to close a TODO: core/UI faces -> UI_FACES in generate.py; package + s
    Face used for optional arguments '&1' through '&9', '&' and '&*'.
 
 * DONE lsp [14/14]
+  Language Server Protocol client.
 ** DONE lsp-details-face
    Used to display additional information throughout 'lsp'.
 ** DONE lsp-face-highlight-read
@@ -1880,10 +1969,12 @@ Mechanism to close a TODO: core/UI faces -> UI_FACES in generate.py; package + s
    Background and foreground for 'lsp-signature-posframe'.
 
 * DONE lv [1/1]
+  The other echo area.
 ** DONE lv-separator
    Face used to draw line between the lv window and the echo area.
 
 * DONE magit [93/93]
+  Controlling Git from Emacs.
 ** DONE magit-bisect-bad
    Face for bad bisect revisions.
 ** DONE magit-bisect-good
@@ -2072,6 +2163,7 @@ Mechanism to close a TODO: core/UI faces -> UI_FACES in generate.py; package + s
    Face for tag labels shown in log buffer.
 
 * DONE magit-section [5/5]
+  Expandable sections.
 ** DONE magit-section-child-count
    Face used for child counts at the end of some section headings.
 ** DONE magit-section-heading
@@ -2084,6 +2176,7 @@ Mechanism to close a TODO: core/UI faces -> UI_FACES in generate.py; package + s
    Face for section headings of some secondary headings.
 
 * DONE malyon [5/5]
+  Play Z-machine interactive fiction games.
 ** DONE malyon-face-bold
    Bold face for game text.
 ** DONE malyon-face-error
@@ -2096,6 +2189,7 @@ Mechanism to close a TODO: core/UI faces -> UI_FACES in generate.py; package + s
    Face for reverse-video text.
 
 * DONE marginalia [32/32]
+  Enrich existing commands with completion annotations.
 ** DONE marginalia-archive
    Face used to highlight package archives.
 ** DONE marginalia-char
@@ -2162,6 +2256,7 @@ Mechanism to close a TODO: core/UI faces -> UI_FACES in generate.py; package + s
    Face used to highlight package versions.
 
 * DONE markdown [43/43]
+  Major mode for editing text files in Markdown format.
 ** DONE markdown-blockquote-face
    Face for blockquote sections.
 ** DONE markdown-bold-face
@@ -2250,6 +2345,7 @@ Mechanism to close a TODO: core/UI faces -> UI_FACES in generate.py; package + s
    Face for URLs that are part of markup.
 
 * DONE nerd-icons [34/34]
+  Manage how Nerd Fonts formats icons.
 ** DONE nerd-icons-blue
    Face for blue icons.
 ** DONE nerd-icons-blue-alt
@@ -2320,10 +2416,12 @@ Mechanism to close a TODO: core/UI faces -> UI_FACES in generate.py; package + s
    Face for yellow icons.
 
 * DONE nerd-icons-completion [1/1]
+  Add icons to completion candidates.
 ** DONE nerd-icons-completion-dir-face
    Face for the directory icon.
 
 * DONE orderless [4/4]
+  Completion method that matches space-separated regexps in any order.
 ** DONE orderless-match-face-0
    Face for matches of components numbered 0 mod 4.
 ** DONE orderless-match-face-1
@@ -2334,6 +2432,7 @@ Mechanism to close a TODO: core/UI faces -> UI_FACES in generate.py; package + s
    Face for matches of components numbered 3 mod 4.
 
 * DONE org-roam [9/9]
+  A database abstraction layer for Org-mode.
 ** DONE org-roam-dailies-calendar-note
    Face for dates with a daily-note in the calendar.
 ** DONE org-roam-dim
@@ -2354,6 +2453,7 @@ Mechanism to close a TODO: core/UI faces -> UI_FACES in generate.py; package + s
    Face for Org-roam titles.
 
 * DOING org-superstar [4/5]
+  Use UTF8 bullets for headlines and plain lists.
 ** DONE org-superstar-first
    Face used to display the first bullet of an inline task.
 ** DONE org-superstar-header-bullet
@@ -2366,12 +2466,14 @@ Mechanism to close a TODO: core/UI faces -> UI_FACES in generate.py; package + s
    Face used to display ordered list item bullets.
 
 * DONE prescient [2/2]
+  Simple but effective candidate sorting by usage.
 ** DONE prescient-primary-highlight
    Face used to highlight the parts of candidates that match the input.
 ** DONE prescient-secondary-highlight
    Additional face used to highlight parts of candidates.
 
 * DONE rainbow-delimiters [13/13]
+  Highlight brackets according to their depth
 ** DONE rainbow-delimiters-base-error-face
 ** DONE rainbow-delimiters-base-face
 ** DONE rainbow-delimiters-depth-1-face
@@ -2387,6 +2489,7 @@ Mechanism to close a TODO: core/UI faces -> UI_FACES in generate.py; package + s
 ** DONE rainbow-delimiters-unmatched-face
 
 * DONE symbol-overlay [9/9]
+  Highlight symbols with keymap-enabled overlays
 ** DONE symbol-overlay-default-face
 ** DONE symbol-overlay-face-1
 ** DONE symbol-overlay-face-2
@@ -2398,6 +2501,7 @@ Mechanism to close a TODO: core/UI faces -> UI_FACES in generate.py; package + s
 ** DONE symbol-overlay-face-8
 
 * DOING tmr [12/17]
+  TMR May Ring: set timers using a simple notation.
 ** DONE tmr-description
    Face for styling the description of a timer.
 ** DONE tmr-duration
@@ -2434,6 +2538,7 @@ Mechanism to close a TODO: core/UI faces -> UI_FACES in generate.py; package + s
    Start time in the 'tmr-tabulated-view'.
 
 * DONE transient [23/23]
+  Transient commands.
 ** DONE transient-active-infix
    Face used for the infix for which the value is being read.
 ** DONE transient-argument
@@ -2482,6 +2587,7 @@ Mechanism to close a TODO: core/UI faces -> UI_FACES in generate.py; package + s
    Face used for values.
 
 * DONE twentyfortyeight [11/11]
+  Tile faces for the 2048 game.
 ** DONE twentyfortyeight-face-1024
    Face for the tile 1024.
 ** DONE twentyfortyeight-face-128
@@ -2506,6 +2612,7 @@ Mechanism to close a TODO: core/UI faces -> UI_FACES in generate.py; package + s
    Face for the tile 8.
 
 * DONE vertico [4/4]
+  VERTical Interactive COmpletion.
 ** DONE vertico-current
    Face used to highlight the currently selected candidate.
 ** DONE vertico-group-separator
@@ -2516,6 +2623,7 @@ Mechanism to close a TODO: core/UI faces -> UI_FACES in generate.py; package + s
    Face used to highlight multiline replacement characters.
 
 * DONE web-mode [81/81]
+  major mode for editing web templates
 ** DONE web-mode-annotation-face
 ** DONE web-mode-annotation-html-face
 ** DONE web-mode-annotation-tag-face
@@ -2599,6 +2707,7 @@ Mechanism to close a TODO: core/UI faces -> UI_FACES in generate.py; package + s
 ** DONE web-mode-whitespace-face
 
 * DONE yas [2/2]
+  Faces for YASnippet template fields.
 ** DONE yas--field-debug-face
    The face used for debugging some overlays normally hidden
 ** DONE yas-field-highlight-face
