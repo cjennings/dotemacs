@@ -9,7 +9,8 @@ studio already themes it; TODO = not yet. Three top-level tiers:
 - emacs-general: built-in Emacs subsystems (org, gnus, erc, diff, vc, custom, ...), one child each.
 - one heading per third-party package installed from elpa (magit, vertico, consult, ...).
 Tier is decided by where each face's defface lives: /usr/share/emacs = built-in, elpa = package.
-The line under each face is its Emacs docstring (first line), where one exists.
+The line under each bucket is its group/package description; the line under each face is its
+Emacs docstring (first line), where one exists.
 
 Totals: 690 / 1293 faces covered; 1129 carry a docstring. Tiers: core 1, general 75, packages 43.
 Coverage tiers in the studio: syntax font-lock=23, UI tier=21, package inventory=643 (39 packages).
@@ -935,7 +936,7 @@ Mechanism to close a TODO: core/UI faces -> UI_FACES in generate.py; package + s
 *** TODO message-signature-separator
     Face used for displaying the signature separator.
 ** TODO message-header [0/7]
-   Mail and news message composing.
+   Message Headers.
 *** TODO message-header-cc
     Face used for displaying Cc headers.
 *** TODO message-header-name

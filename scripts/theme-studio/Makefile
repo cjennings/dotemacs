@@ -16,7 +16,10 @@ OUT ?= ../../themes
 EMACS ?= emacs
 EMACSCLIENT ?= emacsclient
 
-.PHONY: help test check check-generated coverage gen open theme theme-load theme-reload
+.PHONY: help test check check-generated coverage gen open theme theme-load theme-reload face-coverage-dump face-coverage face-coverage-diff
+
+# Scratch path for the face-coverage Emacs data dump.
+FACE_DUMP ?= /tmp/face-coverage-data.json
 
 .DEFAULT_GOAL := help
 
@@ -31,6 +34,8 @@ help:
 	@echo "  make theme JSON=x.json   - Convert a Theme Studio JSON export to OUT/<name>-theme.el"
 	@echo "  make theme-load THEME=x  - Disable all custom themes, then load THEME in current Emacs"
 	@echo "  make theme-reload JSON=x - Convert JSON, then cleanly reload its theme in current Emacs"
+	@echo "  make face-coverage       - Regenerate face-coverage.org from the live Emacs daemon"
+	@echo "  make face-coverage-diff  - Show the coverage delta vs the committed face-coverage.org"
 
 test:
 	@./run-tests.sh
@@ -101,3 +106,16 @@ endif
 	@theme_name='$(THEME)'; \
 	if [ -z "$$theme_name" ]; then theme_name="$$(basename '$(JSON)' .json)"; fi; \
 	$(MAKE) theme-load THEME="$$theme_name" OUT='$(OUT)' EMACSCLIENT='$(EMACSCLIENT)'
+
+# Dump face/group/package data from the running daemon (falls back to a batch
+# Emacs that loads the full init when no daemon is reachable).
+face-coverage-dump:
+	@$(EMACSCLIENT) -e '(progn (load "$(HERE)face-coverage-dump.el") (face-coverage-dump "$(FACE_DUMP)"))' >/dev/null 2>&1 \
+		|| $(EMACS) --batch -l "$$HOME/.emacs.d/init.el" -l "$(HERE)face-coverage-dump.el" \
+			--eval '(face-coverage-dump "$(FACE_DUMP)")'
+
+face-coverage: face-coverage-dump
+	@python3 face_coverage.py --data "$(FACE_DUMP)"
+
+face-coverage-diff: face-coverage-dump
+	@python3 face_coverage.py --data "$(FACE_DUMP)" --compare face-coverage.org
