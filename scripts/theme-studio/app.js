@@ -208,9 +208,21 @@ function mkCheck(get,set){const c=document.createElement('input');c.type='checkb
 // inline column) inherit + height. Each control mutates FACE and calls onChange.
 // Returns the element plus the interactive controls so the row's lock cell can
 // disable them. opts.inheritOptions and opts.showInheritHeight gate the last two.
+// Hover help for each expander field, so the detail labels explain themselves the
+// way the table-header labels do. Keyed by the label text passed to add().
+const DETAIL_HOVERS={
+  'distant fg':'foreground swapped in when the text sits on a background too close to its own color to read (Emacs :distant-foreground)',
+  'family':'font family for this face; blank inherits the default (Emacs :family)',
+  'underline':'underline style and color (Emacs :underline)',
+  'overline':'a line drawn above the text (Emacs :overline)',
+  'inverse':'swap the foreground and background (Emacs :inverse-video)',
+  'extend':'extend the background past the end of the line to the window edge (Emacs :extend)',
+  'inherit':'base face this one inherits unset attributes from (Emacs :inherit)',
+  'height':'text size as a scaling factor of the inherited height, 0.1 to 2.0 (Emacs :height)'
+};
 function mkDetailEditor(face,onChange,opts={}){
   const wrap=document.createElement('div');wrap.className='detailedit';const locks=[];
-  const add=(label,el)=>{const g=document.createElement('label');g.className='detailfield';const s=document.createElement('span');s.textContent=label;g.append(s,el);wrap.appendChild(g);locks.push(el);};
+  const add=(label,el)=>{const g=document.createElement('label');g.className='detailfield';g.title=DETAIL_HOVERS[label]||'';const s=document.createElement('span');s.textContent=label;g.append(s,el);wrap.appendChild(g);locks.push(el);};
   const df=mkColorDropdown(ddList(face['distant-fg']||''),face['distant-fg']||'',h=>{face['distant-fg']=h||null;onChange();},{compact:true,defaultHex:opts.defaultHex});
   add('distant fg',df);
   const fam=document.createElement('input');fam.type='text';fam.className='detailinput';fam.placeholder='font family';fam.value=face.family||'';fam.onchange=()=>{face.family=fam.value.trim()||null;onChange();};
@@ -270,7 +282,7 @@ function updateLockToggle(tier){
   const ids={syntax:'syntaxlocktoggle',ui:'uilocktoggle',pkg:'pkglocktoggle'},b=document.getElementById(ids[tier]);if(!b)return;
   b.textContent=lockToggleLabel(tierLockKeys(tier),LOCKED);
 }
-function updateLockToggles(){updateLockToggle('syntax');updateLockToggle('ui');updateLockToggle('pkg');}
+function updateLockToggles(){updateLockToggle('syntax');updateLockToggle('ui');updateLockToggle('pkg');updateViewLockIndicators();}
 function toggleAllLocks(tier){
   const all=areAllLocked(tierLockKeys(tier),LOCKED);
   LOCKED=toggleLockSet(tierLockKeys(tier),LOCKED);
@@ -616,13 +628,25 @@ function pkgEffBg(app,face,seen){return effResolve(PKGMAP,app,face,'bg',seen);}
 // One dropdown drives the whole assignment panel: two editor entries (@code,
 // @ui) then a non-selectable "package faces" optgroup holding every app,
 // alphabetically by label. onViewChange shows exactly one of the three view blocks.
+// Lock keys for one view value (@code / @ui / a package app), so the view
+// dropdown can flag a view whose every element is locked.
+function viewLockKeys(v){
+  if(v==='@code')return syntaxLockKeys();
+  if(v==='@ui')return uiLockKeys();
+  return (APPS[v]?APPS[v].faces:[]).map(f=>'pkg:'+v+':'+f[0]);
+}
+// Prefix a lock glyph on every view whose elements are all locked; leave the rest
+// bare. The base label rides in dataset.label so re-running never stacks glyphs.
+function updateViewLockIndicators(){const s=document.getElementById('viewsel');if(!s)return;
+  for(const o of s.querySelectorAll('option')){const base=o.dataset.label||o.textContent;
+    o.textContent=(areAllLocked(viewLockKeys(o.value),LOCKED)?'🔒 ':'')+base;}}
 function buildViewSel(){const s=document.getElementById('viewsel');if(!s)return;s.innerHTML='';
-  const mk=(v,t)=>{const o=document.createElement('option');o.value=v;o.textContent=t;return o;};
+  const mk=(v,t)=>{const o=document.createElement('option');o.value=v;o.dataset.label=t;o.textContent=t;return o;};
   s.appendChild(mk('@code','color/code assignments'));
   s.appendChild(mk('@ui','ui faces'));
   const og=document.createElement('optgroup');og.label='package faces';
   for(const app of appViewKeysSorted(APPS))og.appendChild(mk(app,APPS[app].label));
-  s.appendChild(og);}
+  s.appendChild(og);updateViewLockIndicators();}
 // The ‹ › buttons flanking the dropdown step the selection by DIR and re-render
 // the view (faces table + preview), so you can walk the list without reopening it.
 function stepView(dir){

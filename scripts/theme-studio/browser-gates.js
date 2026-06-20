@@ -936,6 +936,32 @@ if(location.hash==='#langtest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c
  A(s.selectedIndex===s.options.length-1,'next clamps at the last language');
  document.title='LANGTEST '+(ok?'PASS':'FAIL');
  const ld=document.createElement('div');ld.id='langtest';ld.textContent='LANGTEST '+(ok?'PASS':'FAIL')+(notes.length?' fails='+notes.join(','):'');document.body.appendChild(ld);}
+// View-lock-indicator gate (open with #viewlocktest): the view dropdown prefixes a
+// lock glyph on a view whose every element is locked, and clears it otherwise.
+if(location.hash==='#viewlocktest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c){ok=false;notes.push(n);}};
+ LOCKED.clear();updateViewLockIndicators();
+ const s=document.getElementById('viewsel'),codeOpt=()=>[...s.options].find(o=>o.value==='@code');
+ A(codeOpt()&&!codeOpt().textContent.startsWith('🔒'),'unlocked view shows no lock glyph: '+(codeOpt()&&codeOpt().textContent));
+ syntaxLockKeys().forEach(k=>LOCKED.add(k));updateViewLockIndicators();
+ A(codeOpt()&&codeOpt().textContent.startsWith('🔒'),'fully-locked view shows the lock glyph: '+(codeOpt()&&codeOpt().textContent));
+ A(codeOpt()&&codeOpt().textContent.includes('color/code assignments'),'glyph prefixes the base label, not replaces it');
+ LOCKED.delete(syntaxLockKeys()[0]);updateViewLockIndicators();
+ A(codeOpt()&&!codeOpt().textContent.startsWith('🔒'),'unlocking one element clears the glyph');
+ LOCKED.clear();updateViewLockIndicators();
+ document.title='VIEWLOCKTEST '+(ok?'PASS':'FAIL');
+ const vd=document.createElement('div');vd.id='viewlocktest';vd.textContent='VIEWLOCKTEST '+(ok?'PASS':'FAIL')+(notes.length?' fails='+notes.join(','):'');document.body.appendChild(vd);}
+// Detail-hover gate (open with #detailhovertest): every label in the expander
+// detail row carries an explanatory hover, the way the table-header labels do.
+if(location.hash==='#detailhovertest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c){ok=false;notes.push(n);}};
+ buildUITable();
+ const f=UI_FACES[0][0],detail=document.querySelector('#uibody tr.detailrow[data-detail-for="'+f+'"]');
+ const fields=detail?[...detail.querySelectorAll('.detailfield')]:[];
+ A(fields.length>0,'detail row has fields');
+ A(fields.every(g=>g.title&&g.title.length>0),'every detail field has a hover: '+fields.map(g=>g.querySelector('span').textContent+(g.title?'+':'-')).join(' '));
+ const inh=fields.find(g=>g.querySelector('span').textContent==='inherit');
+ A(inh&&/inherit/i.test(inh.title),'inherit field hover mentions inheritance: '+(inh&&inh.title));
+ document.title='DETAILHOVERTEST '+(ok?'PASS':'FAIL');
+ const dh=document.createElement('div');dh.id='detailhovertest';dh.textContent='DETAILHOVERTEST '+(ok?'PASS':'FAIL')+(notes.length?' fails='+notes.join(','):'');document.body.appendChild(dh);}
 // Palette default-state gate (open with #paldefaulttest): the studio opens with
 // the palette collapsed to base colors so the span tints don't crowd the first
 // view. initApp() ran at page load, so the live toggle reflects the opening state.
