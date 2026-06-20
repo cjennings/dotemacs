@@ -156,17 +156,6 @@ function resolveUiAttr(face,attr,uimap){
   return walkInheritChain(face,f=>UI_INHERIT[f],f=>uimap[f]&&uimap[f][attr]);
 }
 
-// Text color for a swatch-dropdown popup row. A row showing a real palette color
-// sits on the popup's own fixed background, so its name/hex text must inherit the
-// popup foreground (return '' to use the CSS color). Coloring it for contrast
-// against the swatch instead picks near-black text for a mid/dark swatch, which
-// is unreadable on the dark popup. Only the "default" row, filled solid with
-// SHOWN, uses a contrast color computed against that fill.
-function dropdownRowTextColor(hex,shown,textOnFn){
-  if(hex)return '';
-  return shown?textOnFn(shown):'';
-}
-
 // Turn a theme name into a safe filename slug: collapse runs of disallowed
 // characters to a single dash, trim leading/trailing dashes, fall back to 'theme'.
 function slugify(name){return name.replace(/[^A-Za-z0-9._-]+/g,'-').replace(/^-+|-+$/g,'')||'theme';}
@@ -566,4 +555,4 @@ function composeHoverTitle(doc,base){
   return doc||base;
 }
 
-export { nameToHex, migrateLegacyFace, cssWeight, faceDecoration, boxCss, faceCss, composeHoverTitle, normalizePkgFace, buildPkgmap, packagesForExport, mergePackagesInto, effResolve, resolveSyntaxFg, resolveUiAttr, dropdownRowTextColor, paletteOptionList, galleryModel, appViewKeysSorted, faceBoxNonDefaults, overflowNonDefault, clampHeight, HEIGHT_MIN, HEIGHT_MAX, stepViewIndex, spanNeighborHex, slugify, fgSetFor, floor, lMax, COVERED_FACES, columnsFromPalette, usedPaletteHexes, paletteUsages, regenColumn, rankByLightness, stepRepointPlan, sortColumns, sortColumnMembers, groundRoleOfEntry, groundColumnMembersFromPalette, clearPalettePlan, deletePaletteColumnPlan, areAllLocked, lockToggleLabel, toggleLockSet };
+export { nameToHex, migrateLegacyFace, cssWeight, faceDecoration, boxCss, faceCss, composeHoverTitle, normalizePkgFace, buildPkgmap, packagesForExport, mergePackagesInto, effResolve, resolveSyntaxFg, resolveUiAttr, paletteOptionList, galleryModel, appViewKeysSorted, faceBoxNonDefaults, overflowNonDefault, clampHeight, HEIGHT_MIN, HEIGHT_MAX, stepViewIndex, spanNeighborHex, slugify, fgSetFor, floor, lMax, COVERED_FACES, columnsFromPalette, usedPaletteHexes, paletteUsages, regenColumn, rankByLightness, stepRepointPlan, sortColumns, sortColumnMembers, groundRoleOfEntry, groundColumnMembersFromPalette, clearPalettePlan, deletePaletteColumnPlan, areAllLocked, lockToggleLabel, toggleLockSet };

@@ -7,7 +7,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import {
-  nameToHex, migrateLegacyFace, normalizePkgFace, buildPkgmap, packagesForExport, mergePackagesInto, effResolve, resolveSyntaxFg, resolveUiAttr, dropdownRowTextColor, paletteOptionList, spanNeighborHex, slugify,
+  nameToHex, migrateLegacyFace, normalizePkgFace, buildPkgmap, packagesForExport, mergePackagesInto, effResolve, resolveSyntaxFg, resolveUiAttr, paletteOptionList, spanNeighborHex, slugify,
   clearPalettePlan, deletePaletteColumnPlan, groundColumnMembersFromPalette, areAllLocked, lockToggleLabel, toggleLockSet,
   galleryModel, appViewKeysSorted, faceBoxNonDefaults, overflowNonDefault, stepViewIndex,
   cssWeight, faceDecoration, boxCss, faceCss, composeHoverTitle,
@@ -901,23 +901,6 @@ test('resolveUiAttr: a face with no inherit and an unset attribute returns null'
   assert.equal(resolveUiAttr('region', 'bg', { 'region': { bg: null } }), null);
 });
 
-// dropdownRowTextColor: a popup row showing a real palette color inherits the
-// popup foreground (legible on the fixed dark popup); only the filled default
-// row uses a contrast color against its own background. textOn is stubbed so the
-// test asserts the decision, not the contrast math.
-const stubTextOn = (h) => (h === '#000000' ? '#fff' : '#000');
-test('dropdownRowTextColor: a real palette color inherits the popup fg (empty)', () => {
-  assert.equal(dropdownRowTextColor('#2a3a5a', '#2a3a5a', stubTextOn), '');
-});
-test('dropdownRowTextColor: a dark swatch still inherits (regression: blues were unreadable)', () => {
-  assert.equal(dropdownRowTextColor('#000000', '#000000', stubTextOn), '');
-});
-test('dropdownRowTextColor: the filled default row contrasts against its fill', () => {
-  assert.equal(dropdownRowTextColor('', '#cdced1', stubTextOn), '#000');
-});
-test('dropdownRowTextColor: a default row with no fill inherits (empty)', () => {
-  assert.equal(dropdownRowTextColor('', '', stubTextOn), '');
-});
 
 // appViewKeysSorted: the assignment-view dropdown lists package apps
 // alphabetically by display label, independent of the APPS build order
