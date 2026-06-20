@@ -140,10 +140,7 @@ so a path exists to autosave to."
 (defun cj/gptel--autosave-after-send (&rest _args)
   "Auto-save current GPTel buffer right after `gptel-send' if enabled."
   (when (and cj/gptel-conversations-autosave-on-send
-			 (bound-and-true-p gptel-mode)
-			 cj/gptel-autosave-enabled
-			 (stringp cj/gptel-autosave-filepath)
-			 (> (length cj/gptel-autosave-filepath) 0))
+			 (cj/gptel--autosave-active-p))
 	(condition-case err
 		(cj/gptel--save-buffer-to-file (current-buffer) cj/gptel-autosave-filepath)
 	  (error (message "cj/gptel autosave-on-send failed: %s" (error-message-string err))))))
@@ -359,10 +356,7 @@ enable autosave."
 
 (defun cj/gptel--autosave-after-response (&rest _args)
   "Auto-save the current GPTel buffer when enabled."
-  (when (and (bound-and-true-p gptel-mode)
-			 cj/gptel-autosave-enabled
-			 (stringp cj/gptel-autosave-filepath)
-			 (> (length cj/gptel-autosave-filepath) 0))
+  (when (cj/gptel--autosave-active-p)
 	(condition-case err
 		(cj/gptel--save-buffer-to-file (current-buffer) cj/gptel-autosave-filepath)
 	  (error (message "cj/gptel autosave failed: %s" (error-message-string err))))))
