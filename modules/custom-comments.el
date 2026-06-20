@@ -109,6 +109,14 @@ inputs.  Used by all divider / border helpers below."
      decoration-char))
   decoration-char)
 
+(defun cj/--comment-emit-prefix (cmt-start)
+  "Insert CMT-START -- doubled when it is a lone semicolon -- and a trailing space.
+A bare =;= is doubled to =;;= so the line reads as an Emacs-Lisp comment.  This
+is the line-opening prologue shared by the divider and inline-border emitters."
+  (insert cmt-start)
+  (when (equal cmt-start ";") (insert cmt-start))
+  (insert " "))
+
 ;; ----------------------------- Inline Border ---------------------------------
 
 (defun cj/--comment-inline-border (cmt-start cmt-end decoration-char text length)
@@ -138,10 +146,7 @@ LENGTH is the total width of the line."
       (error "Length %d is too small for text '%s' (need at least %d more chars)"
              length text (- min-space space-on-each-side)))
     ;; Generate the line
-    (insert cmt-start)
-    (when (equal cmt-start ";")
-      (insert cmt-start))
-    (insert " ")
+    (cj/--comment-emit-prefix cmt-start)
     ;; Left decoration
     (dotimes (_ space-on-each-side)
       (insert decoration-char))
@@ -181,48 +186,11 @@ Uses the lesser of `fill-column\\=' or 80 for line length."
 CMT-START and CMT-END are the comment syntax strings.
 DECORATION-CHAR is the character to use for the divider lines.
 TEXT is the comment text.
-LENGTH is the total width of each line."
-  (cj/--validate-decoration-char decoration-char)
-  (let* ((current-column-pos (current-column))
-         (min-length (+ current-column-pos
-                       (length cmt-start)
-                       (if (equal cmt-start ";") 1 0)  ; doubled semicolon
-                       1  ; space after comment-start
-                       3  ; minimum decoration chars
-                       (if (string-empty-p cmt-end) 0 (1+ (length cmt-end))))))
-    (when (< length min-length)
-      (error "Length %d is too small to generate comment (minimum %d)" length min-length))
-    (let* ((available-width (- length current-column-pos
-                              (length cmt-start)
-                              (if (string-empty-p cmt-end) 0 (1+ (length cmt-end)))))
-           (line (make-string available-width (string-to-char decoration-char))))
-    ;; Top line
-    (insert cmt-start)
-    (when (equal cmt-start ";") (insert cmt-start))
-    (insert " ")
-    (insert line)
-    (when (not (string-empty-p cmt-end))
-      (insert " " cmt-end))
-    (newline)
+LENGTH is the total width of each line.
 
-    ;; Text line
-    (dotimes (_ current-column-pos) (insert " "))
-    (insert cmt-start)
-    (when (equal cmt-start ";") (insert cmt-start))
-    (insert " " text)
-    (when (not (string-empty-p cmt-end))
-      (insert " " cmt-end))
-    (newline)
-
-    ;; Bottom line
-    (dotimes (_ current-column-pos) (insert " "))
-    (insert cmt-start)
-    (when (equal cmt-start ";") (insert cmt-start))
-    (insert " ")
-    (insert line)
-    (when (not (string-empty-p cmt-end))
-      (insert " " cmt-end))
-    (newline))))
+A simple divider is a padded divider with no padding before the text, so it
+delegates to `cj/--comment-padded-divider' with PADDING 0."
+  (cj/--comment-padded-divider cmt-start cmt-end decoration-char text length 0))
 
 (defun cj/comment-simple-divider ()
   "Insert a simple divider comment banner.
@@ -276,9 +244,7 @@ PADDING is the number of spaces before the text."
                               (if (string-empty-p cmt-end) 0 (1+ (length cmt-end)))))
            (line (make-string available-width (string-to-char decoration-char))))
       ;; Top line
-    (insert cmt-start)
-    (when (equal cmt-start ";") (insert cmt-start))
-    (insert " ")
+    (cj/--comment-emit-prefix cmt-start)
     (insert line)
     (when (not (string-empty-p cmt-end))
       (insert " " cmt-end))
@@ -286,9 +252,7 @@ PADDING is the number of spaces before the text."
 
     ;; Text line with padding
     (dotimes (_ current-column-pos) (insert " "))
-    (insert cmt-start)
-    (when (equal cmt-start ";") (insert cmt-start))
-    (insert " ")
+    (cj/--comment-emit-prefix cmt-start)
     (dotimes (_ padding) (insert " "))
     (insert text)
     (when (not (string-empty-p cmt-end))
@@ -297,9 +261,7 @@ PADDING is the number of spaces before the text."
 
     ;; Bottom line
     (dotimes (_ current-column-pos) (insert " "))
-    (insert cmt-start)
-    (when (equal cmt-start ";") (insert cmt-start))
-    (insert " ")
+    (cj/--comment-emit-prefix cmt-start)
     (insert line)
     (when (not (string-empty-p cmt-end))
       (insert " " cmt-end))
@@ -335,12 +297,12 @@ Prompts for decoration character, text, padding, and length option."
 
 ;; -------------------------------- Comment Box --------------------------------
 
-(defun cj/--comment-box (cmt-start cmt-end decoration-char text length)
-  "Internal implementation: Generate a 3-line box comment with centered text.
-CMT-START and CMT-END are the comment syntax strings.
-DECORATION-CHAR is the character to use for borders.
-TEXT is the comment text (centered).
-LENGTH is the total width of each line."
+(defun cj/--comment-box-emit (cmt-start cmt-end decoration-char text length heavy)
+  "Emit a box comment with centered TEXT; the border/text/border skeleton.
+CMT-START and CMT-END are the comment syntax strings.  DECORATION-CHAR borders
+the box.  LENGTH is the total width of each line.  When HEAVY is non-nil, an
+interior blank-bordered line is added above and below the text line (the only
+difference between the plain box and the heavy box)."
   (cj/--validate-decoration-char decoration-char)
   (let* ((current-column-pos (current-column))
          (comment-char (if (equal cmt-start ";") ";;" cmt-start))
@@ -363,10 +325,21 @@ LENGTH is the total width of each line."
            (padding-each-side (max 1 (/ (- text-available text-length) 2)))
            (right-padding (if (= (% (- text-available text-length) 2) 0)
                              padding-each-side
-                           (1+ padding-each-side))))
+                           (1+ padding-each-side)))
+           ;; Interior side-border line: repeats the comment prefix and suffix so
+           ;; the blank rows stay valid comments in line-comment languages (elisp,
+           ;; Python).  Only inserted for the heavy box.
+           (empty-line (concat comment-char " " decoration-char
+                               (make-string (- available-width 2) ?\s)
+                               decoration-char " " comment-end-char)))
       ;; Top border
       (insert comment-char " " border-line " " comment-end-char)
       (newline)
+
+      (when heavy
+        (dotimes (_ current-column-pos) (insert " "))
+        (insert empty-line)
+        (newline))
 
       ;; Centered text line with side borders
       (dotimes (_ current-column-pos) (insert " "))
@@ -377,10 +350,23 @@ LENGTH is the total width of each line."
       (insert " " decoration-char " " comment-end-char)
       (newline)
 
+      (when heavy
+        (dotimes (_ current-column-pos) (insert " "))
+        (insert empty-line)
+        (newline))
+
       ;; Bottom border
       (dotimes (_ current-column-pos) (insert " "))
       (insert comment-char " " border-line " " comment-end-char)
       (newline))))
+
+(defun cj/--comment-box (cmt-start cmt-end decoration-char text length)
+  "Internal implementation: Generate a 3-line box comment with centered text.
+CMT-START and CMT-END are the comment syntax strings.
+DECORATION-CHAR is the character to use for borders.
+TEXT is the comment text (centered).
+LENGTH is the total width of each line."
+  (cj/--comment-box-emit cmt-start cmt-end decoration-char text length nil))
 
 (defun cj/comment-box ()
   "Insert a 3-line comment box with centered text.
@@ -404,62 +390,11 @@ Prompts for decoration character, text, and uses `fill-column' for length."
 CMT-START and CMT-END are the comment syntax strings.
 DECORATION-CHAR is the character to use for borders.
 TEXT is the comment text (centered).
-LENGTH is the total width of each line."
-  (cj/--validate-decoration-char decoration-char)
-  (let* ((current-column-pos (current-column))
-         (comment-char (if (equal cmt-start ";") ";;" cmt-start))
-         (comment-end-char (if (string-empty-p cmt-end) comment-char cmt-end))
-         (min-length (+ current-column-pos
-                        (length comment-char)
-                        2  ; spaces around content
-                        (length comment-end-char)
-                        6)))  ; 3 border chars + text space + 3 border chars
-    (when (< length min-length)
-      (error "Length %d is too small to generate comment (minimum %d)" length min-length))
-    (let* ((available-width (- length current-column-pos
-                              (length comment-char)
-                              (length comment-end-char)
-                              2))  ; spaces around content
-           (border-line (make-string available-width (string-to-char decoration-char)))
-           (text-available (- available-width 4))  ; 2 side decorations, 2 spaces
-           (text-length (length text))
-           (padding-each-side (max 1 (/ (- text-available text-length) 2)))
-           (right-padding (if (= (% (- text-available text-length) 2) 0)
-                             padding-each-side
-                           (1+ padding-each-side)))
-           ;; Interior side-border lines repeat the comment prefix and suffix so
-           ;; the empty/text rows stay valid comments in line-comment languages
-           ;; (elisp, Python). Previously they began with a bare decoration char.
-           (empty-line (concat comment-char " " decoration-char
-                               (make-string (- available-width 2) ?\s)
-                               decoration-char " " comment-end-char)))
-      ;; Top border
-      (insert comment-char " " border-line " " comment-end-char)
-      (newline)
+LENGTH is the total width of each line.
 
-      ;; Empty line with side borders
-      (dotimes (_ current-column-pos) (insert " "))
-      (insert empty-line)
-      (newline)
-
-      ;; Centered text line
-      (dotimes (_ current-column-pos) (insert " "))
-      (insert comment-char " " decoration-char " ")
-      (dotimes (_ padding-each-side) (insert " "))
-      (insert text)
-      (dotimes (_ right-padding) (insert " "))
-      (insert " " decoration-char " " comment-end-char)
-      (newline)
-
-      ;; Empty line with side borders
-      (dotimes (_ current-column-pos) (insert " "))
-      (insert empty-line)
-      (newline)
-
-      ;; Bottom border
-      (dotimes (_ current-column-pos) (insert " "))
-      (insert comment-char " " border-line " " comment-end-char)
-      (newline))))
+A heavy box is a box with an interior blank-bordered line above and below the
+text, so it delegates to `cj/--comment-box-emit' with HEAVY non-nil."
+  (cj/--comment-box-emit cmt-start cmt-end decoration-char text length t))
 
 (defun cj/comment-heavy-box ()
   "Insert a heavy box comment with blank lines around centered text.
