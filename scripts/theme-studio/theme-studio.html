@@ -2172,7 +2172,18 @@ function exportObj(){normalizePalette();const o={name:themeName(),palette:PALETT
 function exportState(){const t=document.getElementById('export');t.value=JSON.stringify(exportObj(),null,1);t.style.display='block';t.focus();t.select();}
 function toggleJSON(){const t=document.getElementById('export'),b=document.getElementById('jsonbtn');if(t.style.display==='block'){t.style.display='none';b.textContent='show';}else{exportState();b.textContent='hide';}}
 function updateTitle(){const n=document.getElementById('themename').value.trim();document.getElementById('pagetitle').textContent=(n||'Untitled')+': theme';}
-function exportTheme(){const blob=new Blob([JSON.stringify(exportObj(),null,1)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=fileSlug()+'.json';a.click();}
+// Export the theme JSON. Prefer the File System Access API (showSaveFilePicker)
+// so re-exporting overwrites the chosen file in place -- a blob download routes
+// through the browser's downloads folder, which uniquifies a re-save as
+// "name (1).json" rather than replacing it. Fall back to the blob download where
+// the API is absent (mirrors importTheme's showOpenFilePicker/fileinput fallback).
+async function exportTheme(){
+  const data=JSON.stringify(exportObj(),null,1);
+  if(!window.showSaveFilePicker){const blob=new Blob([data],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=fileSlug()+'.json';a.click();return;}
+  try{const h=await window.showSaveFilePicker({suggestedName:fileSlug()+'.json',types:[{description:'theme JSON',accept:{'application/json':['.json']}}]});
+    const w=await h.createWritable();await w.write(data);await w.close();
+    notify('saved "'+fileSlug()+'.json"',false);
+  }catch(e){if(e&&e.name!=='AbortError')notify('export failed: '+e.message,true);}}
 function applyImported(text){const d=JSON.parse(text);lastGone={};if(d.name)document.getElementById('themename').value=d.name;if(d.palette)PALETTE=d.palette.map(normalizePaletteEntry);
   if(!d.syntax)throw new Error('theme JSON is missing syntax; convert older files first');
   SYNTAX={};CATS.forEach(c=>{const k=c[0];SYNTAX[k]=Object.assign(syntaxBlank(k),migrateLegacyFace(d.syntax[k]||{}));});syncAllSyntaxCache();
@@ -3940,4 +3951,20 @@ if(location.hash==='#hovertest'){let ok=true;const notes=[];const A=(c,n)=>{if(!
    A(pkgCell&&pkgCell.title===FACE_DOCS[docFace]+'\n\n'+docFace,'package cat cell shows docstring on top of the face name: '+(pkgCell&&JSON.stringify(pkgCell.title)));}
  document.title='HOVERTEST '+(ok?'PASS':'FAIL');
  const d=document.createElement('div');d.id='hovertest';d.textContent='HOVERTEST '+(ok?'PASS':'FAIL')+(notes.length?' fails='+notes.join(','):'');document.body.appendChild(d);}
+// Export via the File System Access API (open with #savetest): exportTheme writes
+// the theme JSON straight to the picked file handle and closes it, so re-exporting
+// overwrites in place instead of the browser uniquifying to "name (1).json".
+if(location.hash==='#savetest'){(async()=>{let ok=true;const notes=[];const A=(c,n)=>{if(!c){ok=false;notes.push(n);}};
+ let written='',closed=false,pickerArgs=null;
+ const orig=window.showSaveFilePicker;
+ window.showSaveFilePicker=async(opts)=>{pickerArgs=opts;return {name:'WIP.json',createWritable:async()=>({write:async d=>{written+=d;},close:async()=>{closed=true;}})};};
+ try{
+   await exportTheme();
+   A(written===JSON.stringify(exportObj(),null,1),'export writes the theme JSON to the picked file');
+   A(closed,'writable stream is closed so the file is committed');
+   A(pickerArgs&&/\.json$/.test(pickerArgs.suggestedName||''),'picker suggests a .json name: '+(pickerArgs&&pickerArgs.suggestedName));
+ }catch(e){A(false,'exportTheme threw: '+e.message);}
+ finally{window.showSaveFilePicker=orig;}
+ document.title='SAVETEST '+(ok?'PASS':'FAIL');
+ const d=document.createElement('div');d.id='savetest';d.textContent='SAVETEST '+(ok?'PASS':'FAIL')+(notes.length?' fails='+notes.join(','):'');document.body.appendChild(d);})();}
 </script>

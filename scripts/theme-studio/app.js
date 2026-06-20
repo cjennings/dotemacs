@@ -436,7 +436,18 @@ function exportObj(){normalizePalette();const o={name:themeName(),palette:PALETT
 function exportState(){const t=document.getElementById('export');t.value=JSON.stringify(exportObj(),null,1);t.style.display='block';t.focus();t.select();}
 function toggleJSON(){const t=document.getElementById('export'),b=document.getElementById('jsonbtn');if(t.style.display==='block'){t.style.display='none';b.textContent='show';}else{exportState();b.textContent='hide';}}
 function updateTitle(){const n=document.getElementById('themename').value.trim();document.getElementById('pagetitle').textContent=(n||'Untitled')+': theme';}
-function exportTheme(){const blob=new Blob([JSON.stringify(exportObj(),null,1)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=fileSlug()+'.json';a.click();}
+// Export the theme JSON. Prefer the File System Access API (showSaveFilePicker)
+// so re-exporting overwrites the chosen file in place -- a blob download routes
+// through the browser's downloads folder, which uniquifies a re-save as
+// "name (1).json" rather than replacing it. Fall back to the blob download where
+// the API is absent (mirrors importTheme's showOpenFilePicker/fileinput fallback).
+async function exportTheme(){
+  const data=JSON.stringify(exportObj(),null,1);
+  if(!window.showSaveFilePicker){const blob=new Blob([data],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=fileSlug()+'.json';a.click();return;}
+  try{const h=await window.showSaveFilePicker({suggestedName:fileSlug()+'.json',types:[{description:'theme JSON',accept:{'application/json':['.json']}}]});
+    const w=await h.createWritable();await w.write(data);await w.close();
+    notify('saved "'+fileSlug()+'.json"',false);
+  }catch(e){if(e&&e.name!=='AbortError')notify('export failed: '+e.message,true);}}
 function applyImported(text){const d=JSON.parse(text);lastGone={};if(d.name)document.getElementById('themename').value=d.name;if(d.palette)PALETTE=d.palette.map(normalizePaletteEntry);
   if(!d.syntax)throw new Error('theme JSON is missing syntax; convert older files first');
   SYNTAX={};CATS.forEach(c=>{const k=c[0];SYNTAX[k]=Object.assign(syntaxBlank(k),migrateLegacyFace(d.syntax[k]||{}));});syncAllSyntaxCache();

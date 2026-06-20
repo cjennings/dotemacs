@@ -988,3 +988,19 @@ if(location.hash==='#hovertest'){let ok=true;const notes=[];const A=(c,n)=>{if(!
    A(pkgCell&&pkgCell.title===FACE_DOCS[docFace]+'\n\n'+docFace,'package cat cell shows docstring on top of the face name: '+(pkgCell&&JSON.stringify(pkgCell.title)));}
  document.title='HOVERTEST '+(ok?'PASS':'FAIL');
  const d=document.createElement('div');d.id='hovertest';d.textContent='HOVERTEST '+(ok?'PASS':'FAIL')+(notes.length?' fails='+notes.join(','):'');document.body.appendChild(d);}
+// Export via the File System Access API (open with #savetest): exportTheme writes
+// the theme JSON straight to the picked file handle and closes it, so re-exporting
+// overwrites in place instead of the browser uniquifying to "name (1).json".
+if(location.hash==='#savetest'){(async()=>{let ok=true;const notes=[];const A=(c,n)=>{if(!c){ok=false;notes.push(n);}};
+ let written='',closed=false,pickerArgs=null;
+ const orig=window.showSaveFilePicker;
+ window.showSaveFilePicker=async(opts)=>{pickerArgs=opts;return {name:'WIP.json',createWritable:async()=>({write:async d=>{written+=d;},close:async()=>{closed=true;}})};};
+ try{
+   await exportTheme();
+   A(written===JSON.stringify(exportObj(),null,1),'export writes the theme JSON to the picked file');
+   A(closed,'writable stream is closed so the file is committed');
+   A(pickerArgs&&/\.json$/.test(pickerArgs.suggestedName||''),'picker suggests a .json name: '+(pickerArgs&&pickerArgs.suggestedName));
+ }catch(e){A(false,'exportTheme threw: '+e.message);}
+ finally{window.showSaveFilePicker=orig;}
+ document.title='SAVETEST '+(ok?'PASS':'FAIL');
+ const d=document.createElement('div');d.id='savetest';d.textContent='SAVETEST '+(ok?'PASS':'FAIL')+(notes.length?' fails='+notes.join(','):'');document.body.appendChild(d);})();}
