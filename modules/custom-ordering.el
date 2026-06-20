@@ -40,6 +40,23 @@
 
 (defvar cj/ordering-map)
 
+(defun cj/--ordering-validate-region (start end)
+  "Signal an error when START is greater than END.
+Shared guard for the pure ordering helpers below, which all operate on a
+buffer region and must reject an inverted one before reading it."
+  (when (> start end)
+    (error "Invalid region: start (%d) is greater than end (%d)" start end)))
+
+(defun cj/--ordering-replace-region (start end insertion)
+  "Replace the buffer text between START and END with INSERTION.
+Point is left at START.  Shared tail for the interactive ordering commands,
+which all compute a transformed string from the original region then swap it
+in.  INSERTION is evaluated by the caller before this runs, so the transform
+reads the pre-deletion text."
+  (delete-region start end)
+  (goto-char start)
+  (insert insertion))
+
 (defun cj/--arrayify (start end quote &optional prefix suffix)
   "Internal implementation: Convert lines to quoted, comma-separated format.
 START and END define the region to operate on.
@@ -50,8 +67,7 @@ SUFFIX is an optional string to append to the result (e.g., \"]\" or \")\").
 Preserves a trailing newline if the input region ends with one, so
 line-oriented operations on the result behave the same as before.
 Returns the transformed string without modifying the buffer."
-  (when (> start end)
-    (error "Invalid region: start (%d) is greater than end (%d)" start end))
+  (cj/--ordering-validate-region start end)
   (let* ((raw (buffer-substring start end))
          (trailing-newline (string-suffix-p "\n" raw))
          (result (mapconcat
@@ -65,36 +81,29 @@ Returns the transformed string without modifying the buffer."
 START and END identify the active region.
 QUOTE specifies the quotation characters to surround each element."
   (interactive "r\nMQuotation character to use for array element: ")
-  (let ((insertion (cj/--arrayify start end quote)))
-	(delete-region start end)
-	(insert insertion)))
+  (cj/--ordering-replace-region start end (cj/--arrayify start end quote)))
 
 (defun cj/listify (start end)
   "Convert lines between START and END into an unquoted, comma-separated list.
 START and END identify the active region.
 Example: `apple banana cherry' becomes `apple, banana, cherry'."
   (interactive "r")
-  (let ((insertion (cj/--arrayify start end "")))
-    (delete-region start end)
-    (insert insertion)))
+  (cj/--ordering-replace-region start end (cj/--arrayify start end "")))
 
 (defun cj/arrayify-json (start end)
   "Convert lines between START and END into a JSON-style array.
 START and END identify the active region.
 Example: `apple banana cherry' becomes `[\"apple\", \"banana\", \"cherry\"]'."
   (interactive "r")
-  (let ((insertion (cj/--arrayify start end "\"" "[" "]")))
-    (delete-region start end)
-    (insert insertion)))
+  (cj/--ordering-replace-region start end (cj/--arrayify start end "\"" "[" "]")))
 
-(defun cj/arrayify-python (start end)
-  "Convert lines between START and END into a Python-style list.
-START and END identify the active region.
-Example: `apple banana cherry' becomes `[\"apple\", \"banana\", \"cherry\"]'."
-  (interactive "r")
-  (let ((insertion (cj/--arrayify start end "\"" "[" "]")))
-    (delete-region start end)
-    (insert insertion)))
+;; JSON arrays and Python lists coincide here (double-quoted, square-bracketed),
+;; so the Python command is an alias.  Split it back into its own defun if the
+;; two formats ever need to differ (e.g. Python single quotes).
+(defalias 'cj/arrayify-python 'cj/arrayify-json
+  "Convert lines in the active region into a Python-style list.
+Example: `apple banana cherry' becomes `[\"apple\", \"banana\", \"cherry\"]'.
+Currently identical to `cj/arrayify-json'.")
 
 (defun cj/--unarrayify (start end)
   "Internal implementation: Convert comma-separated array to lines.
@@ -102,8 +111,7 @@ START and END define the region to operate on.
 Removes quotes (both single and double) and splits by ', '.
 Preserves a trailing newline if the input region ends with one.
 Returns the transformed string without modifying the buffer."
-  (when (> start end)
-    (error "Invalid region: start (%d) is greater than end (%d)" start end))
+  (cj/--ordering-validate-region start end)
   (let* ((raw (buffer-substring start end))
          (trailing-newline (string-suffix-p "\n" raw))
          (result (mapconcat
@@ -115,17 +123,14 @@ Returns the transformed string without modifying the buffer."
   "Convert quoted comma-separated strings between START and END to separate lines.
 START and END identify the active region."
   (interactive "r")
-  (let ((insertion (cj/--unarrayify start end)))
-	(delete-region start end)
-	(insert insertion)))
+  (cj/--ordering-replace-region start end (cj/--unarrayify start end)))
 
 (defun cj/--toggle-quotes (start end)
   "Internal implementation: Toggle between double and single quotes.
 START and END define the region to operate on.
 Swaps all double quotes with single quotes and vice versa.
 Returns the transformed string without modifying the buffer."
-  (when (> start end)
-    (error "Invalid region: start (%d) is greater than end (%d)" start end))
+  (cj/--ordering-validate-region start end)
   (let ((text (buffer-substring start end)))
     (with-temp-buffer
       (insert text)
@@ -145,16 +150,13 @@ Returns the transformed string without modifying the buffer."
   "Toggle between double and single quotes in region between START and END.
 START and END identify the active region."
   (interactive "r")
-  (let ((insertion (cj/--toggle-quotes start end)))
-    (delete-region start end)
-    (insert insertion)))
+  (cj/--ordering-replace-region start end (cj/--toggle-quotes start end)))
 
 (defun cj/--reverse-lines (start end)
   "Internal implementation: Reverse the order of lines in region.
 START and END define the region to operate on.
 Returns the transformed string without modifying the buffer."
-  (when (> start end)
-    (error "Invalid region: start (%d) is greater than end (%d)" start end))
+  (cj/--ordering-validate-region start end)
   (let ((lines (split-string (buffer-substring start end) "\n")))
     (mapconcat #'identity (nreverse lines) "\n")))
 
@@ -162,9 +164,7 @@ Returns the transformed string without modifying the buffer."
   "Reverse the order of lines in region between START and END.
 START and END identify the active region."
   (interactive "r")
-  (let ((insertion (cj/--reverse-lines start end)))
-    (delete-region start end)
-    (insert insertion)))
+  (cj/--ordering-replace-region start end (cj/--reverse-lines start end)))
 
 (defun cj/--number-lines (start end format-string zero-pad)
   "Internal implementation: Number lines in region with custom format.
@@ -175,8 +175,7 @@ FORMAT-STRING is the format for each line, with N as placeholder for number.
 ZERO-PAD when non-nil pads numbers with zeros for alignment.
   Example with 100 lines: \"001\", \"002\", ..., \"100\".
 Returns the transformed string without modifying the buffer."
-  (when (> start end)
-    (error "Invalid region: start (%d) is greater than end (%d)" start end))
+  (cj/--ordering-validate-region start end)
   (let* ((lines (split-string (buffer-substring start end) "\n"))
          (line-count (length lines))
          (width (if zero-pad (length (number-to-string line-count)) 1))
@@ -199,17 +198,15 @@ FORMAT-STRING is the format for each line, with N as placeholder for number.
   Example: \"N. \" produces \"1. \", \"2. \", etc.
 ZERO-PAD when non-nil (prefix argument) pads numbers with zeros."
   (interactive "r\nMFormat string (use N for number): \nP")
-  (let ((insertion (cj/--number-lines start end format-string zero-pad)))
-    (delete-region start end)
-    (insert insertion)))
+  (cj/--ordering-replace-region
+   start end (cj/--number-lines start end format-string zero-pad)))
 
 (defun cj/--alphabetize-region (start end)
   "Internal implementation: Alphabetize words in region.
 START and END define the region to operate on.
 Splits by whitespace and commas, sorts alphabetically, joins with ', '.
 Returns the transformed string without modifying the buffer."
-  (when (> start end)
-    (error "Invalid region: start (%d) is greater than end (%d)" start end))
+  (cj/--ordering-validate-region start end)
   (let ((string (buffer-substring-no-properties start end)))
     (mapconcat #'identity
                (sort (split-string string "[[:space:],]+" t)
@@ -221,21 +218,17 @@ Returns the transformed string without modifying the buffer."
 Produce a comma-separated list as the result."
   (interactive)
   (unless (use-region-p)
-	(user-error "No region selected"))
+    (user-error "No region selected"))
   (let ((start (region-beginning))
-		(end (region-end))
-		(insertion (cj/--alphabetize-region (region-beginning) (region-end))))
-	(delete-region start end)
-	(goto-char start)
-	(insert insertion)))
+        (end (region-end)))
+    (cj/--ordering-replace-region start end (cj/--alphabetize-region start end))))
 
 (defun cj/--comma-separated-text-to-lines (start end)
   "Internal implementation: Convert comma-separated text to lines.
 START and END define the region to operate on.
 Replaces commas with newlines and removes trailing whitespace from each line.
 Returns the transformed string without modifying the buffer."
-  (when (> start end)
-    (error "Invalid region: start (%d) is greater than end (%d)" start end))
+  (cj/--ordering-validate-region start end)
   (let ((text (buffer-substring-no-properties start end)))
     (with-temp-buffer
       (insert text)
@@ -249,14 +242,11 @@ Returns the transformed string without modifying the buffer."
   "Break up comma-separated text in active region so each item is on own line."
   (interactive)
   (if (not (region-active-p))
-	  (error "No region selected"))
-
+      (error "No region selected"))
   (let ((beg (region-beginning))
-		(end (region-end))
-		(text (cj/--comma-separated-text-to-lines (region-beginning) (region-end))))
-	(delete-region beg end)
-	(goto-char beg)
-	(insert text)))
+        (end (region-end)))
+    (cj/--ordering-replace-region
+     beg end (cj/--comma-separated-text-to-lines beg end))))
 
 
 
