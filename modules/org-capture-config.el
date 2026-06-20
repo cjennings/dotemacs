@@ -76,6 +76,21 @@
   "Return the cache key for PATH and HEADLINE."
   (list (org-capture-expand-file path) headline))
 
+(defun cj/--org-find-or-create-top-heading (search-regexp heading-line)
+  "Move point to the top-level heading matched by SEARCH-REGEXP in this buffer.
+Search from the start of the buffer; on a match leave point at the start of
+that heading line.  With no match, append HEADING-LINE (a full \"* ...\" line,
+without a trailing newline) at the end of the buffer and leave point on it.
+Returns point."
+  (goto-char (point-min))
+  (if (re-search-forward search-regexp nil t)
+      (forward-line 0)
+    (goto-char (point-max))
+    (unless (bolp) (insert "\n"))
+    (insert heading-line "\n")
+    (forward-line -1))
+  (point))
+
 (defun cj/org-capture--goto-file-headline (path headline)
   "Move to capture target PATH and HEADLINE, using a cached marker when valid.
 This implements Org's `file+headline' target positioning behavior, but avoids
@@ -94,15 +109,9 @@ re-scanning large target files after the first successful lookup."
          (marker (gethash key cj/org-capture--file-headline-target-cache)))
     (if (cj/org-capture--headline-marker-valid-p marker headline)
         (goto-char marker)
-      (goto-char (point-min))
-      (if (re-search-forward (format org-complex-heading-regexp-format
-                                      (regexp-quote headline))
-                              nil t)
-          (forward-line 0)
-        (goto-char (point-max))
-        (unless (bolp) (insert "\n"))
-        (insert "* " headline "\n")
-        (forward-line -1))
+      (cj/--org-find-or-create-top-heading
+       (format org-complex-heading-regexp-format (regexp-quote headline))
+       (concat "* " headline))
       (puthash key (copy-marker (point))
                cj/org-capture--file-headline-target-cache))))
 
@@ -177,27 +186,17 @@ file path.  Return a plist (:file F :open-work BOOL :project NAME :warn MSG):
   "Move point to a top-level \"... Open Work\" heading in the current buffer.
 Create \"* PROJECT-NAME Open Work\" at end of buffer when none exists.
 Leave point at the start of the heading line."
-  (goto-char (point-min))
-  (if (re-search-forward cj/--org-open-work-heading-regexp nil t)
-      (forward-line 0)
-    (goto-char (point-max))
-    (unless (bolp) (insert "\n"))
-    (insert (format "* %s Open Work\n" project-name))
-    (forward-line -1)))
+  (cj/--org-find-or-create-top-heading
+   cj/--org-open-work-heading-regexp
+   (format "* %s Open Work" project-name)))
 
 (defun cj/--org-capture-goto-exact-headline (headline)
   "Move point to the top-level HEADLINE in the current buffer.
 Create \"* HEADLINE\" at end of buffer when absent.  Leave point at the
 start of the heading line."
-  (goto-char (point-min))
-  (if (re-search-forward (format org-complex-heading-regexp-format
-                                 (regexp-quote headline))
-                         nil t)
-      (forward-line 0)
-    (goto-char (point-max))
-    (unless (bolp) (insert "\n"))
-    (insert "* " headline "\n")
-    (forward-line -1)))
+  (cj/--org-find-or-create-top-heading
+   (format org-complex-heading-regexp-format (regexp-quote headline))
+   (concat "* " headline)))
 
 (defun cj/--org-capture-project-location ()
   "Org-capture `function' target for project-aware Task/Bug capture.
