@@ -163,47 +163,45 @@ def normalize_value(value: object) -> object:
     return value
 
 
+def _condition_clauses_pass(clauses: dict) -> bool:
+    """Apply the four display-condition rules to a {key: values} mapping.
+    Returns False when any present clause excludes the GUI-light target."""
+    if "class" in clauses:
+        vals = clauses["class"]
+        if "color" not in vals and "grayscale" not in vals:
+            return False
+    if "min-colors" in clauses:
+        vals = clauses["min-colors"]
+        if vals and isinstance(vals[0], int) and vals[0] > 16777216:
+            return False
+    if "background" in clauses:
+        vals = clauses["background"]
+        if vals and "light" not in vals:
+            return False
+    if "type" in clauses:
+        if "tty" in clauses["type"]:
+            return False
+    return True
+
+
 def condition_matches(condition: object) -> bool:
     if condition in (True, "t", None):
         return True
     if condition == "default":
         return False
+    # Normalize the two display-spec shapes -- a {key: values} dict, or a list of
+    # [key, *values] clauses -- to one {key: values} mapping, then run the four
+    # rules once (see `_condition_clauses_pass').
     if isinstance(condition, dict):
-        if "class" in condition:
-            vals = condition["class"] or []
-            if "color" not in vals and "grayscale" not in vals:
-                return False
-        if "min-colors" in condition:
-            vals = condition["min-colors"] or []
-            if vals and isinstance(vals[0], int) and vals[0] > 16777216:
-                return False
-        if "background" in condition:
-            vals = condition["background"] or []
-            if vals and "light" not in vals:
-                return False
-        if "type" in condition and "tty" in (condition["type"] or []):
-            return False
-        return True
+        clauses = {k: (condition[k] or []) for k in condition}
+        return _condition_clauses_pass(clauses)
     if not isinstance(condition, list):
         return False
+    clauses = {}
     for clause in condition:
-        if not isinstance(clause, list) or not clause:
-            continue
-        key = clause[0]
-        vals = clause[1:]
-        if key == "class":
-            if "color" not in vals and "grayscale" not in vals:
-                return False
-        elif key == "min-colors":
-            if vals and isinstance(vals[0], int) and vals[0] > 16777216:
-                return False
-        elif key == "background":
-            if vals and "light" not in vals:
-                return False
-        elif key == "type":
-            if "tty" in vals:
-                return False
-    return True
+        if isinstance(clause, list) and clause:
+            clauses[clause[0]] = clause[1:]
+    return _condition_clauses_pass(clauses)
 
 
 def choose_gui_light(default_spec: object) -> dict[str, object]:
