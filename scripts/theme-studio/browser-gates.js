@@ -135,7 +135,7 @@ if(location.hash==='#mocktest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c
  const missing=UI_FACES.map(f=>f[0]).filter(f=>!Q('[data-face="'+f+'"]'));
  A(missing.length===0,'all UI faces are represented in live buffer preview: '+missing.join(','));
  buildTable();buildUITable();buildPkgTable();
- [['#legbody tr[data-kind="kw"]',5],['#uibody tr[data-face="mode-line"]',7],['#pkgbody tr',8]].forEach(([sel,idx])=>{
+ [['#legbody tr[data-kind="kw"]',7],['#uibody tr[data-face="mode-line"]',7],['#pkgbody tr',6]].forEach(([sel,idx])=>{
    const cell=document.querySelector(sel)?.cells[idx],ctl=cell&&cell.querySelector('.boxctl');
    A(cell&&ctl&&ctl.getBoundingClientRect().width<=cell.getBoundingClientRect().width,'box control fits its table cell for '+sel);
  });
@@ -298,14 +298,12 @@ if(location.hash==='#contrasttest'){let ok=true;const notes=[];const A=(c,n)=>{i
  UIMAP['region']={fg:null,bg:'#202830',weight:null,slant:null,underline:null,strike:null};
  buildUITable();
  const cell=document.getElementById('uicr-region');
- A(cell&&/^\d+\.\d (PASS|FAIL)$/.test(cell.textContent.trim()),'region shows compact worst-case readout: '+(cell&&cell.textContent));
+ A(cell&&/^\d+\.\d$/.test(cell.textContent.trim()),'region shows a bare worst-case number (no PASS/FAIL word): '+(cell&&cell.textContent));
  A(cell&&!cell.textContent.includes('#67809c'),'compact readout omits limiting fg details: '+(cell&&cell.textContent));
  A(cell&&cell.title.includes('kw (keyword) #67809c'),'hover names failing keyword blue: '+(cell&&cell.title));
- const badge=document.querySelector('#uiprev-region .crerr');
- A(badge&&badge.textContent.trim()===cell.textContent.trim(),'region preview shows failing contrast badge: '+(badge&&badge.textContent));
- A(badge&&badge.title.includes('kw (keyword) #67809c'),'preview badge hover carries failures: '+(badge&&badge.title));
- const firstFail=badge&&badge.title.split('\n')[1];
- A(firstFail&&firstFail.includes('kw (keyword) #67809c'),'failures are sorted from worst first: '+firstFail);
+ A(!document.querySelector('#uiprev-region .crerr'),'region preview no longer carries a failing-contrast badge');
+ const firstFail=cell.title.split('\n')[1];
+ A(firstFail&&firstFail.includes('kw (keyword) #67809c'),'failures are sorted from worst first (in the cell hover): '+firstFail);
  const fl=floor('#202830',fgSetForFace('region').set);
  A(fl.limitingHex==='#67809c','floor limiting is blue, got '+fl.limitingHex);
  A(Math.abs(fl.ratio-contrast('#67809c','#202830'))<1e-9,'floor ratio matches blue-on-bg');
@@ -385,7 +383,7 @@ if(location.hash==='#beveltest'){let ok=true;const notes=[];const A=(c,n)=>{if(!
  if(lineBtn&&boxDd){lineBtn.click();boxDd.click();const redRow=[...document.querySelectorAll('.cddpop .cddgc')].find(c=>(c.dataset.name||'').includes('red'));if(redRow)redRow.click();}
  A(UIMAP['mode-line'].box&&UIMAP['mode-line'].box.color==='#ff0000','UI box color dropdown writes box.color');
  const app=curApp(),face=APPS[app].faces[0][0];PKGMAP[app][face].box={style:'line',width:1,color:null};buildPkgTable();
- const prow=document.querySelector('#pkgbody tr[data-face="'+face+'"]'),pbox=prow&&prow.cells[8],pdd=pbox&&pbox.querySelector('.cdd');
+ const prow=document.querySelector('#pkgbody tr[data-face="'+face+'"]'),pbox=prow&&prow.cells[6],pdd=pbox&&pbox.querySelector('.cdd');
  if(pdd){pdd.click();const redRow=[...document.querySelectorAll('.cddpop .cddgc')].find(c=>(c.dataset.name||'').includes('red'));if(redRow)redRow.click();}
  A(PKGMAP[app][face].box&&PKGMAP[app][face].box.color==='#ff0000','package box color dropdown writes box.color');
  PALETTE=saveP;PKGMAP=savePK;for(const f in UIMAP)delete UIMAP[f];Object.assign(UIMAP,saveUI);buildUITable();buildPkgTable();
@@ -700,8 +698,9 @@ if(location.hash==='#viewtest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c
  const d=document.createElement('div');d.id='viewtest';d.textContent='VIEWTEST '+(ok?'PASS':'FAIL')+(notes.length?' fails='+notes.join(','):'');document.body.appendChild(d);}
 // Non-default-marker gate (open with #ndtest): a per-face setting cell gets the
 // .nd corner flag only when its value differs from the face's seed default. Cell
-// order in a pkg row: 0 label, 1 lock, 2 fg, 3 bg, 4 style, 5 contrast, 6 inherit,
-// 7 size, 8 box.
+// order in a pkg row: 0 label, 1 lock, 2 fg, 3 bg, 4 style, 5 contrast, 6 box.
+// inherit + height live in the row expander, so a non-default height flags the
+// expander toggle (exp-nd) rather than an inline cell.
 if(location.hash==='#ndtest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c){ok=false;notes.push(n);}};
  LOCKED.clear();
  const app=curApp(),row=APPS[app].faces[0],face=row[0];
@@ -710,12 +709,12 @@ if(location.hash==='#ndtest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c){
  A(tr0&&![...tr0.cells].some(c=>c.classList.contains('nd')),'default-face-has-no-marker');
  PKGMAP[app][face].height=1.7;PKGMAP[app][face].source='user';buildPkgTable();
  const tr1=document.querySelector('#pkgbody tr[data-face="'+face+'"]');
- A(tr1.cells[7].classList.contains('nd'),'nondefault-height-marks-size-box');
+ A(tr1.querySelector('.exptoggle').classList.contains('exp-nd'),'nondefault-height-flags-expander');
  A(!tr1.cells[4].classList.contains('nd'),'unchanged-style-box-stays-unmarked');
  PKGMAP[app][face].height=(row[2]&&row[2].height)||1;PKGMAP[app][face].weight=seedFace(row[2]||{}).weight==='bold'?null:'bold';buildPkgTable();
  const tr2=document.querySelector('#pkgbody tr[data-face="'+face+'"]');
  A(tr2.cells[4].classList.contains('nd'),'toggled-weight-marks-style-box');
- A(!tr2.cells[7].classList.contains('nd'),'restored-height-unmarks-size-box');
+ A(!tr2.querySelector('.exptoggle').classList.contains('exp-nd'),'restored-height-unflags-expander');
  PKGMAP[app][face]=seedFace(row[2]||{});buildPkgTable();
  document.title='NDTEST '+(ok?'PASS':'FAIL');
  const d=document.createElement('div');d.id='ndtest';d.textContent='NDTEST '+(ok?'PASS':'FAIL')+(notes.length?' fails='+notes.join(','):'');document.body.appendChild(d);}
@@ -881,12 +880,33 @@ if(location.hash==='#expandtest'){let ok=true;const notes=[];const A=(c,n)=>{if(
  UIMAP['region']=JSON.parse(JSON.stringify(DEFAULT_UIMAP['region']));UIMAP['region'].overline={color:null};buildUITable();
  const ndbtn=document.querySelector('#uibody tr[data-face="region"] .exptoggle');
  A(ndbtn&&ndbtn.classList.contains('exp-nd'),'collapsed-toggle-flags-a-hidden-non-default-attr');
- // package expander omits inherit/height (they have inline columns)
+ // package expander now exposes inherit + height (folded out of inline columns)
  buildPkgTable();const pface=APPS[curApp()].faces[0][0];
  const pdetail=document.querySelector('#pkgbody tr.detailrow[data-detail-for="'+pface+'"]');
- A(pdetail&&!pdetail.querySelector('select.detailsel'),'package-expander-omits-inherit');
+ A(pdetail&&pdetail.querySelector('select.detailsel'),'package-expander-offers-inherit');
  document.title='EXPANDTEST '+(ok?'PASS':'FAIL');
  const d=document.createElement('div');d.id='expandtest';d.textContent='EXPANDTEST '+(ok?'PASS':'FAIL')+(notes.length?' fails='+notes.join(','):'');document.body.appendChild(d);}
+// Height-clamp gate (open with #heighttest): the expander height field coerces a
+// typed value into [HEIGHT_MIN,HEIGHT_MAX] and writes the clamped number back, so
+// an out-of-range type/paste can't reach the model. Guards the fact that an
+// <input type=number> min/max only constrain its steppers, never typed text.
+if(location.hash==='#heighttest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c){ok=false;notes.push(n);}};
+ const face=UI_FACES[0][0],save=JSON.parse(JSON.stringify(UIMAP[face]));
+ buildUITable();
+ const hin=()=>document.querySelector('#uibody tr.detailrow[data-detail-for="'+face+'"] .hstep');
+ const typeHeight=(v)=>{const h=hin();h.value=v;h.dispatchEvent(new Event('change'));};
+ typeHeight('5');
+ A(UIMAP[face].height===HEIGHT_MAX,'above-max-clamps-to-ceiling: '+UIMAP[face].height);
+ A(hin().value===''+HEIGHT_MAX,'field-shows-the-clamped-ceiling: '+hin().value);
+ typeHeight('0.05');
+ A(UIMAP[face].height===HEIGHT_MIN,'below-floor-clamps-to-floor: '+UIMAP[face].height);
+ typeHeight('1.2');
+ A(UIMAP[face].height===1.2,'in-range-value-passes-through: '+UIMAP[face].height);
+ typeHeight('');
+ A(UIMAP[face].height===null,'blank-unsets-to-null: '+UIMAP[face].height);
+ UIMAP[face]=save;buildUITable();
+ document.title='HEIGHTTEST '+(ok?'PASS':'FAIL');
+ const hd=document.createElement('div');hd.id='heighttest';hd.textContent='HEIGHTTEST '+(ok?'PASS':'FAIL')+(notes.length?' fails='+notes.join(','):'');document.body.appendChild(hd);}
 // Palette default-state gate (open with #paldefaulttest): the studio opens with
 // the palette collapsed to base colors so the span tints don't crowd the first
 // view. initApp() ran at page load, so the live toggle reflects the opening state.

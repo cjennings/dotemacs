@@ -198,7 +198,7 @@ function mkDetailEditor(face,onChange,opts={}){
     const isel=document.createElement('select');isel.className='chip detailsel';
     (opts.inheritOptions||['']).forEach(o=>{const op=document.createElement('option');op.value=o;op.textContent=o||'— none —';isel.appendChild(op);});
     isel.value=face.inherit||'';isel.onchange=()=>{face.inherit=isel.value||null;onChange();};add('inherit',isel);
-    const hin=document.createElement('input');hin.type='number';hin.min='0.8';hin.max='2.5';hin.step='0.05';hin.className='hstep';hin.value=face.height||1;hin.onchange=()=>{face.height=parseFloat(hin.value)||null;onChange();};add('height',hin);
+    const hin=document.createElement('input');hin.type='number';hin.min=''+HEIGHT_MIN;hin.max=''+HEIGHT_MAX;hin.step='0.05';hin.className='hstep';hin.value=face.height||1;hin.onchange=()=>{const raw=hin.value,h=clampHeight(raw);face.height=h;hin.value=h==null?1:h;if(h!=null&&parseFloat(raw)!==h)notify('height clamped to '+h+' (allowed '+HEIGHT_MIN+'–'+HEIGHT_MAX+')',false);onChange();};add('height',hin);
   }
   return {el:wrap,locks};}
 // Wire a per-row expander: a toggle button plus a hidden detail row (colspan
@@ -300,7 +300,7 @@ function buildTable(){
     const lkTd=mkLockCell(kind,[dd,bgd,...stCtls,boxCtl,...exp.locks]);
     const c2=document.createElement('td');c2.className='cat';c2.title=composeHoverTitle(SYNTAX_DOCS[kind],c2.title);c2.appendChild(exp.btn);
     const c2lbl=document.createElement('span');c2lbl.textContent=' '+label;c2lbl.style.cursor='pointer';c2lbl.title='flash this category in the code';c2lbl.onclick=()=>flashTokens(kind);c2.appendChild(c2lbl);
-    tr.appendChild(c2);tr.appendChild(lkTd);tr.appendChild(c0);tr.appendChild(cB);tr.appendChild(stTd);tr.appendChild(cX);tr.appendChild(crTd);tr.appendChild(exTd);
+    tr.appendChild(c2);tr.appendChild(lkTd);tr.appendChild(c0);tr.appendChild(cB);tr.appendChild(stTd);tr.appendChild(crTd);tr.appendChild(exTd);tr.appendChild(cX);
     tb.appendChild(tr);tb.appendChild(exp.detail);}
   updateLockToggle('syntax');
 }
@@ -624,7 +624,7 @@ function buildPkgTable(){
     const nd=faceBoxNonDefaults(
       {fg:nameToHex(f.fg,PALETTE),bg:nameToHex(f.bg,PALETTE),weight:f.weight,slant:f.slant,underline:f.underline,strike:f.strike,inherit:f.inherit,height:f.height,box:f.box},
       {fg:nameToHex(def.fg,PALETTE),bg:nameToHex(def.bg,PALETTE),weight:def.weight,slant:def.slant,underline:def.underline,strike:def.strike,inherit:def.inherit,height:def.height,box:def.box});
-    const exp=mkExpander(f,tableColCount('pkgtable'),()=>{f.source='user';pkgChanged();},{defaultHex:effFg(pkgEffFg(app,face)),ndCheck:()=>overflowNonDefault(f,def,false)});
+    const exp=mkExpander(f,tableColCount('pkgtable'),()=>{f.source='user';pkgChanged();},{showInheritHeight:true,inheritOptions:inh,defaultHex:effFg(pkgEffFg(app,face)),ndCheck:()=>overflowNonDefault(f,def,true)});
     exp.detail.dataset.detailFor=face;
     const c0=document.createElement('td');c0.className='cat';c0.title=composeHoverTitle(FACE_DOCS[face],face);c0.appendChild(exp.btn);
     const c0lbl=document.createElement('span');c0lbl.textContent=' '+label;c0lbl.style.cursor='pointer';c0lbl.onclick=()=>flashPkgPreview(face);c0.appendChild(c0lbl);
@@ -635,14 +635,12 @@ function buildPkgTable(){
     const cw=document.createElement('td');
     const pkCtls=mkStyleControls(f,()=>{f.source='user';pkgChanged();},{defaultHex:effFg(pkgEffFg(app,face))});
     const pkCluster=document.createElement('div');pkCluster.className='stylecluster';pkCtls.forEach(c=>pkCluster.appendChild(c));cw.appendChild(pkCluster);
-    const ci=document.createElement('td');const isel=document.createElement('select');isel.className='chip';isel.style.cssText='width:150px;font:10pt monospace';inh.forEach(o=>{const op=document.createElement('option');op.value=o;op.textContent=o||'— none —';isel.appendChild(op);});isel.value=f.inherit||'';isel.onchange=()=>{f.inherit=isel.value||null;f.source='user';pkgChanged();};ci.appendChild(isel);
-    const ch=document.createElement('td');const hin=document.createElement('input');hin.type='number';hin.min='0.8';hin.max='2.5';hin.step='0.05';hin.value=f.height||1;hin.className='hstep';hin.onchange=()=>{f.height=parseFloat(hin.value)||1;f.source='user';pkgChanged();};ch.appendChild(hin);
     const cc=document.createElement('td');cc.style.fontSize='10pt';cc.style.whiteSpace='nowrap';const efg=effFg(pkgEffFg(app,face)),ebg=effBg(pkgEffBg(app,face)),r=contrast(efg,ebg);cc.innerHTML=crHtml(r);
     const cx=document.createElement('td');const boxCtl=mkBoxControl(()=>f.box,b=>{f.box=b;f.source='user';pkgChanged();},{compact:true});cx.appendChild(boxCtl);
-    const cL=mkLockCell('pkg:'+app+':'+face,[fgd,bgd,...pkCtls,isel,hin,boxCtl,...exp.locks]);
+    const cL=mkLockCell('pkg:'+app+':'+face,[fgd,bgd,...pkCtls,boxCtl,...exp.locks]);
     if(nd.fg)cf.classList.add('nd');if(nd.bg)cb.classList.add('nd');if(nd.style)cw.classList.add('nd');
-    if(nd.inherit)ci.classList.add('nd');if(nd.height)ch.classList.add('nd');if(nd.box)cx.classList.add('nd');
-    tr.append(c0,cL,cf,cb,cw,cc,ci,ch,cx);tb.appendChild(tr);tb.appendChild(exp.detail);
+    if(nd.box)cx.classList.add('nd');
+    tr.append(c0,cL,cf,cb,cw,cc,cx);tb.appendChild(tr);tb.appendChild(exp.detail);
   }
   applyTableSort('pkgbody');
   updateLockToggle('pkg');
@@ -702,19 +700,15 @@ function worstCellHtml(face){
   const report=coveredContrastReport(face);
   if(report===null)return null;
   if(report.empty)return '<span title="this overlay has no syntax foreground set yet">no fg set</span>';
-  return `<span style="color:${ratingColor(report.worst.ratio)}" title="${esc(failureTitle(report)||'all covered text clears '+WORST_TARGET.toFixed(1))}">${report.worst.ratio.toFixed(1)} ${report.worst.verdict}</span>`;
+  return `<span style="color:${ratingColor(report.worst.ratio)}" title="${esc(failureTitle(report)||'all covered text clears '+WORST_TARGET.toFixed(1))}">${report.worst.ratio.toFixed(1)}</span>`;
 }
 // Repaint every covered overlay face (their floors depend on the syntax palette,
 // so a syntax-color edit has to refresh them even though it doesn't rebuild the table).
 function repaintCovered(){COVERED_FACES.forEach(f=>{if(UIMAP[f]&&document.getElementById('uicr-'+f))paintUI(f);});}
 function paintUI(face){const pv=document.getElementById('uiprev-'+face);if(!pv)return;const o=UIMAP[face];pv.style.color=effFg(o.fg);pv.style.background=effBg(o.bg);pv.style.fontWeight=cssWeight(o.weight);pv.style.fontStyle=o.slant||'normal';pv.style.textDecoration=(o.underline?'underline ':'')+(o.strike?'line-through':'')||'none';pv.style.boxShadow=boxCss(o.box,effBg(o.bg));
   const report=coveredContrastReport(face);
-  pv.querySelectorAll('.crerr').forEach(e=>e.remove());
   pv.title='';
-  if(report&&report.failures&&report.failures.length){
-    const badge=document.createElement('span');badge.className='crerr';badge.textContent=report.worst.ratio.toFixed(1)+' FAIL';badge.title=failureTitle(report);pv.title=badge.title;pv.appendChild(badge);
-  }
-  const cr=document.getElementById('uicr-'+face);if(cr){cr.title='';if(report!==null){if(report.empty){cr.title='this overlay has no syntax foreground set yet';cr.innerHTML='<span title="this overlay has no syntax foreground set yet">no fg set</span>';}else{const title=failureTitle(report)||'all covered text clears '+WORST_TARGET.toFixed(1);cr.title=title;cr.innerHTML=`<span style="color:${ratingColor(report.worst.ratio)}" title="${esc(title)}">${report.worst.ratio.toFixed(1)} ${report.worst.verdict}</span>`;}}else{const efg=effFg(o.fg),ebg=effBg(o.bg),r=contrast(efg,ebg);cr.innerHTML=crHtml(r);}}}
+  const cr=document.getElementById('uicr-'+face);if(cr){cr.title='';if(report!==null){if(report.empty){cr.title='this overlay has no syntax foreground set yet';cr.innerHTML='<span title="this overlay has no syntax foreground set yet">no fg set</span>';}else{const title=failureTitle(report)||'all covered text clears '+WORST_TARGET.toFixed(1);cr.title=title;cr.innerHTML=`<span style="color:${ratingColor(report.worst.ratio)}" title="${esc(title)}">${report.worst.ratio.toFixed(1)}</span>`;}}else{const efg=effFg(o.fg),ebg=effBg(o.bg),r=contrast(efg,ebg);cr.innerHTML=crHtml(r);}}}
 function buildUITable(){
   const tb=document.getElementById('uibody');tb.innerHTML='';
   for(const [face,label,ex] of UI_FACES){

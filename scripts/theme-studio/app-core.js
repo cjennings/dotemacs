@@ -537,6 +537,24 @@ function overflowNonDefault(cur,def,showInheritHeight){
   return false;
 }
 
+// Height bounds for a face :height scaling factor. 0.1 is Emacs's own floor (a
+// smaller value errors out) and doubles as the modeline-shrink-to-nothing value;
+// 2.0 is the studio's chosen ceiling. The number input's min/max attributes only
+// guard its stepper arrows — typed or pasted values bypass them — so every height
+// edit is coerced through clampHeight instead.
+const HEIGHT_MIN=0.1, HEIGHT_MAX=2.0;
+// Coerce a height-field value to either null (unset → inherit the default height)
+// or a number clamped into [min,max]. Blank/whitespace/non-numeric → null; any
+// number, including 0, a negative, or an over-max value, snaps into range.
+function clampHeight(raw,min=HEIGHT_MIN,max=HEIGHT_MAX){
+  if(raw===null||raw===undefined)return null;
+  const s=(''+raw).trim();
+  if(s==='')return null;
+  const n=parseFloat(s);
+  if(!isFinite(n))return null;
+  return n<min?min:n>max?max:n;
+}
+
 // Compose an element-hover tooltip: the face's docstring on top, the existing
 // hover text (e.g. the bare face name) below it, separated by a blank line. A
 // missing doc or base collapses to whichever is present; missing both yields ''.
@@ -548,4 +566,4 @@ function composeHoverTitle(doc,base){
   return doc||base;
 }
 
-export { nameToHex, migrateLegacyFace, cssWeight, faceDecoration, boxCss, faceCss, composeHoverTitle, normalizePkgFace, buildPkgmap, packagesForExport, mergePackagesInto, effResolve, resolveSyntaxFg, resolveUiAttr, dropdownRowTextColor, paletteOptionList, galleryModel, appViewKeysSorted, faceBoxNonDefaults, overflowNonDefault, stepViewIndex, spanNeighborHex, slugify, fgSetFor, floor, lMax, COVERED_FACES, columnsFromPalette, usedPaletteHexes, paletteUsages, regenColumn, rankByLightness, stepRepointPlan, sortColumns, sortColumnMembers, groundRoleOfEntry, groundColumnMembersFromPalette, clearPalettePlan, deletePaletteColumnPlan, areAllLocked, lockToggleLabel, toggleLockSet };
+export { nameToHex, migrateLegacyFace, cssWeight, faceDecoration, boxCss, faceCss, composeHoverTitle, normalizePkgFace, buildPkgmap, packagesForExport, mergePackagesInto, effResolve, resolveSyntaxFg, resolveUiAttr, dropdownRowTextColor, paletteOptionList, galleryModel, appViewKeysSorted, faceBoxNonDefaults, overflowNonDefault, clampHeight, HEIGHT_MIN, HEIGHT_MAX, stepViewIndex, spanNeighborHex, slugify, fgSetFor, floor, lMax, COVERED_FACES, columnsFromPalette, usedPaletteHexes, paletteUsages, regenColumn, rankByLightness, stepRepointPlan, sortColumns, sortColumnMembers, groundRoleOfEntry, groundColumnMembersFromPalette, clearPalettePlan, deletePaletteColumnPlan, areAllLocked, lockToggleLabel, toggleLockSet };

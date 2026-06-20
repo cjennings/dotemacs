@@ -72,7 +72,6 @@
  .boxctl .cstepbtn{width:18px}
  .legctl{margin:0 0 8px;display:flex;gap:8px;align-items:center}
  .cat{color:#b4b1a2} .ex{font-size:17px}
- .crerr{display:inline-block;margin-left:8px;padding:0 4px;border-radius:3px;background:#2b130e;color:#cb6b4d;border:1px solid #7b3324;font:9pt monospace;vertical-align:middle}
  .paltoggle{align-self:flex-start;width:22px;height:22px;padding:0;border:1px solid #3a3a3a;border-radius:4px;background:#1f1c19;color:#e8bd30;font:12px monospace;line-height:1;cursor:pointer;margin-right:6px}
  /* Barber-pole flag: a ring of two alternating contrasting colors, drawn with a
     masked repeating gradient so it overlays without shifting layout. Distinct
@@ -243,7 +242,7 @@
 <div class="cols">
  <section class="pane">
   <div class="legctl"><button id="syntaxlocktoggle" class="fbtn" onclick="toggleAllLocks('syntax')" title="lock or unlock every syntax row">lock all</button><button class="fbtn" onclick="resetUnlocked()" title="reset to captured defaults, preserving locked rows">&#8635; reset</button><button class="fbtn" onclick="clearUnlocked()" title="erase, preserving locked rows">erase</button></div>
-  <table class="leg" id="legtable"><thead><tr><th onclick="srtTable('legbody',0)">elements &#9651;</th><th title="lock a decided element↔color association"></th><th onclick="srtTable('legbody',2)">fg &#9651;</th><th onclick="srtTable('legbody',3)">bg &#9651;</th><th>style</th><th title="face :box (border)">box</th><th title="WCAG contrast of this color on the background">contrast</th><th>example</th></tr></thead><tbody id="legbody"></tbody></table>
+  <table class="leg" id="legtable"><thead><tr><th onclick="srtTable('legbody',0)">elements &#9651;</th><th title="lock a decided element↔color association"></th><th onclick="srtTable('legbody',2)">fg &#9651;</th><th onclick="srtTable('legbody',3)">bg &#9651;</th><th>style</th><th title="WCAG contrast of this color on the background">contrast</th><th>example</th><th title="face :box (border)">box</th></tr></thead><tbody id="legbody"></tbody></table>
  </section>
  <section class="pane grow">
   <div class="langbar"><label style="color:#b4b1a2">language</label><select id="langsel" class="chip" style="width:auto;font:bold 10pt monospace" onchange="renderCode();buildPkgPreview()"></select></div>
@@ -272,7 +271,7 @@
 </div>
 <div class="cols stretch">
  <section class="pane">
-  <table class="leg" id="pkgtable"><thead><tr><th onclick="srtTable('pkgbody',0)">face &#9651;</th><th title="lock a decided face"></th><th onclick="srtTable('pkgbody',2)">fg &#9651;</th><th onclick="srtTable('pkgbody',3)">bg &#9651;</th><th>style</th><th onclick="srtTable('pkgbody',5)">contrast &#9651;</th><th onclick="srtTable('pkgbody',6)">inherit &#9651;</th><th onclick="srtTable('pkgbody',7)">size &#9651;</th><th title="face :box (border)">box</th></tr></thead><tbody id="pkgbody"></tbody></table>
+  <table class="leg" id="pkgtable"><thead><tr><th onclick="srtTable('pkgbody',0)">face &#9651;</th><th title="lock a decided face"></th><th onclick="srtTable('pkgbody',2)">fg &#9651;</th><th onclick="srtTable('pkgbody',3)">bg &#9651;</th><th>style</th><th onclick="srtTable('pkgbody',5)">contrast &#9651;</th><th title="face :box (border)">box</th></tr></thead><tbody id="pkgbody"></tbody></table>
  </section>
  <section class="pane grow" style="display:flex;flex-direction:column">
   <div class="langbar"><label id="pkgprevlabel" style="color:#b4b1a2">preview</label></div>
@@ -1068,6 +1067,24 @@ function overflowNonDefault(cur,def,showInheritHeight){
   return false;
 }
 
+// Height bounds for a face :height scaling factor. 0.1 is Emacs's own floor (a
+// smaller value errors out) and doubles as the modeline-shrink-to-nothing value;
+// 2.0 is the studio's chosen ceiling. The number input's min/max attributes only
+// guard its stepper arrows — typed or pasted values bypass them — so every height
+// edit is coerced through clampHeight instead.
+const HEIGHT_MIN=0.1, HEIGHT_MAX=2.0;
+// Coerce a height-field value to either null (unset → inherit the default height)
+// or a number clamped into [min,max]. Blank/whitespace/non-numeric → null; any
+// number, including 0, a negative, or an over-max value, snaps into range.
+function clampHeight(raw,min=HEIGHT_MIN,max=HEIGHT_MAX){
+  if(raw===null||raw===undefined)return null;
+  const s=(''+raw).trim();
+  if(s==='')return null;
+  const n=parseFloat(s);
+  if(!isFinite(n))return null;
+  return n<min?min:n>max?max:n;
+}
+
 // Compose an element-hover tooltip: the face's docstring on top, the existing
 // hover text (e.g. the bare face name) below it, separated by a blank line. A
 // missing doc or base collapses to whichever is present; missing both yields ''.
@@ -1683,7 +1700,7 @@ function mkDetailEditor(face,onChange,opts={}){
     const isel=document.createElement('select');isel.className='chip detailsel';
     (opts.inheritOptions||['']).forEach(o=>{const op=document.createElement('option');op.value=o;op.textContent=o||'— none —';isel.appendChild(op);});
     isel.value=face.inherit||'';isel.onchange=()=>{face.inherit=isel.value||null;onChange();};add('inherit',isel);
-    const hin=document.createElement('input');hin.type='number';hin.min='0.8';hin.max='2.5';hin.step='0.05';hin.className='hstep';hin.value=face.height||1;hin.onchange=()=>{face.height=parseFloat(hin.value)||null;onChange();};add('height',hin);
+    const hin=document.createElement('input');hin.type='number';hin.min=''+HEIGHT_MIN;hin.max=''+HEIGHT_MAX;hin.step='0.05';hin.className='hstep';hin.value=face.height||1;hin.onchange=()=>{const raw=hin.value,h=clampHeight(raw);face.height=h;hin.value=h==null?1:h;if(h!=null&&parseFloat(raw)!==h)notify('height clamped to '+h+' (allowed '+HEIGHT_MIN+'–'+HEIGHT_MAX+')',false);onChange();};add('height',hin);
   }
   return {el:wrap,locks};}
 // Wire a per-row expander: a toggle button plus a hidden detail row (colspan
@@ -1785,7 +1802,7 @@ function buildTable(){
     const lkTd=mkLockCell(kind,[dd,bgd,...stCtls,boxCtl,...exp.locks]);
     const c2=document.createElement('td');c2.className='cat';c2.title=composeHoverTitle(SYNTAX_DOCS[kind],c2.title);c2.appendChild(exp.btn);
     const c2lbl=document.createElement('span');c2lbl.textContent=' '+label;c2lbl.style.cursor='pointer';c2lbl.title='flash this category in the code';c2lbl.onclick=()=>flashTokens(kind);c2.appendChild(c2lbl);
-    tr.appendChild(c2);tr.appendChild(lkTd);tr.appendChild(c0);tr.appendChild(cB);tr.appendChild(stTd);tr.appendChild(cX);tr.appendChild(crTd);tr.appendChild(exTd);
+    tr.appendChild(c2);tr.appendChild(lkTd);tr.appendChild(c0);tr.appendChild(cB);tr.appendChild(stTd);tr.appendChild(crTd);tr.appendChild(exTd);tr.appendChild(cX);
     tb.appendChild(tr);tb.appendChild(exp.detail);}
   updateLockToggle('syntax');
 }
@@ -2360,7 +2377,7 @@ function buildPkgTable(){
     const nd=faceBoxNonDefaults(
       {fg:nameToHex(f.fg,PALETTE),bg:nameToHex(f.bg,PALETTE),weight:f.weight,slant:f.slant,underline:f.underline,strike:f.strike,inherit:f.inherit,height:f.height,box:f.box},
       {fg:nameToHex(def.fg,PALETTE),bg:nameToHex(def.bg,PALETTE),weight:def.weight,slant:def.slant,underline:def.underline,strike:def.strike,inherit:def.inherit,height:def.height,box:def.box});
-    const exp=mkExpander(f,tableColCount('pkgtable'),()=>{f.source='user';pkgChanged();},{defaultHex:effFg(pkgEffFg(app,face)),ndCheck:()=>overflowNonDefault(f,def,false)});
+    const exp=mkExpander(f,tableColCount('pkgtable'),()=>{f.source='user';pkgChanged();},{showInheritHeight:true,inheritOptions:inh,defaultHex:effFg(pkgEffFg(app,face)),ndCheck:()=>overflowNonDefault(f,def,true)});
     exp.detail.dataset.detailFor=face;
     const c0=document.createElement('td');c0.className='cat';c0.title=composeHoverTitle(FACE_DOCS[face],face);c0.appendChild(exp.btn);
     const c0lbl=document.createElement('span');c0lbl.textContent=' '+label;c0lbl.style.cursor='pointer';c0lbl.onclick=()=>flashPkgPreview(face);c0.appendChild(c0lbl);
@@ -2371,14 +2388,12 @@ function buildPkgTable(){
     const cw=document.createElement('td');
     const pkCtls=mkStyleControls(f,()=>{f.source='user';pkgChanged();},{defaultHex:effFg(pkgEffFg(app,face))});
     const pkCluster=document.createElement('div');pkCluster.className='stylecluster';pkCtls.forEach(c=>pkCluster.appendChild(c));cw.appendChild(pkCluster);
-    const ci=document.createElement('td');const isel=document.createElement('select');isel.className='chip';isel.style.cssText='width:150px;font:10pt monospace';inh.forEach(o=>{const op=document.createElement('option');op.value=o;op.textContent=o||'— none —';isel.appendChild(op);});isel.value=f.inherit||'';isel.onchange=()=>{f.inherit=isel.value||null;f.source='user';pkgChanged();};ci.appendChild(isel);
-    const ch=document.createElement('td');const hin=document.createElement('input');hin.type='number';hin.min='0.8';hin.max='2.5';hin.step='0.05';hin.value=f.height||1;hin.className='hstep';hin.onchange=()=>{f.height=parseFloat(hin.value)||1;f.source='user';pkgChanged();};ch.appendChild(hin);
     const cc=document.createElement('td');cc.style.fontSize='10pt';cc.style.whiteSpace='nowrap';const efg=effFg(pkgEffFg(app,face)),ebg=effBg(pkgEffBg(app,face)),r=contrast(efg,ebg);cc.innerHTML=crHtml(r);
     const cx=document.createElement('td');const boxCtl=mkBoxControl(()=>f.box,b=>{f.box=b;f.source='user';pkgChanged();},{compact:true});cx.appendChild(boxCtl);
-    const cL=mkLockCell('pkg:'+app+':'+face,[fgd,bgd,...pkCtls,isel,hin,boxCtl,...exp.locks]);
+    const cL=mkLockCell('pkg:'+app+':'+face,[fgd,bgd,...pkCtls,boxCtl,...exp.locks]);
     if(nd.fg)cf.classList.add('nd');if(nd.bg)cb.classList.add('nd');if(nd.style)cw.classList.add('nd');
-    if(nd.inherit)ci.classList.add('nd');if(nd.height)ch.classList.add('nd');if(nd.box)cx.classList.add('nd');
-    tr.append(c0,cL,cf,cb,cw,cc,ci,ch,cx);tb.appendChild(tr);tb.appendChild(exp.detail);
+    if(nd.box)cx.classList.add('nd');
+    tr.append(c0,cL,cf,cb,cw,cc,cx);tb.appendChild(tr);tb.appendChild(exp.detail);
   }
   applyTableSort('pkgbody');
   updateLockToggle('pkg');
@@ -2901,19 +2916,15 @@ function worstCellHtml(face){
   const report=coveredContrastReport(face);
   if(report===null)return null;
   if(report.empty)return '<span title="this overlay has no syntax foreground set yet">no fg set</span>';
-  return `<span style="color:${ratingColor(report.worst.ratio)}" title="${esc(failureTitle(report)||'all covered text clears '+WORST_TARGET.toFixed(1))}">${report.worst.ratio.toFixed(1)} ${report.worst.verdict}</span>`;
+  return `<span style="color:${ratingColor(report.worst.ratio)}" title="${esc(failureTitle(report)||'all covered text clears '+WORST_TARGET.toFixed(1))}">${report.worst.ratio.toFixed(1)}</span>`;
 }
 // Repaint every covered overlay face (their floors depend on the syntax palette,
 // so a syntax-color edit has to refresh them even though it doesn't rebuild the table).
 function repaintCovered(){COVERED_FACES.forEach(f=>{if(UIMAP[f]&&document.getElementById('uicr-'+f))paintUI(f);});}
 function paintUI(face){const pv=document.getElementById('uiprev-'+face);if(!pv)return;const o=UIMAP[face];pv.style.color=effFg(o.fg);pv.style.background=effBg(o.bg);pv.style.fontWeight=cssWeight(o.weight);pv.style.fontStyle=o.slant||'normal';pv.style.textDecoration=(o.underline?'underline ':'')+(o.strike?'line-through':'')||'none';pv.style.boxShadow=boxCss(o.box,effBg(o.bg));
   const report=coveredContrastReport(face);
-  pv.querySelectorAll('.crerr').forEach(e=>e.remove());
   pv.title='';
-  if(report&&report.failures&&report.failures.length){
-    const badge=document.createElement('span');badge.className='crerr';badge.textContent=report.worst.ratio.toFixed(1)+' FAIL';badge.title=failureTitle(report);pv.title=badge.title;pv.appendChild(badge);
-  }
-  const cr=document.getElementById('uicr-'+face);if(cr){cr.title='';if(report!==null){if(report.empty){cr.title='this overlay has no syntax foreground set yet';cr.innerHTML='<span title="this overlay has no syntax foreground set yet">no fg set</span>';}else{const title=failureTitle(report)||'all covered text clears '+WORST_TARGET.toFixed(1);cr.title=title;cr.innerHTML=`<span style="color:${ratingColor(report.worst.ratio)}" title="${esc(title)}">${report.worst.ratio.toFixed(1)} ${report.worst.verdict}</span>`;}}else{const efg=effFg(o.fg),ebg=effBg(o.bg),r=contrast(efg,ebg);cr.innerHTML=crHtml(r);}}}
+  const cr=document.getElementById('uicr-'+face);if(cr){cr.title='';if(report!==null){if(report.empty){cr.title='this overlay has no syntax foreground set yet';cr.innerHTML='<span title="this overlay has no syntax foreground set yet">no fg set</span>';}else{const title=failureTitle(report)||'all covered text clears '+WORST_TARGET.toFixed(1);cr.title=title;cr.innerHTML=`<span style="color:${ratingColor(report.worst.ratio)}" title="${esc(title)}">${report.worst.ratio.toFixed(1)}</span>`;}}else{const efg=effFg(o.fg),ebg=effBg(o.bg),r=contrast(efg,ebg);cr.innerHTML=crHtml(r);}}}
 function buildUITable(){
   const tb=document.getElementById('uibody');tb.innerHTML='';
   for(const [face,label,ex] of UI_FACES){
@@ -3098,7 +3109,7 @@ if(location.hash==='#mocktest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c
  const missing=UI_FACES.map(f=>f[0]).filter(f=>!Q('[data-face="'+f+'"]'));
  A(missing.length===0,'all UI faces are represented in live buffer preview: '+missing.join(','));
  buildTable();buildUITable();buildPkgTable();
- [['#legbody tr[data-kind="kw"]',5],['#uibody tr[data-face="mode-line"]',7],['#pkgbody tr',8]].forEach(([sel,idx])=>{
+ [['#legbody tr[data-kind="kw"]',7],['#uibody tr[data-face="mode-line"]',7],['#pkgbody tr',6]].forEach(([sel,idx])=>{
    const cell=document.querySelector(sel)?.cells[idx],ctl=cell&&cell.querySelector('.boxctl');
    A(cell&&ctl&&ctl.getBoundingClientRect().width<=cell.getBoundingClientRect().width,'box control fits its table cell for '+sel);
  });
@@ -3261,14 +3272,12 @@ if(location.hash==='#contrasttest'){let ok=true;const notes=[];const A=(c,n)=>{i
  UIMAP['region']={fg:null,bg:'#202830',weight:null,slant:null,underline:null,strike:null};
  buildUITable();
  const cell=document.getElementById('uicr-region');
- A(cell&&/^\d+\.\d (PASS|FAIL)$/.test(cell.textContent.trim()),'region shows compact worst-case readout: '+(cell&&cell.textContent));
+ A(cell&&/^\d+\.\d$/.test(cell.textContent.trim()),'region shows a bare worst-case number (no PASS/FAIL word): '+(cell&&cell.textContent));
  A(cell&&!cell.textContent.includes('#67809c'),'compact readout omits limiting fg details: '+(cell&&cell.textContent));
  A(cell&&cell.title.includes('kw (keyword) #67809c'),'hover names failing keyword blue: '+(cell&&cell.title));
- const badge=document.querySelector('#uiprev-region .crerr');
- A(badge&&badge.textContent.trim()===cell.textContent.trim(),'region preview shows failing contrast badge: '+(badge&&badge.textContent));
- A(badge&&badge.title.includes('kw (keyword) #67809c'),'preview badge hover carries failures: '+(badge&&badge.title));
- const firstFail=badge&&badge.title.split('\n')[1];
- A(firstFail&&firstFail.includes('kw (keyword) #67809c'),'failures are sorted from worst first: '+firstFail);
+ A(!document.querySelector('#uiprev-region .crerr'),'region preview no longer carries a failing-contrast badge');
+ const firstFail=cell.title.split('\n')[1];
+ A(firstFail&&firstFail.includes('kw (keyword) #67809c'),'failures are sorted from worst first (in the cell hover): '+firstFail);
  const fl=floor('#202830',fgSetForFace('region').set);
  A(fl.limitingHex==='#67809c','floor limiting is blue, got '+fl.limitingHex);
  A(Math.abs(fl.ratio-contrast('#67809c','#202830'))<1e-9,'floor ratio matches blue-on-bg');
@@ -3348,7 +3357,7 @@ if(location.hash==='#beveltest'){let ok=true;const notes=[];const A=(c,n)=>{if(!
  if(lineBtn&&boxDd){lineBtn.click();boxDd.click();const redRow=[...document.querySelectorAll('.cddpop .cddgc')].find(c=>(c.dataset.name||'').includes('red'));if(redRow)redRow.click();}
  A(UIMAP['mode-line'].box&&UIMAP['mode-line'].box.color==='#ff0000','UI box color dropdown writes box.color');
  const app=curApp(),face=APPS[app].faces[0][0];PKGMAP[app][face].box={style:'line',width:1,color:null};buildPkgTable();
- const prow=document.querySelector('#pkgbody tr[data-face="'+face+'"]'),pbox=prow&&prow.cells[8],pdd=pbox&&pbox.querySelector('.cdd');
+ const prow=document.querySelector('#pkgbody tr[data-face="'+face+'"]'),pbox=prow&&prow.cells[6],pdd=pbox&&pbox.querySelector('.cdd');
  if(pdd){pdd.click();const redRow=[...document.querySelectorAll('.cddpop .cddgc')].find(c=>(c.dataset.name||'').includes('red'));if(redRow)redRow.click();}
  A(PKGMAP[app][face].box&&PKGMAP[app][face].box.color==='#ff0000','package box color dropdown writes box.color');
  PALETTE=saveP;PKGMAP=savePK;for(const f in UIMAP)delete UIMAP[f];Object.assign(UIMAP,saveUI);buildUITable();buildPkgTable();
@@ -3663,8 +3672,9 @@ if(location.hash==='#viewtest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c
  const d=document.createElement('div');d.id='viewtest';d.textContent='VIEWTEST '+(ok?'PASS':'FAIL')+(notes.length?' fails='+notes.join(','):'');document.body.appendChild(d);}
 // Non-default-marker gate (open with #ndtest): a per-face setting cell gets the
 // .nd corner flag only when its value differs from the face's seed default. Cell
-// order in a pkg row: 0 label, 1 lock, 2 fg, 3 bg, 4 style, 5 contrast, 6 inherit,
-// 7 size, 8 box.
+// order in a pkg row: 0 label, 1 lock, 2 fg, 3 bg, 4 style, 5 contrast, 6 box.
+// inherit + height live in the row expander, so a non-default height flags the
+// expander toggle (exp-nd) rather than an inline cell.
 if(location.hash==='#ndtest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c){ok=false;notes.push(n);}};
  LOCKED.clear();
  const app=curApp(),row=APPS[app].faces[0],face=row[0];
@@ -3673,12 +3683,12 @@ if(location.hash==='#ndtest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c){
  A(tr0&&![...tr0.cells].some(c=>c.classList.contains('nd')),'default-face-has-no-marker');
  PKGMAP[app][face].height=1.7;PKGMAP[app][face].source='user';buildPkgTable();
  const tr1=document.querySelector('#pkgbody tr[data-face="'+face+'"]');
- A(tr1.cells[7].classList.contains('nd'),'nondefault-height-marks-size-box');
+ A(tr1.querySelector('.exptoggle').classList.contains('exp-nd'),'nondefault-height-flags-expander');
  A(!tr1.cells[4].classList.contains('nd'),'unchanged-style-box-stays-unmarked');
  PKGMAP[app][face].height=(row[2]&&row[2].height)||1;PKGMAP[app][face].weight=seedFace(row[2]||{}).weight==='bold'?null:'bold';buildPkgTable();
  const tr2=document.querySelector('#pkgbody tr[data-face="'+face+'"]');
  A(tr2.cells[4].classList.contains('nd'),'toggled-weight-marks-style-box');
- A(!tr2.cells[7].classList.contains('nd'),'restored-height-unmarks-size-box');
+ A(!tr2.querySelector('.exptoggle').classList.contains('exp-nd'),'restored-height-unflags-expander');
  PKGMAP[app][face]=seedFace(row[2]||{});buildPkgTable();
  document.title='NDTEST '+(ok?'PASS':'FAIL');
  const d=document.createElement('div');d.id='ndtest';d.textContent='NDTEST '+(ok?'PASS':'FAIL')+(notes.length?' fails='+notes.join(','):'');document.body.appendChild(d);}
@@ -3844,12 +3854,33 @@ if(location.hash==='#expandtest'){let ok=true;const notes=[];const A=(c,n)=>{if(
  UIMAP['region']=JSON.parse(JSON.stringify(DEFAULT_UIMAP['region']));UIMAP['region'].overline={color:null};buildUITable();
  const ndbtn=document.querySelector('#uibody tr[data-face="region"] .exptoggle');
  A(ndbtn&&ndbtn.classList.contains('exp-nd'),'collapsed-toggle-flags-a-hidden-non-default-attr');
- // package expander omits inherit/height (they have inline columns)
+ // package expander now exposes inherit + height (folded out of inline columns)
  buildPkgTable();const pface=APPS[curApp()].faces[0][0];
  const pdetail=document.querySelector('#pkgbody tr.detailrow[data-detail-for="'+pface+'"]');
- A(pdetail&&!pdetail.querySelector('select.detailsel'),'package-expander-omits-inherit');
+ A(pdetail&&pdetail.querySelector('select.detailsel'),'package-expander-offers-inherit');
  document.title='EXPANDTEST '+(ok?'PASS':'FAIL');
  const d=document.createElement('div');d.id='expandtest';d.textContent='EXPANDTEST '+(ok?'PASS':'FAIL')+(notes.length?' fails='+notes.join(','):'');document.body.appendChild(d);}
+// Height-clamp gate (open with #heighttest): the expander height field coerces a
+// typed value into [HEIGHT_MIN,HEIGHT_MAX] and writes the clamped number back, so
+// an out-of-range type/paste can't reach the model. Guards the fact that an
+// <input type=number> min/max only constrain its steppers, never typed text.
+if(location.hash==='#heighttest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c){ok=false;notes.push(n);}};
+ const face=UI_FACES[0][0],save=JSON.parse(JSON.stringify(UIMAP[face]));
+ buildUITable();
+ const hin=()=>document.querySelector('#uibody tr.detailrow[data-detail-for="'+face+'"] .hstep');
+ const typeHeight=(v)=>{const h=hin();h.value=v;h.dispatchEvent(new Event('change'));};
+ typeHeight('5');
+ A(UIMAP[face].height===HEIGHT_MAX,'above-max-clamps-to-ceiling: '+UIMAP[face].height);
+ A(hin().value===''+HEIGHT_MAX,'field-shows-the-clamped-ceiling: '+hin().value);
+ typeHeight('0.05');
+ A(UIMAP[face].height===HEIGHT_MIN,'below-floor-clamps-to-floor: '+UIMAP[face].height);
+ typeHeight('1.2');
+ A(UIMAP[face].height===1.2,'in-range-value-passes-through: '+UIMAP[face].height);
+ typeHeight('');
+ A(UIMAP[face].height===null,'blank-unsets-to-null: '+UIMAP[face].height);
+ UIMAP[face]=save;buildUITable();
+ document.title='HEIGHTTEST '+(ok?'PASS':'FAIL');
+ const hd=document.createElement('div');hd.id='heighttest';hd.textContent='HEIGHTTEST '+(ok?'PASS':'FAIL')+(notes.length?' fails='+notes.join(','):'');document.body.appendChild(hd);}
 // Palette default-state gate (open with #paldefaulttest): the studio opens with
 // the palette collapsed to base colors so the span tints don't crowd the first
 // view. initApp() ran at page load, so the live toggle reflects the opening state.

@@ -11,6 +11,7 @@ import {
   clearPalettePlan, deletePaletteColumnPlan, groundColumnMembersFromPalette, areAllLocked, lockToggleLabel, toggleLockSet,
   galleryModel, appViewKeysSorted, faceBoxNonDefaults, overflowNonDefault, stepViewIndex,
   cssWeight, faceDecoration, boxCss, faceCss, composeHoverTitle,
+  clampHeight, HEIGHT_MIN, HEIGHT_MAX,
 } from './app-core.js';
 import { planPaletteGenerator, entriesForGeneratedColumn } from './palette-generator-core.js';
 import { oklch2hex, deltaE } from './colormath.js';
@@ -1151,4 +1152,40 @@ test('composeHoverTitle: Boundary — base only (no doc) returns the base unchan
 test('composeHoverTitle: Error — neither doc nor base returns empty string', () => {
   assert.equal(composeHoverTitle(null, null), '');
   assert.equal(composeHoverTitle(undefined, ''), '');
+});
+
+// --- clampHeight: coerce a height-field value to null (unset) or an in-range number ---
+test('clampHeight: bounds are the agreed Emacs-floor / studio-ceiling pair', () => {
+  assert.equal(HEIGHT_MIN, 0.1);
+  assert.equal(HEIGHT_MAX, 2.0);
+});
+test('clampHeight: Normal — an in-range value passes through unchanged', () => {
+  assert.equal(clampHeight('1.2'), 1.2);
+  assert.equal(clampHeight('0.5'), 0.5);
+  assert.equal(clampHeight(1.0), 1.0);
+});
+test('clampHeight: Boundary — the exact min and max are kept', () => {
+  assert.equal(clampHeight('0.1'), 0.1);
+  assert.equal(clampHeight('2.0'), 2.0);
+  assert.equal(clampHeight(0.1), 0.1);
+});
+test('clampHeight: Boundary — out-of-range snaps to the nearer bound', () => {
+  assert.equal(clampHeight('5'), 2.0);     // above max
+  assert.equal(clampHeight('0.05'), 0.1);  // below the Emacs floor
+  assert.equal(clampHeight('0'), 0.1);     // zero is not unset; it clamps up
+  assert.equal(clampHeight('-3'), 0.1);    // negative clamps up
+});
+test('clampHeight: Boundary — blank or whitespace is unset (null)', () => {
+  assert.equal(clampHeight(''), null);
+  assert.equal(clampHeight('   '), null);
+  assert.equal(clampHeight(null), null);
+  assert.equal(clampHeight(undefined), null);
+});
+test('clampHeight: Error — non-numeric text is unset (null), not NaN', () => {
+  assert.equal(clampHeight('abc'), null);
+  assert.equal(clampHeight('1.2x'), 1.2); // parseFloat reads the leading number
+});
+test('clampHeight: caller may override the bounds', () => {
+  assert.equal(clampHeight('5', 0.1, 3.0), 3.0);
+  assert.equal(clampHeight('0.2', 0.5, 3.0), 0.5);
 });
