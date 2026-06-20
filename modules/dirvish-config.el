@@ -259,6 +259,37 @@ Examples:
       (message "Duplicated: %s → %s"
                (file-name-nondirectory file) new-name))))
 
+;;; ----------------------------- Dirvish Hard Delete ---------------------------
+
+(defun cj/--dirvish-hard-delete-command (files)
+  "Return the `sudo rm -rf' shell command that force-deletes FILES.
+Each path is shell-quoted and the list is preceded by `--' so a
+leading-dash filename can't be misread as an option.  Pure helper used by
+`cj/dirvish-hard-delete'."
+  (concat "sudo rm -rf -- "
+          (mapconcat #'shell-quote-argument files " ")))
+
+(defun cj/dirvish-hard-delete ()
+  "Force-delete the marked files (or the file at point) via `sudo rm -rf'.
+This bypasses the trash and is IRREVERSIBLE.  Prompts with the exact
+targets named before running."
+  (interactive)
+  (let ((files (dired-get-marked-files)))
+    (unless files
+      (user-error "No file at point"))
+    (let ((targets (mapconcat #'file-name-nondirectory files ", ")))
+      (when (yes-or-no-p
+             (format "Force-delete (sudo rm -rf, NO undo): %s? " targets))
+        (let ((status (shell-command (cj/--dirvish-hard-delete-command files))))
+          ;; Revert either way so the listing reflects whatever was removed,
+          ;; but only claim success when `rm' actually exited 0 -- a failed or
+          ;; cancelled `sudo' must not report files gone that are still there.
+          (revert-buffer)
+          (if (zerop status)
+              (message "Force-deleted: %s" targets)
+            (message "Hard delete failed (exit %d) -- see *Shell Command Output*"
+                     status)))))))
+
 ;;; ------------------------------ Dirvish Print File ---------------------------
 
 (defvar cj/dirvish-print-extensions
@@ -489,8 +520,8 @@ Uses feh on X11, swww on Wayland."
    ("M-p"     . dirvish-peek-toggle)
    ("M-s"     . dirvish-setup-menu)
    ("TAB"     . dirvish-subtree-toggle)
-   ("d"       . dired-do-delete)
-   ("D"       . cj/dirvish-duplicate-file)
+   ("d"       . cj/dirvish-duplicate-file)
+   ("D"       . cj/dirvish-hard-delete)
    ("f"       . cj/dirvish-open-file-manager-here)
    ("g"       . dirvish-quick-access)
    ("o"       . cj/xdg-open)
