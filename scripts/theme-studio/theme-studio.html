@@ -3053,6 +3053,20 @@ function initApp(){
 }
 initApp();
 addEventListener('resize',()=>{syncMockHeight();syncPkgHeight();});
+// Shared gate harness. Each call site keeps its literal location.hash==='#NAMEtest'
+// check (run-tests.sh greps it); gate() owns the ok/notes/A setup and the verdict
+// postamble. Note format standardized to ' fails=note1,note2'.
+function gate(id, body){
+  const name=id.toUpperCase();
+  let ok=true;const notes=[];
+  const A=(c,n)=>{if(!c){ok=false;notes.push(n);}};
+  body(A);
+  const verdict=name+' '+(ok?'PASS':'FAIL');
+  document.title=verdict;
+  const d=document.createElement('div');d.id=id;
+  d.textContent=verdict+(notes.length?' fails='+notes.join(','):'');
+  document.body.appendChild(d);
+}
 // Shared preview-face validator for the #mdtest / #mupreviewtest / #gnustest
 // gates: render HTML into a detached div, then assert it exercises at least
 // MINCOUNT data-faces, that every data-face is a real face of the package
@@ -3093,7 +3107,7 @@ if(location.hash==='#selftest')pkgSelftest();
 // preserve, across all three tiers. (1) Locking a row disables its controls via
 // the shared mkLockCell. (2) reset/erase batch actions update editable rows but
 // leave locked rows (syntax bare-kind, ui:, pkg: keys) untouched.
-if(location.hash==='#locktest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c){ok=false;notes.push(n);}};
+if(location.hash==='#locktest')gate('locktest',A=>{
  const cssRgb=h=>{const [r,g,b]=hex2rgb(h);return 'rgb('+r+', '+g+', '+b+')';};
  LOCKED.clear();buildTable();
  {const k=CATS.map(c=>c[0]).filter(k=>k!=='bg'&&k!=='p')[0];
@@ -3163,13 +3177,12 @@ if(location.hash==='#locktest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c
   if(filter&&faces.length>1){filter.value=faces[0];buildPkgTable();const b=document.getElementById('pkglocktoggle');b.click();
     A(faces.every(face=>LOCKED.has('pkg:'+app+':'+face)),'pkg lock-all covers the whole package even when filtered');
     filter.value='';buildPkgTable();}}
- document.title='LOCKTEST '+(ok?'PASS':'FAIL');
- const d=document.createElement('div');d.id='locktest';d.textContent='LOCKTEST '+(ok?'PASS':'FAIL')+(notes.length?' | '+notes.join(' ; '):'');document.body.appendChild(d);}
+ });
 // Sort gate (open with #sorttest): all three tables now share srtTable/cellVal.
 // Verifies the syntax table (which used to have its own srt) sorts by color
 // value and by element name, that a repeat click reverses, and that the UI and
 // package tables still sort. Guards the unified sort for the later stages.
-if(location.hash==='#sorttest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c){ok=false;notes.push(n);}};
+if(location.hash==='#sorttest')gate('sorttest',A=>{
  const ddVals=tb=>[...document.querySelectorAll('#'+tb+' tr:not(.detailrow)')].map(tr=>{const dd=tr.cells[2].querySelector('.cdd');return dd?(dd.dataset.val||''):'';});
  const txtVals=tb=>[...document.querySelectorAll('#'+tb+' tr:not(.detailrow)')].map(tr=>tr.cells[1].innerText.trim().toLowerCase());
  const asc=a=>a.every((v,i)=>i===0||a[i-1]<=v),desc=a=>a.every((v,i)=>i===0||a[i-1]>=v);
@@ -3179,13 +3192,12 @@ if(location.hash==='#sorttest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c
  srtTable('legbody',1);A(asc(txtVals('legbody')),'legbody-elements-asc');
  buildUITable();srtTable('uibody',1);A(asc(txtVals('uibody')),'uibody-face-asc');
  buildPkgTable();srtTable('pkgbody',2);A(asc(ddVals('pkgbody')),'pkgbody-fg-asc');
- document.title='SORTTEST '+(ok?'PASS':'FAIL');
- const d=document.createElement('div');d.id='sorttest';d.textContent='SORTTEST '+(ok?'PASS':'FAIL')+(notes.length?' | '+notes.join(' ; '):'');document.body.appendChild(d);}
+ });
 // Live-buffer rendering gate (open with #mocktest): pins the face-faithfulness
 // fixes so they cannot silently regress — overlay faces keep syntax colors and
 // honor their styles, the cursor sits on a glyph, line numbers honor weight, the
 // fringe shows its foreground indicator, and the mode-line carries its box.
-if(location.hash==='#mocktest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c){ok=false;notes.push(n);}};
+if(location.hash==='#mocktest')gate('mocktest',A=>{
  const Q=s=>document.querySelector('#mockframe '+s);
  buildMockFrame();
  A(Q('[data-face="highlight"] [data-k]'),'highlight-keeps-token-colors');
@@ -3234,13 +3246,12 @@ if(location.hash==='#mocktest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c
  A(pkgWeight()&&pkgWeight().dataset.val==='','pkg weight dropdown starts empty when model is unset');
  pickEnum(pkgWeight(),'heavy');
  A(PKGMAP[app][face].weight==='heavy'&&PKGMAP[app][face].source==='user','pkg weight dropdown writes the model and marks the face edited');
- document.title='MOCKTEST '+(ok?'PASS':'FAIL');
- const d=document.createElement('div');d.id='mocktest';d.textContent='MOCKTEST '+(ok?'PASS':'FAIL')+(notes.length?' | '+notes.join(' ; '):'');document.body.appendChild(d);}
+ });
 // Palette-generator gate (open with #generatortest): previewing is non-mutating,
 // clicking a generated tile loads the existing selector, adding creates a normal
 // singleton base column, and appending a preview column commits all span members
 // under one stable column id.
-if(location.hash==='#generatortest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c){ok=false;notes.push(n);}};
+if(location.hash==='#generatortest')gate('generatortest',A=>{
  const before=JSON.stringify(PALETTE);
  A(document.getElementById('genaccents').value==='5','default accent count is 5');
  A(document.getElementById('gensource').value==='palette','default generator source is palette');
@@ -3290,12 +3301,11 @@ if(location.hash==='#generatortest'){let ok=true;const notes=[];const A=(c,n)=>{
  GEN_PROPOSAL={summary:{generated:1,rejected:0,minContrast:null},columns:[{name:'medium-aquamarine',members:[{name:'medium-aquamarine',hex:'#66cdaa',offset:0,columnId:'medium-aquamarine'}]}]};
  renderGeneratorPreview();
  A(document.querySelector('#genpreview .genchip .gn').textContent==='medium aquamarine','generated tile names display spaces instead of hyphens');
- document.title='GENERATORTEST '+(ok?'PASS':'FAIL');
- const d=document.createElement('div');d.id='generatortest';d.textContent='GENERATORTEST '+(ok?'PASS':'FAIL')+(notes.length?' | '+notes.join(' ; '):'');document.body.appendChild(d);}
+ });
 // Auto-dim gate (open with #autodimtest): the bespoke split preview shows the
 // selected language in both panes -- the left in real syntax colors, the right
 // collapsed to the single auto-dim-other-buffers face -- and tracks the langsel.
-if(location.hash==='#autodimtest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c){ok=false;notes.push(n);}};
+if(location.hash==='#autodimtest')gate('autodimtest',A=>{
  const langs=Object.keys(SAMPLES),ls=document.getElementById('langsel');
  ls.value=langs[0];
  const box=document.createElement('div');box.innerHTML=renderAutodimPreview();
@@ -3309,8 +3319,7 @@ if(location.hash==='#autodimtest'){let ok=true;const notes=[];const A=(c,n)=>{if
  if(langs.length>1){const t1=box.textContent;ls.value=langs[1];
   const box2=document.createElement('div');box2.innerHTML=renderAutodimPreview();
   A(box2.textContent!==t1,'preview tracks the language selector');ls.value=langs[0];}
- document.title='AUTODIMTEST '+(ok?'PASS':'FAIL');
- const d=document.createElement('div');d.id='autodimtest';d.textContent='AUTODIMTEST '+(ok?'PASS':'FAIL')+(notes.length?' | '+notes.join(' ; '):'');document.body.appendChild(d);}
+ });
 if(location.hash.startsWith('#pick')){openPicker();const m=location.hash.slice(5);if(m){const b=document.querySelector('.pmode button[data-m="'+m+'"]');if(b)b.click();}}
 if(location.hash==='#cursortest'){document.getElementById('newhexstr').value='#67809c';openPicker();const sc=document.getElementById('svcur'),hc=document.getElementById('huecur');const L=parseFloat(sc.style.left||'0'),T=parseFloat(sc.style.top||'0'),H=parseFloat(hc.style.top||'0');const ok=L>1&&T>1&&H>1;document.title='CURSORTEST '+(ok?'PASS':'FAIL');const d=document.createElement('div');d.id='cursortest';d.textContent='CURSORTEST '+(ok?'PASS':'FAIL')+' left='+sc.style.left+' top='+sc.style.top+' hue='+hc.style.top;document.body.appendChild(d);}
 if(location.hash.startsWith('#app')){const ap=location.hash.slice(4),s=document.getElementById('appsel');if(s&&ap){s.value=ap;pkgChanged();}}
@@ -3361,7 +3370,7 @@ if(location.hash==='#readouttest'){const hex='#67809c';document.getElementById('
 // Worst-case readout gate (open with #contrasttest): a covered overlay face shows
 // the floor over its foreground set and names the limiting foreground, an
 // out-of-scope face keeps the single-pair readout, and an empty set reads "no fg set".
-if(location.hash==='#contrasttest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c){ok=false;notes.push(n);}};
+if(location.hash==='#contrasttest')gate('contrasttest',A=>{
  const saveMAP=Object.assign({},MAP),saveUI=JSON.parse(JSON.stringify(UIMAP));
  CATS.forEach(c=>{if(c[0]!=='bg'&&c[0]!=='p')setSyntaxFg(c[0],'');});
  setSyntaxFg('p','#f0fef0');setSyntaxFg('kw','#67809c');setSyntaxFg('str','#a3b18a');setSyntaxFg('bg','#000000');
@@ -3426,12 +3435,11 @@ if(location.hash==='#contrasttest'){let ok=true;const notes=[];const A=(c,n)=>{i
  }else A(false,'syntax table has a p row with a dropdown');
  if(pLocked){LOCKED.add('p');buildTable();}
  for(const k in MAP)delete MAP[k];Object.assign(MAP,saveMAP);syncSyntaxFromCache();for(const f in UIMAP)delete UIMAP[f];Object.assign(UIMAP,saveUI);buildUITable();applyGround();
- document.title='CONTRASTTEST '+(ok?'PASS':'FAIL');
- const d=document.createElement('div');d.id='contrasttest';d.textContent='CONTRASTTEST '+(ok?'PASS':'FAIL')+(notes.length?' | '+notes.join(' ; '):'');document.body.appendChild(d);}
+ });
 // Bevel gate (open with #beveltest): released/pressed boxes derive their
 // highlight and shadow from the face's effective bg per Emacs's relief
 // algorithm, and pressed draws the shadow edge first.
-if(location.hash==='#beveltest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c){ok=false;notes.push(n);}};
+if(location.hash==='#beveltest')gate('beveltest',A=>{
  const saveUI=JSON.parse(JSON.stringify(UIMAP)),saveP=PALETTE.slice(),savePK=JSON.parse(JSON.stringify(PKGMAP));
  UIMAP['mode-line']={fg:'#d8dee9',bg:'#30343c',weight:null,slant:null,underline:null,strike:null,box:{style:'released',width:1,color:null}};
  buildUITable();
@@ -3457,14 +3465,13 @@ if(location.hash==='#beveltest'){let ok=true;const notes=[];const A=(c,n)=>{if(!
  if(pdd){pdd.click();const redRow=[...document.querySelectorAll('.cddpop .cddgc')].find(c=>(c.dataset.name||'').includes('red'));if(redRow)redRow.click();}
  A(PKGMAP[app][face].box&&PKGMAP[app][face].box.color==='#ff0000','package box color dropdown writes box.color');
  PALETTE=saveP;PKGMAP=savePK;for(const f in UIMAP)delete UIMAP[f];Object.assign(UIMAP,saveUI);buildUITable();buildPkgTable();
- document.title='BEVELTEST '+(ok?'PASS':'FAIL');
- const d=document.createElement('div');d.id='beveltest';d.textContent='BEVELTEST '+(ok?'PASS':'FAIL')+(notes.length?' | '+notes.join(' ; '):'');document.body.appendChild(d);}
+ });
 // Gallery gate (open with #gallerytest): the color dropdown opens a 2D grid in
 // the palette-panel shape. Driven on a throwaway dropdown so no real face state
 // is mutated. Covers: grid opens, every palette color has a cell, a cell click
 // fires onPick + updates the trigger, the pick highlights on reopen, the default
 // chip clears.
-if(location.hash==='#gallerytest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c){ok=false;notes.push(n);}};
+if(location.hash==='#gallerytest')gate('gallerytest',A=>{
  let picked='__none__';
  const dd=mkColorDropdown(ddList(''),'',(hex)=>{picked=hex;},{});
  document.body.appendChild(dd);
@@ -3488,11 +3495,10 @@ if(location.hash==='#gallerytest'){let ok=true;const notes=[];const A=(c,n)=>{if
  trig.click();const defc=document.querySelector('.cddpop.cddgrid .cddgdef');if(defc)defc.click();
  A(picked==='','the default chip clears the assignment: '+JSON.stringify(picked));
  dd.remove();closeColorDropdown();
- document.title='GALLERYTEST '+(ok?'PASS':'FAIL');
- const d=document.createElement('div');d.id='gallerytest';d.textContent='GALLERYTEST '+(ok?'PASS':'FAIL')+(notes.length?' | '+notes.join(' ; '):'');document.body.appendChild(d);}
+ });
 // Preview-link gate (open with #previewlinktest): known bespoke-preview face
 // mappings stay wired to the face that Emacs actually uses.
-if(location.hash==='#previewlinktest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c){ok=false;notes.push(n);}};
+if(location.hash==='#previewlinktest')gate('previewlinktest',A=>{
  const box=document.createElement('div');
  box.innerHTML=renderOrgPreview();
  const headline=[...box.querySelectorAll('[data-face="org-headline-todo"]')].find(e=>e.textContent.includes('Heading three'));
@@ -3507,11 +3513,10 @@ if(location.hash==='#previewlinktest'){let ok=true;const notes=[];const A=(c,n)=
  const bob=[...box.querySelectorAll('[data-face="erc-default-face"]')].some(e=>e.textContent.includes('hi craig'));
  A(own,'erc own sent message uses erc-input-face');
  A(bob,'erc remote message uses erc-default-face');
- document.title='PREVIEWLINKTEST '+(ok?'PASS':'FAIL');
- const d=document.createElement('div');d.id='previewlinktest';d.textContent='PREVIEWLINKTEST '+(ok?'PASS':'FAIL')+(notes.length?' | '+notes.join(' ; '):'');document.body.appendChild(d);}
+ });
 // Safe-lightness gate (open with #safetest): the OKLCH picker shades the unsafe
 // lightness band for a selected covered face and hides it when no face is selected.
-if(location.hash==='#safetest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c){ok=false;notes.push(n);}};
+if(location.hash==='#safetest')gate('safetest',A=>{
  const saveMAP=Object.assign({},MAP);
  setSyntaxFg('p','#f0fef0');setSyntaxFg('kw','#67809c');setSyntaxFg('bg','#000000');
  document.getElementById('newhexstr').value='#202830';openPicker();setPkModel('oklch');
@@ -3523,11 +3528,10 @@ if(location.hash==='#safetest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c
  A(band&&band.style.display==='none','safe band hidden when no face is selected');
  for(const k in MAP)delete MAP[k];Object.assign(MAP,saveMAP);syncSyntaxFromCache();
  setPkModel('hsv');closePicker();
- document.title='SAFETEST '+(ok?'PASS':'FAIL');
- const d=document.createElement('div');d.id='safetest';d.textContent='SAFETEST '+(ok?'PASS':'FAIL')+(notes.length?' | '+notes.join(' ; '):'');document.body.appendChild(d);}
+ });
 // Gone-rebind gate (open with #healtest): deleting a named color then recreating
 // the name re-points face references stranded on the old hex to the new color.
-if(location.hash==='#healtest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c){ok=false;notes.push(n);}};
+if(location.hash==='#healtest')gate('healtest',A=>{
  const saveP=PALETTE.slice(),saveM=Object.assign({},MAP),saveU=JSON.parse(JSON.stringify(UIMAP)),savePK=JSON.parse(JSON.stringify(PKGMAP)),saveG=Object.assign({},lastGone),saveSel=selectedIdx;
  PALETTE=[['#0d0b0a','ground'],['#cdced1','fg'],['#67809c','blue']];setSyntaxFg('kw','#67809c');lastGone={};selectedIdx=null;renderPalette();buildTable();
  const blue=[...document.querySelectorAll('#pals .pchip')].find(c=>c.querySelector('.nm')&&c.querySelector('.nm').value==='blue');
@@ -3540,12 +3544,11 @@ if(location.hash==='#healtest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c
  A(!('blue' in lastGone),'heal consumed the gone entry');
  PALETTE=saveP;for(const k in MAP)delete MAP[k];Object.assign(MAP,saveM);syncSyntaxFromCache();for(const f in UIMAP)delete UIMAP[f];Object.assign(UIMAP,saveU);PKGMAP=savePK;lastGone=saveG;selectedIdx=saveSel;
  renderPalette();buildTable();buildUITable();if(document.getElementById('pkgbody'))buildPkgTable();
- document.title='HEALTEST '+(ok?'PASS':'FAIL');
- const d=document.createElement('div');d.id='healtest';d.textContent='HEALTEST '+(ok?'PASS':'FAIL')+(notes.length?' | '+notes.join(' ; '):'');document.body.appendChild(d);}
+ });
 // Column-strip gate (open with #columntest): the palette renders as a pinned
 // ground column plus structural columns, chips keep their controls, and renaming
 // a color leaves it in the same strip because the column id is stable.
-if(location.hash==='#columntest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c){ok=false;notes.push(n);}};
+if(location.hash==='#columntest')gate('columntest',A=>{
  const saveP=PALETTE.slice(),saveM=Object.assign({},MAP),saveG=Object.assign({},lastGone),saveSel=selectedIdx;
  setSyntaxFg('bg','#0d0b0a');setSyntaxFg('p','#f0fef0');
  PALETTE=[['#0d0b0a','ground'],['#f0fef0','fg'],['#c0402a','red'],['#3a6ea5','blue'],['#808080','gray']];selectedIdx=null;renderPalette();
@@ -3628,13 +3631,12 @@ if(location.hash==='#columntest'){let ok=true;const notes=[];const A=(c,n)=>{if(
  A(lastGone['blue']==='#3a6ea5'&&lastGone['blue+1']==='#92acc2','clear palette records removed names for recovery');
  A(selectedIdx===null,'clear palette clears selected color');
  PALETTE=saveP;for(const k in MAP)delete MAP[k];Object.assign(MAP,saveM);syncSyntaxFromCache();lastGone=saveG;selectedIdx=saveSel;renderPalette();
- document.title='COLUMNTEST '+(ok?'PASS':'FAIL');
- const d=document.createElement('div');d.id='columntest';d.textContent='COLUMNTEST '+(ok?'PASS':'FAIL')+(notes.length?' | '+notes.join(' ; '):'');document.body.appendChild(d);}
+ });
 // Count-control gate (open with #counttest): the per-column count regenerates the
 // column — count up adds symmetric steps, count down drops the extremes, a
 // reference to a surviving step follows the new hex, a reference to a removed step
 // is left on its old (now-gone) hex.
-if(location.hash==='#counttest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c){ok=false;notes.push(n);}};
+if(location.hash==='#counttest')gate('counttest',A=>{
  const saveP=PALETTE.slice(),saveM=Object.assign({},MAP),saveU=JSON.parse(JSON.stringify(UIMAP)),saveSel=selectedIdx;
  paletteShowFull=true;  // this gate asserts span tiles, so render the full palette
  setSyntaxFg('bg','#204060');setSyntaxFg('p','#f0fef0');
@@ -3680,12 +3682,11 @@ if(location.hash==='#counttest'){let ok=true;const notes=[];const A=(c,n)=>{if(!
   const lo=_lum(MAP['bg']),hi=_lum(MAP['p']),blue=PALETTE.filter(p=>p[2]==='blue').map(p=>_lum(p[0]));
   A(blue.length&&blue.every(L=>L>=lo-1e-6&&L<=hi+1e-6),'generated span stays within the bg/fg bounds');}
  PALETTE=saveP;for(const k in MAP)delete MAP[k];Object.assign(MAP,saveM);syncSyntaxFromCache();for(const f in UIMAP)delete UIMAP[f];Object.assign(UIMAP,saveU);selectedIdx=saveSel;renderPalette();
- document.title='COUNTTEST '+(ok?'PASS':'FAIL');
- const d=document.createElement('div');d.id='counttest';d.textContent='COUNTTEST '+(ok?'PASS':'FAIL')+(notes.length?' | '+notes.join(' ; '):'');document.body.appendChild(d);}
+ });
 // Base-edit + ground-edit gate (open with #baseedittest): editing a column base
 // recolors the whole column at the same count and references follow; editing a
 // ground swatch writes the bg/fg assignment.
-if(location.hash==='#baseedittest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c){ok=false;notes.push(n);}};
+if(location.hash==='#baseedittest')gate('baseedittest',A=>{
  const saveP=PALETTE.slice(),saveM=Object.assign({},MAP),saveU=JSON.parse(JSON.stringify(UIMAP)),saveSel=selectedIdx;
  setSyntaxFg('bg','#0d0b0a');setSyntaxFg('p','#f0fef0');
  PALETTE=[['#0d0b0a','ground'],['#f0fef0','fg']];
@@ -3716,11 +3717,10 @@ if(location.hash==='#baseedittest'){let ok=true;const notes=[];const A=(c,n)=>{i
  A(!PALETTE.some(p=>/^fg[+-]\d+$/.test(p[1])),'editing fg does not generate fg span tiles from a same-hex normal column');
  A(PALETTE.find(p=>p[1]==='fg')[2]==='ground','editing fg preserves the ground column id');
  PALETTE=saveP;for(const k in MAP)delete MAP[k];Object.assign(MAP,saveM);syncSyntaxFromCache();for(const f in UIMAP)delete UIMAP[f];Object.assign(UIMAP,saveU);selectedIdx=saveSel;renderPalette();
- document.title='BASEEDITTEST '+(ok?'PASS':'FAIL');
- const d=document.createElement('div');d.id='baseedittest';d.textContent='BASEEDITTEST '+(ok?'PASS':'FAIL')+(notes.length?' | '+notes.join(' ; '):'');document.body.appendChild(d);}
+ });
 // Round-trip gate (open with #roundtriptest): export stays a flat palette with
 // stable column ids, and import does not need color-derived column reconstruction.
-if(location.hash==='#roundtriptest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c){ok=false;notes.push(n);}};
+if(location.hash==='#roundtriptest')gate('roundtriptest',A=>{
  const stable=o=>Array.isArray(o)?o.map(stable):(o&&typeof o==='object'?Object.fromEntries(Object.keys(o).sort().map(k=>[k,stable(o[k])])):o);
  const diff=(a,b,p='')=>{if(JSON.stringify(a)===JSON.stringify(b))return '';if(typeof a!==typeof b||!a||!b||typeof a!=='object')return p+': '+JSON.stringify(a)+' != '+JSON.stringify(b);
   const ks=[...new Set([...Object.keys(a),...Object.keys(b)])].sort();for(const k of ks){const d=diff(a[k],b[k],p?p+'.'+k:k);if(d)return d;}return p;};
@@ -3738,13 +3738,12 @@ if(location.hash==='#roundtriptest'){let ok=true;const notes=[];const A=(c,n)=>{
  A(obj.palette.some(e=>e[1]==='renamed-blue'&&e[2]==='blue'),'renamed color keeps its stable column id through export/import');
  A(obj.locks&&obj.locks.includes('kw')&&obj.locks.includes('ui:region'),'lock state survives export/import');
  PALETTE=saveP;for(const k in MAP)delete MAP[k];Object.assign(MAP,saveM);syncSyntaxFromCache();LOCKED=saveL;
- document.title='ROUNDTRIPTEST '+(ok?'PASS':'FAIL');
- const d=document.createElement('div');d.id='roundtriptest';d.textContent='ROUNDTRIPTEST '+(ok?'PASS':'FAIL')+(notes.length?' | '+notes.join(' ; '):'');document.body.appendChild(d);}
+ });
 // View-selector gate (open with #viewtest): the assignment panel is driven by a
 // single #viewsel dropdown -- two editor entries (@code, @ui) then a "package
 // faces" optgroup of every app, alphabetically by label -- and switching it
 // shows exactly one of the three view blocks.
-if(location.hash==='#viewtest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c){ok=false;notes.push(n);}};
+if(location.hash==='#viewtest')gate('viewtest',A=>{
  const sel=document.getElementById('viewsel');
  A(!!sel,'viewsel-exists');
  if(sel){
@@ -3764,14 +3763,13 @@ if(location.hash==='#viewtest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c
   A(curApp()===firstApp,'curApp-returns-selected-app');
   A(!document.querySelector('#pkgbody .sbtn[title="reset to default"]'),'no-per-row-reset-button');
  }
- document.title='VIEWTEST '+(ok?'PASS':'FAIL');
- const d=document.createElement('div');d.id='viewtest';d.textContent='VIEWTEST '+(ok?'PASS':'FAIL')+(notes.length?' fails='+notes.join(','):'');document.body.appendChild(d);}
+ });
 // Non-default-marker gate (open with #ndtest): a per-face setting cell gets the
 // .nd corner flag only when its value differs from the face's seed default. Cell
 // order in a pkg row: 0 lock, 1 label, 2 fg, 3 bg, 4 style, 5 box, 6 contrast.
 // inherit + height live in the row expander, so a non-default height flags the
 // expander toggle (exp-nd) rather than an inline cell.
-if(location.hash==='#ndtest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c){ok=false;notes.push(n);}};
+if(location.hash==='#ndtest')gate('ndtest',A=>{
  LOCKED.clear();
  const app=curApp(),row=APPS[app].faces[0],face=row[0];
  PKGMAP[app][face]=seedFace(row[2]||{});buildPkgTable();
@@ -3786,22 +3784,20 @@ if(location.hash==='#ndtest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c){
  A(tr2.cells[4].classList.contains('nd'),'toggled-weight-marks-style-box');
  A(!tr2.querySelector('.exptoggle').classList.contains('exp-nd'),'restored-height-unflags-expander');
  PKGMAP[app][face]=seedFace(row[2]||{});buildPkgTable();
- document.title='NDTEST '+(ok?'PASS':'FAIL');
- const d=document.createElement('div');d.id='ndtest';d.textContent='NDTEST '+(ok?'PASS':'FAIL')+(notes.length?' fails='+notes.join(','):'');document.body.appendChild(d);}
+ });
 // Contrast-cell gate (open with #crtest): the per-face contrast column shows a
 // bare colored number (no PASS/FAIL word); the WCAG verdict lives in the hover.
-if(location.hash==='#crtest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c){ok=false;notes.push(n);}};
+if(location.hash==='#crtest')gate('crtest',A=>{
  const app=curApp(),face=APPS[app].faces[0][0];buildPkgTable();
  const cell=document.querySelector('#pkgbody tr[data-face="'+face+'"]').cells[6];
  const span=cell&&cell.querySelector('span');
  A(span&&/^\d+\.\d$/.test(span.textContent.trim()),'contrast cell is a bare number: '+(span&&span.textContent));
  A(span&&!/PASS|FAIL/.test(span.textContent),'no PASS/FAIL word in the contrast cell');
  A(span&&span.title&&/(passes|fails) WCAG/i.test(span.title),'contrast cell carries a WCAG hover: '+(span&&span.title));
- document.title='CRTEST '+(ok?'PASS':'FAIL');
- const d=document.createElement('div');d.id='crtest';d.textContent='CRTEST '+(ok?'PASS':'FAIL')+(notes.length?' fails='+notes.join(','):'');document.body.appendChild(d);}
+ });
 // View-nav gate (open with #navtest): the prev/next arrows flanking the view
 // dropdown step the selection (clamped, no wrap) and re-render the view.
-if(location.hash==='#navtest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c){ok=false;notes.push(n);}};
+if(location.hash==='#navtest')gate('navtest',A=>{
  const sel=document.getElementById('viewsel'),prev=document.getElementById('viewprev'),next=document.getElementById('viewnext');
  A(!!prev&&!!next,'nav arrows exist');
  if(sel&&prev&&next){
@@ -3815,39 +3811,35 @@ if(location.hash==='#navtest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c)
   sel.selectedIndex=2;onViewChange();
   A(sel.options[2]&&sel.options[2].value[0]!=='@'&&vis('view-pkg'),'stepping to a package shows the pkg view');
  }
- document.title='NAVTEST '+(ok?'PASS':'FAIL');
- const d=document.createElement('div');d.id='navtest';d.textContent='NAVTEST '+(ok?'PASS':'FAIL')+(notes.length?' fails='+notes.join(','):'');document.body.appendChild(d);}
+ });
 // Markdown-preview gate (open with #mdtest): markdown-mode has a dedicated README
 // renderer, and every data-face it emits is a real markdown-mode face.
-if(location.hash==='#mdtest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c){ok=false;notes.push(n);}};
+if(location.hash==='#mdtest')gate('mdtest',A=>{
  A(APPS['markdown-mode']&&APPS['markdown-mode'].preview==='markdown','markdown-mode wired to the markdown preview');
  A(!!PACKAGE_PREVIEWS['markdown'],'markdown renderer registered');
  if(PACKAGE_PREVIEWS['markdown']&&APPS['markdown-mode']){
   assertPreviewFaces(A, PACKAGE_PREVIEWS['markdown'](), APPS['markdown-mode'].faces, 15, 'markdown',
    ['markdown-header-face-1','markdown-bold-face','markdown-inline-code-face','markdown-blockquote-face','markdown-gfm-checkbox-face','markdown-table-face']);
  }
- document.title='MDTEST '+(ok?'PASS':'FAIL');
- const d=document.createElement('div');d.id='mdtest';d.textContent='MDTEST '+(ok?'PASS':'FAIL')+(notes.length?' fails='+notes.join(','):'');document.body.appendChild(d);}
+ });
 // mu4e-preview gate (open with #mupreviewtest): the mu4e preview is a realistic
 // headers list + message view, and every data-face it emits is a real mu4e face.
-if(location.hash==='#mupreviewtest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c){ok=false;notes.push(n);}};
+if(location.hash==='#mupreviewtest')gate('mupreviewtest',A=>{
  assertPreviewFaces(A, renderMu4ePreview(), APPS['mu4e']&&APPS['mu4e'].faces, 20, 'mu4e',
   ['mu4e-unread-face','mu4e-flagged-face','mu4e-replied-face','mu4e-draft-face','mu4e-trashed-face','mu4e-header-highlight-face','mu4e-header-marks-face','mu4e-contact-face','mu4e-compose-separator-face']);
- document.title='MUPREVIEWTEST '+(ok?'PASS':'FAIL');
- const d=document.createElement('div');d.id='mupreviewtest';d.textContent='MUPREVIEWTEST '+(ok?'PASS':'FAIL')+(notes.length?' fails='+notes.join(','):'');document.body.appendChild(d);}
+ });
 // gnus-preview gate (open with #gnustest): gnus is its own view package (it drives
 // the mu4e article view), and every data-face its preview emits is a real gnus face.
-if(location.hash==='#gnustest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c){ok=false;notes.push(n);}};
+if(location.hash==='#gnustest')gate('gnustest',A=>{
  A(!!APPS['gnus'],'gnus is a registered view package');
  A(APPS['gnus']&&APPS['gnus'].preview==='gnus','gnus uses the gnus preview renderer');
  assertPreviewFaces(A, renderGnusPreview(), APPS['gnus']&&APPS['gnus'].faces, 20, 'gnus',
   ['gnus-header-name','gnus-header-from','gnus-header-subject','gnus-cite-1','gnus-cite-attribution','gnus-signature','gnus-button','gnus-emphasis-highlight-words']);
- document.title='GNUSTEST '+(ok?'PASS':'FAIL');
- const d=document.createElement('div');d.id='gnustest';d.textContent='GNUSTEST '+(ok?'PASS':'FAIL')+(notes.length?' fails='+notes.join(','):'');document.body.appendChild(d);}
+ });
 // picker-distinct gate (open with #pickertest): the color picker panel must stand
 // out from the page background. It carries a highlighted gold accent border, and its
 // background is meaningfully lighter than the body so the two are easy to tell apart.
-if(location.hash==='#pickertest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c){ok=false;notes.push(n);}};
+if(location.hash==='#pickertest')gate('pickertest',A=>{
  const pk=document.getElementById('picker');A(!!pk,'picker element exists');
  if(pk){const cs=getComputedStyle(pk),body=getComputedStyle(document.body);
   const bc=(cs.borderTopColor.match(/\d+/g)||[]).slice(0,3).map(Number);
@@ -3857,12 +3849,11 @@ if(location.hash==='#pickertest'){let ok=true;const notes=[];const A=(c,n)=>{if(
   const lift=pkbg.map((c,i)=>c-bdbg[i]);
   A(lift.every(d=>d>=12),'picker background is clearly lighter than the page (per-channel lift '+lift.join(',')+')');
  }
- document.title='PICKERTEST '+(ok?'PASS':'FAIL');
- const d=document.createElement('div');d.id='pickertest';d.textContent='PICKERTEST '+(ok?'PASS':'FAIL')+(notes.length?' fails='+notes.join(','):'');document.body.appendChild(d);}
+ });
 // Box-cluster gate (open with #boxtest): the box control is a 2x2 cluster of
 // four radio buttons (none / line / pressed / raised); the color swatch shows
 // only while a box style is active.
-if(location.hash==='#boxtest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c){ok=false;notes.push(n);}};
+if(location.hash==='#boxtest')gate('boxtest',A=>{
  LOCKED.clear();const f=UI_FACES[0][0];const saveBox=UIMAP[f].box;
  UIMAP[f].box=null;buildUITable();
  const cell=document.querySelector('#uibody tr[data-face="'+f+'"]').cells[5];
@@ -3878,11 +3869,10 @@ if(location.hash==='#boxtest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c)
  A(UIMAP[f].box===null,'blank-click-clears-box');
  A(dd.style.display==='none','color-hidden-again-after-clear');
  UIMAP[f].box=saveBox;buildUITable();
- document.title='BOXTEST '+(ok?'PASS':'FAIL');
- const d=document.createElement('div');d.id='boxtest';d.textContent='BOXTEST '+(ok?'PASS':'FAIL')+(notes.length?' fails='+notes.join(','):'');document.body.appendChild(d);}
+ });
 // Style-cluster gate (open with #styletest): the style cell holds a weight
 // selector, a slant selector, and box-like underline and strike controls.
-if(location.hash==='#styletest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c){ok=false;notes.push(n);}};
+if(location.hash==='#styletest')gate('styletest',A=>{
  buildUITable();const f=UI_FACES[0][0];
  const cell=document.querySelector('#uibody tr[data-face="'+f+'"]').cells[4];
  const cluster=cell.querySelector('.stylecluster');
@@ -3902,11 +3892,10 @@ if(location.hash==='#styletest'){let ok=true;const notes=[];const A=(c,n)=>{if(!
  A(sital&&sital.style.fontStyle==='italic','slant-options-preview-their-own-slant: italic renders italic');
  closeColorDropdown();
  A(cluster&&cluster.querySelectorAll('.boxctl').length===1,'strike-control-in-row-underline-moved-to-expander');
- document.title='STYLETEST '+(ok?'PASS':'FAIL');
- const d=document.createElement('div');d.id='styletest';d.textContent='STYLETEST '+(ok?'PASS':'FAIL')+(notes.length?' fails='+notes.join(','):'');document.body.appendChild(d);}
+ });
 // Expander gate (open with #expandtest): the per-row "more" toggle reveals a
 // detail row with the overflow attribute editor, and its controls write the model.
-if(location.hash==='#expandtest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c){ok=false;notes.push(n);}};
+if(location.hash==='#expandtest')gate('expandtest',A=>{
  buildUITable();
  const row=document.querySelector('#uibody tr[data-face="region"]');
  const detail=document.querySelector('#uibody tr.detailrow[data-detail-for="region"]');
@@ -3946,13 +3935,12 @@ if(location.hash==='#expandtest'){let ok=true;const notes=[];const A=(c,n)=>{if(
  buildPkgTable();const pface=APPS[curApp()].faces[0][0];
  const pdetail=document.querySelector('#pkgbody tr.detailrow[data-detail-for="'+pface+'"]');
  A(pdetail&&pdetail.querySelector('select.detailsel'),'package-expander-offers-inherit');
- document.title='EXPANDTEST '+(ok?'PASS':'FAIL');
- const d=document.createElement('div');d.id='expandtest';d.textContent='EXPANDTEST '+(ok?'PASS':'FAIL')+(notes.length?' fails='+notes.join(','):'');document.body.appendChild(d);}
+ });
 // Height-clamp gate (open with #heighttest): the expander height field coerces a
 // typed value into [HEIGHT_MIN,HEIGHT_MAX] and writes the clamped number back, so
 // an out-of-range type/paste can't reach the model. Guards the fact that an
 // <input type=number> min/max only constrain its steppers, never typed text.
-if(location.hash==='#heighttest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c){ok=false;notes.push(n);}};
+if(location.hash==='#heighttest')gate('heighttest',A=>{
  const face=UI_FACES[0][0],save=JSON.parse(JSON.stringify(UIMAP[face]));
  buildUITable();
  const hin=()=>document.querySelector('#uibody tr.detailrow[data-detail-for="'+face+'"] .hstep');
@@ -3967,12 +3955,11 @@ if(location.hash==='#heighttest'){let ok=true;const notes=[];const A=(c,n)=>{if(
  typeHeight('');
  A(UIMAP[face].height===null,'blank-unsets-to-null: '+UIMAP[face].height);
  UIMAP[face]=save;buildUITable();
- document.title='HEIGHTTEST '+(ok?'PASS':'FAIL');
- const hd=document.createElement('div');hd.id='heighttest';hd.textContent='HEIGHTTEST '+(ok?'PASS':'FAIL')+(notes.length?' fails='+notes.join(','):'');document.body.appendChild(hd);}
+ });
 // Language-dropdown gate (open with #langtest): the language list is sorted
 // alphabetically with Elisp pinned as the default selection, and the ‹ › arrows
 // step the selection (clamped, no wrap).
-if(location.hash==='#langtest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c){ok=false;notes.push(n);}};
+if(location.hash==='#langtest')gate('langtest',A=>{
  buildLangSel();
  const s=document.getElementById('langsel');
  const labels=[...s.options].map(o=>o.value);
@@ -3985,11 +3972,10 @@ if(location.hash==='#langtest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c
  A(s.selectedIndex===1,'next steps forward one');
  s.selectedIndex=s.options.length-1;stepLang(1);
  A(s.selectedIndex===s.options.length-1,'next clamps at the last language');
- document.title='LANGTEST '+(ok?'PASS':'FAIL');
- const ld=document.createElement('div');ld.id='langtest';ld.textContent='LANGTEST '+(ok?'PASS':'FAIL')+(notes.length?' fails='+notes.join(','):'');document.body.appendChild(ld);}
+ });
 // View-lock-indicator gate (open with #viewlocktest): the view dropdown prefixes a
 // lock glyph on a view whose every element is locked, and clears it otherwise.
-if(location.hash==='#viewlocktest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c){ok=false;notes.push(n);}};
+if(location.hash==='#viewlocktest')gate('viewlocktest',A=>{
  LOCKED.clear();updateViewLockIndicators();
  const s=document.getElementById('viewsel'),codeOpt=()=>[...s.options].find(o=>o.value==='@code');
  A(codeOpt()&&!codeOpt().textContent.startsWith('🔒'),'unlocked view shows no lock glyph: '+(codeOpt()&&codeOpt().textContent));
@@ -3999,11 +3985,10 @@ if(location.hash==='#viewlocktest'){let ok=true;const notes=[];const A=(c,n)=>{i
  LOCKED.delete(syntaxLockKeys()[0]);updateViewLockIndicators();
  A(codeOpt()&&!codeOpt().textContent.startsWith('🔒'),'unlocking one element clears the glyph');
  LOCKED.clear();updateViewLockIndicators();
- document.title='VIEWLOCKTEST '+(ok?'PASS':'FAIL');
- const vd=document.createElement('div');vd.id='viewlocktest';vd.textContent='VIEWLOCKTEST '+(ok?'PASS':'FAIL')+(notes.length?' fails='+notes.join(','):'');document.body.appendChild(vd);}
+ });
 // Detail-hover gate (open with #detailhovertest): every label in the expander
 // detail row carries an explanatory hover, the way the table-header labels do.
-if(location.hash==='#detailhovertest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c){ok=false;notes.push(n);}};
+if(location.hash==='#detailhovertest')gate('detailhovertest',A=>{
  buildUITable();
  const f=UI_FACES[0][0],detail=document.querySelector('#uibody tr.detailrow[data-detail-for="'+f+'"]');
  const fields=detail?[...detail.querySelectorAll('.detailfield')]:[];
@@ -4011,12 +3996,11 @@ if(location.hash==='#detailhovertest'){let ok=true;const notes=[];const A=(c,n)=
  A(fields.every(g=>g.title&&g.title.length>0),'every detail field has a hover: '+fields.map(g=>g.querySelector('span').textContent+(g.title?'+':'-')).join(' '));
  const inh=fields.find(g=>g.querySelector('span').textContent==='inherit');
  A(inh&&/inherit/i.test(inh.title),'inherit field hover mentions inheritance: '+(inh&&inh.title));
- document.title='DETAILHOVERTEST '+(ok?'PASS':'FAIL');
- const dh=document.createElement('div');dh.id='detailhovertest';dh.textContent='DETAILHOVERTEST '+(ok?'PASS':'FAIL')+(notes.length?' fails='+notes.join(','):'');document.body.appendChild(dh);}
+ });
 // Expand/collapse-all gate (open with #expandalltest): the header toggle opens or
 // closes every row's detail at once, the per-row triangles track state (▶ closed,
 // ▼ open), and the header button's label follows the aggregate.
-if(location.hash==='#expandalltest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c){ok=false;notes.push(n);}};
+if(location.hash==='#expandalltest')gate('expandalltest',A=>{
  buildUITable();
  const tb=document.getElementById('uibody'),btn=document.getElementById('uiexpandall');
  const details=()=>[...tb.querySelectorAll('tr.detailrow')];
@@ -4034,12 +4018,11 @@ if(location.hash==='#expandalltest'){let ok=true;const notes=[];const A=(c,n)=>{
  firstTog().click();
  A(open()===1,'a single row toggle opens just that row');
  A(btn.textContent.indexOf('▼')===0,'button reflects a single open row as ▼ collapse all');
- document.title='EXPANDALLTEST '+(ok?'PASS':'FAIL');
- const ea=document.createElement('div');ea.id='expandalltest';ea.textContent='EXPANDALLTEST '+(ok?'PASS':'FAIL')+(notes.length?' fails='+notes.join(','):'');document.body.appendChild(ea);}
+ });
 // Expander-persistence gate (open with #expandpersisttest): a package edit rebuilds
 // the whole table, so an open expander must reopen instead of collapsing under the
 // user. Editing a value inside the open expander must not close the row.
-if(location.hash==='#expandpersisttest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c){ok=false;notes.push(n);}};
+if(location.hash==='#expandpersisttest')gate('expandpersisttest',A=>{
  EXPANDED.clear();
  const app=curApp(),face=APPS[app].faces[0][0];buildPkgTable();
  const row=()=>document.querySelector('#pkgbody tr[data-face="'+face+'"]');
@@ -4053,20 +4036,18 @@ if(location.hash==='#expandpersisttest'){let ok=true;const notes=[];const A=(c,n
  row().querySelector('.exptoggle').click();buildPkgTable();
  A(detail()&&detail().style.display==='none','a collapsed expander stays collapsed across a rebuild');
  EXPANDED.clear();buildPkgTable();
- document.title='EXPANDPERSISTTEST '+(ok?'PASS':'FAIL');
- const ep=document.createElement('div');ep.id='expandpersisttest';ep.textContent='EXPANDPERSISTTEST '+(ok?'PASS':'FAIL')+(notes.length?' fails='+notes.join(','):'');document.body.appendChild(ep);}
+ });
 // Palette default-state gate (open with #paldefaulttest): the studio opens with
 // the palette collapsed to base colors so the span tints don't crowd the first
 // view. initApp() ran at page load, so the live toggle reflects the opening state.
-if(location.hash==='#paldefaulttest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c){ok=false;notes.push(n);}};
+if(location.hash==='#paldefaulttest')gate('paldefaulttest',A=>{
  const tg=document.getElementById('paltoggle');
  A(!!tg,'palette toggle present after boot');
  A(tg&&tg.textContent==='▶','palette opens collapsed to base colors (arrow shows right-pointing ▶)');
- document.title='PALDEFAULTTEST '+(ok?'PASS':'FAIL');
- const d=document.createElement('div');d.id='paldefaulttest';d.textContent='PALDEFAULTTEST '+(ok?'PASS':'FAIL')+(notes.length?' fails='+notes.join(','):'');document.body.appendChild(d);}
+ });
 // Palette display-toggle gate (open with #paltoggletest): the arrow control
 // collapses each column to its base color and expands back to full spans.
-if(location.hash==='#paltoggletest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c){ok=false;notes.push(n);}};
+if(location.hash==='#paltoggletest')gate('paltoggletest',A=>{
  const saveP=PALETTE.slice(),saveM=Object.assign({},MAP);
  paletteShowFull=true;  // start expanded so the first click collapses to base-only
  setSyntaxFg('bg','#101010');setSyntaxFg('p','#f0f0f0');
@@ -4083,12 +4064,11 @@ if(location.hash==='#paltoggletest'){let ok=true;const notes=[];const A=(c,n)=>{
  document.getElementById('paltoggle').click();
  A(blueChips()===5,'toggling-back-restores-spans');
  PALETTE=saveP;for(const k in MAP)delete MAP[k];Object.assign(MAP,saveM);syncSyntaxFromCache();renderPalette();
- document.title='PALTOGGLETEST '+(ok?'PASS':'FAIL');
- const d=document.createElement('div');d.id='paltoggletest';d.textContent='PALTOGGLETEST '+(ok?'PASS':'FAIL')+(notes.length?' fails='+notes.join(','):'');document.body.appendChild(d);}
+ });
 // Unused-tile gate (open with #unusedtest): a palette color referenced nowhere
 // in the theme gets the .unused flag; a column with no used members gets
 // .unused-col; referenced colors stay unflagged.
-if(location.hash==='#unusedtest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c){ok=false;notes.push(n);}};
+if(location.hash==='#unusedtest')gate('unusedtest',A=>{
  const saveP=PALETTE.slice(),saveM=Object.assign({},MAP),saveSyn=JSON.parse(JSON.stringify(SYNTAX)),saveU=JSON.parse(JSON.stringify(UIMAP));
  setSyntaxFg('bg','#101010');setSyntaxFg('p','#f0f0f0');
  PALETTE=[['#101010','bg','ground'],['#f0f0f0','fg','ground'],['#67809c','blue','blue'],['#123456','teal','teal']];
@@ -4104,12 +4084,11 @@ if(location.hash==='#unusedtest'){let ok=true;const notes=[];const A=(c,n)=>{if(
  A(tealStrip&&tealStrip.classList.contains('unused-col'),'all-unused-column-flagged');
  A(blueStrip&&!blueStrip.classList.contains('unused-col'),'used-column-not-flagged');
  PALETTE=saveP;for(const k in MAP)delete MAP[k];Object.assign(MAP,saveM);for(const k in SYNTAX)delete SYNTAX[k];Object.assign(SYNTAX,saveSyn);for(const f in UIMAP)delete UIMAP[f];Object.assign(UIMAP,saveU);syncSyntaxFromCache();renderPalette();
- document.title='UNUSEDTEST '+(ok?'PASS':'FAIL');
- const d=document.createElement('div');d.id='unusedtest';d.textContent='UNUSEDTEST '+(ok?'PASS':'FAIL')+(notes.length?' fails='+notes.join(','):'');document.body.appendChild(d);}
+ });
 // Gone-assignment gate (open with #gonetest): a swatch whose assigned color is
 // no longer in the palette gets the .gone flag; an assignment to a present color
 // does not.
-if(location.hash==='#gonetest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c){ok=false;notes.push(n);}};
+if(location.hash==='#gonetest')gate('gonetest',A=>{
  const saveP=PALETTE.slice(),saveM=Object.assign({},MAP),saveU=JSON.parse(JSON.stringify(UIMAP));
  setSyntaxFg('bg','#101010');setSyntaxFg('p','#f0f0f0');
  PALETTE=[['#101010','bg','ground'],['#f0f0f0','fg','ground'],['#67809c','blue','blue']];
@@ -4121,11 +4100,10 @@ if(location.hash==='#gonetest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c
  A(goneDd&&goneDd.classList.contains('gone'),'assignment-to-missing-color-flagged');
  A(okDd&&!okDd.classList.contains('gone'),'assignment-to-present-color-not-flagged');
  PALETTE=saveP;for(const k in MAP)delete MAP[k];Object.assign(MAP,saveM);for(const f in UIMAP)delete UIMAP[f];Object.assign(UIMAP,saveU);syncSyntaxFromCache();buildUITable();
- document.title='GONETEST '+(ok?'PASS':'FAIL');
- const d=document.createElement('div');d.id='gonetest';d.textContent='GONETEST '+(ok?'PASS':'FAIL')+(notes.length?' fails='+notes.join(','):'');document.body.appendChild(d);}
+ });
 // Tile-usage-hover gate (open with #usagetest): a tile's title lists the
 // "view area > element" pairings that use its color, under the name/hex line.
-if(location.hash==='#usagetest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c){ok=false;notes.push(n);}};
+if(location.hash==='#usagetest')gate('usagetest',A=>{
  const saveP=PALETTE.slice(),saveM=Object.assign({},MAP),saveU=JSON.parse(JSON.stringify(UIMAP));
  setSyntaxFg('bg','#101010');setSyntaxFg('p','#f0f0f0');
  PALETTE=[['#101010','bg','ground'],['#f0f0f0','fg','ground'],['#67809c','blue','blue']];
@@ -4137,12 +4115,11 @@ if(location.hash==='#usagetest'){let ok=true;const notes=[];const A=(c,n)=>{if(!
  A(blueChip&&blueChip.title.includes('ui faces > '+f0label),'hover-title-lists-ui-face-usage');
  A(blueChip&&blueChip.title.split('\n').length>1,'usage-list-on-its-own-line-under-current-info');
  PALETTE=saveP;for(const k in MAP)delete MAP[k];Object.assign(MAP,saveM);for(const f in UIMAP)delete UIMAP[f];Object.assign(UIMAP,saveU);syncSyntaxFromCache();renderPalette();
- document.title='USAGETEST '+(ok?'PASS':'FAIL');
- const d=document.createElement('div');d.id='usagetest';d.textContent='USAGETEST '+(ok?'PASS':'FAIL')+(notes.length?' fails='+notes.join(','):'');document.body.appendChild(d);}
+ });
 // Element-docstring hovers (open with #hovertest): each table's category cell
 // carries the face's Emacs docstring on top of its prior hover text, and the
 // existing label-span hints are left intact (added in addition, not replaced).
-if(location.hash==='#hovertest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c){ok=false;notes.push(n);}};
+if(location.hash==='#hovertest')gate('hovertest',A=>{
  buildTable();buildUITable();buildPkgTable();
  const synCell=document.querySelector('#legbody tr[data-kind="kw"] .cat');
  A(synCell&&synCell.title===SYNTAX_DOCS['kw'],'syntax cat cell shows the category face docstring: '+(synCell&&synCell.title));
@@ -4154,8 +4131,7 @@ if(location.hash==='#hovertest'){let ok=true;const notes=[];const A=(c,n)=>{if(!
  A(docFace,'a package face with a docstring exists to test');
  if(docFace){const pkgCell=document.querySelector('#pkgbody tr[data-face="'+docFace+'"] .cat');
    A(pkgCell&&pkgCell.title===FACE_DOCS[docFace]+'\n\n'+docFace,'package cat cell shows docstring on top of the face name: '+(pkgCell&&JSON.stringify(pkgCell.title)));}
- document.title='HOVERTEST '+(ok?'PASS':'FAIL');
- const d=document.createElement('div');d.id='hovertest';d.textContent='HOVERTEST '+(ok?'PASS':'FAIL')+(notes.length?' fails='+notes.join(','):'');document.body.appendChild(d);}
+ });
 // Export via the File System Access API (open with #savetest): exportTheme writes
 // the theme JSON straight to the picked file handle and closes it, so re-exporting
 // overwrites in place instead of the browser uniquifying to "name (1).json".
