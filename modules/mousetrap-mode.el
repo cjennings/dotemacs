@@ -144,30 +144,34 @@ the mode is toggled, allowing dynamic behavior without reloading config."
           (push (cons cache-key map) mouse-trap--keymap-cache)
           map))))
 
+(defun mouse-trap--bind-events-to-ignore (spec prefixes map)
+  "Bind every event in SPEC, across every PREFIXES variant, to `ignore' in MAP.
+SPEC is one category's event description: wheel events under \\='wheel, or
+click/drag events as \\='types x \\='buttons.  Used to disable a category that
+the active profile disallows."
+  (cond
+   ;; Scroll events (wheel)
+   ((alist-get 'wheel spec)
+    (dolist (evt (alist-get 'wheel spec))
+      (dolist (pref prefixes)
+        (define-key map (kbd (format "<%s%s>" pref evt)) #'ignore))))
+
+   ;; Click/drag events (types + buttons)
+   ((and (alist-get 'types spec) (alist-get 'buttons spec))
+    (dolist (type (alist-get 'types spec))
+      (dolist (button (alist-get 'buttons spec))
+        (dolist (pref prefixes)
+          (define-key map (kbd (format "<%s%s-%d>" pref type button)) #'ignore)))))))
+
 (defun mouse-trap--build-keymap-1 (allowed-categories)
   "Build a fresh keymap binding events not in ALLOWED-CATEGORIES to `ignore'."
   (let ((prefixes '("" "C-" "M-" "S-" "C-M-" "C-S-" "M-S-" "C-M-S-"))
         (map (make-sparse-keymap)))
-
-    ;; For each event category, disable it if not in allowed list
     (dolist (category-entry mouse-trap--event-categories)
       (let ((category (car category-entry))
             (spec (cdr category-entry)))
         (unless (memq category allowed-categories)
-          ;; This category is NOT allowed - bind its events to ignore
-          (cond
-           ;; Scroll events (wheel)
-           ((alist-get 'wheel spec)
-            (dolist (evt (alist-get 'wheel spec))
-              (dolist (pref prefixes)
-                (define-key map (kbd (format "<%s%s>" pref evt)) #'ignore))))
-
-           ;; Click/drag events (types + buttons)
-           ((and (alist-get 'types spec) (alist-get 'buttons spec))
-            (dolist (type (alist-get 'types spec))
-              (dolist (button (alist-get 'buttons spec))
-                (dolist (pref prefixes)
-                  (define-key map (kbd (format "<%s%s-%d>" pref type button)) #'ignore)))))))))
+          (mouse-trap--bind-events-to-ignore spec prefixes map))))
     map))
 
 ;;; Buffer-local keymap via emulation-mode-map-alists
