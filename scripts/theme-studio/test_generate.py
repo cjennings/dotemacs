@@ -177,6 +177,20 @@ class LanguageSamples(unittest.TestCase):
         self.assertIn("@import", text)
         self.assertIn("error.MissingColor", text)
 
+    def test_expanded_language_set_is_registered_and_renders(self):
+        # Every added language is selectable and renders a non-trivial sample that
+        # exercises keywords and carries a comment.
+        added = ["Racket", "Scheme", "Haskell", "OCaml", "Scala", "Kotlin",
+                 "Swift", "Lua", "Ruby", "Perl", "R", "Erlang", "SQL", "PHP",
+                 "Ada", "Fortran", "MATLAB", "Assembly"]
+        for lang in added:
+            self.assertIn(lang, generate.SAMPLES, f"{lang} not in the language selector")
+            tokens = self._tokens(lang)
+            cats = {k for k, _ in tokens}
+            self.assertGreater(len(tokens), 40, f"{lang} sample is too short")
+            self.assertIn("kw", cats, f"{lang} sample has no keywords")
+            self.assertIn("cmd", cats, f"{lang} sample has no comment")
+
 
 class FacesHelper(unittest.TestCase):
     def test_strips_prefix_and_derives_label_and_merges_seed(self):
