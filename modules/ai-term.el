@@ -774,6 +774,65 @@ launches from either (only kitty inline-graphics degrade in a TTY)."
         (when win (select-window win))))
     buf))
 
+(defun cj/--ai-term-swap-to-working-buffer (win)
+  "In WIN, switch to the most-recent non-agent buffer (a working file).
+Falls back to `other-buffer' (excluding WIN's current agent buffer) when no
+non-agent buffer is on record.  Used at toggle-off and close so dismissing an
+agent surfaces the file the user was working on rather than another agent or
+the agent itself."
+  (with-selected-window win
+    (switch-to-buffer
+     (or (cj/--ai-term-most-recent-non-agent-buffer)
+         (other-buffer (window-buffer win) t)))))
+
+(defun cj/--ai-term-toggle-off (win)
+  "Hide the agent shown in WIN for an F9 toggle-off.  Always returns nil.
+
+Two cases, by window count:
+
+- Lone fullscreen agent (e.g. after `C-x 1' inside it): there is no prior
+  layout for the native undo to restore and deleting would leave the frame
+  empty.  Bury and flag, so the next toggle-on (`cj/--ai-term-display-saved')
+  restores the agent in place at full frame rather than splitting.  Capture
+  geometry for that restore.  `bury-buffer' can no-op when the window's
+  prev-buffer history holds only the agent (common right after `C-x 1'), so
+  force a swap to a non-agent buffer to keep the toggle observable.
+
+- Multi-window: collapse the agent split outright by deleting its window, so
+  the working buffer (e.g. todo.org) reclaims the space.  F9 is a pure
+  show/hide toggle of THE agent split -- it must never surface a different
+  agent.  `quit-restore-window' can't guarantee that here: switching among
+  several agents reuses the one slot via `set-window-buffer' (see
+  `cj/--ai-term-reuse-existing-agent'), which leaves the window's
+  `quit-restore' parameter pointing at the FIRST agent shown.  Once it's
+  stale, `quit-restore-window' falls back to `switch-to-prev-buffer' and
+  surfaces another agent instead of removing the window -- exactly the \"F9
+  shows another agent\" bug.  `delete-window' is unconditional and
+  slot-history-independent.  Capture geometry first so the next toggle-on
+  splits at the same size (the user's chosen split width is preserved)."
+  ;; Remember which agent we're hiding so the next toggle-on reopens this
+  ;; same one, not whichever agent is most-recent in `buffer-list'.
+  (setq cj/--ai-term-last-hidden-buffer (window-buffer win))
+  (cond
+   ((one-window-p)
+    (cj/--ai-term-capture-state win)
+    (setq cj/--ai-term-last-was-bury t)
+    (bury-buffer (window-buffer win))
+    (when (and (window-live-p win)
+               (cj/--ai-term-buffer-p (window-buffer win)))
+      (cj/--ai-term-swap-to-working-buffer win)))
+   (t
+    (cj/--ai-term-capture-state win)
+    (setq cj/--ai-term-last-was-bury nil)
+    (if (and (window-live-p win)
+             (> (length (window-list (window-frame win) 'never)) 1))
+        (delete-window win)
+      ;; Degenerate fallback (window became sole between dispatch and
+      ;; here): swap to a non-agent buffer rather than leave the agent up.
+      (when (window-live-p win)
+        (cj/--ai-term-swap-to-working-buffer win)))))
+  nil)
+
 (defun cj/ai-term (&optional arg)
   "Smart F9 dispatch for the AI-term launcher.
 
@@ -793,55 +852,7 @@ M-F9 (and C-S-F9) close an agent via `cj/ai-term-close'."
   (interactive "P")
   (pcase (cj/--ai-term-dispatch)
     (`(toggle-off . ,win)
-     ;; Remember which agent we're hiding so the next toggle-on reopens this
-     ;; same one, not whichever agent is most-recent in `buffer-list'.
-     (setq cj/--ai-term-last-hidden-buffer (window-buffer win))
-     (cond
-      ;; Lone fullscreen agent (e.g. after `C-x 1' inside it): there is no
-      ;; prior layout for the native undo to restore and deleting would
-      ;; leave the frame empty.  Bury and flag, so the next toggle-on
-      ;; (`cj/--ai-term-display-saved') restores the agent in place at
-      ;; full frame rather than splitting.  Capture geometry for that
-      ;; restore.  `bury-buffer' can no-op when the window's prev-buffer
-      ;; history holds only the agent (common right after `C-x 1'), so
-      ;; force a swap to a non-agent buffer to keep the toggle observable.
-      ((one-window-p)
-       (cj/--ai-term-capture-state win)
-       (setq cj/--ai-term-last-was-bury t)
-       (bury-buffer (window-buffer win))
-       (when (and (window-live-p win)
-                  (cj/--ai-term-buffer-p (window-buffer win)))
-         (with-selected-window win
-           (switch-to-buffer
-            (or (cj/--ai-term-most-recent-non-agent-buffer)
-                (other-buffer (window-buffer win) t))))))
-      ;; Multi-window: collapse the agent split outright by deleting its
-      ;; window, so the working buffer (e.g. todo.org) reclaims the space.
-      ;; F9 is a pure show/hide toggle of THE agent split -- it must never
-      ;; surface a different agent.  `quit-restore-window' can't guarantee
-      ;; that here: switching among several agents reuses the one slot via
-      ;; `set-window-buffer' (see `cj/--ai-term-reuse-existing-agent'),
-      ;; which leaves the window's `quit-restore' parameter pointing at the
-      ;; FIRST agent shown.  Once it's stale, `quit-restore-window' falls
-      ;; back to `switch-to-prev-buffer' and surfaces another agent instead
-      ;; of removing the window -- exactly the "F9 shows another agent"
-      ;; bug.  `delete-window' is unconditional and slot-history-independent.
-      ;; Capture geometry first so the next toggle-on splits at the same
-      ;; size (the user's chosen split width is preserved across the toggle).
-      (t
-       (cj/--ai-term-capture-state win)
-       (setq cj/--ai-term-last-was-bury nil)
-       (if (and (window-live-p win)
-                (> (length (window-list (window-frame win) 'never)) 1))
-           (delete-window win)
-         ;; Degenerate fallback (window became sole between dispatch and
-         ;; here): swap to a non-agent buffer rather than leave the agent up.
-         (when (window-live-p win)
-           (with-selected-window win
-             (switch-to-buffer
-              (or (cj/--ai-term-most-recent-non-agent-buffer)
-                  (other-buffer (window-buffer win) t))))))))
-     nil)
+     (cj/--ai-term-toggle-off win))
     (`(redisplay-recent . ,buf)
      (display-buffer buf)
      (unless arg
@@ -881,10 +892,7 @@ when BUFFER isn't an AI-term buffer."
       (buffer-local-value 'default-directory buffer)))
     (let ((win (get-buffer-window buffer)))
       (when (window-live-p win)
-        (with-selected-window win
-          (switch-to-buffer
-           (or (cj/--ai-term-most-recent-non-agent-buffer)
-               (other-buffer buffer t))))))
+        (cj/--ai-term-swap-to-working-buffer win)))
     (let ((kill-buffer-query-functions nil))
       (kill-buffer buffer))))
 
