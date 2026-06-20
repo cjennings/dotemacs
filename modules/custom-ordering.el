@@ -49,7 +49,7 @@ buffer region and must reject an inverted one before reading it."
 
 (defun cj/--ordering-replace-region (start end insertion)
   "Replace the buffer text between START and END with INSERTION.
-Point is left at START.  Shared tail for the interactive ordering commands,
+Point is left after the inserted text.  Shared tail for the interactive ordering commands,
 which all compute a transformed string from the original region then swap it
 in.  INSERTION is evaluated by the caller before this runs, so the transform
 reads the pre-deletion text."
