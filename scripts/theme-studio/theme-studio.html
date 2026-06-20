@@ -3053,6 +3053,20 @@ function initApp(){
 }
 initApp();
 addEventListener('resize',()=>{syncMockHeight();syncPkgHeight();});
+// Shared preview-face validator for the #mdtest / #mupreviewtest / #gnustest
+// gates: render HTML into a detached div, then assert it exercises at least
+// MINCOUNT data-faces, that every data-face is a real face of the package
+// (drawn from FACES, the app's face rows), and that each face in REQUIRED is
+// present. A is the gate's assertion collector; NAME labels the failure note.
+function assertPreviewFaces(A, html, faces, minCount, name, required){
+  const box=document.createElement('div');box.innerHTML=html;
+  const valid=new Set((faces||[]).map(r=>r[0]));
+  const used=[...box.querySelectorAll('[data-face]')].map(e=>e.dataset.face);
+  A(used.length>=minCount,'preview exercises many faces ('+used.length+')');
+  const bad=used.filter(f=>!valid.has(f));
+  A(bad.length===0,'every data-face is a real '+name+' face; bad='+bad.join(','));
+  for(const f of required) A(used.includes(f),'preview includes '+f);
+}
 // Phase-1 self-test (open with #selftest): seed -> export -> import -> compare.
 function pkgSelftest(){
   const seeded=seedPkgmap();
@@ -3809,28 +3823,16 @@ if(location.hash==='#mdtest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c){
  A(APPS['markdown-mode']&&APPS['markdown-mode'].preview==='markdown','markdown-mode wired to the markdown preview');
  A(!!PACKAGE_PREVIEWS['markdown'],'markdown renderer registered');
  if(PACKAGE_PREVIEWS['markdown']&&APPS['markdown-mode']){
-  const box=document.createElement('div');box.innerHTML=PACKAGE_PREVIEWS['markdown']();
-  const valid=new Set(APPS['markdown-mode'].faces.map(r=>r[0]));
-  const used=[...box.querySelectorAll('[data-face]')].map(e=>e.dataset.face);
-  A(used.length>=15,'preview exercises many faces ('+used.length+')');
-  const bad=used.filter(f=>!valid.has(f));
-  A(bad.length===0,'every data-face is a real markdown face; bad='+bad.join(','));
-  for(const f of ['markdown-header-face-1','markdown-bold-face','markdown-inline-code-face','markdown-blockquote-face','markdown-gfm-checkbox-face','markdown-table-face'])
-   A(used.includes(f),'preview includes '+f);
+  assertPreviewFaces(A, PACKAGE_PREVIEWS['markdown'](), APPS['markdown-mode'].faces, 15, 'markdown',
+   ['markdown-header-face-1','markdown-bold-face','markdown-inline-code-face','markdown-blockquote-face','markdown-gfm-checkbox-face','markdown-table-face']);
  }
  document.title='MDTEST '+(ok?'PASS':'FAIL');
  const d=document.createElement('div');d.id='mdtest';d.textContent='MDTEST '+(ok?'PASS':'FAIL')+(notes.length?' fails='+notes.join(','):'');document.body.appendChild(d);}
 // mu4e-preview gate (open with #mupreviewtest): the mu4e preview is a realistic
 // headers list + message view, and every data-face it emits is a real mu4e face.
 if(location.hash==='#mupreviewtest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c){ok=false;notes.push(n);}};
- const box=document.createElement('div');box.innerHTML=renderMu4ePreview();
- const valid=new Set((APPS['mu4e']&&APPS['mu4e'].faces||[]).map(r=>r[0]));
- const used=[...box.querySelectorAll('[data-face]')].map(e=>e.dataset.face);
- A(used.length>=20,'preview exercises many faces ('+used.length+')');
- const bad=used.filter(f=>!valid.has(f));
- A(bad.length===0,'every data-face is a real mu4e face; bad='+bad.join(','));
- for(const f of ['mu4e-unread-face','mu4e-flagged-face','mu4e-replied-face','mu4e-draft-face','mu4e-trashed-face','mu4e-header-highlight-face','mu4e-header-marks-face','mu4e-contact-face','mu4e-compose-separator-face'])
-  A(used.includes(f),'preview includes '+f);
+ assertPreviewFaces(A, renderMu4ePreview(), APPS['mu4e']&&APPS['mu4e'].faces, 20, 'mu4e',
+  ['mu4e-unread-face','mu4e-flagged-face','mu4e-replied-face','mu4e-draft-face','mu4e-trashed-face','mu4e-header-highlight-face','mu4e-header-marks-face','mu4e-contact-face','mu4e-compose-separator-face']);
  document.title='MUPREVIEWTEST '+(ok?'PASS':'FAIL');
  const d=document.createElement('div');d.id='mupreviewtest';d.textContent='MUPREVIEWTEST '+(ok?'PASS':'FAIL')+(notes.length?' fails='+notes.join(','):'');document.body.appendChild(d);}
 // gnus-preview gate (open with #gnustest): gnus is its own view package (it drives
@@ -3838,14 +3840,8 @@ if(location.hash==='#mupreviewtest'){let ok=true;const notes=[];const A=(c,n)=>{
 if(location.hash==='#gnustest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c){ok=false;notes.push(n);}};
  A(!!APPS['gnus'],'gnus is a registered view package');
  A(APPS['gnus']&&APPS['gnus'].preview==='gnus','gnus uses the gnus preview renderer');
- const box=document.createElement('div');box.innerHTML=renderGnusPreview();
- const valid=new Set((APPS['gnus']&&APPS['gnus'].faces||[]).map(r=>r[0]));
- const used=[...box.querySelectorAll('[data-face]')].map(e=>e.dataset.face);
- A(used.length>=20,'preview exercises many faces ('+used.length+')');
- const bad=used.filter(f=>!valid.has(f));
- A(bad.length===0,'every data-face is a real gnus face; bad='+bad.join(','));
- for(const f of ['gnus-header-name','gnus-header-from','gnus-header-subject','gnus-cite-1','gnus-cite-attribution','gnus-signature','gnus-button','gnus-emphasis-highlight-words'])
-  A(used.includes(f),'preview includes '+f);
+ assertPreviewFaces(A, renderGnusPreview(), APPS['gnus']&&APPS['gnus'].faces, 20, 'gnus',
+  ['gnus-header-name','gnus-header-from','gnus-header-subject','gnus-cite-1','gnus-cite-attribution','gnus-signature','gnus-button','gnus-emphasis-highlight-words']);
  document.title='GNUSTEST '+(ok?'PASS':'FAIL');
  const d=document.createElement('div');d.id='gnustest';d.textContent='GNUSTEST '+(ok?'PASS':'FAIL')+(notes.length?' fails='+notes.join(','):'');document.body.appendChild(d);}
 // picker-distinct gate (open with #pickertest): the color picker panel must stand
