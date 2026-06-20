@@ -75,14 +75,42 @@ resize -- each moves the active window's divider in the arrow's direction
   "<up>"    #'windsize-up
   "<down>"  #'windsize-down)
 
+(defun cj/window-arrow-direction (key)
+  "Map a windsize arrow KEY description to a split direction.
+KEY is one of \"<left>\" \"<right>\" \"<up>\" \"<down>\"; returns
+left/right/above/below respectively, or nil for anything else."
+  (pcase key
+    ("<left>"  'left)
+    ("<right>" 'right)
+    ("<up>"    'above)
+    ("<down>"  'below)
+    (_ nil)))
+
+(defun cj/window--pull-away (direction)
+  "Split the sole window toward DIRECTION and reveal the previous buffer.
+DIRECTION is one of left/right/above/below.  A new window opens on that
+side showing `other-buffer'; focus stays on the original window so it
+shrinks from that edge, letting a fullscreen window (e.g. a terminal)
+share the frame.  No-op when DIRECTION is nil."
+  (when direction
+    (let ((new (split-window (selected-window) nil direction)))
+      (set-window-buffer new (other-buffer (current-buffer) t))
+      new)))
+
 (defun cj/window-resize-sticky ()
   "Resize the active window's divider in the just-pressed arrow's direction
-(via `windsize'), then keep `cj/window-resize-map' active so bare arrows keep
-nudging until any other key.  Bound to `C-; b <left>/<right>/<up>/<down>'."
+\(via `windsize'), then keep `cj/window-resize-map' active so bare arrows keep
+nudging until any other key.  Bound to `C-; b <left>/<right>/<up>/<down>'.
+
+When the selected window is the sole window in the frame there is no
+divider to move, so the arrow instead pulls a new window away toward that
+edge (`cj/window--pull-away'), revealing the previous buffer."
   (interactive)
-  (let ((cmd (keymap-lookup cj/window-resize-map
-                            (key-description (vector last-command-event)))))
-    (when cmd (call-interactively cmd)))
+  (let ((key (key-description (vector last-command-event))))
+    (if (one-window-p)
+        (cj/window--pull-away (cj/window-arrow-direction key))
+      (let ((cmd (keymap-lookup cj/window-resize-map key)))
+        (when cmd (call-interactively cmd)))))
   (set-transient-map cj/window-resize-map t))
 
 ;; ------------------------------ Window Splitting -----------------------------

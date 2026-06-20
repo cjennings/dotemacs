@@ -24,8 +24,11 @@
   (should (eq (keymap-lookup cj/window-resize-map "<down>")  #'windsize-down)))
 
 (ert-deftest test-ui-navigation-window-resize-sticky-dispatches-and-arms ()
-  "Normal: `cj/window-resize-sticky' runs the `windsize' command matching the
-arrow key that triggered it, then arms the sticky-repeat map."
+  "Normal: with more than one window, `cj/window-resize-sticky' runs the
+`windsize' command matching the arrow key that triggered it, then arms the
+sticky-repeat map.  `one-window-p' is forced nil so the resize path is taken
+deterministically -- in `--batch' the sole frame is one-window-p, which would
+otherwise route to the pull-away path."
   (dolist (case '((left  . windsize-left)
                   (right . windsize-right)
                   (up    . windsize-up)
@@ -33,11 +36,41 @@ arrow key that triggered it, then arms the sticky-repeat map."
     (let ((ran nil)
           (overriding-terminal-local-map nil)
           (pre-command-hook nil))
-      (cl-letf (((symbol-function (cdr case))
+      (cl-letf (((symbol-function 'one-window-p) (lambda (&rest _) nil))
+                ((symbol-function (cdr case))
                  (lambda (&rest _) (interactive) (setq ran t))))
         (let ((last-command-event (car case)))
           (cj/window-resize-sticky)))
       (should ran)                              ; dispatched to the right command
+      (should overriding-terminal-local-map)))) ; loop armed
+
+(ert-deftest test-ui-navigation-window-arrow-direction ()
+  "Normal/Error: each arrow maps to its split direction; anything else is nil."
+  (should (eq (cj/window-arrow-direction "<left>")  'left))
+  (should (eq (cj/window-arrow-direction "<right>") 'right))
+  (should (eq (cj/window-arrow-direction "<up>")    'above))
+  (should (eq (cj/window-arrow-direction "<down>")  'below))
+  (should (null (cj/window-arrow-direction "<prior>")))
+  (should (null (cj/window-arrow-direction "x"))))
+
+(ert-deftest test-ui-navigation-window-resize-sticky-sole-window-pulls-away ()
+  "Normal: with a single window, the arrow pulls a window away toward its
+direction (via `cj/window--pull-away') rather than resizing, then arms the
+loop.  `cj/window--pull-away' is stubbed to capture the direction so no real
+window split happens under `--batch'."
+  (dolist (case '((left  . left)
+                  (right . right)
+                  (up    . above)
+                  (down  . below)))
+    (let ((pulled nil)
+          (overriding-terminal-local-map nil)
+          (pre-command-hook nil))
+      (cl-letf (((symbol-function 'one-window-p) (lambda (&rest _) t))
+                ((symbol-function 'cj/window--pull-away)
+                 (lambda (dir) (setq pulled dir))))
+        (let ((last-command-event (car case)))
+          (cj/window-resize-sticky)))
+      (should (eq pulled (cdr case)))           ; pulled toward the arrow
       (should overriding-terminal-local-map)))) ; loop armed
 
 (ert-deftest test-ui-navigation-window-resize-bound-under-c-semicolon-b ()
