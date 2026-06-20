@@ -245,7 +245,7 @@
   <table class="leg" id="legtable"><thead><tr><th onclick="srtTable('legbody',0)">elements &#9651;</th><th title="lock a decided element↔color association"></th><th onclick="srtTable('legbody',2)">fg &#9651;</th><th onclick="srtTable('legbody',3)">bg &#9651;</th><th>style</th><th title="WCAG contrast of this color on the background">contrast</th><th>example</th><th title="face :box (border)">box</th></tr></thead><tbody id="legbody"></tbody></table>
  </section>
  <section class="pane grow">
-  <div class="langbar"><label style="color:#b4b1a2">language</label><select id="langsel" class="chip" style="width:auto;font:bold 10pt monospace" onchange="renderCode();buildPkgPreview()"></select></div>
+  <div class="langbar"><label style="color:#b4b1a2">language</label><button id="langprev" class="viewnav" title="previous in the list" onclick="stepLang(-1)">&lsaquo;</button><select id="langsel" class="chip" style="width:auto;font:bold 10pt monospace" onchange="renderCode();buildPkgPreview()"></select><button id="langnext" class="viewnav" title="next in the list" onclick="stepLang(1)">&rsaquo;</button></div>
   <pre id="codepre"></pre>
  </section>
 </div>
@@ -1549,7 +1549,7 @@ function effBg(v){return v||MAP['bg'];}
 // fg:MAP['p']} repeated across app.js, palette-actions.js, and the browser gates.
 function groundPair(){return {bg:MAP['bg'],fg:MAP['p']};}
 function cid(l){return l.replace(/\W/g,'');}
-function buildLangSel(){const s=document.getElementById('langsel');s.innerHTML='';for(const lang in SAMPLES){const o=document.createElement('option');o.value=lang;o.textContent=lang;s.appendChild(o);}}
+function buildLangSel(){const s=document.getElementById('langsel');s.innerHTML='';for(const lang of Object.keys(SAMPLES).sort((a,b)=>a.localeCompare(b))){const o=document.createElement('option');o.value=lang;o.textContent=lang;s.appendChild(o);}if(SAMPLES['Elisp'])s.value='Elisp';}
 function renderCode(){
   const lang=document.getElementById('langsel').value;let html='';
   for(const line of SAMPLES[lang]){
@@ -2357,6 +2357,13 @@ function stepView(dir){
   const s=document.getElementById('viewsel');if(!s)return;
   const i=stepViewIndex(s.selectedIndex,s.options.length,dir);
   if(i!==s.selectedIndex){s.selectedIndex=i;onViewChange();}
+}
+// The ‹ › buttons flanking the language dropdown step the selection by DIR and
+// re-render the code sample + package preview, mirroring the view-dropdown nav.
+function stepLang(dir){
+  const s=document.getElementById('langsel');if(!s)return;
+  const i=stepViewIndex(s.selectedIndex,s.options.length,dir);
+  if(i!==s.selectedIndex){s.selectedIndex=i;renderCode();buildPkgPreview();}
 }
 function onViewChange(){const s=document.getElementById('viewsel');const v=(s&&s.value)||'@code';
   const show=(id,on)=>{const e=document.getElementById(id);if(e)e.style.display=on?'':'none';};
@@ -3881,6 +3888,24 @@ if(location.hash==='#heighttest'){let ok=true;const notes=[];const A=(c,n)=>{if(
  UIMAP[face]=save;buildUITable();
  document.title='HEIGHTTEST '+(ok?'PASS':'FAIL');
  const hd=document.createElement('div');hd.id='heighttest';hd.textContent='HEIGHTTEST '+(ok?'PASS':'FAIL')+(notes.length?' fails='+notes.join(','):'');document.body.appendChild(hd);}
+// Language-dropdown gate (open with #langtest): the language list is sorted
+// alphabetically with Elisp pinned as the default selection, and the ‹ › arrows
+// step the selection (clamped, no wrap).
+if(location.hash==='#langtest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c){ok=false;notes.push(n);}};
+ buildLangSel();
+ const s=document.getElementById('langsel');
+ const labels=[...s.options].map(o=>o.value);
+ const sorted=[...labels].sort((a,b)=>a.localeCompare(b));
+ A(JSON.stringify(labels)===JSON.stringify(sorted),'languages are alphabetical: '+labels.join(','));
+ A(s.value==='Elisp','Elisp is the default selection: '+s.value);
+ s.selectedIndex=0;stepLang(-1);
+ A(s.selectedIndex===0,'prev clamps at the first language');
+ stepLang(1);
+ A(s.selectedIndex===1,'next steps forward one');
+ s.selectedIndex=s.options.length-1;stepLang(1);
+ A(s.selectedIndex===s.options.length-1,'next clamps at the last language');
+ document.title='LANGTEST '+(ok?'PASS':'FAIL');
+ const ld=document.createElement('div');ld.id='langtest';ld.textContent='LANGTEST '+(ok?'PASS':'FAIL')+(notes.length?' fails='+notes.join(','):'');document.body.appendChild(ld);}
 // Palette default-state gate (open with #paldefaulttest): the studio opens with
 // the palette collapsed to base colors so the span tints don't crowd the first
 // view. initApp() ran at page load, so the live toggle reflects the opening state.

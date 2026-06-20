@@ -47,7 +47,7 @@ function effBg(v){return v||MAP['bg'];}
 // fg:MAP['p']} repeated across app.js, palette-actions.js, and the browser gates.
 function groundPair(){return {bg:MAP['bg'],fg:MAP['p']};}
 function cid(l){return l.replace(/\W/g,'');}
-function buildLangSel(){const s=document.getElementById('langsel');s.innerHTML='';for(const lang in SAMPLES){const o=document.createElement('option');o.value=lang;o.textContent=lang;s.appendChild(o);}}
+function buildLangSel(){const s=document.getElementById('langsel');s.innerHTML='';for(const lang of Object.keys(SAMPLES).sort((a,b)=>a.localeCompare(b))){const o=document.createElement('option');o.value=lang;o.textContent=lang;s.appendChild(o);}if(SAMPLES['Elisp'])s.value='Elisp';}
 function renderCode(){
   const lang=document.getElementById('langsel').value;let html='';
   for(const line of SAMPLES[lang]){
@@ -604,6 +604,13 @@ function stepView(dir){
   const s=document.getElementById('viewsel');if(!s)return;
   const i=stepViewIndex(s.selectedIndex,s.options.length,dir);
   if(i!==s.selectedIndex){s.selectedIndex=i;onViewChange();}
+}
+// The ‹ › buttons flanking the language dropdown step the selection by DIR and
+// re-render the code sample + package preview, mirroring the view-dropdown nav.
+function stepLang(dir){
+  const s=document.getElementById('langsel');if(!s)return;
+  const i=stepViewIndex(s.selectedIndex,s.options.length,dir);
+  if(i!==s.selectedIndex){s.selectedIndex=i;renderCode();buildPkgPreview();}
 }
 function onViewChange(){const s=document.getElementById('viewsel');const v=(s&&s.value)||'@code';
   const show=(id,on)=>{const e=document.getElementById(id);if(e)e.style.display=on?'':'none';};

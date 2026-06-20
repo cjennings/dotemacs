@@ -907,6 +907,24 @@ if(location.hash==='#heighttest'){let ok=true;const notes=[];const A=(c,n)=>{if(
  UIMAP[face]=save;buildUITable();
  document.title='HEIGHTTEST '+(ok?'PASS':'FAIL');
  const hd=document.createElement('div');hd.id='heighttest';hd.textContent='HEIGHTTEST '+(ok?'PASS':'FAIL')+(notes.length?' fails='+notes.join(','):'');document.body.appendChild(hd);}
+// Language-dropdown gate (open with #langtest): the language list is sorted
+// alphabetically with Elisp pinned as the default selection, and the ‹ › arrows
+// step the selection (clamped, no wrap).
+if(location.hash==='#langtest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c){ok=false;notes.push(n);}};
+ buildLangSel();
+ const s=document.getElementById('langsel');
+ const labels=[...s.options].map(o=>o.value);
+ const sorted=[...labels].sort((a,b)=>a.localeCompare(b));
+ A(JSON.stringify(labels)===JSON.stringify(sorted),'languages are alphabetical: '+labels.join(','));
+ A(s.value==='Elisp','Elisp is the default selection: '+s.value);
+ s.selectedIndex=0;stepLang(-1);
+ A(s.selectedIndex===0,'prev clamps at the first language');
+ stepLang(1);
+ A(s.selectedIndex===1,'next steps forward one');
+ s.selectedIndex=s.options.length-1;stepLang(1);
+ A(s.selectedIndex===s.options.length-1,'next clamps at the last language');
+ document.title='LANGTEST '+(ok?'PASS':'FAIL');
+ const ld=document.createElement('div');ld.id='langtest';ld.textContent='LANGTEST '+(ok?'PASS':'FAIL')+(notes.length?' fails='+notes.join(','):'');document.body.appendChild(ld);}
 // Palette default-state gate (open with #paldefaulttest): the studio opens with
 // the palette collapsed to base colors so the span tints don't crowd the first
 // view. initApp() ran at page load, so the live toggle reflects the opening state.
