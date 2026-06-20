@@ -64,9 +64,21 @@
 (defvar treesit-auto-recipe-list)
 
 ;; Forward declarations for functions defined later in this file
-(declare-function cj/find-project-root-file "prog-general")
 (declare-function cj/project-switch-actions "prog-general")
 (declare-function cj/deadgrep--initial-term "prog-general")
+
+(defun cj/find-project-root-file (regexp)
+  "Return first file in the current Projectile project root matching REGEXP.
+
+Match is done against (downcase file) for case-insensitivity.
+REGEXP must be a string or an rx form."
+  (when-let ((root (projectile-project-root)))
+    (seq-find (lambda (file)
+                (string-match-p (if (stringp regexp)
+                                    regexp
+                                  (rx-to-string regexp))
+                                (downcase file)))
+              (directory-files root))))
 (declare-function cj/highlight-indent-guides-disable-in-non-prog-modes "prog-general")
 
 ;; --------------------- General Programming Mode Settings ---------------------
@@ -176,19 +188,6 @@ reuses the current window otherwise, matching `cj/open-project-root-todo'."
   (projectile-project-search-path `(,code-dir ,projects-dir))
   :config
   (require 'seq)
-
-  (defun cj/find-project-root-file (regexp)
-	"Return first file in the current Projectile project root matching REGEXP.
-
-Match is done against (downcase file) for case-insensitivity.
-REGEXP must be a string or an rx form."
-	(when-let ((root (projectile-project-root)))
-	  (seq-find (lambda (file)
-				  (string-match-p (if (stringp regexp)
-									  regexp
-									(rx-to-string regexp))
-								  (downcase file)))
-				(directory-files root))))
 
   (defun cj/open-project-root-todo ()
 	"Open todo.org in the current Projectile project root.
