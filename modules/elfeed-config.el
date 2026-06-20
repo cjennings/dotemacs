@@ -126,23 +126,13 @@ Returns the stream URL or nil on failure."
          (cmd-args (append '("yt-dlp" "-q" "-g")
 						   format-args
 						   (list url)))
-		 ;; DEBUG: Log the command
-		 (_ (cj/log-silently "DEBUG: Extracting with command: %s"
-							 (mapconcat #'shell-quote-argument cmd-args " ")))
 		 (output (with-temp-buffer
 				   (let ((exit-code (apply #'call-process
 										   (car cmd-args) nil t nil
 										   (cdr cmd-args))))
 					 (if (zerop exit-code)
 						 (string-trim (buffer-string))
-					   (progn
-						 ;; DEBUG: Log failure
-						 (cj/log-silently "DEBUG: yt-dlp failed with exit code %d" exit-code)
-						 (cj/log-silently "DEBUG: Error output: %s" (buffer-string))
-						 nil))))))
-    ;; DEBUG: Log the result
-	(cj/log-silently "DEBUG: Extracted URL: %s"
-					 (if output (truncate-string-to-width output 100) "nil"))
+					   nil)))))
     (when (and output (string-match-p "^https?://" output))
       output)))
 
@@ -223,6 +213,15 @@ Note: Function name kept for backwards compatibility."
   "Seconds to wait for a synchronous YouTube page fetch before giving up.
 Without a timeout a hung request would block Emacs indefinitely.")
 
+(defun cj/--decode-html-entities (text)
+  "Decode the common HTML entities in TEXT.
+Handles &amp; &lt; &gt; &quot; &#39; and &#x27; -- the entities YouTube's
+og:title meta tag emits.  Decoded left-to-right, &amp; first."
+  (let ((entities '(("&amp;" . "&") ("&lt;" . "<") ("&gt;" . ">")
+                    ("&quot;" . "\"") ("&#39;" . "'") ("&#x27;" . "'"))))
+    (dolist (pair entities text)
+      (setq text (replace-regexp-in-string (car pair) (cdr pair) text)))))
+
 (defun cj/youtube-to-elfeed-feed-format (url type)
   "Convert YouTube URL to elfeed-feeds format.
 
@@ -274,13 +273,8 @@ TYPE should be either \='channel or \='playlist."
               (goto-char (point-min))
               (when (re-search-forward "<meta property=\"og:title\" content=\"\\([^\"]+\\)\"" nil t)
                 (setq title (match-string 1))
-                ;; Simple HTML entity decoding
-                (setq title (replace-regexp-in-string "&amp;" "&" title))
-                (setq title (replace-regexp-in-string "&lt;" "<" title))
-                (setq title (replace-regexp-in-string "&gt;" ">" title))
-                (setq title (replace-regexp-in-string "&quot;" "\"" title))
-                (setq title (replace-regexp-in-string "&#39;" "'" title))
-                (setq title (replace-regexp-in-string "&#x27;" "'" title))))))
+                ;; Decode HTML entities in the extracted title
+                (setq title (cj/--decode-html-entities title))))))
       ;; Always kill the temporary URL buffer, even when extraction failed --
       ;; the old code only killed it when an ID was found, leaking it otherwise.
       (when (buffer-live-p buffer)
