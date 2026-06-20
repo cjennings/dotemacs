@@ -221,7 +221,7 @@ CATS=[["bg","bg (ground)","Aa Bb 123"],["p","fg","other / whitespace"],["kw","ke
 UI_FACES=[["cursor","cursor","Aa|"],["region","region (selection)","selected text"],
  ["hl-line","hl-line (current line)","current line"],["highlight","highlight","hover"],
  ["mode-line","mode-line","status active"],
- ["mode-line-highlight","mode-line-highlight (mode-line hover)","git:main"],
+ ["mode-line-highlight","mode-line-highlight (hover)","git:main"],
  ["mode-line-inactive","mode-line-inactive","status idle"],
  ["fringe","fringe","| |"],["line-number","line-number","  42"],
  ["line-number-current-line","line-number-current-line","> 42"],["minibuffer-prompt","minibuffer-prompt","M-x "],

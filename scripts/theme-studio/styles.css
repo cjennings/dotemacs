@@ -4,8 +4,8 @@
  .wrap{display:flex;flex-wrap:nowrap;overflow-x:auto;gap:14px;padding-bottom:10px}
  .col{flex:0 0 auto;width:460px}
  pre{background:#0d0b0a;border:1px solid #252321;border-radius:8px;padding:14px 16px;font-size:12pt;overflow:auto;white-space:pre}
- table.leg{border-collapse:collapse} table.leg td{padding:4px 12px;vertical-align:middle}
- table.leg th{cursor:pointer;color:#b4b1a2;text-align:left;padding:4px 12px;user-select:none;font-weight:normal}
+ table.leg{border-collapse:collapse} table.leg td{padding:4px 8px;vertical-align:middle}
+ table.leg th{cursor:pointer;color:#b4b1a2;text-align:left;padding:4px 8px;user-select:none;font-weight:normal}
  #legtable th:nth-child(3),#legtable th:nth-child(4),
  #legtable td:nth-child(3),#legtable td:nth-child(4),
  #uitable th:nth-child(3),#uitable th:nth-child(4),
