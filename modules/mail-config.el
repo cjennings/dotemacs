@@ -417,6 +417,34 @@ Prompts user for the action when executing."
   (cj/activate-mu4e-org-contacts-integration)) ;; end use-package mu4e
 
 
+;; ----------------------- Account Navigation Keymaps --------------------------
+;; The C-; e c/d/g submaps jump to each account's inbox views.  Built from one
+;; template so the maildir prefix is the only per-account difference.
+
+;; eval-and-compile so the builder is defined when org-msg's :preface (below)
+;; calls it during byte-compilation, not only at load.
+(eval-and-compile
+  (defun cj/--mail-account-search-queries (account)
+    "Return an alist of (KEY . QUERY) mu4e searches for ACCOUNT's inbox.
+ACCOUNT is the maildir account name (\"cmail\", \"dmail\", \"gmail\").  The four
+entries scope inbox / unread / flagged / large searches to that account's
+INBOX maildir."
+    (let ((base (format "maildir:/%s/INBOX" account)))
+      (list (cons "i" base)
+            (cons "u" (concat base " AND flag:unread AND NOT flag:trashed"))
+            (cons "s" (concat base " AND flag:flagged"))
+            (cons "l" (concat base " AND size:5M..999M")))))
+
+  (defun cj/--mail-make-account-map (account)
+    "Build a mu4e navigation keymap for ACCOUNT (a maildir account name).
+Keys i/u/s/l run the inbox/unread/flagged/large searches from
+`cj/--mail-account-search-queries', each scoped to ACCOUNT."
+    (let ((map (make-sparse-keymap)))
+      (dolist (entry (cj/--mail-account-search-queries account) map)
+        (let ((query (cdr entry)))
+          (keymap-set map (car entry)
+                      (lambda () (interactive) (mu4e-search query))))))))
+
 ;; ---------------------------------- Org-Msg ----------------------------------
 ;; user composes org mode; recipient receives html
 
@@ -425,24 +453,12 @@ Prompts user for the action when executing."
   :defer 1
   :after (org mu4e)
   :preface
-	(defvar-keymap cj/mail-cmail-map
-	  :doc "cmail account navigation"
-	  "i" (lambda () (interactive) (mu4e-search "maildir:/cmail/INBOX"))
-	  "u" (lambda () (interactive) (mu4e-search "maildir:/cmail/INBOX AND flag:unread AND NOT flag:trashed"))
-	  "s" (lambda () (interactive) (mu4e-search "maildir:/cmail/INBOX AND flag:flagged"))
-	  "l" (lambda () (interactive) (mu4e-search "maildir:/cmail/INBOX AND size:5M..999M")))
-	(defvar-keymap cj/mail-dmail-map
-	  :doc "deepsat account navigation"
-	  "i" (lambda () (interactive) (mu4e-search "maildir:/dmail/INBOX"))
-	  "u" (lambda () (interactive) (mu4e-search "maildir:/dmail/INBOX AND flag:unread AND NOT flag:trashed"))
-	  "s" (lambda () (interactive) (mu4e-search "maildir:/dmail/INBOX AND flag:flagged"))
-	  "l" (lambda () (interactive) (mu4e-search "maildir:/dmail/INBOX AND size:5M..999M")))
-	(defvar-keymap cj/mail-gmail-map
-	  :doc "gmail account navigation"
-	  "i" (lambda () (interactive) (mu4e-search "maildir:/gmail/INBOX"))
-	  "u" (lambda () (interactive) (mu4e-search "maildir:/gmail/INBOX AND flag:unread AND NOT flag:trashed"))
-	  "s" (lambda () (interactive) (mu4e-search "maildir:/gmail/INBOX AND flag:flagged"))
-	  "l" (lambda () (interactive) (mu4e-search "maildir:/gmail/INBOX AND size:5M..999M")))
+	(defvar cj/mail-cmail-map (cj/--mail-make-account-map "cmail")
+	  "cmail account navigation.")
+	(defvar cj/mail-dmail-map (cj/--mail-make-account-map "dmail")
+	  "deepsat account navigation.")
+	(defvar cj/mail-gmail-map (cj/--mail-make-account-map "gmail")
+	  "gmail account navigation.")
 	(defvar-keymap cj/email-map
 	  :doc "Email operations and account navigation"
 	  "A" #'org-msg-attach-attach
