@@ -75,26 +75,31 @@ resize -- each moves the active window's divider in the arrow's direction
   "<up>"    #'windsize-up
   "<down>"  #'windsize-down)
 
-(defun cj/window-arrow-direction (key)
-  "Map a windsize arrow KEY description to a split direction.
-KEY is one of \"<left>\" \"<right>\" \"<up>\" \"<down>\"; returns
-left/right/above/below respectively, or nil for anything else."
+(defun cj/window-pull-side (key)
+  "Map a `C-; b' arrow KEY to the side the revealed window opens on.
+The arrow names the edge the current window shrinks toward, so the new
+window opens on the *opposite* side and the current window keeps the
+arrow's edge: <down> -> above, <up> -> below, <left> -> right,
+<right> -> left.  Returns nil for anything else."
   (pcase key
-    ("<left>"  'left)
-    ("<right>" 'right)
-    ("<up>"    'above)
-    ("<down>"  'below)
+    ("<down>"  'above)
+    ("<up>"    'below)
+    ("<left>"  'right)
+    ("<right>" 'left)
     (_ nil)))
 
-(defun cj/window--pull-away (direction)
-  "Split the sole window toward DIRECTION and reveal the previous buffer.
-DIRECTION is one of left/right/above/below.  A new window opens on that
-side showing `other-buffer'; focus stays on the original window so it
-shrinks from that edge, letting a fullscreen window (e.g. a terminal)
-share the frame.  No-op when DIRECTION is nil."
-  (when direction
-    (let ((new (split-window (selected-window) nil direction)))
+(defun cj/window--pull-away (side)
+  "Split the sole window so the previous buffer opens on SIDE.
+SIDE is one of above/below/left/right -- opposite the pressed arrow, so
+the current window keeps the arrow's edge.  The new window is minimized
+to a sliver (the current window keeps almost the whole frame) and shows
+`other-buffer'; focus stays on the current window so the sticky arrows
+then shrink it step by step via `windsize', exactly as resizing an
+existing split does.  No-op when SIDE is nil."
+  (when side
+    (let ((new (split-window (selected-window) nil side)))
       (set-window-buffer new (other-buffer (current-buffer) t))
+      (minimize-window new)
       new)))
 
 (defun cj/window-resize-sticky ()
@@ -103,12 +108,15 @@ share the frame.  No-op when DIRECTION is nil."
 nudging until any other key.  Bound to `C-; b <left>/<right>/<up>/<down>'.
 
 When the selected window is the sole window in the frame there is no
-divider to move, so the arrow instead pulls a new window away toward that
-edge (`cj/window--pull-away'), revealing the previous buffer."
+divider to move, so the first arrow instead splits a sliver away on the
+side opposite the arrow (`cj/window--pull-away'), revealing the previous
+buffer; the current window keeps almost the whole frame and the following
+arrows shrink it via `windsize', so it reads the same as resizing an
+existing split."
   (interactive)
   (let ((key (key-description (vector last-command-event))))
     (if (one-window-p)
-        (cj/window--pull-away (cj/window-arrow-direction key))
+        (cj/window--pull-away (cj/window-pull-side key))
       (let ((cmd (keymap-lookup cj/window-resize-map key)))
         (when cmd (call-interactively cmd)))))
   (set-transient-map cj/window-resize-map t))

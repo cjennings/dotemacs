@@ -44,24 +44,26 @@ otherwise route to the pull-away path."
       (should ran)                              ; dispatched to the right command
       (should overriding-terminal-local-map)))) ; loop armed
 
-(ert-deftest test-ui-navigation-window-arrow-direction ()
-  "Normal/Error: each arrow maps to its split direction; anything else is nil."
-  (should (eq (cj/window-arrow-direction "<left>")  'left))
-  (should (eq (cj/window-arrow-direction "<right>") 'right))
-  (should (eq (cj/window-arrow-direction "<up>")    'above))
-  (should (eq (cj/window-arrow-direction "<down>")  'below))
-  (should (null (cj/window-arrow-direction "<prior>")))
-  (should (null (cj/window-arrow-direction "x"))))
+(ert-deftest test-ui-navigation-window-pull-side ()
+  "Normal/Error: each arrow maps to the *opposite* side (where the revealed
+window opens, so the current window keeps the arrow's edge); anything else
+is nil."
+  (should (eq (cj/window-pull-side "<down>")  'above))
+  (should (eq (cj/window-pull-side "<up>")    'below))
+  (should (eq (cj/window-pull-side "<left>")  'right))
+  (should (eq (cj/window-pull-side "<right>") 'left))
+  (should (null (cj/window-pull-side "<prior>")))
+  (should (null (cj/window-pull-side "x"))))
 
 (ert-deftest test-ui-navigation-window-resize-sticky-sole-window-pulls-away ()
-  "Normal: with a single window, the arrow pulls a window away toward its
-direction (via `cj/window--pull-away') rather than resizing, then arms the
-loop.  `cj/window--pull-away' is stubbed to capture the direction so no real
-window split happens under `--batch'."
-  (dolist (case '((left  . left)
-                  (right . right)
-                  (up    . above)
-                  (down  . below)))
+  "Normal: with a single window, the arrow pulls a sliver away on the side
+opposite the arrow (via `cj/window--pull-away') rather than resizing, then
+arms the loop.  `cj/window--pull-away' is stubbed to capture the side so no
+real window split happens under `--batch'."
+  (dolist (case '((down  . above)
+                  (up    . below)
+                  (left  . right)
+                  (right . left)))
     (let ((pulled nil)
           (overriding-terminal-local-map nil)
           (pre-command-hook nil))
