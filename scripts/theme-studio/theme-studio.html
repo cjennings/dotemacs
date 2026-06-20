@@ -249,7 +249,7 @@
 <div class="cols">
  <section class="pane">
   <div class="legctl"><button id="syntaxlocktoggle" class="fbtn" onclick="toggleAllLocks('syntax')" title="lock or unlock every syntax row">lock all</button><button class="fbtn" onclick="resetUnlocked()" title="reset to captured defaults, preserving locked rows">&#8635; reset</button><button class="fbtn" onclick="clearUnlocked()" title="erase, preserving locked rows">erase</button></div>
-  <table class="leg" id="legtable"><thead><tr><th onclick="srtTable('legbody',0)">elements &#9651;</th><th title="lock a decided element↔color association"></th><th onclick="srtTable('legbody',2)">fg &#9651;</th><th onclick="srtTable('legbody',3)">bg &#9651;</th><th>style</th><th title="WCAG contrast of this color on the background">contrast</th><th>example</th><th title="face :box (border)">box</th></tr></thead><tbody id="legbody"></tbody></table>
+  <table class="leg" id="legtable"><thead><tr><th title="lock a decided element↔color association"></th><th onclick="srtTable('legbody',1)">elements &#9651;</th><th onclick="srtTable('legbody',2)">fg &#9651;</th><th onclick="srtTable('legbody',3)">bg &#9651;</th><th>style</th><th title="WCAG contrast of this color on the background">contrast</th><th>example</th><th title="face :box (border)">box</th></tr></thead><tbody id="legbody"></tbody></table>
  </section>
  <section class="pane grow">
   <div class="langbar"><label style="color:#b4b1a2">language</label><button id="langprev" class="viewnav" title="previous in the list" onclick="stepLang(-1)">&lsaquo;</button><select id="langsel" class="chip" style="width:auto;font:bold 10pt monospace" onchange="renderCode();buildPkgPreview()"></select><button id="langnext" class="viewnav" title="next in the list" onclick="stepLang(1)">&rsaquo;</button></div>
@@ -261,7 +261,7 @@
 <div class="cols stretch">
  <section class="pane">
   <div class="legctl"><button id="uilocktoggle" class="fbtn" onclick="toggleAllLocks('ui')" title="lock or unlock every UI face row">lock all</button><button class="fbtn" onclick="resetUnlockedUI()" title="reset to captured defaults, preserving locked rows">&#8635; reset</button><button class="fbtn" onclick="clearUnlockedUI()" title="erase, preserving locked rows">erase</button></div>
-  <table class="leg" id="uitable"><thead><tr><th onclick="srtTable('uibody',0)">face &#9651;</th><th title="lock a decided face"></th><th onclick="srtTable('uibody',2)" title="foreground">fg &#9651;</th><th onclick="srtTable('uibody',3)" title="background">bg &#9651;</th><th>style</th><th onclick="srtTable('uibody',5)" title="WCAG contrast: this face's foreground on its background (or the ground)">contrast &#9651;</th><th>preview</th><th title="face :box (border)">box</th></tr></thead><tbody id="uibody"></tbody></table>
+  <table class="leg" id="uitable"><thead><tr><th title="lock a decided face"></th><th onclick="srtTable('uibody',1)">face &#9651;</th><th onclick="srtTable('uibody',2)" title="foreground">fg &#9651;</th><th onclick="srtTable('uibody',3)" title="background">bg &#9651;</th><th>style</th><th onclick="srtTable('uibody',5)" title="WCAG contrast: this face's foreground on its background (or the ground)">contrast &#9651;</th><th>preview</th><th title="face :box (border)">box</th></tr></thead><tbody id="uibody"></tbody></table>
  </section>
  <section class="pane grow" style="display:flex;flex-direction:column">
   <div class="langbar"><label style="color:#b4b1a2">live buffer preview</label></div>
@@ -278,7 +278,7 @@
 </div>
 <div class="cols stretch">
  <section class="pane">
-  <table class="leg" id="pkgtable"><thead><tr><th onclick="srtTable('pkgbody',0)">face &#9651;</th><th title="lock a decided face"></th><th onclick="srtTable('pkgbody',2)">fg &#9651;</th><th onclick="srtTable('pkgbody',3)">bg &#9651;</th><th>style</th><th onclick="srtTable('pkgbody',5)">contrast &#9651;</th><th title="face :box (border)">box</th></tr></thead><tbody id="pkgbody"></tbody></table>
+  <table class="leg" id="pkgtable"><thead><tr><th title="lock a decided face"></th><th onclick="srtTable('pkgbody',1)">face &#9651;</th><th onclick="srtTable('pkgbody',2)">fg &#9651;</th><th onclick="srtTable('pkgbody',3)">bg &#9651;</th><th>style</th><th onclick="srtTable('pkgbody',5)">contrast &#9651;</th><th title="face :box (border)">box</th></tr></thead><tbody id="pkgbody"></tbody></table>
  </section>
  <section class="pane grow" style="display:flex;flex-direction:column">
   <div class="langbar"><label id="pkgprevlabel" style="color:#b4b1a2">preview</label></div>
@@ -1834,7 +1834,7 @@ function buildTable(){
     const lkTd=mkLockCell(kind,[dd,bgd,...stCtls,boxCtl,...exp.locks]);
     const c2=document.createElement('td');c2.className='cat';c2.title=composeHoverTitle(SYNTAX_DOCS[kind],c2.title);c2.appendChild(exp.btn);
     const c2lbl=document.createElement('span');c2lbl.textContent=' '+label;c2lbl.style.cursor='pointer';c2lbl.title='flash this category in the code';c2lbl.onclick=()=>flashTokens(kind);c2.appendChild(c2lbl);
-    tr.appendChild(c2);tr.appendChild(lkTd);tr.appendChild(c0);tr.appendChild(cB);tr.appendChild(stTd);tr.appendChild(crTd);tr.appendChild(exTd);tr.appendChild(cX);
+    tr.appendChild(lkTd);tr.appendChild(c2);tr.appendChild(c0);tr.appendChild(cB);tr.appendChild(stTd);tr.appendChild(crTd);tr.appendChild(exTd);tr.appendChild(cX);
     tb.appendChild(tr);tb.appendChild(exp.detail);}
   updateLockToggle('syntax');
 }
@@ -2432,7 +2432,7 @@ function buildPkgTable(){
     const cL=mkLockCell('pkg:'+app+':'+face,[fgd,bgd,...pkCtls,boxCtl,...exp.locks]);
     if(nd.fg)cf.classList.add('nd');if(nd.bg)cb.classList.add('nd');if(nd.style)cw.classList.add('nd');
     if(nd.box)cx.classList.add('nd');
-    tr.append(c0,cL,cf,cb,cw,cc,cx);tb.appendChild(tr);tb.appendChild(exp.detail);
+    tr.append(cL,c0,cf,cb,cw,cc,cx);tb.appendChild(tr);tb.appendChild(exp.detail);
   }
   applyTableSort('pkgbody');
   updateLockToggle('pkg');
@@ -2982,7 +2982,7 @@ function buildUITable(){
     const cP=document.createElement('td');cP.className='ex';cP.id='uiprev-'+face;cP.textContent=ex;cP.style.padding='4px 10px';cP.style.borderRadius='4px';
     const cX=document.createElement('td');const boxCtl=mkBoxControl(()=>UIMAP[face].box,b=>{UIMAP[face].box=b;paintUI(face);buildMockFrame();},{compact:true});cX.appendChild(boxCtl);
     const cL=mkLockCell('ui:'+face,[fgSel,bgSel,...stCtls,boxCtl,...exp.locks]);
-    tr.appendChild(c0);tr.appendChild(cL);tr.appendChild(cF);tr.appendChild(cB);tr.appendChild(cS);tr.appendChild(cC);tr.appendChild(cP);tr.appendChild(cX);tb.appendChild(tr);tb.appendChild(exp.detail);paintUI(face);
+    tr.appendChild(cL);tr.appendChild(c0);tr.appendChild(cF);tr.appendChild(cB);tr.appendChild(cS);tr.appendChild(cC);tr.appendChild(cP);tr.appendChild(cX);tb.appendChild(tr);tb.appendChild(exp.detail);paintUI(face);
   }
   applyTableSort('uibody');
   updateLockToggle('ui');
@@ -3115,13 +3115,13 @@ if(location.hash==='#locktest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c
 // package tables still sort. Guards the unified sort for the later stages.
 if(location.hash==='#sorttest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c){ok=false;notes.push(n);}};
  const ddVals=tb=>[...document.querySelectorAll('#'+tb+' tr:not(.detailrow)')].map(tr=>{const dd=tr.cells[2].querySelector('.cdd');return dd?(dd.dataset.val||''):'';});
- const txtVals=tb=>[...document.querySelectorAll('#'+tb+' tr:not(.detailrow)')].map(tr=>tr.cells[0].innerText.trim().toLowerCase());
+ const txtVals=tb=>[...document.querySelectorAll('#'+tb+' tr:not(.detailrow)')].map(tr=>tr.cells[1].innerText.trim().toLowerCase());
  const asc=a=>a.every((v,i)=>i===0||a[i-1]<=v),desc=a=>a.every((v,i)=>i===0||a[i-1]>=v);
  buildTable();
  srtTable('legbody',2);A(asc(ddVals('legbody')),'legbody-color-asc');
  srtTable('legbody',2);A(desc(ddVals('legbody')),'legbody-color-desc');
- srtTable('legbody',0);A(asc(txtVals('legbody')),'legbody-elements-asc');
- buildUITable();srtTable('uibody',0);A(asc(txtVals('uibody')),'uibody-face-asc');
+ srtTable('legbody',1);A(asc(txtVals('legbody')),'legbody-elements-asc');
+ buildUITable();srtTable('uibody',1);A(asc(txtVals('uibody')),'uibody-face-asc');
  buildPkgTable();srtTable('pkgbody',2);A(asc(ddVals('pkgbody')),'pkgbody-fg-asc');
  document.title='SORTTEST '+(ok?'PASS':'FAIL');
  const d=document.createElement('div');d.id='sorttest';d.textContent='SORTTEST '+(ok?'PASS':'FAIL')+(notes.length?' | '+notes.join(' ; '):'');document.body.appendChild(d);}
@@ -3712,7 +3712,7 @@ if(location.hash==='#viewtest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c
  const d=document.createElement('div');d.id='viewtest';d.textContent='VIEWTEST '+(ok?'PASS':'FAIL')+(notes.length?' fails='+notes.join(','):'');document.body.appendChild(d);}
 // Non-default-marker gate (open with #ndtest): a per-face setting cell gets the
 // .nd corner flag only when its value differs from the face's seed default. Cell
-// order in a pkg row: 0 label, 1 lock, 2 fg, 3 bg, 4 style, 5 contrast, 6 box.
+// order in a pkg row: 0 lock, 1 label, 2 fg, 3 bg, 4 style, 5 contrast, 6 box.
 // inherit + height live in the row expander, so a non-default height flags the
 // expander toggle (exp-nd) rather than an inline cell.
 if(location.hash==='#ndtest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c){ok=false;notes.push(n);}};

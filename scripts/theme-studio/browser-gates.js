@@ -102,13 +102,13 @@ if(location.hash==='#locktest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c
 // package tables still sort. Guards the unified sort for the later stages.
 if(location.hash==='#sorttest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c){ok=false;notes.push(n);}};
  const ddVals=tb=>[...document.querySelectorAll('#'+tb+' tr:not(.detailrow)')].map(tr=>{const dd=tr.cells[2].querySelector('.cdd');return dd?(dd.dataset.val||''):'';});
- const txtVals=tb=>[...document.querySelectorAll('#'+tb+' tr:not(.detailrow)')].map(tr=>tr.cells[0].innerText.trim().toLowerCase());
+ const txtVals=tb=>[...document.querySelectorAll('#'+tb+' tr:not(.detailrow)')].map(tr=>tr.cells[1].innerText.trim().toLowerCase());
  const asc=a=>a.every((v,i)=>i===0||a[i-1]<=v),desc=a=>a.every((v,i)=>i===0||a[i-1]>=v);
  buildTable();
  srtTable('legbody',2);A(asc(ddVals('legbody')),'legbody-color-asc');
  srtTable('legbody',2);A(desc(ddVals('legbody')),'legbody-color-desc');
- srtTable('legbody',0);A(asc(txtVals('legbody')),'legbody-elements-asc');
- buildUITable();srtTable('uibody',0);A(asc(txtVals('uibody')),'uibody-face-asc');
+ srtTable('legbody',1);A(asc(txtVals('legbody')),'legbody-elements-asc');
+ buildUITable();srtTable('uibody',1);A(asc(txtVals('uibody')),'uibody-face-asc');
  buildPkgTable();srtTable('pkgbody',2);A(asc(ddVals('pkgbody')),'pkgbody-fg-asc');
  document.title='SORTTEST '+(ok?'PASS':'FAIL');
  const d=document.createElement('div');d.id='sorttest';d.textContent='SORTTEST '+(ok?'PASS':'FAIL')+(notes.length?' | '+notes.join(' ; '):'');document.body.appendChild(d);}
@@ -699,7 +699,7 @@ if(location.hash==='#viewtest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c
  const d=document.createElement('div');d.id='viewtest';d.textContent='VIEWTEST '+(ok?'PASS':'FAIL')+(notes.length?' fails='+notes.join(','):'');document.body.appendChild(d);}
 // Non-default-marker gate (open with #ndtest): a per-face setting cell gets the
 // .nd corner flag only when its value differs from the face's seed default. Cell
-// order in a pkg row: 0 label, 1 lock, 2 fg, 3 bg, 4 style, 5 contrast, 6 box.
+// order in a pkg row: 0 lock, 1 label, 2 fg, 3 bg, 4 style, 5 contrast, 6 box.
 // inherit + height live in the row expander, so a non-default height flags the
 // expander toggle (exp-nd) rather than an inline cell.
 if(location.hash==='#ndtest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c){ok=false;notes.push(n);}};
