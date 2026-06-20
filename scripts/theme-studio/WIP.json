@@ -7390,32 +7390,36 @@
   },
   "orderless": {
    "orderless-match-face-0": {
-    "fg": "#223fbf",
+    "fg": "#cbd0d6",
     "bg": null,
     "weight": "bold",
+    "slant": "italic",
     "inherit": null,
-    "source": "default"
+    "source": "user"
    },
    "orderless-match-face-1": {
-    "fg": "#8f0075",
+    "fg": "#c99990",
     "bg": null,
     "weight": "bold",
+    "slant": "italic",
     "inherit": null,
-    "source": "default"
+    "source": "user"
    },
    "orderless-match-face-2": {
-    "fg": "#145a00",
+    "fg": "#c5d4ae",
     "bg": null,
     "weight": "bold",
+    "slant": "italic",
     "inherit": null,
-    "source": "default"
+    "source": "user"
    },
    "orderless-match-face-3": {
-    "fg": "#804000",
+    "fg": "#bea9dc",
     "bg": null,
     "weight": "bold",
+    "slant": "italic",
     "inherit": null,
-    "source": "default"
+    "source": "user"
    }
   },
   "org-roam": {
