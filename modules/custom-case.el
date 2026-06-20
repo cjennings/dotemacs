@@ -49,6 +49,18 @@
 		  (downcase-region (car bounds) (cdr bounds))
 		(user-error "No symbol at point")))))
 
+(defun cj/--title-case-capitalize-word-p (word is-first prev-word-end word-skip chars-skip-reset)
+  "Return non-nil when WORD at point should be capitalized in title case.
+Point is at WORD's first character.  WORD is capitalized when it is the first
+word (IS-FIRST), is not a minor skip word (in WORD-SKIP), or immediately follows
+a skip-reset character (one of CHARS-SKIP-RESET: : ! ?), reached by skipping
+blanks back to PREV-WORD-END."
+  (or is-first
+      (not (member word word-skip))
+      (save-excursion
+        (and (not (zerop (skip-chars-backward "[:blank:]" prev-word-end)))
+             (memq (char-before (point)) chars-skip-reset)))))
+
 (defun cj/title-case-region ()
   "Capitalize the region in title case format.
 Title case is a capitalization convention where major words are capitalized,
@@ -58,67 +70,53 @@ considered major words. Short (i.e., three letters or fewer) conjunctions,
 short prepositions, and all articles are considered minor words."
   (interactive)
   (let ((beg nil)
-		(end nil)
-		(prev-word-end nil)
-		;; Allow capitals for skip characters after this, so:
-		;;   Warning: An Example
-		;; Capitalizes the `An'.
-		(chars-skip-reset '(?: ?! ??))
-		;; Don't capitalize characters directly after these. e.g.
-		;; "Foo-bar" or "Foo\bar" or "Foo's".
-
-		(chars-separator '(?\\ ?- ?' ?.))
-
-		(word-chars "[:alnum:]")
-		(word-skip
-		 (list "a" "an" "and" "as" "at" "but" "by"
-			   "for" "if" "in" "is" "nor" "of"
-			   "on" "or" "so" "the" "to" "yet"))
-		(is-first t))
-	(cond
-	 ((region-active-p)
-	  (setq beg (region-beginning))
-	  (setq end (region-end)))
-	 (t
-	  (setq beg (line-beginning-position))
-	  (setq end (line-end-position))))
-	(save-excursion
-	  ;; work on uppercased text (e.g., headlines) by downcasing first
-	  (downcase-region beg end)
-	  (goto-char beg)
-
-	  (while (< (point) end)
-		(setq prev-word-end (point))
-		(skip-chars-forward (concat "^" word-chars) end)
-		(when (>= (point) end)  ;; no word chars remaining
-		  (goto-char end))
-		(let ((word-end
-			   (save-excursion
-				 (skip-chars-forward word-chars end)
-				 (point))))
-
-		  (unless (or (>= (point) end)
-					  (memq (char-before (point)) chars-separator))
-			(let* ((c-orig (char-to-string (char-after (point))))
-				   (c-up (capitalize c-orig)))
-			  (unless (string-equal c-orig c-up)
-				(let ((word (buffer-substring-no-properties (point) word-end)))
-				  (when
-					  (or
-					   ;; Always allow capitalization.
-					   is-first
-					   ;; If it's not a skip word, allow.
-					   (not (member word word-skip))
-					   ;; Check the beginning of the previous word doesn't reset first.
-					   (save-excursion
-						 (and
-						  (not (zerop
-								(skip-chars-backward "[:blank:]" prev-word-end)))
-						  (memq (char-before (point)) chars-skip-reset))))
-					(delete-region (point) (1+ (point)))
-					(insert c-up))))))
-		  (goto-char word-end)
-		  (setq is-first nil))))))
+        (end nil)
+        (prev-word-end nil)
+        ;; Allow capitals for skip characters after this, so:
+        ;;   Warning: An Example
+        ;; Capitalizes the `An'.
+        (chars-skip-reset '(?: ?! ??))
+        ;; Don't capitalize characters directly after these. e.g.
+        ;; "Foo-bar" or "Foo\bar" or "Foo's".
+        (chars-separator '(?\\ ?- ?' ?.))
+        (word-chars "[:alnum:]")
+        (word-skip
+         (list "a" "an" "and" "as" "at" "but" "by"
+               "for" "if" "in" "is" "nor" "of"
+               "on" "or" "so" "the" "to" "yet"))
+        (is-first t))
+    (cond
+     ((region-active-p)
+      (setq beg (region-beginning))
+      (setq end (region-end)))
+     (t
+      (setq beg (line-beginning-position))
+      (setq end (line-end-position))))
+    (save-excursion
+      ;; work on uppercased text (e.g., headlines) by downcasing first
+      (downcase-region beg end)
+      (goto-char beg)
+      (while (< (point) end)
+        (setq prev-word-end (point))
+        (skip-chars-forward (concat "^" word-chars) end)
+        (when (>= (point) end)  ;; no word chars remaining
+          (goto-char end))
+        (let ((word-end
+               (save-excursion
+                 (skip-chars-forward word-chars end)
+                 (point))))
+          (unless (or (>= (point) end)
+                      (memq (char-before (point)) chars-separator))
+            (let* ((c-orig (char-to-string (char-after (point))))
+                   (c-up (capitalize c-orig)))
+              (unless (string-equal c-orig c-up)
+                (let ((word (buffer-substring-no-properties (point) word-end)))
+                  (when (cj/--title-case-capitalize-word-p
+                         word is-first prev-word-end word-skip chars-skip-reset)
+                    (delete-region (point) (1+ (point)))
+                    (insert c-up))))))
+          (goto-char word-end)
+          (setq is-first nil))))))
 
 ;; replace the capitalize-region keybinding to call title-case
 (keymap-global-set "<remap> <capitalize-region>" #'cj/title-case-region)
