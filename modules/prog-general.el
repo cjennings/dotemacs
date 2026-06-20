@@ -232,6 +232,23 @@ If no such file exists there, display a message."
 
 ;; ---------------------------------- Ripgrep ----------------------------------
 
+(declare-function deadgrep "deadgrep")
+
+(defun cj/deadgrep--initial-term ()
+  "Return the region text or the symbol at point, to seed a Deadgrep search."
+  (cond
+   ((use-region-p)
+    (buffer-substring-no-properties (region-beginning) (region-end)))
+   (t (thing-at-point 'symbol t))))
+
+(defun cj/--deadgrep-run (root &optional term)
+  "Run Deadgrep for TERM under directory ROOT.
+ROOT is normalized to a directory name; TERM defaults to a minibuffer read
+seeded by `cj/deadgrep--initial-term'.  Shared tail of the deadgrep commands."
+  (let ((root (file-name-as-directory (expand-file-name root)))
+        (term (or term (read-from-minibuffer "Search: " (cj/deadgrep--initial-term)))))
+    (deadgrep term root)))
+
 (use-package deadgrep
   :after projectile
   :bind
@@ -241,12 +258,6 @@ If no such file exists there, display a message."
 
   :config
   (require 'thingatpt)
-
-  (defun cj/deadgrep--initial-term ()
-	(cond
-	 ((use-region-p)
-	  (buffer-substring-no-properties (region-beginning) (region-end)))
-	 (t (thing-at-point 'symbol t))))
 
   (defun cj/deadgrep-here (&optional term)
 	"Search with Deadgrep in the most relevant directory at point."
@@ -264,17 +275,14 @@ If no such file exists there, display a message."
 			 (buffer-file-name
 			  (file-name-directory (file-truename buffer-file-name)))
 			 (t default-directory)))
-		   (root (file-name-as-directory (expand-file-name root)))
-		   (term (or term (read-from-minibuffer "Search: " (cj/deadgrep--initial-term)))))
-	  (deadgrep term root)))
+		   )
+	  (cj/--deadgrep-run root term)))
 
   (defun cj/deadgrep-in-dir (&optional dir term)
     "Prompt for a directory, then search there with Deadgrep."
     (interactive)
-	(let* ((dir (or dir (read-directory-name "Search in directory: " default-directory nil t)))
-		   (dir (file-name-as-directory (expand-file-name dir)))
-		   (term (or term (read-from-minibuffer "Search: " (cj/deadgrep--initial-term)))))
-	  (deadgrep term dir))))
+	(let ((dir (or dir (read-directory-name "Search in directory: " default-directory nil t))))
+	  (cj/--deadgrep-run dir term))))
 
 (with-eval-after-load 'dired
   (keymap-set dired-mode-map "G" #'cj/deadgrep-here))
