@@ -184,6 +184,14 @@ Auto-adds # prefix if missing.  Offers completion from configured channels."
 		  (erc-join-channel channel)))
 	(message "Failed to establish an active ERC connection")))
 
+(defun cj/erc-generate-buffer-name (parms)
+  "Generate buffer name in the format SERVER-CHANNEL."
+  (let ((network (plist-get parms :server))
+        (target (plist-get parms :target)))
+    (if target
+        (concat (or network "") "-" (or target ""))
+      (or network ""))))
+
 ;; Keymap for ERC commands (must be defined before use-package erc)
 (defvar-keymap cj/erc-keymap
   :doc "Keymap for ERC-related commands"
@@ -259,15 +267,7 @@ Auto-adds # prefix if missing.  Offers completion from configured channels."
   ;; Note: erc-rename-buffers is obsolete as of Emacs 29.1 (old behavior is now permanent)
   (setq erc-unique-buffers t)
 
-  ;; Custom buffer naming function
-  (defun cj/erc-generate-buffer-name (parms)
-	"Generate buffer name in the format SERVER-CHANNEL."
-	(let ((network (plist-get parms :server))
-		  (target (plist-get parms :target)))
-	  (if target
-		  (concat (or network "") "-" (or target ""))
-		(or network ""))))
-
+  ;; Custom buffer naming (cj/erc-generate-buffer-name is defined at top level)
   (setq erc-generate-buffer-name-function 'cj/erc-generate-buffer-name)
 
   ;; Configure erc-track (show channel activity in modeline)
