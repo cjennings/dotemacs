@@ -3409,6 +3409,112 @@
     "source": "default"
    }
   },
+  "ansi-color": {
+   "ansi-color-black": {
+    "fg": "#100f0f",
+    "bg": "#bfc4d0",
+    "inherit": null,
+    "source": "user"
+   },
+   "ansi-color-red": {
+    "fg": "#cb6b4d",
+    "bg": null,
+    "inherit": null,
+    "source": "user"
+   },
+   "ansi-color-green": {
+    "fg": "#8ea85e",
+    "bg": null,
+    "inherit": null,
+    "source": "user"
+   },
+   "ansi-color-yellow": {
+    "fg": "#e0c266",
+    "bg": null,
+    "inherit": null,
+    "source": "user"
+   },
+   "ansi-color-blue": {
+    "fg": "#899bb1",
+    "bg": null,
+    "inherit": null,
+    "source": "user"
+   },
+   "ansi-color-magenta": {
+    "fg": "#9f80c9",
+    "bg": null,
+    "inherit": null,
+    "source": "user"
+   },
+   "ansi-color-cyan": {
+    "fg": "#47a0b7",
+    "bg": null,
+    "inherit": null,
+    "source": "user"
+   },
+   "ansi-color-white": {
+    "fg": null,
+    "bg": null,
+    "inherit": null,
+    "source": "default"
+   },
+   "ansi-color-bright-black": {
+    "fg": "#363638",
+    "bg": null,
+    "weight": "bold",
+    "inherit": "ansi-color-black",
+    "source": "user"
+   },
+   "ansi-color-bright-red": {
+    "fg": null,
+    "bg": null,
+    "weight": "bold",
+    "inherit": "ansi-color-red",
+    "source": "user"
+   },
+   "ansi-color-bright-green": {
+    "fg": null,
+    "bg": null,
+    "weight": "bold",
+    "inherit": "ansi-color-green",
+    "source": "user"
+   },
+   "ansi-color-bright-yellow": {
+    "fg": null,
+    "bg": null,
+    "weight": "bold",
+    "inherit": "ansi-color-yellow",
+    "source": "user"
+   },
+   "ansi-color-bright-blue": {
+    "fg": null,
+    "bg": null,
+    "weight": "bold",
+    "inherit": "ansi-color-blue",
+    "source": "user"
+   },
+   "ansi-color-bright-magenta": {
+    "fg": null,
+    "bg": null,
+    "weight": "bold",
+    "inherit": "ansi-color-bright-magenta",
+    "source": "user"
+   },
+   "ansi-color-bright-cyan": {
+    "fg": null,
+    "bg": null,
+    "weight": "bold",
+    "inherit": "ansi-color-cyan",
+    "source": "user"
+   },
+   "ansi-color-bright-white": {
+    "fg": null,
+    "bg": null,
+    "weight": "bold",
+    "inherit": "ansi-color-bright-white",
+    "source": "user"
+   }
+  },
   "auto-dim-other-buffers": {
    "auto-dim-other-buffers": {
     "fg": "#777980",
