@@ -233,6 +233,20 @@ Returns a string like \"Anthropic - Claude: claude-opus-4-7\"."
             (or backend-name "AI")
             (cj/gptel--model-to-string current-model))))
 
+(defun cj/--gptel-apply-model-selection (scope backend model backend-name)
+  "Set gptel BACKEND and MODEL, globally or buffer-locally per SCOPE.
+SCOPE is \"global\" or \"buffer\"; any non-\"global\" value is buffer-local.
+MODEL is a symbol.  BACKEND-NAME is the display name for the confirmation.
+Returns the confirmation message string."
+  (if (string= scope "global")
+      (progn
+        (setq gptel-backend backend)
+        (setq gptel-model model)
+        (format "Changed to %s model: %s (global)" backend-name model))
+    (setq-local gptel-backend backend)
+    (setq-local gptel-model model)
+    (format "Changed to %s model: %s (buffer-local)" backend-name model)))
+
 ;; Backend/model switching commands
 (defun cj/gptel-change-model ()
   "Change the GPTel backend and select a model from that backend.
@@ -257,14 +271,8 @@ necessary. Prompt for whether to apply the selection globally or buffer-locally.
            (backend (nth 1 model-info))
            (model (intern (nth 2 model-info)))
            (backend-name (nth 3 model-info)))
-      (if (string= scope "global")
-          (progn
-            (setq gptel-backend backend)
-            (setq gptel-model model)
-            (message "Changed to %s model: %s (global)" backend-name model))
-        (setq-local gptel-backend backend)
-        (setq-local gptel-model (if (stringp model) (intern model) model))
-        (message "Changed to %s model: %s (buffer-local)" backend-name model)))))
+      (message "%s" (cj/--gptel-apply-model-selection
+                     scope backend model backend-name)))))
 
 (defun cj/gptel-switch-backend ()
   "Switch the GPTel backend and then choose one of its models."
