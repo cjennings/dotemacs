@@ -155,15 +155,16 @@ if(location.hash==='#mocktest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c
  A(curNum&&/font-weight:\s*700/.test(curNum.getAttribute('style')||''),'line-number-honors-weight');
  UIMAP['region'].weight=null;UIMAP['region'].slant=null;UIMAP['region'].underline=null;buildUITable();
  const regionRow=[...document.querySelectorAll('#uibody tr')].find(r=>r.dataset.face==='region');
- const uiWeight=regionRow.querySelector('select.stylesel');
- A(uiWeight&&uiWeight.value==='','ui weight select starts empty when model is unset');
- uiWeight.value='bold';uiWeight.dispatchEvent(new Event('change'));
- A(UIMAP['region'].weight==='bold','ui weight select writes the model');
+ const pickEnum=(dd,label)=>{dd.click();const o=[..._ddPop.querySelectorAll('.enumopt')].find(b=>b.textContent===label);if(o)o.click();};
+ const uiWeight=regionRow.querySelector('.enumdd');
+ A(uiWeight&&uiWeight.dataset.val==='','ui weight dropdown starts empty when model is unset');
+ pickEnum(uiWeight,'bold');
+ A(UIMAP['region'].weight==='bold','ui weight dropdown writes the model');
  const app=curApp(),face=APPS[app].faces[0][0];PKGMAP[app][face].weight=null;buildPkgTable();
- const pkgWeight=()=>document.querySelector('#pkgbody tr[data-face="'+face+'"] select.stylesel');
- A(pkgWeight()&&pkgWeight().value==='','pkg weight select starts empty when model is unset');
- pkgWeight().value='heavy';pkgWeight().dispatchEvent(new Event('change'));
- A(PKGMAP[app][face].weight==='heavy'&&PKGMAP[app][face].source==='user','pkg weight select writes the model and marks the face edited');
+ const pkgWeight=()=>document.querySelector('#pkgbody tr[data-face="'+face+'"] .enumdd');
+ A(pkgWeight()&&pkgWeight().dataset.val==='','pkg weight dropdown starts empty when model is unset');
+ pickEnum(pkgWeight(),'heavy');
+ A(PKGMAP[app][face].weight==='heavy'&&PKGMAP[app][face].source==='user','pkg weight dropdown writes the model and marks the face edited');
  document.title='MOCKTEST '+(ok?'PASS':'FAIL');
  const d=document.createElement('div');d.id='mocktest';d.textContent='MOCKTEST '+(ok?'PASS':'FAIL')+(notes.length?' | '+notes.join(' ; '):'');document.body.appendChild(d);}
 // Palette-generator gate (open with #generatortest): previewing is non-mutating,
@@ -835,10 +836,20 @@ if(location.hash==='#styletest'){let ok=true;const notes=[];const A=(c,n)=>{if(!
  const cell=document.querySelector('#uibody tr[data-face="'+f+'"]').cells[4];
  const cluster=cell.querySelector('.stylecluster');
  A(!!cluster,'style-cluster-present');
- const sels=cluster?cluster.querySelectorAll('select.stylesel'):[];
- A(sels.length===2,'weight-and-slant-selectors-present');
- A(sels[0]&&[...sels[0].options].some(o=>o.value==='semibold'),'weight-selector-offers-the-curated-range');
- A(sels[1]&&[...sels[1].options].some(o=>o.value==='oblique'),'slant-selector-offers-oblique');
+ const dds=cluster?cluster.querySelectorAll('.enumdd'):[];
+ A(dds.length===2,'weight-and-slant-custom-dropdowns-present');
+ dds[0]&&dds[0].click();
+ const wopts=_ddPop?[..._ddPop.querySelectorAll('.enumopt')]:[];
+ A(wopts.some(b=>b.textContent==='semibold'),'weight-dropdown-spells-out-the-curated-range: '+wopts.map(b=>b.textContent).join(','));
+ const wbold=wopts.find(b=>b.textContent==='bold');
+ A(wbold&&wbold.style.fontWeight==='700','weight-options-preview-their-own-weight: bold renders 700, got '+(wbold&&wbold.style.fontWeight));
+ closeColorDropdown();
+ dds[1]&&dds[1].click();
+ const sopts=_ddPop?[..._ddPop.querySelectorAll('.enumopt')]:[];
+ A(sopts.some(b=>b.textContent==='oblique'),'slant-dropdown-offers-oblique: '+sopts.map(b=>b.textContent).join(','));
+ const sital=sopts.find(b=>b.textContent==='italic');
+ A(sital&&sital.style.fontStyle==='italic','slant-options-preview-their-own-slant: italic renders italic');
+ closeColorDropdown();
  A(cluster&&cluster.querySelectorAll('.boxctl').length===1,'strike-control-in-row-underline-moved-to-expander');
  document.title='STYLETEST '+(ok?'PASS':'FAIL');
  const d=document.createElement('div');d.id='styletest';d.textContent='STYLETEST '+(ok?'PASS':'FAIL')+(notes.length?' fails='+notes.join(','):'');document.body.appendChild(d);}

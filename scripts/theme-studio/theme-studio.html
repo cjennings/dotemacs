@@ -22,7 +22,6 @@
  .boxbtn.on{background:#3a3320;border-color:#e8bd30;color:#e8bd30}
  .boxbtn:disabled{opacity:.3;cursor:default}
  .stylecluster{display:flex;flex-wrap:wrap;align-items:center;gap:4px;width:max-content;max-width:210px}
- select.stylesel{width:78px;padding:2px 4px;font:11px monospace;font-weight:normal}
  .exptoggle{width:18px;height:18px;padding:0;border:1px solid #3a3a3a;border-radius:3px;background:#1f1c19;color:#8a9496;font:12px monospace;line-height:1;cursor:pointer;vertical-align:middle}
  .exptoggle.on{background:#3a3320;border-color:#e8bd30;color:#e8bd30}
  .exptoggle.exp-nd{border-color:#e8bd30;color:#e8bd30}
@@ -54,6 +53,14 @@
  .cdd.compact.is-default{border-color:#8f7810;box-shadow:inset 0 0 0 1px #8f7810}
  .cddsw{display:inline-block;width:13px;height:13px;border-radius:3px;border:1px solid #0007;flex:none}
  .cdd.compact .cddsw{width:18px;height:18px}
+ .cdd.enumdd{width:auto;min-width:60px;max-width:96px;justify-content:center;background:#161412;color:#cdced1;font:13px monospace;padding:5px 8px}
+ .cdd.enumdd.is-default{color:#8a8a82}
+ .cdd.enumdd.locked{cursor:default;opacity:.85;box-shadow:inset 0 0 0 2px #e8bd3088}
+ .enumpop{display:flex;flex-direction:column;gap:2px;min-width:96px}
+ .enumopt{text-align:left;font:13px monospace;color:#cdced1;background:#161412;border:1px solid #3a3a3a;border-radius:4px;padding:4px 10px;cursor:pointer}
+ .enumopt:hover{background:#252321}
+ .enumopt.sel{outline:1px solid #e8bd30;outline-offset:1px}
+ .enumdef{color:#9a9a92}
  .cddpop{position:fixed;z-index:200;background:#161412;border:1px solid #3a3a3a;border-radius:6px;box-shadow:0 12px 34px #000c;max-height:70vh;overflow:auto;padding:8px}
  .cddghead{display:flex;align-items:center;gap:8px;margin-bottom:7px}
  .cddgdef{font:bold 11px monospace;color:#cdced1;background:#161412;border:1px solid #3a3a3a;border-radius:4px;padding:3px 10px;cursor:pointer}
@@ -1644,12 +1651,37 @@ function mkLockCell(lockKey,els){
 // selector, a slant selector, and box-like underline and strike controls. Each
 // edit mutates the face object and calls onChange to repaint. Returns the control
 // elements so the caller lays them out and hands them to mkLockCell.
-const WEIGHT_OPTS=[['','wt'],['light','light'],['normal','normal'],['medium','medium'],['semibold','semi'],['bold','bold'],['heavy','heavy']];
-const SLANT_OPTS=[['','sl'],['normal','normal'],['italic','italic'],['oblique','oblique']];
-function mkEnumSelect(opts,get,set,title){
-  const s=document.createElement('select');s.className='chip stylesel';s.title=title;
-  for(const [v,label] of opts){const o=document.createElement('option');o.value=v;o.textContent=label;s.appendChild(o);}
-  s.value=get()||'';s.onchange=()=>set(s.value||null);return s;}
+const WEIGHT_OPTS=[['light','light'],['normal','normal'],['medium','medium'],['semibold','semibold'],['bold','bold'],['heavy','heavy']];
+const SLANT_OPTS=[['normal','normal'],['italic','italic'],['oblique','oblique']];
+// A compact custom dropdown for an enum attribute (weight / slant), themed like
+// the color dropdown. The trigger shows the current value drawn in its own weight
+// or slant; the popup lists each option drawn with the attribute applied, so the
+// choice previews itself. opts.styleFor(value) returns the preview style props
+// ({fontWeight} / {fontStyle}); opts.placeholder is the unset-state label.
+function mkEnumDropdown(options,get,set,opts={}){
+  const t=document.createElement('div');t.className='cdd enumdd';t.tabIndex=0;
+  const styleFor=opts.styleFor||(()=>({}));
+  const labelOf=v=>{const o=options.find(p=>p[0]===v);return o?o[1]:'';};
+  function applyPreview(el,v){el.style.fontWeight='';el.style.fontStyle='';const s=styleFor(v);if(s.fontWeight)el.style.fontWeight=s.fontWeight;if(s.fontStyle)el.style.fontStyle=s.fontStyle;}
+  function paint(){const v=get()||'';t.dataset.val=v;t.classList.toggle('is-default',!v);
+    t.textContent=v?labelOf(v):(opts.placeholder||'set');applyPreview(t,v);t.title=opts.title||'';}
+  paint();
+  t.onclick=(e)=>{e.stopPropagation();if(t.dataset.locked==='1')return;if(_ddPop){closeColorDropdown();return;}
+    const pop=document.createElement('div');pop.className='cddpop enumpop';const cur=get()||'';
+    const pick=v=>{set(v||null);paint();closeColorDropdown();};
+    const def=document.createElement('button');def.type='button';
+    def.className='enumopt enumdef'+(cur===''?' sel':'');def.textContent='default';
+    def.title='clear — use the default';def.onclick=ev=>{ev.stopPropagation();pick('');};pop.appendChild(def);
+    for(const [v,label] of options){const b=document.createElement('button');b.type='button';
+      b.className='enumopt'+(v===cur?' sel':'');b.textContent=label;applyPreview(b,v);
+      b.onclick=ev=>{ev.stopPropagation();pick(v);};pop.appendChild(b);}
+    document.body.appendChild(pop);const r=t.getBoundingClientRect();
+    pop.style.left=r.left+'px';pop.style.minWidth=r.width+'px';pop.style.top=(r.bottom+2)+'px';
+    const ph=pop.getBoundingClientRect().height;
+    if(r.bottom+ph>window.innerHeight-6)pop.style.top=Math.max(6,r.top-ph-2)+'px';
+    _ddPop=pop;};
+  t.setValue=()=>paint();t.syncLocked=()=>paint();
+  return t;}
 // Underline control: none / line / wave glyph buttons plus a color swatch shown
 // while a style is active. Mirrors mkBoxControl; get()/set() read and write the
 // underline object ({style,color}) or null.
@@ -1673,8 +1705,8 @@ function mkStrikeControl(get,set,opts={}){
 // underline control lives in the per-row expander (it carries the wave/color
 // detail), keeping the row compact.
 function mkStyleControls(face,onChange,opts={}){
-  const w=mkEnumSelect(WEIGHT_OPTS,()=>face.weight,v=>{face.weight=v;onChange();},'font weight');
-  const s=mkEnumSelect(SLANT_OPTS,()=>face.slant,v=>{face.slant=v;onChange();},'font slant');
+  const w=mkEnumDropdown(WEIGHT_OPTS,()=>face.weight,v=>{face.weight=v;onChange();},{placeholder:'weight',title:'font weight',styleFor:v=>({fontWeight:cssWeight(v)})});
+  const s=mkEnumDropdown(SLANT_OPTS,()=>face.slant,v=>{face.slant=v;onChange();},{placeholder:'slant',title:'font slant',styleFor:v=>({fontStyle:v||'normal'})});
   const k=mkStrikeControl(()=>face.strike,v=>{face.strike=v;onChange();},opts);
   return [w,s,k];}
 function mkOverlineControl(get,set,opts={}){
@@ -3136,15 +3168,16 @@ if(location.hash==='#mocktest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c
  A(curNum&&/font-weight:\s*700/.test(curNum.getAttribute('style')||''),'line-number-honors-weight');
  UIMAP['region'].weight=null;UIMAP['region'].slant=null;UIMAP['region'].underline=null;buildUITable();
  const regionRow=[...document.querySelectorAll('#uibody tr')].find(r=>r.dataset.face==='region');
- const uiWeight=regionRow.querySelector('select.stylesel');
- A(uiWeight&&uiWeight.value==='','ui weight select starts empty when model is unset');
- uiWeight.value='bold';uiWeight.dispatchEvent(new Event('change'));
- A(UIMAP['region'].weight==='bold','ui weight select writes the model');
+ const pickEnum=(dd,label)=>{dd.click();const o=[..._ddPop.querySelectorAll('.enumopt')].find(b=>b.textContent===label);if(o)o.click();};
+ const uiWeight=regionRow.querySelector('.enumdd');
+ A(uiWeight&&uiWeight.dataset.val==='','ui weight dropdown starts empty when model is unset');
+ pickEnum(uiWeight,'bold');
+ A(UIMAP['region'].weight==='bold','ui weight dropdown writes the model');
  const app=curApp(),face=APPS[app].faces[0][0];PKGMAP[app][face].weight=null;buildPkgTable();
- const pkgWeight=()=>document.querySelector('#pkgbody tr[data-face="'+face+'"] select.stylesel');
- A(pkgWeight()&&pkgWeight().value==='','pkg weight select starts empty when model is unset');
- pkgWeight().value='heavy';pkgWeight().dispatchEvent(new Event('change'));
- A(PKGMAP[app][face].weight==='heavy'&&PKGMAP[app][face].source==='user','pkg weight select writes the model and marks the face edited');
+ const pkgWeight=()=>document.querySelector('#pkgbody tr[data-face="'+face+'"] .enumdd');
+ A(pkgWeight()&&pkgWeight().dataset.val==='','pkg weight dropdown starts empty when model is unset');
+ pickEnum(pkgWeight(),'heavy');
+ A(PKGMAP[app][face].weight==='heavy'&&PKGMAP[app][face].source==='user','pkg weight dropdown writes the model and marks the face edited');
  document.title='MOCKTEST '+(ok?'PASS':'FAIL');
  const d=document.createElement('div');d.id='mocktest';d.textContent='MOCKTEST '+(ok?'PASS':'FAIL')+(notes.length?' | '+notes.join(' ; '):'');document.body.appendChild(d);}
 // Palette-generator gate (open with #generatortest): previewing is non-mutating,
@@ -3816,10 +3849,20 @@ if(location.hash==='#styletest'){let ok=true;const notes=[];const A=(c,n)=>{if(!
  const cell=document.querySelector('#uibody tr[data-face="'+f+'"]').cells[4];
  const cluster=cell.querySelector('.stylecluster');
  A(!!cluster,'style-cluster-present');
- const sels=cluster?cluster.querySelectorAll('select.stylesel'):[];
- A(sels.length===2,'weight-and-slant-selectors-present');
- A(sels[0]&&[...sels[0].options].some(o=>o.value==='semibold'),'weight-selector-offers-the-curated-range');
- A(sels[1]&&[...sels[1].options].some(o=>o.value==='oblique'),'slant-selector-offers-oblique');
+ const dds=cluster?cluster.querySelectorAll('.enumdd'):[];
+ A(dds.length===2,'weight-and-slant-custom-dropdowns-present');
+ dds[0]&&dds[0].click();
+ const wopts=_ddPop?[..._ddPop.querySelectorAll('.enumopt')]:[];
+ A(wopts.some(b=>b.textContent==='semibold'),'weight-dropdown-spells-out-the-curated-range: '+wopts.map(b=>b.textContent).join(','));
+ const wbold=wopts.find(b=>b.textContent==='bold');
+ A(wbold&&wbold.style.fontWeight==='700','weight-options-preview-their-own-weight: bold renders 700, got '+(wbold&&wbold.style.fontWeight));
+ closeColorDropdown();
+ dds[1]&&dds[1].click();
+ const sopts=_ddPop?[..._ddPop.querySelectorAll('.enumopt')]:[];
+ A(sopts.some(b=>b.textContent==='oblique'),'slant-dropdown-offers-oblique: '+sopts.map(b=>b.textContent).join(','));
+ const sital=sopts.find(b=>b.textContent==='italic');
+ A(sital&&sital.style.fontStyle==='italic','slant-options-preview-their-own-slant: italic renders italic');
+ closeColorDropdown();
  A(cluster&&cluster.querySelectorAll('.boxctl').length===1,'strike-control-in-row-underline-moved-to-expander');
  document.title='STYLETEST '+(ok?'PASS':'FAIL');
  const d=document.createElement('div');d.id='styletest';d.textContent='STYLETEST '+(ok?'PASS':'FAIL')+(notes.length?' fails='+notes.join(','):'');document.body.appendChild(d);}

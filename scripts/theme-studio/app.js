@@ -142,12 +142,37 @@ function mkLockCell(lockKey,els){
 // selector, a slant selector, and box-like underline and strike controls. Each
 // edit mutates the face object and calls onChange to repaint. Returns the control
 // elements so the caller lays them out and hands them to mkLockCell.
-const WEIGHT_OPTS=[['','wt'],['light','light'],['normal','normal'],['medium','medium'],['semibold','semi'],['bold','bold'],['heavy','heavy']];
-const SLANT_OPTS=[['','sl'],['normal','normal'],['italic','italic'],['oblique','oblique']];
-function mkEnumSelect(opts,get,set,title){
-  const s=document.createElement('select');s.className='chip stylesel';s.title=title;
-  for(const [v,label] of opts){const o=document.createElement('option');o.value=v;o.textContent=label;s.appendChild(o);}
-  s.value=get()||'';s.onchange=()=>set(s.value||null);return s;}
+const WEIGHT_OPTS=[['light','light'],['normal','normal'],['medium','medium'],['semibold','semibold'],['bold','bold'],['heavy','heavy']];
+const SLANT_OPTS=[['normal','normal'],['italic','italic'],['oblique','oblique']];
+// A compact custom dropdown for an enum attribute (weight / slant), themed like
+// the color dropdown. The trigger shows the current value drawn in its own weight
+// or slant; the popup lists each option drawn with the attribute applied, so the
+// choice previews itself. opts.styleFor(value) returns the preview style props
+// ({fontWeight} / {fontStyle}); opts.placeholder is the unset-state label.
+function mkEnumDropdown(options,get,set,opts={}){
+  const t=document.createElement('div');t.className='cdd enumdd';t.tabIndex=0;
+  const styleFor=opts.styleFor||(()=>({}));
+  const labelOf=v=>{const o=options.find(p=>p[0]===v);return o?o[1]:'';};
+  function applyPreview(el,v){el.style.fontWeight='';el.style.fontStyle='';const s=styleFor(v);if(s.fontWeight)el.style.fontWeight=s.fontWeight;if(s.fontStyle)el.style.fontStyle=s.fontStyle;}
+  function paint(){const v=get()||'';t.dataset.val=v;t.classList.toggle('is-default',!v);
+    t.textContent=v?labelOf(v):(opts.placeholder||'set');applyPreview(t,v);t.title=opts.title||'';}
+  paint();
+  t.onclick=(e)=>{e.stopPropagation();if(t.dataset.locked==='1')return;if(_ddPop){closeColorDropdown();return;}
+    const pop=document.createElement('div');pop.className='cddpop enumpop';const cur=get()||'';
+    const pick=v=>{set(v||null);paint();closeColorDropdown();};
+    const def=document.createElement('button');def.type='button';
+    def.className='enumopt enumdef'+(cur===''?' sel':'');def.textContent='default';
+    def.title='clear — use the default';def.onclick=ev=>{ev.stopPropagation();pick('');};pop.appendChild(def);
+    for(const [v,label] of options){const b=document.createElement('button');b.type='button';
+      b.className='enumopt'+(v===cur?' sel':'');b.textContent=label;applyPreview(b,v);
+      b.onclick=ev=>{ev.stopPropagation();pick(v);};pop.appendChild(b);}
+    document.body.appendChild(pop);const r=t.getBoundingClientRect();
+    pop.style.left=r.left+'px';pop.style.minWidth=r.width+'px';pop.style.top=(r.bottom+2)+'px';
+    const ph=pop.getBoundingClientRect().height;
+    if(r.bottom+ph>window.innerHeight-6)pop.style.top=Math.max(6,r.top-ph-2)+'px';
+    _ddPop=pop;};
+  t.setValue=()=>paint();t.syncLocked=()=>paint();
+  return t;}
 // Underline control: none / line / wave glyph buttons plus a color swatch shown
 // while a style is active. Mirrors mkBoxControl; get()/set() read and write the
 // underline object ({style,color}) or null.
@@ -171,8 +196,8 @@ function mkStrikeControl(get,set,opts={}){
 // underline control lives in the per-row expander (it carries the wave/color
 // detail), keeping the row compact.
 function mkStyleControls(face,onChange,opts={}){
-  const w=mkEnumSelect(WEIGHT_OPTS,()=>face.weight,v=>{face.weight=v;onChange();},'font weight');
-  const s=mkEnumSelect(SLANT_OPTS,()=>face.slant,v=>{face.slant=v;onChange();},'font slant');
+  const w=mkEnumDropdown(WEIGHT_OPTS,()=>face.weight,v=>{face.weight=v;onChange();},{placeholder:'weight',title:'font weight',styleFor:v=>({fontWeight:cssWeight(v)})});
+  const s=mkEnumDropdown(SLANT_OPTS,()=>face.slant,v=>{face.slant=v;onChange();},{placeholder:'slant',title:'font slant',styleFor:v=>({fontStyle:v||'normal'})});
   const k=mkStrikeControl(()=>face.strike,v=>{face.strike=v;onChange();},opts);
   return [w,s,k];}
 function mkOverlineControl(get,set,opts={}){
