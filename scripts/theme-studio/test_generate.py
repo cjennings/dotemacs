@@ -102,31 +102,17 @@ class AssembledPage(unittest.TestCase):
         self.assertIn("keyword", generate.SYNTAX_DOCS["kw"].lower())
         self.assertIn(json.dumps(generate.SYNTAX_DOCS), generate.HTML)
 
-    def test_page_carries_the_colormath_body_verbatim(self):
-        # Python-side inline-integrity: the same guarantee the JS test asserts, but
-        # checked at the point the page is built rather than after a round-trip.
-        self.assertIn(generate.COLORMATH_BODY, generate.HTML)
-
-    def test_page_carries_the_app_core_body_verbatim(self):
-        # app-core.js inlines verbatim (no data placeholders), so the inlined copy
-        # and the unit-tested module cannot drift.
-        self.assertIn(generate.APP_CORE_BODY, generate.HTML)
-
-    def test_page_carries_the_app_util_body_verbatim(self):
-        # app-util.js inlines verbatim after its import line is stripped.
-        self.assertIn(generate.APP_UTIL_BODY, generate.HTML)
-
-    def test_page_carries_palette_generator_core_verbatim(self):
-        self.assertIn(generate.PALETTE_GENERATOR_CORE_BODY, generate.HTML)
-
-    def test_page_carries_palette_generator_ui_verbatim(self):
-        self.assertIn(generate.PALETTE_GENERATOR_UI_BODY, generate.HTML)
-
-    def test_page_carries_palette_actions_verbatim(self):
-        self.assertIn(generate.PALETTE_ACTIONS_BODY, generate.HTML)
-
-    def test_page_carries_browser_gates_verbatim(self):
-        self.assertIn(generate.BROWSER_GATES_BODY, generate.HTML)
+    def test_page_carries_each_inlined_body_verbatim(self):
+        # Python-side inline-integrity: every verbatim-inlined module (no data
+        # placeholders, exports/imports stripped) must appear in the page byte for
+        # byte, so the inlined copy and the unit-tested module cannot drift. Checked
+        # at build time rather than after a round-trip. app-util.js's import line is
+        # already stripped in APP_UTIL_BODY.
+        for name in ("COLORMATH_BODY", "APP_CORE_BODY", "APP_UTIL_BODY",
+                     "PALETTE_GENERATOR_CORE_BODY", "PALETTE_GENERATOR_UI_BODY",
+                     "PALETTE_ACTIONS_BODY", "BROWSER_GATES_BODY"):
+            with self.subTest(body=name):
+                self.assertIn(getattr(generate, name), generate.HTML)
 
     def test_app_util_inlined_body_has_no_import_line(self):
         # The `import rl` line must be gone, or the page <script> is invalid.

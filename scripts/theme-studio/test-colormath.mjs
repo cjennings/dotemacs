@@ -18,9 +18,8 @@ import {
 
 const close = (a, b, eps = 0.005) => Math.abs(a - b) <= eps;
 const here = fileURLToPath(new URL('.', import.meta.url));
-// Same export-strip generate.py applies before inlining (drop `export` lines, rstrip).
-const stripExports = (s) =>
-  s.split('\n').filter((l) => !l.startsWith('export')).join('\n').replace(/\s+$/, '');
+// Same strip generate.py applies before inlining (drop export/import lines, rstrip).
+import { stripInlinedBody } from './inline-strip.mjs';
 
 test('srgb2oklab achromatic anchors', () => {
   const w = srgb2oklab('#ffffff');
@@ -266,7 +265,7 @@ test('reliefColors: malformed hex returns null pair (Error)', () => {
 // body (sans exports) verbatim, so the inlined copy and the tested module cannot
 // drift. Requires `python3 generate.py` to have run first.
 test('inline-integrity: theme-studio.html contains the colormath.js body verbatim', () => {
-  const body = stripExports(readFileSync(here + 'colormath.js', 'utf8'));
+  const body = stripInlinedBody(readFileSync(here + 'colormath.js', 'utf8'));
   const html = readFileSync(here + 'theme-studio.html', 'utf8');
   assert.ok(html.includes(body), 'generated page is missing the colormath.js body verbatim');
 });

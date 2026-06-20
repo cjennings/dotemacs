@@ -84,12 +84,10 @@ test('textOn: Boundary — straddles the ~0.179 luminance crossover', () => {
 
 // Inline-integrity: the page must carry app-util.js's body (sans import/export)
 // verbatim — the same strip generate.py applies. Requires `python3 generate.py`.
-const stripModule = (s) =>
-  s.split('\n').filter((l) => !(l.startsWith('export') || l.startsWith('import')))
-    .join('\n').replace(/\s+$/, '');
+import { stripInlinedBody } from './inline-strip.mjs';
 
 test('inline-integrity: theme-studio.html contains the app-util.js body verbatim', () => {
-  const body = stripModule(readFileSync(here + 'app-util.js', 'utf8'));
+  const body = stripInlinedBody(readFileSync(here + 'app-util.js', 'utf8'));
   const html = readFileSync(here + 'theme-studio.html', 'utf8');
   assert.ok(html.includes(body), 'generated page is missing the app-util.js body verbatim');
 });

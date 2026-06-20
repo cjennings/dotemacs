@@ -819,35 +819,34 @@ test('slugify: Error — an all-disallowed name falls back to "theme"', () => {
 // Guards the one-source-of-truth contract, same as the colormath integrity test:
 // the page must carry app-core.js's body (sans exports) verbatim. Requires
 // `python3 generate.py` to have run first.
-const stripExports = (s) =>
-  s.split('\n').filter((l) => !(l.startsWith('export') || l.startsWith('import'))).join('\n').replace(/\s+$/, '');
+import { stripInlinedBody } from './inline-strip.mjs';
 
 test('inline-integrity: theme-studio.html contains the app-core.js body verbatim', () => {
-  const body = stripExports(readFileSync(here + 'app-core.js', 'utf8'));
+  const body = stripInlinedBody(readFileSync(here + 'app-core.js', 'utf8'));
   const html = readFileSync(here + 'theme-studio.html', 'utf8');
   assert.ok(html.includes(body), 'generated page is missing the app-core.js body verbatim');
 });
 
 test('inline-integrity: theme-studio.html contains palette-generator-core.js verbatim', () => {
-  const body = stripExports(readFileSync(here + 'palette-generator-core.js', 'utf8'));
+  const body = stripInlinedBody(readFileSync(here + 'palette-generator-core.js', 'utf8'));
   const html = readFileSync(here + 'theme-studio.html', 'utf8');
   assert.ok(html.includes(body), 'generated page is missing palette-generator-core.js verbatim');
 });
 
 test('inline-integrity: theme-studio.html contains palette-generator-ui.js verbatim', () => {
-  const body = stripExports(readFileSync(here + 'palette-generator-ui.js', 'utf8'));
+  const body = stripInlinedBody(readFileSync(here + 'palette-generator-ui.js', 'utf8'));
   const html = readFileSync(here + 'theme-studio.html', 'utf8');
   assert.ok(html.includes(body), 'generated page is missing palette-generator-ui.js verbatim');
 });
 
 test('inline-integrity: theme-studio.html contains palette-actions.js verbatim', () => {
-  const body = stripExports(readFileSync(here + 'palette-actions.js', 'utf8'));
+  const body = stripInlinedBody(readFileSync(here + 'palette-actions.js', 'utf8'));
   const html = readFileSync(here + 'theme-studio.html', 'utf8');
   assert.ok(html.includes(body), 'generated page is missing palette-actions.js verbatim');
 });
 
 test('inline-integrity: theme-studio.html contains browser-gates.js verbatim', () => {
-  const body = stripExports(readFileSync(here + 'browser-gates.js', 'utf8'));
+  const body = stripInlinedBody(readFileSync(here + 'browser-gates.js', 'utf8'));
   const html = readFileSync(here + 'theme-studio.html', 'utf8');
   assert.ok(html.includes(body), 'generated page is missing browser-gates.js verbatim');
 });
