@@ -10,7 +10,7 @@ import {
   nameToHex, migrateLegacyFace, normalizePkgFace, buildPkgmap, packagesForExport, mergePackagesInto, effResolve, resolveSyntaxFg, resolveUiAttr, dropdownRowTextColor, paletteOptionList, spanNeighborHex, slugify,
   clearPalettePlan, deletePaletteColumnPlan, groundColumnMembersFromPalette, areAllLocked, lockToggleLabel, toggleLockSet,
   galleryModel, appViewKeysSorted, faceBoxNonDefaults, overflowNonDefault, stepViewIndex,
-  cssWeight, faceDecoration, boxCss, faceCss,
+  cssWeight, faceDecoration, boxCss, faceCss, composeHoverTitle,
 } from './app-core.js';
 import { planPaletteGenerator, entriesForGeneratedColumn } from './palette-generator-core.js';
 import { oklch2hex, deltaE } from './colormath.js';
@@ -1134,4 +1134,21 @@ test('boxCss: Boundary — released with no color but a bg shades from the bg', 
   // not the translucent no-bg fallback, and a real two-edge relief
   assert.notEqual(fromBg, 'inset 1px 1px 0 #ffffff33,inset -1px -1px 0 #00000066');
   assert.match(fromBg, /^inset 1px 1px 0 \S+,inset -1px -1px 0 \S+$/);
+});
+
+test('composeHoverTitle: Normal — docstring sits on top of existing base text', () => {
+  assert.equal(composeHoverTitle('A face doc.', 'mode-line'),
+               'A face doc.\n\nmode-line');
+});
+test('composeHoverTitle: Boundary — doc only (no base) returns the doc', () => {
+  assert.equal(composeHoverTitle('A face doc.', ''), 'A face doc.');
+  assert.equal(composeHoverTitle('A face doc.', null), 'A face doc.');
+});
+test('composeHoverTitle: Boundary — base only (no doc) returns the base unchanged', () => {
+  assert.equal(composeHoverTitle('', 'mode-line'), 'mode-line');
+  assert.equal(composeHoverTitle(undefined, 'mode-line'), 'mode-line');
+});
+test('composeHoverTitle: Error — neither doc nor base returns empty string', () => {
+  assert.equal(composeHoverTitle(null, null), '');
+  assert.equal(composeHoverTitle(undefined, ''), '');
 });

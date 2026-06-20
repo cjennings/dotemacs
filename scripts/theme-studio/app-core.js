@@ -537,4 +537,15 @@ function overflowNonDefault(cur,def,showInheritHeight){
   return false;
 }
 
-export { nameToHex, migrateLegacyFace, cssWeight, faceDecoration, boxCss, faceCss, normalizePkgFace, buildPkgmap, packagesForExport, mergePackagesInto, effResolve, resolveSyntaxFg, resolveUiAttr, dropdownRowTextColor, paletteOptionList, galleryModel, appViewKeysSorted, faceBoxNonDefaults, overflowNonDefault, stepViewIndex, spanNeighborHex, slugify, fgSetFor, floor, lMax, COVERED_FACES, columnsFromPalette, usedPaletteHexes, paletteUsages, regenColumn, rankByLightness, stepRepointPlan, sortColumns, sortColumnMembers, groundRoleOfEntry, groundColumnMembersFromPalette, clearPalettePlan, deletePaletteColumnPlan, areAllLocked, lockToggleLabel, toggleLockSet };
+// Compose an element-hover tooltip: the face's docstring on top, the existing
+// hover text (e.g. the bare face name) below it, separated by a blank line. A
+// missing doc or base collapses to whichever is present; missing both yields ''.
+// Keyed lookups (FACE_DOCS[face], SYNTAX_DOCS[kind]) supply DOC; BASE is
+// whatever title the element carried before.
+function composeHoverTitle(doc,base){
+  doc=doc||''; base=base||'';
+  if(doc&&base)return doc+'\n\n'+base;
+  return doc||base;
+}
+
+export { nameToHex, migrateLegacyFace, cssWeight, faceDecoration, boxCss, faceCss, composeHoverTitle, normalizePkgFace, buildPkgmap, packagesForExport, mergePackagesInto, effResolve, resolveSyntaxFg, resolveUiAttr, dropdownRowTextColor, paletteOptionList, galleryModel, appViewKeysSorted, faceBoxNonDefaults, overflowNonDefault, stepViewIndex, spanNeighborHex, slugify, fgSetFor, floor, lMax, COVERED_FACES, columnsFromPalette, usedPaletteHexes, paletteUsages, regenColumn, rankByLightness, stepRepointPlan, sortColumns, sortColumnMembers, groundRoleOfEntry, groundColumnMembersFromPalette, clearPalettePlan, deletePaletteColumnPlan, areAllLocked, lockToggleLabel, toggleLockSet };

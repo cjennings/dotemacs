@@ -58,6 +58,13 @@ PALETTE_ACTIONS_BODY=strip_exports(read_text('palette-actions.js'))
 # under the test harness while still shipping one self-contained HTML file.
 BROWSER_GATES_BODY=strip_exports(read_text('browser-gates.js'))
 COLOR_NAMES=read_json('color-names.json')
+# Face docstrings (first line each), dumped from a live Emacs via
+# face-docs-dump.el. Two maps: "faces" keyed by real face name (UI + package
+# tables), "syntax" keyed by theme-studio category (the syntax table). Inlined so
+# the element hovers can show each face's docstring on top of the existing title.
+_face_docs=read_json('face-docs.json')
+FACE_DOCS=_face_docs['faces']
+SYNTAX_DOCS=_face_docs['syntax']
 ns={}
 src=read_text('samples.py')
 exec(src[:src.index('# THEME_STUDIO_DATA_END')], ns)
@@ -273,6 +280,7 @@ def fill_data(s):
      .replace("PALETTE_ACTIONS_J",PALETTE_ACTIONS_BODY)
      .replace("BROWSER_GATES_J",BROWSER_GATES_BODY)
      .replace("COLOR_NAMES_J",json.dumps(COLOR_NAMES))
+     .replace("FACE_DOCS_J",json.dumps(FACE_DOCS)).replace("SYNTAX_DOCS_J",json.dumps(SYNTAX_DOCS))
      .replace("SAMPLES_J",json.dumps(SAMPLES))
      .replace("PALETTE_J",json.dumps(PALETTE)).replace("CATS_J",json.dumps(CATS))
      .replace("UIFACES_J",json.dumps(UI_FACES)).replace("UIMAP_J",json.dumps(UIMAP)).replace("APPS_J",json.dumps(APPS))

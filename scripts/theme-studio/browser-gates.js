@@ -971,3 +971,20 @@ if(location.hash==='#usagetest'){let ok=true;const notes=[];const A=(c,n)=>{if(!
  PALETTE=saveP;for(const k in MAP)delete MAP[k];Object.assign(MAP,saveM);for(const f in UIMAP)delete UIMAP[f];Object.assign(UIMAP,saveU);syncSyntaxFromCache();renderPalette();
  document.title='USAGETEST '+(ok?'PASS':'FAIL');
  const d=document.createElement('div');d.id='usagetest';d.textContent='USAGETEST '+(ok?'PASS':'FAIL')+(notes.length?' fails='+notes.join(','):'');document.body.appendChild(d);}
+// Element-docstring hovers (open with #hovertest): each table's category cell
+// carries the face's Emacs docstring on top of its prior hover text, and the
+// existing label-span hints are left intact (added in addition, not replaced).
+if(location.hash==='#hovertest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c){ok=false;notes.push(n);}};
+ buildTable();buildUITable();buildPkgTable();
+ const synCell=document.querySelector('#legbody tr[data-kind="kw"] .cat');
+ A(synCell&&synCell.title===SYNTAX_DOCS['kw'],'syntax cat cell shows the category face docstring: '+(synCell&&synCell.title));
+ const synLbl=document.querySelector('#legbody tr[data-kind="kw"] .cat span');
+ A(synLbl&&synLbl.title==='flash this category in the code','syntax label-span hint left intact');
+ const uiCell=document.querySelector('#uibody tr[data-face="mode-line"] .cat');
+ A(uiCell&&uiCell.title===FACE_DOCS['mode-line'],'ui cat cell shows the face docstring: '+(uiCell&&uiCell.title));
+ const app=curApp(),docFace=APPS[app].faces.map(r=>r[0]).find(f=>FACE_DOCS[f]);
+ A(docFace,'a package face with a docstring exists to test');
+ if(docFace){const pkgCell=document.querySelector('#pkgbody tr[data-face="'+docFace+'"] .cat');
+   A(pkgCell&&pkgCell.title===FACE_DOCS[docFace]+'\n\n'+docFace,'package cat cell shows docstring on top of the face name: '+(pkgCell&&JSON.stringify(pkgCell.title)));}
+ document.title='HOVERTEST '+(ok?'PASS':'FAIL');
+ const d=document.createElement('div');d.id='hovertest';d.textContent='HOVERTEST '+(ok?'PASS':'FAIL')+(notes.length?' fails='+notes.join(','):'');document.body.appendChild(d);}

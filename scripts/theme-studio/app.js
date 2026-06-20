@@ -1,5 +1,6 @@
 const SAMPLES=SAMPLES_J, CATS=CATS_J, UI_FACES=UIFACES_J, APPS=APPS_J;
 const COLOR_NAMES=COLOR_NAMES_J;
+const FACE_DOCS=FACE_DOCS_J, SYNTAX_DOCS=SYNTAX_DOCS_J; // face/category -> docstring first line, for element hovers
 let MAP=MAP_J, PALETTE=PALETTE_J, SYNTAX=SYNTAX_J, UIMAP=UIMAP_J;
 let LOCKED=new Set(LOCKS_J);   // rows whose choice is decided (controls disabled, skipped by erase/reset batch actions)
 const DELTAE_MIN=0.02; // OKLab ΔE below this = colors too close to tell apart (perceptual-metrics spec)
@@ -297,7 +298,7 @@ function buildTable(){
     const exp=mkExpander(syntaxFace(kind),tableColCount('legtable'),()=>{styleEx();renderCode();},{showInheritHeight:true,inheritOptions:[''].concat(BASE_INHERITS),defaultHex:rowFg(),ndCheck:()=>overflowNonDefault(syntaxFace(kind),DEFAULT_SYNTAX[kind],true)});
     exp.detail.dataset.detailFor=kind;
     const lkTd=mkLockCell(kind,[dd,bgd,...stCtls,boxCtl,...exp.locks]);
-    const c2=document.createElement('td');c2.className='cat';c2.appendChild(exp.btn);
+    const c2=document.createElement('td');c2.className='cat';c2.title=composeHoverTitle(SYNTAX_DOCS[kind],c2.title);c2.appendChild(exp.btn);
     const c2lbl=document.createElement('span');c2lbl.textContent=' '+label;c2lbl.style.cursor='pointer';c2lbl.title='flash this category in the code';c2lbl.onclick=()=>flashTokens(kind);c2.appendChild(c2lbl);
     tr.appendChild(c2);tr.appendChild(lkTd);tr.appendChild(c0);tr.appendChild(cB);tr.appendChild(stTd);tr.appendChild(cX);tr.appendChild(crTd);tr.appendChild(exTd);
     tb.appendChild(tr);tb.appendChild(exp.detail);}
@@ -614,7 +615,7 @@ function buildPkgTable(){
       {fg:nameToHex(def.fg,PALETTE),bg:nameToHex(def.bg,PALETTE),weight:def.weight,slant:def.slant,underline:def.underline,strike:def.strike,inherit:def.inherit,height:def.height,box:def.box});
     const exp=mkExpander(f,tableColCount('pkgtable'),()=>{f.source='user';pkgChanged();},{defaultHex:effFg(pkgEffFg(app,face)),ndCheck:()=>overflowNonDefault(f,def,false)});
     exp.detail.dataset.detailFor=face;
-    const c0=document.createElement('td');c0.className='cat';c0.title=face;c0.appendChild(exp.btn);
+    const c0=document.createElement('td');c0.className='cat';c0.title=composeHoverTitle(FACE_DOCS[face],face);c0.appendChild(exp.btn);
     const c0lbl=document.createElement('span');c0lbl.textContent=' '+label;c0lbl.style.cursor='pointer';c0lbl.onclick=()=>flashPkgPreview(face);c0.appendChild(c0lbl);
     const fgd=mkColorDropdown(ddList(f.fg||''),f.fg||'',h=>{f.fg=h||null;f.source='user';pkgChanged();},{compact:true,defaultHex:effFg(pkgEffFg(app,face))}),
           bgd=mkColorDropdown(ddList(f.bg||''),f.bg||'',h=>{f.bg=h||null;f.source='user';pkgChanged();},{compact:true,defaultHex:effBg(pkgEffBg(app,face))});
@@ -709,7 +710,7 @@ function buildUITable(){
     const tr=document.createElement('tr');tr.dataset.face=face;
     const exp=mkExpander(UIMAP[face],tableColCount('uitable'),()=>{paintUI(face);buildMockFrame();},{showInheritHeight:true,inheritOptions:[''].concat(BASE_INHERITS),defaultHex:effFg(UIMAP[face].fg),ndCheck:()=>overflowNonDefault(UIMAP[face],DEFAULT_UIMAP[face],true)});
     exp.detail.dataset.detailFor=face;
-    const c0=document.createElement('td');c0.className='cat';c0.appendChild(exp.btn);
+    const c0=document.createElement('td');c0.className='cat';c0.title=composeHoverTitle(FACE_DOCS[face],c0.title);c0.appendChild(exp.btn);
     const c0lbl=document.createElement('span');c0lbl.textContent=' '+label;c0lbl.style.cursor='pointer';c0lbl.title='flash this face in the live preview';c0lbl.onclick=()=>flashUiPreview(face);c0.appendChild(c0lbl);
     const fgSel=uiSelect(face,'fg'),bgSel=uiSelect(face,'bg');
     const cF=document.createElement('td');cF.appendChild(fgSel);

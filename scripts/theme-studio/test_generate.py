@@ -10,6 +10,7 @@ Run: python3 -m unittest test_generate   (from scripts/theme-studio/)
 """
 import os
 import io
+import json
 import tempfile
 import runpy
 import unittest
@@ -82,12 +83,24 @@ class AssembledPage(unittest.TestCase):
         "PALETTE_ACTIONS_J", "BROWSER_GATES_J",
         "COLORMATH_J", "SAMPLES_J", "PALETTE_J", "CATS_J",
         "UIFACES_J", "UIMAP_J", "APPS_J", "SYNTAX_J", "MAP_J",
-        "COLOR_NAMES_J",
+        "COLOR_NAMES_J", "FACE_DOCS_J", "SYNTAX_DOCS_J",
     ]
 
     def test_every_placeholder_is_substituted(self):
         for token in self.PLACEHOLDERS:
             self.assertNotIn(token, generate.HTML, f"{token} left unsubstituted")
+
+    def test_face_docs_maps_embed_a_known_docstring(self):
+        # The face/syntax docstring maps inline so element hovers can show them.
+        # default is always present; its first line is stable across Emacs builds.
+        self.assertIn("Basic default face.", generate.FACE_DOCS["default"])
+        self.assertIn(json.dumps(generate.FACE_DOCS), generate.HTML)
+
+    def test_syntax_docs_resolve_categories_to_face_docstrings(self):
+        # The syntax table is keyed by category (kw, doc, ...); each resolves to
+        # its font-lock face's docstring via build-theme's canonical map.
+        self.assertIn("keyword", generate.SYNTAX_DOCS["kw"].lower())
+        self.assertIn(json.dumps(generate.SYNTAX_DOCS), generate.HTML)
 
     def test_page_carries_the_colormath_body_verbatim(self):
         # Python-side inline-integrity: the same guarantee the JS test asserts, but
