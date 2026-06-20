@@ -382,11 +382,6 @@
    "dark-cyan"
   ],
   [
-   "#6191c7",
-   "link",
-   "sapphire"
-  ],
-  [
    "#282f36",
    "sky-4",
    "sky"
@@ -430,6 +425,11 @@
    "#b8c6d9",
    "sky+4",
    "sky"
+  ],
+  [
+   "#5f8bf9",
+   "link",
+   "link"
   ]
  ],
  "syntax": {
@@ -881,11 +881,15 @@
    "underline": null,
    "strike": null,
    "overline": null,
-   "box": null,
+   "box": {
+    "style": "line",
+    "width": 1,
+    "color": "#54677d"
+   },
    "inverse": false,
    "extend": false,
    "inherit": "mode-line",
-   "height": null
+   "height": 2
   },
   "fringe": {
    "fg": "#f3e7c5",
@@ -1016,7 +1020,7 @@
    "height": null
   },
   "show-paren-mismatch": {
-   "fg": "#ffffff",
+   "fg": "#edeff1",
    "bg": "#cb6b4d",
    "distant-fg": null,
    "family": null,
@@ -1032,7 +1036,7 @@
    "height": null
   },
   "link": {
-   "fg": "#6191c7",
+   "fg": "#0000ee",
    "bg": "#100f0f",
    "distant-fg": null,
    "family": null,
@@ -1099,7 +1103,7 @@
    "height": null
   },
   "vertical-border": {
-   "fg": "#424f5e",
+   "fg": "#4a4b4f",
    "bg": "#100f0f",
    "distant-fg": null,
    "family": null,
@@ -1133,11 +1137,9 @@
   "ui:minibuffer-prompt",
   "ui:isearch-fail",
   "ui:show-paren-match",
-  "ui:show-paren-mismatch",
   "ui:error",
   "ui:warning",
   "ui:success",
-  "ui:vertical-border",
   "con",
   "pkg:git-gutter:git-gutter:deleted",
   "pkg:git-gutter:git-gutter:modified",
@@ -1257,11 +1259,6 @@
   "pkg:emms:emms-metaplaylist-mode-face",
   "pkg:emms:emms-playlist-selected-face",
   "pkg:emms:emms-playlist-track-face",
-  "pkg:malyon:malyon-face-bold",
-  "pkg:malyon:malyon-face-error",
-  "pkg:malyon:malyon-face-italic",
-  "pkg:malyon:malyon-face-plain",
-  "pkg:malyon:malyon-face-reverse",
   "pkg:org-drill:org-drill-hidden-cloze-face",
   "pkg:org-drill:org-drill-visible-cloze-face",
   "pkg:org-drill:org-drill-visible-cloze-hint-face",
@@ -1349,18 +1346,6 @@
   "pkg:elfeed:elfeed-log-debug-level-face",
   "pkg:elfeed:elfeed-search-unread-title-face",
   "pkg:elfeed:elfeed-search-feed-face",
-  "pkg:embark:embark-collect-annotation",
-  "pkg:embark:embark-collect-candidate",
-  "pkg:embark:embark-collect-group-separator",
-  "pkg:embark:embark-collect-group-title",
-  "pkg:embark:embark-keybinding",
-  "pkg:embark:embark-keybinding-repeat",
-  "pkg:embark:embark-keymap",
-  "pkg:embark:embark-selected",
-  "pkg:embark:embark-target",
-  "pkg:embark:embark-verbose-indicator-documentation",
-  "pkg:embark:embark-verbose-indicator-shadowed",
-  "pkg:embark:embark-verbose-indicator-title",
   "pkg:org-mode:org-scheduled-today",
   "pkg:ghostel:ghostel-default",
   "pkg:ghostel:ghostel-fake-cursor",
@@ -1388,11 +1373,8 @@
   "pkg:shr:shr-h5",
   "pkg:shr:shr-h6",
   "pkg:shr:shr-text",
-  "pkg:shr:shr-link",
-  "pkg:shr:shr-selected-link",
   "pkg:shr:shr-code",
   "pkg:shr:shr-mark",
-  "pkg:shr:shr-strike-through",
   "pkg:shr:shr-sup",
   "pkg:shr:shr-abbreviation",
   "pkg:shr:shr-sliced-image",
@@ -1438,7 +1420,6 @@
   "pkg:pearl:pearl-modified-unknown",
   "pkg:pearl:pearl-readonly-comment",
   "pkg:pearl:pearl-editable-comment",
-  "ui:mode-line-inactive",
   "ui:mode-line",
   "ui:mode-line-highlight",
   "pkg:alert:alert-high-face",
@@ -1447,7 +1428,74 @@
   "pkg:alert:alert-urgent-face",
   "pkg:alert:alert-moderate-face",
   "pkg:alert:alert-low-face",
-  "pkg:dashboard:dashboard-banner-logo-title"
+  "ui:show-paren-mismatch",
+  "ui:vertical-border",
+  "pkg:ansi-color:ansi-color-black",
+  "pkg:ansi-color:ansi-color-red",
+  "pkg:ansi-color:ansi-color-green",
+  "pkg:ansi-color:ansi-color-yellow",
+  "pkg:ansi-color:ansi-color-blue",
+  "pkg:ansi-color:ansi-color-magenta",
+  "pkg:ansi-color:ansi-color-cyan",
+  "pkg:ansi-color:ansi-color-white",
+  "pkg:ansi-color:ansi-color-bright-black",
+  "pkg:ansi-color:ansi-color-bright-red",
+  "pkg:ansi-color:ansi-color-bright-green",
+  "pkg:ansi-color:ansi-color-bright-yellow",
+  "pkg:ansi-color:ansi-color-bright-blue",
+  "pkg:ansi-color:ansi-color-bright-magenta",
+  "pkg:ansi-color:ansi-color-bright-cyan",
+  "pkg:ansi-color:ansi-color-bright-white",
+  "pkg:dashboard:dashboard-banner-logo-title",
+  "pkg:json-mode:json-mode-object-name-face",
+  "pkg:malyon:malyon-face-bold",
+  "pkg:malyon:malyon-face-error",
+  "pkg:malyon:malyon-face-italic",
+  "pkg:malyon:malyon-face-plain",
+  "pkg:malyon:malyon-face-reverse",
+  "pkg:mu4e:mu4e-title-face",
+  "pkg:mu4e:mu4e-context-face",
+  "pkg:mu4e:mu4e-modeline-face",
+  "pkg:mu4e:mu4e-ok-face",
+  "pkg:mu4e:mu4e-warning-face",
+  "pkg:mu4e:mu4e-header-title-face",
+  "pkg:mu4e:mu4e-header-key-face",
+  "pkg:mu4e:mu4e-header-value-face",
+  "pkg:mu4e:mu4e-header-face",
+  "pkg:mu4e:mu4e-header-highlight-face",
+  "pkg:mu4e:mu4e-header-marks-face",
+  "pkg:mu4e:mu4e-unread-face",
+  "pkg:mu4e:mu4e-flagged-face",
+  "pkg:mu4e:mu4e-replied-face",
+  "pkg:mu4e:mu4e-forwarded-face",
+  "pkg:mu4e:mu4e-draft-face",
+  "pkg:mu4e:mu4e-trashed-face",
+  "pkg:mu4e:mu4e-related-face",
+  "pkg:mu4e:mu4e-contact-face",
+  "pkg:mu4e:mu4e-special-header-value-face",
+  "pkg:mu4e:mu4e-url-number-face",
+  "pkg:mu4e:mu4e-link-face",
+  "pkg:mu4e:mu4e-footer-face",
+  "pkg:mu4e:mu4e-region-code",
+  "pkg:mu4e:mu4e-system-face",
+  "pkg:mu4e:mu4e-highlight-face",
+  "pkg:mu4e:mu4e-compose-separator-face",
+  "pkg:rainbow-delimiters:rainbow-delimiters-base-error-face",
+  "pkg:rainbow-delimiters:rainbow-delimiters-base-face",
+  "pkg:rainbow-delimiters:rainbow-delimiters-depth-1-face",
+  "pkg:rainbow-delimiters:rainbow-delimiters-depth-2-face",
+  "pkg:rainbow-delimiters:rainbow-delimiters-depth-3-face",
+  "pkg:rainbow-delimiters:rainbow-delimiters-depth-4-face",
+  "pkg:rainbow-delimiters:rainbow-delimiters-depth-5-face",
+  "pkg:rainbow-delimiters:rainbow-delimiters-depth-6-face",
+  "pkg:rainbow-delimiters:rainbow-delimiters-depth-7-face",
+  "pkg:rainbow-delimiters:rainbow-delimiters-depth-8-face",
+  "pkg:rainbow-delimiters:rainbow-delimiters-depth-9-face",
+  "pkg:rainbow-delimiters:rainbow-delimiters-mismatched-face",
+  "pkg:rainbow-delimiters:rainbow-delimiters-unmatched-face",
+  "pkg:shr:shr-link",
+  "pkg:shr:shr-selected-link",
+  "pkg:shr:shr-strike-through"
  ],
  "packages": {
   "org-mode": {
@@ -2908,7 +2956,7 @@
     "source": "user"
    },
    "mu4e-link-face": {
-    "fg": "#6191c7",
+    "fg": "#0000ee",
     "bg": null,
     "underline": {
      "style": "line",
@@ -3536,7 +3584,7 @@
     "weight": "bold",
     "slant": "italic",
     "inherit": "default",
-    "height": 1.3,
+    "height": 1.25,
     "source": "user"
    },
    "dashboard-text-banner": {
@@ -3601,9 +3649,9 @@
    },
    "lsp-signature-posframe": {
     "fg": null,
-    "bg": "#1a1714",
+    "bg": null,
     "inherit": null,
-    "source": "default"
+    "source": "user"
    },
    "lsp-face-highlight-read": {
     "fg": null,
@@ -3638,18 +3686,18 @@
     "source": "default"
    },
    "lsp-inlay-hint-face": {
-    "fg": "#5e6770",
+    "fg": "#777980",
     "bg": null,
     "slant": "italic",
     "inherit": null,
-    "source": "default"
+    "source": "user"
    },
    "lsp-inlay-hint-parameter-face": {
-    "fg": "#838d97",
+    "fg": "#8e919a",
     "bg": null,
     "slant": "italic",
     "inherit": null,
-    "source": "default"
+    "source": "user"
    },
    "lsp-inlay-hint-type-face": {
     "fg": "#5d9b86",
@@ -5643,7 +5691,7 @@
     "source": "user"
    },
    "shr-link": {
-    "fg": "#6191c7",
+    "fg": "#5f8bf9",
     "bg": null,
     "underline": {
      "style": "line",
@@ -5653,7 +5701,7 @@
     "source": "user"
    },
    "shr-selected-link": {
-    "fg": "#dab53d",
+    "fg": "#777980",
     "bg": null,
     "weight": "bold",
     "underline": {
@@ -5661,7 +5709,7 @@
      "color": null
     },
     "inherit": null,
-    "source": "default"
+    "source": "user"
    },
    "shr-code": {
     "fg": "#cb6b4d",
@@ -5676,7 +5724,7 @@
     "source": "default"
    },
    "shr-strike-through": {
-    "fg": "#a6aab4",
+    "fg": "#8e919a",
     "bg": null,
     "strike": {
      "color": null
@@ -5706,10 +5754,10 @@
   },
   "2048-game": {
    "twentyfortyeight-face-1024": {
-    "fg": null,
+    "fg": "#a9be87",
     "bg": null,
     "inherit": null,
-    "source": "default"
+    "source": "user"
    },
    "twentyfortyeight-face-128": {
     "fg": null,
@@ -5724,22 +5772,24 @@
     "source": "default"
    },
    "twentyfortyeight-face-2": {
-    "fg": null,
+    "fg": "#100f0f",
     "bg": null,
     "inherit": null,
-    "source": "default"
+    "source": "user"
    },
    "twentyfortyeight-face-2048": {
-    "fg": null,
+    "fg": "#dab53d",
     "bg": null,
+    "weight": "bold",
+    "slant": "italic",
     "inherit": null,
-    "source": "default"
+    "source": "user"
    },
    "twentyfortyeight-face-256": {
-    "fg": null,
+    "fg": "#47a0b7",
     "bg": null,
     "inherit": null,
-    "source": "default"
+    "source": "user"
    },
    "twentyfortyeight-face-32": {
     "fg": null,
@@ -5754,16 +5804,16 @@
     "source": "default"
    },
    "twentyfortyeight-face-512": {
-    "fg": null,
+    "fg": "#9f80c9",
     "bg": null,
     "inherit": null,
-    "source": "default"
+    "source": "user"
    },
    "twentyfortyeight-face-64": {
     "fg": null,
     "bg": null,
     "inherit": null,
-    "source": "default"
+    "source": "user"
    },
    "twentyfortyeight-face-8": {
     "fg": null,
@@ -6533,10 +6583,10 @@
   },
   "json-mode": {
    "json-mode-object-name-face": {
-    "fg": null,
+    "fg": "#e0c266",
     "bg": null,
     "inherit": null,
-    "source": "default"
+    "source": "user"
    }
   },
   "llama": {
@@ -6619,7 +6669,7 @@
   },
   "malyon": {
    "malyon-face-bold": {
-    "fg": null,
+    "fg": "#788da6",
     "bg": null,
     "weight": "bold",
     "inherit": "bold",
@@ -6633,7 +6683,7 @@
     "source": "user"
    },
    "malyon-face-italic": {
-    "fg": "#bfc4d0",
+    "fg": "#67809c",
     "bg": null,
     "slant": "italic",
     "inherit": "italic",
