@@ -179,11 +179,18 @@ Only checks DIRECTORY/*/todo.org — does not recurse deeper."
 ;; builds the org agenda list from all agenda targets with caching.
 ;; agenda targets is the schedule, contacts, project todos,
 ;; inbox, and org roam projects.
+(defun cj/--org-agenda-base-files ()
+  "Return the fixed base files for the agenda: inbox, schedule, and calendars.
+The single source of the base list shared by the agenda builders and the chime
+initializer, so adding a calendar source is a one-place change.  Per-project
+todo.org files are layered on separately."
+  (list inbox-file schedule-file gcal-file pcal-file dcal-file))
+
 (defun cj/--org-agenda-scan-files ()
   "Scan disk for the agenda files list.  Pure-ish: no caching, no logging.
 Returns the list to assign to `org-agenda-files'.  Slow -- walks
 `projects-dir' for per-project todo.org files."
-  (let ((files (list inbox-file schedule-file gcal-file pcal-file dcal-file)))
+  (let ((files (cj/--org-agenda-base-files)))
     ;; cj/add-files-to-org-agenda-files-list mutates org-agenda-files; let-bind
     ;; it for the duration of the helper, then return whatever it produced.
     (let ((org-agenda-files files))
@@ -262,9 +269,7 @@ scoped to that project's todo.org plus calendars, schedule, and inbox."
          (chosen (completing-read "Show agenda for project: " project-names nil t))
          (todo-file (expand-file-name "todo.org"
                                       (expand-file-name chosen projects-dir)))
-         (org-agenda-files (list todo-file
-                                inbox-file schedule-file
-                                gcal-file pcal-file dcal-file)))
+         (org-agenda-files (cons todo-file (cj/--org-agenda-base-files))))
     (org-agenda "a" "d")))
 (global-set-key (kbd "C-<f8>") #'cj/todo-list-single-project)
 
@@ -424,7 +429,7 @@ This allows a line to show in an agenda without being scheduled or a deadline."
   :init
   ;; Initialize org-agenda-files with base files before chime loads
   ;; The full list will be built asynchronously later
-  (setq org-agenda-files (list inbox-file schedule-file gcal-file pcal-file dcal-file))
+  (setq org-agenda-files (cj/--org-agenda-base-files))
 
   ;; Debug mode (keep set to nil, but available for troubleshooting)
   (setq chime-debug nil)
