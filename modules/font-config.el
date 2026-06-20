@@ -153,36 +153,38 @@
 		   :italic-slant italic
 		   :line-spacing nil))))
 
-(with-eval-after-load 'fontaine
-  ;; Track which frames have had fonts applied
-  (defvar cj/fontaine-configured-frames nil
-	"List of frames that have had fontaine configuration applied.")
+;; Track which frames have had fonts applied
+(defvar cj/fontaine-configured-frames nil
+  "List of frames that have had fontaine configuration applied.")
 
-  (defun cj/apply-font-settings-to-frame (&optional frame)
-    "Apply font settings to FRAME if not already configured.
+(declare-function fontaine-set-preset "fontaine")
+
+(defun cj/apply-font-settings-to-frame (&optional frame)
+  "Apply font settings to FRAME if not already configured.
 If FRAME is nil, uses the selected frame."
-	(let ((target-frame (or frame (selected-frame))))
-	  (unless (member target-frame cj/fontaine-configured-frames)
-		(with-selected-frame target-frame
-		  (when (env-gui-p)
-			(fontaine-set-preset 'default)
-			(push target-frame cj/fontaine-configured-frames))))))
+  (let ((target-frame (or frame (selected-frame))))
+    (unless (member target-frame cj/fontaine-configured-frames)
+      (with-selected-frame target-frame
+        (when (env-gui-p)
+          (fontaine-set-preset 'default)
+          (push target-frame cj/fontaine-configured-frames))))))
 
-  (defun cj/cleanup-frame-list (frame)
-	"Remove FRAME from the configured frames list when deleted."
-	(setq cj/fontaine-configured-frames
-		  (delq frame cj/fontaine-configured-frames)))
+(defun cj/cleanup-frame-list (frame)
+  "Remove FRAME from the configured frames list when deleted."
+  (setq cj/fontaine-configured-frames
+        (delq frame cj/fontaine-configured-frames)))
 
+(with-eval-after-load 'fontaine
   ;; Handle daemon mode and regular mode
   (if (daemonp)
-	  (progn
-		;; Apply to each new frame in daemon mode
-		(add-hook 'server-after-make-frame-hook #'cj/apply-font-settings-to-frame)
-		;; Clean up deleted frames from tracking list
-		(add-hook 'delete-frame-functions #'cj/cleanup-frame-list))
-	;; Apply immediately in non-daemon mode
-	(when (env-gui-p)
-	  (cj/apply-font-settings-to-frame))))
+      (progn
+        ;; Apply to each new frame in daemon mode
+        (add-hook 'server-after-make-frame-hook #'cj/apply-font-settings-to-frame)
+        ;; Clean up deleted frames from tracking list
+        (add-hook 'delete-frame-functions #'cj/cleanup-frame-list))
+    ;; Apply immediately in non-daemon mode
+    (when (env-gui-p)
+      (cj/apply-font-settings-to-frame))))
 
 ;; ----------------------------- Font Install Check ----------------------------
 ;; convenience function to indicate whether a font is available by name.
@@ -196,22 +198,23 @@ If FRAME is nil, uses the selected frame."
 ;; ------------------------------- All The Icons -------------------------------
 ;; icons made available through fonts
 
+(declare-function all-the-icons-install-fonts "all-the-icons")
+
+(defun cj/maybe-install-all-the-icons-fonts (&optional _frame)
+  "Install all-the-icons fonts if needed and we have a GUI."
+  (when (and (env-gui-p)
+             (not (cj/font-installed-p "all-the-icons")))
+    (all-the-icons-install-fonts t)
+    ;; Remove this hook after successful installation
+    (remove-hook 'server-after-make-frame-hook #'cj/maybe-install-all-the-icons-fonts)))
+
 (use-package all-the-icons
   :demand t
   :config
-  ;; Check for font installation after frame creation
-  (defun cj/maybe-install-all-the-icons-fonts (&optional _frame)
-	"Install all-the-icons fonts if needed and we have a GUI."
-	(when (and (env-gui-p)
-			   (not (cj/font-installed-p "all-the-icons")))
-	  (all-the-icons-install-fonts t)
-	  ;; Remove this hook after successful installation
-	  (remove-hook 'server-after-make-frame-hook #'cj/maybe-install-all-the-icons-fonts)))
-
   ;; Handle both daemon and non-daemon modes
   (if (daemonp)
-	  (add-hook 'server-after-make-frame-hook #'cj/maybe-install-all-the-icons-fonts)
-	(cj/maybe-install-all-the-icons-fonts)))
+      (add-hook 'server-after-make-frame-hook #'cj/maybe-install-all-the-icons-fonts)
+    (cj/maybe-install-all-the-icons-fonts)))
 
 (use-package all-the-icons-nerd-fonts
   :after all-the-icons
