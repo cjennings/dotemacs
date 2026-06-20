@@ -119,6 +119,35 @@ through a `../' or absolute path.  Pure helper."
   (and (not (string-empty-p name))
        (not (string-match-p "/" name))))
 
+(defun cj/--playlist-resolve-target ()
+  "Prompt for a playlist name and return the .m3u path to write under `music-dir'.
+Re-prompt until the name is a safe bare filename (no `/').  When the target
+already exists, ask whether to overwrite, cancel, or rename: overwrite returns
+the path, cancel signals a `user-error', rename re-prompts.  Interactive
+prompting only -- the caller does the file write."
+  (let ((base-name nil)
+        (playlist-path nil)
+        (done nil))
+    (while (not done)
+      (setq base-name (cj/--playlist-sanitize-name
+                       (read-string "Playlist name (without .m3u): ")))
+      (cond
+       ((not (cj/--playlist-name-safe-p base-name))
+        (message "Playlist name must be a bare filename, without '/'."))
+       (t
+        (setq playlist-path (expand-file-name (concat base-name ".m3u") music-dir))
+        (if (not (file-exists-p playlist-path))
+            (setq done t)
+          (let ((choice (read-char-choice
+                         (format "Playlist '%s' exists. [o]verwrite, [c]ancel, [r]ename? "
+                                 (file-name-nondirectory playlist-path))
+                         '(?o ?c ?r))))
+            (cl-case choice
+              (?o (setq done t))
+              (?c (user-error "Cancelled playlist creation"))
+              (?r (setq done nil))))))))
+    playlist-path))
+
 (defun cj/dired-create-playlist-from-marked ()
   "Create an .m3u playlist file from marked files in Dired (or Dirvish).
 Filters for audio files, prompts for the playlist name, and saves the resulting
@@ -131,27 +160,7 @@ Filters for audio files, prompts for the playlist name, and saves the resulting
     (if (zerop count)
         (user-error "No audio files marked (extensions: %s)"
                     (string-join cj/audio-file-extensions ", "))
-      (let ((base-name nil)
-            (playlist-path nil)
-            (done nil))
-        (while (not done)
-          (setq base-name (cj/--playlist-sanitize-name
-                           (read-string "Playlist name (without .m3u): ")))
-          (cond
-           ((not (cj/--playlist-name-safe-p base-name))
-            (message "Playlist name must be a bare filename, without '/'."))
-           (t
-            (setq playlist-path (expand-file-name (concat base-name ".m3u") music-dir))
-            (if (not (file-exists-p playlist-path))
-                (setq done t)
-              (let ((choice (read-char-choice
-                             (format "Playlist '%s' exists. [o]verwrite, [c]ancel, [r]ename? "
-                                     (file-name-nondirectory playlist-path))
-                             '(?o ?c ?r))))
-                (cl-case choice
-                  (?o (setq done t))
-                  (?c (user-error "Cancelled playlist creation"))
-                  (?r (setq done nil))))))))
+      (let ((playlist-path (cj/--playlist-resolve-target)))
         (with-temp-file playlist-path
           (dolist (af audio-files)
             (insert af "\n")))

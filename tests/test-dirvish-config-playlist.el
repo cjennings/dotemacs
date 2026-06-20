@@ -10,6 +10,7 @@
 ;;; Code:
 
 (require 'ert)
+(require 'cl-lib)
 (require 'package)
 
 (setq package-user-dir (expand-file-name "elpa" user-emacs-directory))
@@ -92,6 +93,60 @@ lowercase extension list."
   "Error: any directory separator (relative, absolute, or nested) is rejected."
   (dolist (bad '("../evil" "../../etc/cron" "/etc/passwd" "sub/dir/name"))
     (should-not (cj/--playlist-name-safe-p bad))))
+
+;;; cj/--playlist-resolve-target
+;;
+;; Drives the real `file-exists-p' against a temp `music-dir' (mocking a C
+;; primitive triggers a native-comp trampoline rebuild that fails under
+;; --batch); only the ordinary `read-string' / `read-char-choice' prompts are
+;; stubbed.
+
+(ert-deftest test-cj--playlist-resolve-target-returns-path-for-new-name ()
+  "Normal: a safe name with no existing file returns its .m3u path under music-dir."
+  (let* ((music-dir (make-temp-file "cj-playlist-" t)))
+    (unwind-protect
+        (cl-letf (((symbol-function 'read-string) (lambda (&rest _) "roadtrip")))
+          (should (equal (expand-file-name "roadtrip.m3u" music-dir)
+                         (cj/--playlist-resolve-target))))
+      (delete-directory music-dir t))))
+
+(ert-deftest test-cj--playlist-resolve-target-reprompts-on-unsafe-name ()
+  "Boundary: an unsafe name (with `/') re-prompts until a safe name is given."
+  (let* ((music-dir (make-temp-file "cj-playlist-" t))
+         (answers '("../escape" "safe"))
+         (asked 0))
+    (unwind-protect
+        (cl-letf (((symbol-function 'read-string)
+                   (lambda (&rest _) (prog1 (nth asked answers) (cl-incf asked))))
+                  ((symbol-function 'message) (lambda (&rest _) nil)))
+          (should (equal (expand-file-name "safe.m3u" music-dir)
+                         (cj/--playlist-resolve-target)))
+          (should (= 2 asked)))
+      (delete-directory music-dir t))))
+
+(ert-deftest test-cj--playlist-resolve-target-overwrite-returns-existing-path ()
+  "Normal: when the target exists, choosing overwrite returns the same path."
+  (let* ((music-dir (make-temp-file "cj-playlist-" t))
+         (existing (expand-file-name "mix.m3u" music-dir)))
+    (unwind-protect
+        (progn
+          (with-temp-file existing (insert "old\n"))
+          (cl-letf (((symbol-function 'read-string) (lambda (&rest _) "mix"))
+                    ((symbol-function 'read-char-choice) (lambda (&rest _) ?o)))
+            (should (equal existing (cj/--playlist-resolve-target)))))
+      (delete-directory music-dir t))))
+
+(ert-deftest test-cj--playlist-resolve-target-cancel-signals-user-error ()
+  "Error: when the target exists, choosing cancel aborts with a `user-error'."
+  (let* ((music-dir (make-temp-file "cj-playlist-" t))
+         (existing (expand-file-name "mix.m3u" music-dir)))
+    (unwind-protect
+        (progn
+          (with-temp-file existing (insert "old\n"))
+          (cl-letf (((symbol-function 'read-string) (lambda (&rest _) "mix"))
+                    ((symbol-function 'read-char-choice) (lambda (&rest _) ?c)))
+            (should-error (cj/--playlist-resolve-target) :type 'user-error)))
+      (delete-directory music-dir t))))
 
 (provide 'test-dirvish-config-playlist)
 ;;; test-dirvish-config-playlist.el ends here
