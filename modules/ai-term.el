@@ -445,21 +445,28 @@ the \"the displayed buffer changes\" bug.  Falls back to the buffer-list
 MRU when nil or when the remembered buffer has been killed.")
 
 (defvar cj/--ai-term-last-size nil
-  "Last user-chosen body size for the AI-term display.
+  "Last user-chosen size for the AI-term display.
 
 Positive integer: body-columns when `cj/--ai-term-last-direction'
-is right or left, body-lines when below or above.  nil means use
+is right or left, total-lines when below or above.  nil means use
 the host-aware default from `cj/--ai-term-default-size' (a float
-fraction).
+fraction).  See `cj/window-replay-size' for the per-axis capture.
 
-Body size, not total size, because total-width includes the
-right-edge divider when the window has a right sibling but excludes
-it when the window is at the frame edge.  Capturing total-width
-from a rightmost agent (no divider) and replaying into a middle
-position (with divider) leaves the body 1 column short -- visible
-as 1 col of the sibling buffer peeking through where agent should
-have ended.  Body-width is divider-independent and matches what the
-user actually sees.
+The axis choice is asymmetric.  Width captures body-width, not
+total-width: total-width includes the right-edge divider when the
+window has a right sibling but excludes it at the frame edge, so
+capturing total-width from a rightmost agent (no divider) and
+replaying into a middle position (with divider) leaves the body 1
+column short.  Body-width is divider-independent.
+
+Height captures total-height, not body-height: every window has
+exactly one mode line regardless of position, so total-height has
+no divider-position problem, and total-height is the same whether
+the window is active or inactive.  Body-height would subtract the
+mode line's pixel height, which differs between an active and an
+inactive (theme-shrunk) mode line -- capturing body-height active
+and replaying it inactive then re-measuring active drifts the
+window down by ~1 line per toggle (the F9 shrink bug, 2026-06-20).
 
 Absolute values rather than fractions because
 `display-buffer-in-direction' interprets a float `window-width' /

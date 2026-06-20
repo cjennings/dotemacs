@@ -17,7 +17,9 @@
 (require 'term-config)
 
 (ert-deftest test-term-toggle--capture-state-records-direction-and-size ()
-  "Normal: capture-state writes direction and integer body size."
+  "Normal: capture-state writes direction and integer size.
+The vertical axis captures total-height (not body-height) so the toggle
+round-trip is immune to the mode line's pixel height."
   (save-window-excursion
     (delete-other-windows)
     (let ((below (split-window (selected-window) nil 'below))
@@ -26,7 +28,7 @@
       (cj/--term-toggle-capture-state below)
       (should (eq cj/--term-toggle-last-direction 'below))
       (should (integerp cj/--term-toggle-last-size))
-      (should (= cj/--term-toggle-last-size (window-body-height below))))))
+      (should (= cj/--term-toggle-last-size (window-total-height below))))))
 
 (ert-deftest test-term-toggle--capture-state-noop-on-dead-window ()
   "Boundary: nil window -> state remains unchanged."
@@ -50,7 +52,9 @@
     (should (eq (cdr (assq 'inhibit-same-window received-alist)) t))))
 
 (ert-deftest test-term-toggle--display-saved-maps-cardinal-to-edge ()
-  "Normal: saved 'below maps to bottom edge; integer size wraps in body-lines."
+  "Normal: saved 'below maps to bottom edge; integer size is a plain total-line count.
+The height axis replays a total-line integer (not a body-lines cons) so the
+round-trip is immune to the mode line's pixel height."
   (let (received-alist
         (cj/--term-toggle-last-direction 'below)
         (cj/--term-toggle-last-size 12))
@@ -58,8 +62,7 @@
                (lambda (_b a) (setq received-alist a) 'fake-window)))
       (cj/--term-toggle-display-saved 'fake-buf nil))
     (should (eq (cdr (assq 'direction received-alist)) 'bottom))
-    (should (equal (cdr (assq 'window-height received-alist))
-                   '(body-lines . 12)))
+    (should (equal (cdr (assq 'window-height received-alist)) 12))
     (should-not (assq 'window-width received-alist))))
 
 (ert-deftest test-term-toggle--display-saved-strips-conflicting-alist-entries ()

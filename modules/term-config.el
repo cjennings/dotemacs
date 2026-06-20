@@ -313,8 +313,9 @@ Symbol: right, left, or below.  `above' is never stored.  nil means use the
 default `below' for F12's traditional bottom split.")
 
 (defvar cj/--term-toggle-last-size nil
-  "Last user-chosen body size for the F12 terminal display.
-Positive integer: body-cols (right/left) or body-lines (below/above).
+  "Last user-chosen size for the F12 terminal display.
+Positive integer: body-cols (right/left) or total-lines (below/above) -- see
+`cj/window-replay-size' for why the vertical axis uses total, not body.
 nil means fall back to `cj/term-toggle-window-height' as a fraction.")
 
 (defun cj/--term-toggle-buffer-p (buffer)

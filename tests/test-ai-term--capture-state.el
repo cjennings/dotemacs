@@ -27,7 +27,9 @@
       (should (= cj/--ai-term-last-size (window-body-width right))))))
 
 (ert-deftest test-ai-term--capture-state-below-split-sets-direction ()
-  "Normal: below-split window -> direction=below, integer body-lines matching window."
+  "Normal: below-split window -> direction=below, integer total-lines matching window.
+The vertical axis captures total-height (not body-height) so the toggle
+round-trip is immune to the mode line's pixel height."
   (save-window-excursion
     (delete-other-windows)
     (let ((below (split-window (selected-window) nil 'below))
@@ -36,7 +38,7 @@
       (cj/--ai-term-capture-state below)
       (should (eq cj/--ai-term-last-direction 'below))
       (should (integerp cj/--ai-term-last-size))
-      (should (= cj/--ai-term-last-size (window-body-height below))))))
+      (should (= cj/--ai-term-last-size (window-total-height below))))))
 
 (ert-deftest test-ai-term--capture-state-noop-on-dead-window ()
   "Boundary: nil window -> state remains unchanged."

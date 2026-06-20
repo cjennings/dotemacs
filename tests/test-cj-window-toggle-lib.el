@@ -36,7 +36,9 @@
                  (window-body-width right))))))
 
 (ert-deftest test-cj-window-toggle-capture-records-below-split ()
-  "Normal: below-split window writes direction=below and integer body-lines."
+  "Normal: below-split window writes direction=below and integer total-lines.
+The vertical axis captures total-height, not body-height, so the round-trip
+is immune to the mode line's pixel height (see `cj/window-replay-size')."
   (save-window-excursion
     (delete-other-windows)
     (let ((below (split-window (selected-window) nil 'below))
@@ -49,7 +51,7 @@
       (should (eq test-cj-window-toggle--last-direction 'below))
       (should (integerp test-cj-window-toggle--last-size))
       (should (= test-cj-window-toggle--last-size
-                 (window-body-height below))))))
+                 (window-total-height below))))))
 
 (ert-deftest test-cj-window-toggle-capture-falls-back-to-default-direction ()
   "Boundary: window filling the frame uses the supplied default direction."
@@ -156,7 +158,9 @@ transfer; clearing it lets the consumer's default size apply."
     (should (eq (cdr (assq 'inhibit-same-window received-alist)) t))))
 
 (ert-deftest test-cj-window-toggle-display-saved-maps-below-to-bottom ()
-  "Normal: saved below + integer size -> bottom edge, body-lines cons."
+  "Normal: saved below + integer size -> bottom edge, plain total-line count.
+The height axis replays a total-line integer (not a body-lines cons) so the
+round-trip is immune to the mode line's pixel height."
   (let (received-alist
         (test-cj-window-toggle--last-direction 'below)
         (test-cj-window-toggle--last-size 12))
@@ -169,8 +173,7 @@ transfer; clearing it lets the consumer's default size apply."
        'test-cj-window-toggle--last-size
        0.7))
     (should (eq (cdr (assq 'direction received-alist)) 'bottom))
-    (should (equal (cdr (assq 'window-height received-alist))
-                   '(body-lines . 12)))
+    (should (equal (cdr (assq 'window-height received-alist)) 12))
     (should-not (assq 'window-width received-alist))))
 
 (ert-deftest test-cj-window-toggle-display-saved-maps-right-to-rightmost ()

@@ -42,21 +42,34 @@ fails to span the full height."
      ((not spans-full-height) (if (= top root-top) 'above 'below))
      (t (or default 'right)))))
 
-(defun cj/window-body-size (window direction)
-  "Return WINDOW's body size on the axis matching DIRECTION.
+(defun cj/window-replay-size (window direction)
+  "Return WINDOW's size to capture for geometry replay, on DIRECTION's axis.
 
 Returns body-width (columns) when DIRECTION is right or left.
-Returns body-height (lines) when DIRECTION is below or above.
+Returns total-height (lines) when DIRECTION is below or above.
 
-Body size, not total size, is the right thing to capture for
-geometry replay: total-width includes the right-side divider when
-the window has a right sibling but excludes it at the frame edge,
-so a captured rightmost window replayed into a middle position
-would leave the body 1 col short.  Body size is divider-
-independent and matches what the user actually sees."
+The axis choice is deliberately asymmetric, for two different reasons:
+
+- Width: body-width, not total-width.  Total-width includes the right-side
+  divider when the window has a right sibling but excludes it at the frame
+  edge, so a captured rightmost window replayed into a middle position would
+  leave the body 1 col short.  Body-width is divider-independent and matches
+  what the user sees.
+
+- Height: total-height, not body-height.  Every window carries exactly one
+  mode line regardless of position, so total-height has no analog of the
+  divider-position problem -- it is position-independent.  Body-height does
+  NOT work here: it subtracts the mode line's *pixel* height, which differs
+  between an active (full-height) and an inactive (theme-shrunk) mode line.
+  Capturing body-height while the window is active and replaying it while the
+  window is displayed inactive then re-measuring active drifts the value down
+  by ~1 line per toggle whenever the inactive mode line is shorter than a text
+  line (e.g. a theme that sets `mode-line-inactive' to a sub-line height).
+  Total-height is identical active or inactive, so the capture/replay
+  round-trip is a fixed point."
   (if (memq direction '(right left))
       (window-body-width window)
-    (window-body-height window)))
+    (window-total-height window)))
 
 (defun cj/cardinal-to-edge-direction (direction)
   "Map cardinal DIRECTION to its `display-buffer-in-direction' edge variant.

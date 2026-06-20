@@ -44,7 +44,7 @@ No-op when WINDOW is nil or not live."
       (if (or (null allowed) (memq dir allowed))
           (progn
             (set direction-var dir)
-            (set size-var (cj/window-body-size window dir)))
+            (set size-var (cj/window-replay-size window dir)))
         (set direction-var default-direction)
         (set size-var nil)))))
 
@@ -59,10 +59,12 @@ DEFAULT-SIZE when the stored values are nil.  The cardinal direction
 is mapped to its frame-edge variant via
 `cj/cardinal-to-edge-direction' so the new buffer always lands at
 the same frame edge regardless of the selected window.  An integer
-size is wrapped in a `(body-columns . N)' / `(body-lines . N)' cons
-so `display-buffer-in-direction' sets the body explicitly,
-divider-independent.  A float size passes through as a fraction of
-the new window's parent.
+size is wrapped per axis: a width size as a `(body-columns . N)'
+cons (divider-independent body width), a height size as a plain
+integer total-line count.  Height uses total rather than body so the
+capture/replay round-trip is immune to the mode line's pixel height
+(see `cj/window-replay-size').  A float size passes through as a
+fraction of the new window's parent.
 
 Caller-supplied ALIST entries for direction, window-width, or
 window-height are stripped before delegating to
@@ -74,15 +76,15 @@ placement; the remaining alist entries are passed through."
          (edge-direction (or (cj/cardinal-to-edge-direction direction)
                              (cj/cardinal-to-edge-direction default-direction)))
          (size (or stored-size default-size))
-         (size-key (if (memq direction '(right left))
-                       'window-width
-                     'window-height))
-         (body-tag (if (memq direction '(right left))
-                       'body-columns
-                     'body-lines))
-         (size-value (if (integerp size)
-                         (cons body-tag size)
-                       size))
+         (width-axis (memq direction '(right left)))
+         (size-key (if width-axis 'window-width 'window-height))
+         ;; A width integer is a body-column count (divider-independent); a
+         ;; height integer is a plain total-line count (mode-line-pixel-
+         ;; independent -- see `cj/window-replay-size').  Floats pass through.
+         (size-value (cond
+                      ((not (integerp size)) size)
+                      (width-axis (cons 'body-columns size))
+                      (t size)))
          (filtered (cl-remove-if
                     (lambda (cell)
                       (memq (car-safe cell)

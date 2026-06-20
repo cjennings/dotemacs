@@ -2,7 +2,7 @@
 
 ;;; Commentary:
 ;; Tests the pure helpers in `cj-window-geometry-lib.el':
-;; `cj/window-direction', `cj/window-body-size',
+;; `cj/window-direction', `cj/window-replay-size',
 ;; `cj/cardinal-to-edge-direction', and `cj/window-at-edge'.
 
 ;;; Code:
@@ -52,30 +52,32 @@
     (delete-other-windows)
     (should (eq (cj/window-direction (selected-window) 'below) 'below))))
 
-(ert-deftest test-cj-window-geometry--body-size-right-returns-body-cols ()
+(ert-deftest test-cj-window-geometry--replay-size-right-returns-body-cols ()
   "Normal: right window with direction='right -> body-width in cols."
   (save-window-excursion
     (delete-other-windows)
     (let ((right (split-window (selected-window) nil 'right)))
-      (should (= (cj/window-body-size right 'right)
+      (should (= (cj/window-replay-size right 'right)
                  (window-body-width right))))))
 
-(ert-deftest test-cj-window-geometry--body-size-below-returns-body-lines ()
-  "Normal: below window with direction='below -> body-height in lines."
+(ert-deftest test-cj-window-geometry--replay-size-below-returns-total-lines ()
+  "Normal: below window with direction='below -> total-height in lines.
+The vertical axis captures total-height (not body-height) so the capture/
+replay round-trip is immune to the mode line's pixel height."
   (save-window-excursion
     (delete-other-windows)
     (let ((below (split-window (selected-window) nil 'below)))
-      (should (= (cj/window-body-size below 'below)
-                 (window-body-height below))))))
+      (should (= (cj/window-replay-size below 'below)
+                 (window-total-height below))))))
 
-(ert-deftest test-cj-window-geometry--body-size-narrow-window ()
+(ert-deftest test-cj-window-geometry--replay-size-narrow-window ()
   "Normal: deliberately narrow right window -> matching body cols."
   (save-window-excursion
     (delete-other-windows)
     (let* ((frame-w (frame-width))
            (target-cols (/ frame-w 4))
            (right (split-window (selected-window) (- target-cols) 'right)))
-      (should (= (cj/window-body-size right 'right)
+      (should (= (cj/window-replay-size right 'right)
                  (window-body-width right))))))
 
 (ert-deftest test-cj-window-geometry--cardinal-to-edge-right ()
