@@ -54,48 +54,42 @@ CLOSING is appended to TEXT.
 Returns the wrapped text without modifying the buffer."
   (concat opening text closing))
 
+(defun cj/--enclose-region-or-word (transform &optional no-target-message)
+  "Apply TRANSFORM to the active region or the word at point, in place.
+TRANSFORM is a function of one string (the target text) returning the
+replacement text.  An active region is the target; otherwise the word at
+point is.  With neither, show NO-TARGET-MESSAGE (or a default) and leave the
+buffer unchanged.  Point is left after the inserted text."
+  (let ((bounds (cond ((use-region-p) (cons (region-beginning) (region-end)))
+                      ((thing-at-point 'word) (bounds-of-thing-at-point 'word)))))
+    (if (null bounds)
+        (message "%s" (or no-target-message
+                          "Can't do that. No word at point and no region selected."))
+      (let* ((beg (car bounds))
+             (end (cdr bounds))
+             (text (buffer-substring beg end)))
+        (delete-region beg end)
+        (goto-char beg)
+        (insert (funcall transform text))))))
+
 (defun cj/surround-word-or-region ()
   "Surround the word at point or active region with a string.
 The surround string is read from the minibuffer."
   (interactive)
-  (let ((str (read-string "Surround with: "))
-        (regionp (use-region-p)))
-    (if regionp
-        (let ((beg (region-beginning))
-              (end (region-end))
-              (text (buffer-substring (region-beginning) (region-end))))
-          (delete-region beg end)
-          (goto-char beg)
-          (insert (cj/--surround text str)))
-      (if (thing-at-point 'word)
-          (let* ((bounds (bounds-of-thing-at-point 'word))
-                 (text (buffer-substring (car bounds) (cdr bounds))))
-            (delete-region (car bounds) (cdr bounds))
-            (goto-char (car bounds))
-            (insert (cj/--surround text str)))
-        (message "Can't insert around. No word at point and no region selected.")))))
+  (let ((str (read-string "Surround with: ")))
+    (cj/--enclose-region-or-word
+     (lambda (text) (cj/--surround text str))
+     "Can't insert around. No word at point and no region selected.")))
 
 (defun cj/wrap-word-or-region ()
   "Wrap the word at point or active region with different opening/closing strings.
 The opening and closing strings are read from the minibuffer."
   (interactive)
   (let ((opening (read-string "Opening: "))
-        (closing (read-string "Closing: "))
-        (regionp (use-region-p)))
-    (if regionp
-        (let ((beg (region-beginning))
-              (end (region-end))
-              (text (buffer-substring (region-beginning) (region-end))))
-          (delete-region beg end)
-          (goto-char beg)
-          (insert (cj/--wrap text opening closing)))
-      (if (thing-at-point 'word)
-          (let* ((bounds (bounds-of-thing-at-point 'word))
-                 (text (buffer-substring (car bounds) (cdr bounds))))
-            (delete-region (car bounds) (cdr bounds))
-            (goto-char (car bounds))
-            (insert (cj/--wrap text opening closing)))
-        (message "Can't wrap. No word at point and no region selected.")))))
+        (closing (read-string "Closing: ")))
+    (cj/--enclose-region-or-word
+     (lambda (text) (cj/--wrap text opening closing))
+     "Can't wrap. No word at point and no region selected.")))
 
 (defun cj/--unwrap (text opening closing)
   "Internal implementation: Remove OPENING and CLOSING from TEXT if present.
@@ -114,22 +108,10 @@ Returns the unwrapped text if both delimiters present, otherwise unchanged."
 The opening and closing strings are read from the minibuffer."
   (interactive)
   (let ((opening (read-string "Opening to remove: "))
-        (closing (read-string "Closing to remove: "))
-        (regionp (use-region-p)))
-    (if regionp
-        (let ((beg (region-beginning))
-              (end (region-end))
-              (text (buffer-substring (region-beginning) (region-end))))
-          (delete-region beg end)
-          (goto-char beg)
-          (insert (cj/--unwrap text opening closing)))
-      (if (thing-at-point 'word)
-          (let* ((bounds (bounds-of-thing-at-point 'word))
-                 (text (buffer-substring (car bounds) (cdr bounds))))
-            (delete-region (car bounds) (cdr bounds))
-            (goto-char (car bounds))
-            (insert (cj/--unwrap text opening closing)))
-        (message "Can't unwrap. No word at point and no region selected.")))))
+        (closing (read-string "Closing to remove: ")))
+    (cj/--enclose-region-or-word
+     (lambda (text) (cj/--unwrap text opening closing))
+     "Can't unwrap. No word at point and no region selected.")))
 
 (defun cj/--append-to-lines (text suffix)
   "Internal implementation: Append SUFFIX to each line in TEXT.
