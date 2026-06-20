@@ -985,6 +985,25 @@ if(location.hash==='#expandalltest'){let ok=true;const notes=[];const A=(c,n)=>{
  A(btn.textContent.indexOf('▼')===0,'button reflects a single open row as ▼ collapse all');
  document.title='EXPANDALLTEST '+(ok?'PASS':'FAIL');
  const ea=document.createElement('div');ea.id='expandalltest';ea.textContent='EXPANDALLTEST '+(ok?'PASS':'FAIL')+(notes.length?' fails='+notes.join(','):'');document.body.appendChild(ea);}
+// Expander-persistence gate (open with #expandpersisttest): a package edit rebuilds
+// the whole table, so an open expander must reopen instead of collapsing under the
+// user. Editing a value inside the open expander must not close the row.
+if(location.hash==='#expandpersisttest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c){ok=false;notes.push(n);}};
+ EXPANDED.clear();
+ const app=curApp(),face=APPS[app].faces[0][0];buildPkgTable();
+ const row=()=>document.querySelector('#pkgbody tr[data-face="'+face+'"]');
+ const detail=()=>document.querySelector('#pkgbody tr.detailrow[data-detail-for="'+face+'"]');
+ A(detail()&&detail().style.display==='none','expander starts collapsed');
+ row().querySelector('.exptoggle').click();
+ A(detail()&&detail().style.display!=='none','expander opens on toggle');
+ const hin=detail().querySelector('.hstep');hin.value='1.4';hin.dispatchEvent(new Event('change'));
+ A(detail()&&detail().style.display!=='none','expander stays open after an in-expander edit rebuilds the row');
+ A(PKGMAP[app][face].height===1.4,'the in-expander edit still wrote the model');
+ row().querySelector('.exptoggle').click();buildPkgTable();
+ A(detail()&&detail().style.display==='none','a collapsed expander stays collapsed across a rebuild');
+ EXPANDED.clear();buildPkgTable();
+ document.title='EXPANDPERSISTTEST '+(ok?'PASS':'FAIL');
+ const ep=document.createElement('div');ep.id='expandpersisttest';ep.textContent='EXPANDPERSISTTEST '+(ok?'PASS':'FAIL')+(notes.length?' fails='+notes.join(','):'');document.body.appendChild(ep);}
 // Palette default-state gate (open with #paldefaulttest): the studio opens with
 // the palette collapsed to base colors so the span tints don't crowd the first
 // view. initApp() ran at page load, so the live toggle reflects the opening state.

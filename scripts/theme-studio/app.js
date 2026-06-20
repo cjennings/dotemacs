@@ -242,8 +242,14 @@ function mkDetailEditor(face,onChange,opts={}){
 // across the table) holding mkDetailEditor. The caller drops the button into a
 // cell, adds the returned locks to the row's lock cell, and inserts detailRow
 // right after the main row.
+// Which rows have their detail expanded, keyed by the row's element/face key.
+// Held outside the DOM so a table rebuild (a package edit rebuilds the whole
+// table) re-opens the rows that were open, instead of collapsing them under the
+// user — editing a value in an open expander must not close it.
+let EXPANDED=new Set();
 function mkExpander(face,colspan,onChange,opts={}){
   const detail=document.createElement('tr');detail.className='detailrow';detail.style.display='none';
+  if(opts.expandKey&&EXPANDED.has(opts.expandKey))detail.style.display='';
   const btn=document.createElement('button');btn.className='exptoggle';
   // The disclosure triangle shows the row's state: ▶ collapsed, ▼ expanded.
   const setGlyph=()=>{const open=detail.style.display!=='none';btn.textContent=open?'▼':'▶';btn.classList.toggle('on',open);};
@@ -254,13 +260,15 @@ function mkExpander(face,colspan,onChange,opts={}){
   const refreshNd=()=>{const nd=ndCheck();btn.classList.toggle('exp-nd',nd);btn.title=nd?'more attributes (some differ from default)':'more attributes';};
   const wrapped=()=>{onChange();refreshNd();};
   const td=document.createElement('td');td.colSpan=colspan;const {el,locks}=mkDetailEditor(face,wrapped,opts);td.appendChild(el);detail.appendChild(td);
-  btn.onclick=()=>{detail.style.display=detail.style.display==='none'?'':'none';setGlyph();syncExpandAllBtns();};
+  btn.onclick=()=>{const willOpen=detail.style.display==='none';detail.style.display=willOpen?'':'none';
+    if(opts.expandKey){willOpen?EXPANDED.add(opts.expandKey):EXPANDED.delete(opts.expandKey);}
+    setGlyph();syncExpandAllBtns();};
   refreshNd();setGlyph();
   return {btn,detail,locks};}
 // Expand/collapse every row in a table at once, then sync the per-row triangles.
 function setAllExpanded(tableId,expand){
   const tb=document.getElementById(tableId);if(!tb)return;
-  tb.querySelectorAll('tr.detailrow').forEach(d=>{d.style.display=expand?'':'none';});
+  tb.querySelectorAll('tr.detailrow').forEach(d=>{d.style.display=expand?'':'none';const k=d.dataset.detailFor;if(k){expand?EXPANDED.add(k):EXPANDED.delete(k);}});
   tb.querySelectorAll('.exptoggle').forEach(b=>{b.textContent=expand?'▼':'▶';b.classList.toggle('on',expand);});
 }
 // The header-level expand/collapse-all toggle for a table. Its label and triangle
@@ -353,7 +361,7 @@ function buildTable(){
     const c0=document.createElement('td');c0.appendChild(dd);
     const cB=document.createElement('td');cB.appendChild(bgd);
     const cX=document.createElement('td');const boxCtl=mkBoxControl(()=>syntaxFace(kind).box,b=>{syntaxFace(kind).box=b;styleEx();renderCode();},{compact:true});cX.appendChild(boxCtl);
-    const exp=mkExpander(syntaxFace(kind),tableColCount('legtable'),()=>{styleEx();renderCode();},{showInheritHeight:true,inheritOptions:[''].concat(BASE_INHERITS),defaultHex:rowFg(),ndCheck:()=>overflowNonDefault(syntaxFace(kind),DEFAULT_SYNTAX[kind],true)});
+    const exp=mkExpander(syntaxFace(kind),tableColCount('legtable'),()=>{styleEx();renderCode();},{expandKey:kind,showInheritHeight:true,inheritOptions:[''].concat(BASE_INHERITS),defaultHex:rowFg(),ndCheck:()=>overflowNonDefault(syntaxFace(kind),DEFAULT_SYNTAX[kind],true)});
     exp.detail.dataset.detailFor=kind;
     const lkTd=mkLockCell(kind,[dd,bgd,...stCtls,boxCtl,...exp.locks]);
     const c2=document.createElement('td');c2.className='cat';c2.title=composeHoverTitle(SYNTAX_DOCS[kind],c2.title);c2.appendChild(exp.btn);
@@ -701,7 +709,7 @@ function buildPkgTable(){
     const nd=faceBoxNonDefaults(
       {fg:nameToHex(f.fg,PALETTE),bg:nameToHex(f.bg,PALETTE),weight:f.weight,slant:f.slant,underline:f.underline,strike:f.strike,inherit:f.inherit,height:f.height,box:f.box},
       {fg:nameToHex(def.fg,PALETTE),bg:nameToHex(def.bg,PALETTE),weight:def.weight,slant:def.slant,underline:def.underline,strike:def.strike,inherit:def.inherit,height:def.height,box:def.box});
-    const exp=mkExpander(f,tableColCount('pkgtable'),()=>{f.source='user';pkgChanged();},{showInheritHeight:true,inheritOptions:inh,defaultHex:effFg(pkgEffFg(app,face)),ndCheck:()=>overflowNonDefault(f,def,true)});
+    const exp=mkExpander(f,tableColCount('pkgtable'),()=>{f.source='user';pkgChanged();},{expandKey:face,showInheritHeight:true,inheritOptions:inh,defaultHex:effFg(pkgEffFg(app,face)),ndCheck:()=>overflowNonDefault(f,def,true)});
     exp.detail.dataset.detailFor=face;
     const c0=document.createElement('td');c0.className='cat';c0.title=composeHoverTitle(FACE_DOCS[face],face);c0.appendChild(exp.btn);
     const c0lbl=document.createElement('span');c0lbl.textContent=' '+label;c0lbl.style.cursor='pointer';c0lbl.onclick=()=>flashPkgPreview(face);c0.appendChild(c0lbl);
@@ -790,7 +798,7 @@ function buildUITable(){
   const tb=document.getElementById('uibody');tb.innerHTML='';
   for(const [face,label,ex] of UI_FACES){
     const tr=document.createElement('tr');tr.dataset.face=face;
-    const exp=mkExpander(UIMAP[face],tableColCount('uitable'),()=>{paintUI(face);buildMockFrame();},{showInheritHeight:true,inheritOptions:[''].concat(BASE_INHERITS),defaultHex:effFg(UIMAP[face].fg),ndCheck:()=>overflowNonDefault(UIMAP[face],DEFAULT_UIMAP[face],true)});
+    const exp=mkExpander(UIMAP[face],tableColCount('uitable'),()=>{paintUI(face);buildMockFrame();},{expandKey:face,showInheritHeight:true,inheritOptions:[''].concat(BASE_INHERITS),defaultHex:effFg(UIMAP[face].fg),ndCheck:()=>overflowNonDefault(UIMAP[face],DEFAULT_UIMAP[face],true)});
     exp.detail.dataset.detailFor=face;
     const c0=document.createElement('td');c0.className='cat';c0.title=composeHoverTitle(FACE_DOCS[face],c0.title);c0.appendChild(exp.btn);
     const c0lbl=document.createElement('span');c0lbl.textContent=' '+label;c0lbl.style.cursor='pointer';c0lbl.title='flash this face in the live preview';c0lbl.onclick=()=>flashUiPreview(face);c0.appendChild(c0lbl);
