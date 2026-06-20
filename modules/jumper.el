@@ -106,20 +106,29 @@ Note that using M-SPC will override the default binding to just-one-space.")
 		  (line-number-at-pos)
 		  (current-column)))
 
+(defun jumper--with-marker-at (index fn)
+  "Call FN with point at the marker stored for register INDEX.
+Resolve register INDEX's marker; when it is a live marker, run FN in that
+marker's buffer with point at the marker (within `save-current-buffer' and
+`save-excursion') and return FN's value.  Return nil when INDEX has no valid
+marker."
+  (let* ((reg (aref jumper--registers index))
+         (marker (get-register reg)))
+    (when (and marker (markerp marker))
+      (save-current-buffer
+        (set-buffer (marker-buffer marker))
+        (save-excursion
+          (goto-char marker)
+          (funcall fn))))))
+
 (defun jumper--location-exists-p ()
   "Check if current location is already stored."
   (let ((key (jumper--location-key))
-		(found nil))
-	(dotimes (i jumper--next-index found)
-	  (let* ((reg (aref jumper--registers i))
-			 (marker (get-register reg)))
-		(when (and marker (markerp marker))
-		  (save-current-buffer
-			(set-buffer (marker-buffer marker))
-			(save-excursion
-			  (goto-char marker)
-			  (when (string= key (jumper--location-key))
-				(setq found t)))))))))
+        (found nil))
+    (dotimes (i jumper--next-index found)
+      (when (jumper--with-marker-at
+             i (lambda () (string= key (jumper--location-key))))
+        (setq found t)))))
 
 (defun jumper--register-available-p ()
   "Check if there are registers available."
@@ -127,21 +136,25 @@ Note that using M-SPC will override the default binding to just-one-space.")
 
 (defun jumper--format-location (index)
   "Format location at INDEX for display."
-  (let* ((reg (aref jumper--registers index))
-		 (marker (get-register reg)))
-	(when (and marker (markerp marker))
-	  (save-current-buffer
-		(set-buffer (marker-buffer marker))
-		(save-excursion
-		  (goto-char marker)
-		  (format "[%d] %s:%d - %s"
-				  index
-				  (buffer-name)
-				  (line-number-at-pos)
-				  (buffer-substring-no-properties
-				   (line-beginning-position)
-				   (min (+ (line-beginning-position) 40)
-						(line-end-position)))))))))
+  (jumper--with-marker-at
+   index
+   (lambda ()
+     (format "[%d] %s:%d - %s"
+             index
+             (buffer-name)
+             (line-number-at-pos)
+             (buffer-substring-no-properties
+              (line-beginning-position)
+              (min (+ (line-beginning-position) 40)
+                   (line-end-position)))))))
+
+(defun jumper--location-candidates ()
+  "Return an alist of (DISPLAY . INDEX) for all stored locations.
+Indices whose marker is no longer valid are skipped (their
+`jumper--format-location' returns nil)."
+  (cl-loop for i from 0 below jumper--next-index
+           for fmt = (jumper--format-location i)
+           when fmt collect (cons fmt i)))
 
 (defun jumper--do-store-location ()
   "Store current location in the next free register.
@@ -208,9 +221,7 @@ Returns: \\='no-locations if no locations stored,
    ;; Multiple locations - prompt user
    (t
     (let* ((locations
-            (cl-loop for i from 0 below jumper--next-index
-                     for fmt = (jumper--format-location i)
-                     when fmt collect (cons fmt i)))
+            (jumper--location-candidates))
            ;; Add last location if available
            (last-pos (get-register jumper--last-location-register))
            (locations (if last-pos
@@ -248,9 +259,7 @@ Returns: \\='no-locations if no locations stored,
   (if (= jumper--next-index 0)
       (message "No locations stored")
     (let* ((locations
-            (cl-loop for i from 0 below jumper--next-index
-                     for fmt = (jumper--format-location i)
-                     when fmt collect (cons fmt i)))
+            (jumper--location-candidates))
            (locations (cons (cons "Cancel" -1) locations))
            (choice (completing-read "Remove location: " locations nil t))
            (idx (cdr (assoc choice locations))))
