@@ -279,9 +279,33 @@ run its own project-named tmux session instead of a bare, auto-named one.
 ;; which ai-term.el owns via F9.
 
 (defcustom cj/term-toggle-window-height 0.7
-  "Default fraction of frame height for the F12 terminal window."
+  "Default fraction of frame height for the F12 terminal window.
+Used as the size fallback when F12 docks the terminal as a bottom split."
   :type 'number
   :group 'term)
+
+(defcustom cj/term-toggle-window-width 0.5
+  "Default fraction of frame width for the F12 terminal window.
+Used as the size fallback when F12 docks the terminal as a right-side
+column (see `cj/--term-toggle-default-direction')."
+  :type 'number
+  :group 'term)
+
+(defun cj/--term-toggle-default-direction ()
+  "Return the default dock direction for the F12 terminal: `right' or `below'.
+Docks as a right-side column only when a side-by-side split would leave
+both panes at least `cj/window-dock-min-columns' wide (the terminal's
+share is `cj/term-toggle-window-width'); otherwise stacks below.  See
+`cj/preferred-dock-direction'."
+  (cj/preferred-dock-direction (frame-width) cj/term-toggle-window-width))
+
+(defun cj/--term-toggle-default-size (direction)
+  "Return the default size fraction paired with DIRECTION for the F12 terminal.
+`cj/term-toggle-window-width' for `right', `cj/term-toggle-window-height'
+otherwise."
+  (if (eq direction 'right)
+      cj/term-toggle-window-width
+    cj/term-toggle-window-height))
 
 (defvar cj/--term-toggle-last-direction nil
   "Last user-chosen direction for the F12 terminal display.
@@ -321,9 +345,10 @@ FRAME defaults to the selected frame.  Minibuffer is excluded."
 
 (defun cj/--term-toggle-capture-state (window)
   "Capture WINDOW's direction + body size into module-level state.
-Default direction is `below' to match F12's traditional bottom split."
+The default direction (used when WINDOW fills its frame) is the
+column-rule choice from `cj/--term-toggle-default-direction'."
   (cj/window-toggle-capture-state
-   window 'below
+   window (cj/--term-toggle-default-direction)
    'cj/--term-toggle-last-direction
    'cj/--term-toggle-last-size
    '(right below left)))
@@ -331,11 +356,13 @@ Default direction is `below' to match F12's traditional bottom split."
 (defun cj/--term-toggle-display-saved (buffer alist)
   "Display-buffer action: split per saved direction and body size.
 Delegates to `cj/window-toggle-display-saved' against the F12 state vars,
-falling back to `below' and `cj/term-toggle-window-height'."
-  (cj/window-toggle-display-saved
-   buffer alist
-   'cj/--term-toggle-last-direction 'below
-   'cj/--term-toggle-last-size cj/term-toggle-window-height))
+falling back to the column-rule default direction
+\(`cj/--term-toggle-default-direction') and its paired size."
+  (let ((dir (cj/--term-toggle-default-direction)))
+    (cj/window-toggle-display-saved
+     buffer alist
+     'cj/--term-toggle-last-direction dir
+     'cj/--term-toggle-last-size (cj/--term-toggle-default-size dir))))
 
 (defun cj/--term-toggle-display-rule-list ()
   "Return the `display-buffer-alist' entry list installed by F12.

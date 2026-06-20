@@ -83,5 +83,29 @@
                      received-alist)))
       (should (null wh-cells)))))
 
+(ert-deftest test-term-toggle--default-size-pairs-width-with-right ()
+  "Normal: the default size for `right' is the width fraction."
+  (let ((cj/term-toggle-window-width 0.5)
+        (cj/term-toggle-window-height 0.7))
+    (should (= (cj/--term-toggle-default-size 'right) 0.5))))
+
+(ert-deftest test-term-toggle--default-size-pairs-height-with-below ()
+  "Normal: the default size for `below' is the height fraction."
+  (let ((cj/term-toggle-window-width 0.5)
+        (cj/term-toggle-window-height 0.7))
+    (should (= (cj/--term-toggle-default-size 'below) 0.7))))
+
+(ert-deftest test-term-toggle--default-direction-delegates-to-dock-rule ()
+  "Normal: default-direction passes the width fraction to the dock rule."
+  (let ((cj/term-toggle-window-width 0.5)
+        captured)
+    (cl-letf (((symbol-function 'cj/preferred-dock-direction)
+               (lambda (cols frac &rest _)
+                 (setq captured (list cols frac))
+                 'right)))
+      (should (eq (cj/--term-toggle-default-direction) 'right))
+      (should (= (nth 1 captured) 0.5))
+      (should (integerp (nth 0 captured))))))
+
 (provide 'test-term-toggle--display)
 ;;; test-term-toggle--display.el ends here

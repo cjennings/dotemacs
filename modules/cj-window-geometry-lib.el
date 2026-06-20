@@ -129,5 +129,39 @@ the fraction at toggle-off, replay it on the next toggle-on."
           (hi (or max-frac 0.95)))
       (max lo (min hi (/ (float window-size) frame-size))))))
 
+(defcustom cj/window-dock-min-columns 80
+  "Minimum body columns each pane must keep for a side-by-side dock.
+
+`cj/preferred-dock-direction' docks a companion panel as a side-by-side
+column only when both the panel and the main window would stay at least
+this wide; otherwise it stacks the panel below.  80 is the classic
+terminal/code width."
+  :type 'integer
+  :group 'windows)
+
+(defun cj/preferred-dock-direction (frame-cols fraction &optional min-cols)
+  "Return the dock direction for a companion panel beside the main window.
+
+Returns `right' (a side-by-side column) when a split that gives the panel
+FRACTION of FRAME-COLS would leave both panes at least MIN-COLS columns
+wide; otherwise `below' (a stacked panel).  FRAME-COLS is the frame's
+total column count; FRACTION is the panel's share of the width, in the
+open interval (0, 1).  MIN-COLS defaults to `cj/window-dock-min-columns'.
+
+The narrower of the two resulting panes governs: the panel takes
+round(FRACTION * FRAME-COLS) columns, the main window takes the rest less
+one divider column, and `right' is returned only when the smaller of the
+two clears MIN-COLS.  Returns `below' for degenerate input (non-positive
+FRAME-COLS, or FRACTION outside (0, 1)) so a caller always gets a usable
+stacked fallback."
+  (let ((min-cols (or min-cols cj/window-dock-min-columns)))
+    (if (and (numberp frame-cols) (> frame-cols 0)
+             (numberp fraction) (< 0 fraction 1))
+        (let* ((panel (round (* fraction frame-cols)))
+               (main (- frame-cols panel 1))
+               (narrower (min panel main)))
+          (if (>= narrower min-cols) 'right 'below))
+      'below)))
+
 (provide 'cj-window-geometry-lib)
 ;;; cj-window-geometry-lib.el ends here

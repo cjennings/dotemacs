@@ -1,18 +1,20 @@
 ;;; test-ai-term--default-geometry.el --- Tests for host-aware display defaults -*- lexical-binding: t; -*-
 
 ;;; Commentary:
-;; ai-term's default display geometry is chosen from the frame's pixel aspect
-;; ratio: a landscape frame docks the agent from the right (a width fraction), a
-;; square or portrait frame docks it from the bottom (a height fraction).
-;; `cj/--ai-term-direction-for-aspect' is the pure decision;
-;; `cj/--ai-term-default-direction' reads the frame and delegates to it;
-;; `cj/--ai-term-default-size' pairs the size fraction with that direction.
-;; They feed the default fallbacks in `cj/--ai-term-capture-state' and
-;; `cj/--ai-term-display-saved'.
+;; ai-term's default display geometry is chosen from the frame's column
+;; width: the agent docks from the right (a width fraction) only when a
+;; side-by-side split would leave both panes at least
+;; `cj/window-dock-min-columns' wide, otherwise from the bottom (a height
+;; fraction).  `cj/--ai-term-default-direction' reads the frame width and
+;; delegates the decision to `cj/preferred-dock-direction' (tested in
+;; test-cj-window-geometry-lib.el); `cj/--ai-term-default-size' pairs the
+;; size fraction with that direction.  They feed the default fallbacks in
+;; `cj/--ai-term-capture-state' and `cj/--ai-term-display-saved'.
 ;;
-;; The direction is tested on the pure helper (no frame mocking, which would
-;; trip the native-comp trampoline trap on the frame-pixel-* subrs); the size
-;; helper is tested by stubbing the direction defun.
+;; The direction is tested by stubbing `cj/preferred-dock-direction' (an
+;; ordinary defun -- safe to `cl-letf', unlike the frame-* subrs, which
+;; would trip the native-comp trampoline trap); the size helper is tested
+;; by stubbing the direction defun.
 
 ;;; Code:
 
@@ -22,17 +24,26 @@
 (add-to-list 'load-path (expand-file-name "modules" user-emacs-directory))
 (require 'ai-term)
 
-(ert-deftest test-ai-term--direction-for-aspect-landscape-is-right ()
-  "Normal: a wider-than-tall frame docks from the right."
-  (should (eq (cj/--ai-term-direction-for-aspect 1920 1080) 'right)))
+(ert-deftest test-ai-term--default-direction-delegates-to-dock-rule ()
+  "Normal: default-direction passes the desktop-width fraction to the dock rule
+and returns its verdict."
+  (let ((cj/ai-term-desktop-width 0.5)
+        captured)
+    (cl-letf (((symbol-function 'cj/preferred-dock-direction)
+               (lambda (cols frac &rest _)
+                 (setq captured (list cols frac))
+                 'below)))
+      (should (eq (cj/--ai-term-default-direction) 'below))
+      ;; the fraction passed is the agent's desktop-width
+      (should (= (nth 1 captured) 0.5))
+      ;; the first argument is a column count (the frame width)
+      (should (integerp (nth 0 captured))))))
 
-(ert-deftest test-ai-term--direction-for-aspect-portrait-is-below ()
-  "Normal: a taller-than-wide frame docks from the bottom."
-  (should (eq (cj/--ai-term-direction-for-aspect 1080 1920) 'below)))
-
-(ert-deftest test-ai-term--direction-for-aspect-square-is-below ()
-  "Boundary: a square frame docks from the bottom (the conserving tie-break)."
-  (should (eq (cj/--ai-term-direction-for-aspect 1000 1000) 'below)))
+(ert-deftest test-ai-term--default-direction-returns-right-when-rule-says ()
+  "Normal: when the dock rule returns `right', so does default-direction."
+  (cl-letf (((symbol-function 'cj/preferred-dock-direction)
+             (lambda (&rest _) 'right)))
+    (should (eq (cj/--ai-term-default-direction) 'right))))
 
 (ert-deftest test-ai-term--default-size-pairs-width-with-right ()
   "Normal: when the direction is `right' the size is the width fraction."

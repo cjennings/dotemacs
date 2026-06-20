@@ -391,21 +391,17 @@ fallback when `cj/--ai-term-last-size' is nil."
   :type 'number
   :group 'ai-term)
 
-(defun cj/--ai-term-direction-for-aspect (pixel-width pixel-height)
-  "Return the space-conserving dock direction for a frame of PIXEL-WIDTH by
-PIXEL-HEIGHT.  `right' when the frame is wider than tall (dock from the right
-edge), `below' when it is square or taller (dock from the bottom)."
-  (if (> pixel-width pixel-height) 'right 'below))
-
 (defun cj/--ai-term-default-direction (&optional frame)
   "Return the default split direction for the agent window.
 
-Chosen at display time from FRAME's pixel aspect ratio (FRAME defaults to the
-selected frame): `right' on a landscape frame, `below' on a square or portrait
-one -- whichever edge conserves more screen space."
+Chosen at display time from FRAME's column width (FRAME defaults to the
+selected frame): `right' when a side-by-side split would leave both the
+agent and the main window at least `cj/window-dock-min-columns' wide,
+`below' otherwise.  The agent's share of the width is
+`cj/ai-term-desktop-width'.  See `cj/preferred-dock-direction'."
   (let ((frame (or frame (selected-frame))))
-    (cj/--ai-term-direction-for-aspect (frame-pixel-width frame)
-                                       (frame-pixel-height frame))))
+    (cj/preferred-dock-direction (frame-width frame)
+                                 cj/ai-term-desktop-width)))
 
 (defun cj/--ai-term-default-size ()
   "Return the default size fraction paired with the chosen direction.

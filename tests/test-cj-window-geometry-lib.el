@@ -197,5 +197,52 @@ window forms the full-height right half -> nil."
   (should (null (cj/window-size-fraction nil 40)))
   (should (null (cj/window-size-fraction 20 nil))))
 
+;; ----------------------------- preferred-dock-direction -----------------------------
+
+(ert-deftest test-cj-window-geometry-dock-wide-frame-is-right ()
+  "Normal: a frame wide enough for both panes to clear 80 docks right."
+  (should (eq (cj/preferred-dock-direction 200 0.5) 'right)))
+
+(ert-deftest test-cj-window-geometry-dock-narrow-frame-is-below ()
+  "Normal: an 0.5 split on a 138-col frame leaves ~68-col panes -> below."
+  (should (eq (cj/preferred-dock-direction 138 0.5) 'below)))
+
+(ert-deftest test-cj-window-geometry-dock-boundary-exactly-min-is-right ()
+  "Boundary: when the narrower pane lands exactly on 80, dock right."
+  ;; 161 cols, 0.5: panel 80, main 161-80-1 = 80, narrower 80 -> right.
+  (should (eq (cj/preferred-dock-direction 161 0.5) 'right)))
+
+(ert-deftest test-cj-window-geometry-dock-boundary-one-under-min-is-below ()
+  "Boundary: one column short of the floor stacks instead."
+  ;; 160 cols, 0.5: panel 80, main 160-80-1 = 79, narrower 79 -> below.
+  (should (eq (cj/preferred-dock-direction 160 0.5) 'below)))
+
+(ert-deftest test-cj-window-geometry-dock-narrow-panel-fraction-governs ()
+  "Normal: a slim panel fraction makes the panel the narrower pane."
+  ;; 200 cols, 0.3: panel 60 < 80 -> below, even though main (139) is wide.
+  (should (eq (cj/preferred-dock-direction 200 0.3) 'below))
+  ;; 300 cols, 0.3: panel 90, main 209 -> right.
+  (should (eq (cj/preferred-dock-direction 300 0.3) 'right)))
+
+(ert-deftest test-cj-window-geometry-dock-honors-explicit-min-cols ()
+  "Boundary: an explicit MIN-COLS overrides the default floor."
+  ;; 138 cols, 0.5 -> ~68-col panes: passes a 60-floor, fails the 80-default.
+  (should (eq (cj/preferred-dock-direction 138 0.5 60) 'right))
+  (should (eq (cj/preferred-dock-direction 138 0.5 80) 'below)))
+
+(ert-deftest test-cj-window-geometry-dock-honors-custom-default-var ()
+  "Boundary: the default floor reads `cj/window-dock-min-columns'."
+  (let ((cj/window-dock-min-columns 30))
+    (should (eq (cj/preferred-dock-direction 138 0.5) 'right))))
+
+(ert-deftest test-cj-window-geometry-dock-degenerate-input-is-below ()
+  "Error: non-positive cols or out-of-range fraction stacks (safe fallback)."
+  (should (eq (cj/preferred-dock-direction 0 0.5) 'below))
+  (should (eq (cj/preferred-dock-direction -10 0.5) 'below))
+  (should (eq (cj/preferred-dock-direction 200 0) 'below))
+  (should (eq (cj/preferred-dock-direction 200 1) 'below))
+  (should (eq (cj/preferred-dock-direction nil 0.5) 'below))
+  (should (eq (cj/preferred-dock-direction 200 nil) 'below)))
+
 (provide 'test-cj-window-geometry-lib)
 ;;; test-cj-window-geometry-lib.el ends here

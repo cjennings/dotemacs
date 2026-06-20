@@ -94,6 +94,7 @@
 (require 'subr-x)
 (require 'user-constants)
 (require 'keybindings)  ;; provides cj/custom-keymap
+(require 'cj-window-geometry-lib) ;; cj/preferred-dock-direction (F10 dock side)
 (require 'cj-window-toggle-lib)  ;; side-window size memory (F10 toggle)
 (require 'system-lib)            ;; cj/confirm-strong (overwrite confirms)
 
@@ -517,13 +518,37 @@ Intended for use on `emms-player-finished-hook'."
 
 (defvar cj/music-playlist-window-height 0.3
   "Default fraction of frame height for the F10 music playlist side window.
-Used until the playlist is resized and toggled off this session; after that,
-the toggled-off height is remembered in `cj/--music-playlist-height'.")
+Used when the playlist docks at the bottom and hasn't been resized and
+toggled off this session; after that, the toggled-off height is remembered
+in `cj/--music-playlist-height'.")
+
+(defvar cj/music-playlist-window-width 0.4
+  "Default fraction of frame width for the F10 music playlist side window.
+Used when the playlist docks as a right-side column (see
+`cj/--music-playlist-side') and hasn't been resized this session; after
+that the toggled-off width is remembered in `cj/--music-playlist-width'.")
 
 (defvar cj/--music-playlist-height nil
-  "Last height fraction the playlist side window was toggled off at.
+  "Last height fraction the playlist was toggled off at while docked bottom.
 nil means fall back to `cj/music-playlist-window-height'.  In-memory only --
 resets each Emacs session.")
+
+(defvar cj/--music-playlist-width nil
+  "Last width fraction the playlist was toggled off at while docked right.
+nil means fall back to `cj/music-playlist-window-width'.  In-memory only --
+resets each Emacs session.")
+
+(defun cj/--music-playlist-side ()
+  "Return the side the F10 playlist should dock on: `right' or `bottom'.
+Docks as a right-side column only when a side-by-side split would leave
+both panes at least `cj/window-dock-min-columns' wide (the playlist's
+share is `cj/music-playlist-window-width'); otherwise docks at the bottom.
+See `cj/preferred-dock-direction'."
+  (if (eq (cj/preferred-dock-direction (frame-width)
+                                       cj/music-playlist-window-width)
+          'right)
+      'right
+    'bottom))
 
 (defun cj/music-playlist-toggle ()
   "Toggle the EMMS playlist buffer in a bottom side window.
@@ -535,15 +560,28 @@ resized and toggled off this session, it reopens at that remembered height."
          (win (and buffer (get-buffer-window buffer))))
     (if win
         (progn
-          (cj/side-window-capture-size win 'bottom 'cj/--music-playlist-height)
+          ;; Capture the resized size into the var matching the window's
+          ;; actual side, so width and height memories stay independent.
+          ;; Guard the parameter lookup: a dead or non-window WIN (the
+          ;; capture helpers tolerate one) must not error here.
+          (let ((side (if (window-live-p win)
+                          (or (window-parameter win 'window-side) 'bottom)
+                        'bottom)))
+            (if (memq side '(left right))
+                (cj/side-window-capture-size win side 'cj/--music-playlist-width)
+              (cj/side-window-capture-size win 'bottom 'cj/--music-playlist-height)))
           (delete-window win)
           (message "Playlist window closed"))
       (progn
         (cj/emms--setup)
         (setq buffer (cj/music--ensure-playlist-buffer))
-        (setq win (cj/side-window-display
-                   buffer 'bottom 'cj/--music-playlist-height
-                   cj/music-playlist-window-height))
+        (let* ((side (cj/--music-playlist-side))
+               (right (eq side 'right)))
+          (setq win (cj/side-window-display
+                     buffer side
+                     (if right 'cj/--music-playlist-width 'cj/--music-playlist-height)
+                     (if right cj/music-playlist-window-width
+                       cj/music-playlist-window-height))))
         (select-window win)
         (with-current-buffer buffer
           (if (and (fboundp 'emms-playlist-current-selected-track)
