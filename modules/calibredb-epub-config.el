@@ -241,6 +241,29 @@ layout passes -- each pass narrows the body width but not the natural width."
   "Return the preferred EPUB text column count for WINDOW."
   (cj/nov--text-width (cj/nov--natural-window-width window)))
 
+(defun cj/nov--rerender-preserving-position ()
+  "Re-render the nov document, restoring point's relative position.
+Capture point as a fraction of the buffer, re-render, then move point to the
+same fraction of the re-rendered buffer so the reading position is kept
+approximately."
+  (let ((frac (when (> (point-max) (point-min))
+                (/ (float (- (point) (point-min)))
+                   (- (point-max) (point-min))))))
+    (nov-render-document)
+    (when frac
+      (goto-char (+ (point-min)
+                    (round (* frac (- (point-max) (point-min)))))))))
+
+(defun cj/nov--center-in-window (win total width)
+  "Center a WIDTH-column text block in WIN, given its TOTAL natural width.
+Set equal left/right display margins and push the fringes to the window edge."
+  ;; floor: never let the margins squeeze the text area below WIDTH.
+  (let ((margin (max 0 (/ (- total width) 2))))
+    (set-window-margins win margin margin))
+  ;; Push the fringes out to the window's edge; otherwise they sit between the
+  ;; margin and the text and show as thin vertical lines beside it.
+  (set-window-fringes win nil nil t))
+
 (defun cj/nov-update-layout (&optional _frame)
   "Size the EPUB text column for this buffer and center it in its window.
 `nov-text-width' is set so nov's `shr' fills the text to roughly 80% of the
@@ -256,20 +279,9 @@ command."
            (width (cj/nov--text-width total)))
       (unless (eql nov-text-width width)
         (setq-local nov-text-width width)
-        (let ((frac (when (> (point-max) (point-min))
-                      (/ (float (- (point) (point-min)))
-                         (- (point-max) (point-min))))))
-          (nov-render-document)
-          (when frac
-            (goto-char (+ (point-min)
-                          (round (* frac (- (point-max) (point-min)))))))))
+        (cj/nov--rerender-preserving-position))
       (when win
-        ;; floor: never let the margins squeeze the text area below WIDTH.
-        (let ((margin (max 0 (/ (- total width) 2))))
-          (set-window-margins win margin margin))
-        ;; Push the fringes out to the window's edge; otherwise they sit between
-        ;; the margin and the text and show as thin vertical lines beside it.
-        (set-window-fringes win nil nil t)))))
+        (cj/nov--center-in-window win total width)))))
 
 (defun cj/--nov-adjust-margin (delta)
   "Add DELTA to `cj/nov-margin-percent' (clamped 0..25), re-lay-out, and report.
@@ -293,11 +305,12 @@ A positive DELTA narrows the text column; a negative DELTA widens it."
 (defun cj/nov-apply-preferences ()
   "Apply preferences after nov-mode has launched."
   (interactive)
-  ;; Use Merriweather for comfortable reading with appropriate scaling
-  ;; Darker sepia color (#E8DCC0) is easier on the eyes than pure white
-  (face-remap-add-relative 'variable-pitch :family "Merriweather" :height 1.0 :foreground "#E8DCC0")
-  (face-remap-add-relative 'default :family "Merriweather" :height 180 :foreground "#E8DCC0")
-  (face-remap-add-relative 'fixed-pitch :height 180 :foreground "#E8DCC0")
+  ;; Use Merriweather for comfortable reading with appropriate scaling.
+  ;; Darker sepia color (#E8DCC0) is easier on the eyes than pure white.
+  (let ((sepia "#E8DCC0"))
+    (face-remap-add-relative 'variable-pitch :family "Merriweather" :height 1.0 :foreground sepia)
+    (face-remap-add-relative 'default :family "Merriweather" :height 180 :foreground sepia)
+    (face-remap-add-relative 'fixed-pitch :height 180 :foreground sepia))
   ;; Enable visual-line-mode for proper text wrapping
   (visual-line-mode 1)
   ;; Set fill-column as a fallback
