@@ -135,7 +135,7 @@ if(location.hash==='#mocktest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c
  const missing=UI_FACES.map(f=>f[0]).filter(f=>!Q('[data-face="'+f+'"]'));
  A(missing.length===0,'all UI faces are represented in live buffer preview: '+missing.join(','));
  buildTable();buildUITable();buildPkgTable();
- [['#legbody tr[data-kind="kw"]',7],['#uibody tr[data-face="mode-line"]',7],['#pkgbody tr',6]].forEach(([sel,idx])=>{
+ [['#legbody tr[data-kind="kw"]',5],['#uibody tr[data-face="mode-line"]',5],['#pkgbody tr',5]].forEach(([sel,idx])=>{
    const cell=document.querySelector(sel)?.cells[idx],ctl=cell&&cell.querySelector('.boxctl');
    A(cell&&ctl&&ctl.getBoundingClientRect().width<=cell.getBoundingClientRect().width,'box control fits its table cell for '+sel);
  });
@@ -328,7 +328,7 @@ if(location.hash==='#contrasttest'){let ok=true;const notes=[];const A=(c,n)=>{i
  A(two&&Math.abs(parseFloat(two.textContent)-twoWant)<0.06,'ui two-color face rates own fg-on-bg: got '+(two&&two.textContent.trim())+' want '+twoWant.toFixed(1));
  const tApp=Object.keys(APPS)[0],tFace=APPS[tApp].faces[0][0],savePF=JSON.parse(JSON.stringify(PKGMAP[tApp][tFace]));
  Object.assign(PKGMAP[tApp][tFace],{fg:'#112233',bg:'#aabbcc',inherit:null});buildPkgTable();
- const prow=document.querySelector('#pkgbody tr[data-face="'+tFace+'"]'),pcell=prow&&prow.children[5];
+ const prow=document.querySelector('#pkgbody tr[data-face="'+tFace+'"]'),pcell=prow&&prow.children[6];
  A(pcell&&Math.abs(parseFloat(pcell.textContent)-twoWant)<0.06,'pkg two-color face rates own fg-on-bg: got '+(pcell&&pcell.textContent.trim())+' want '+twoWant.toFixed(1));
  PKGMAP[tApp][tFace]=savePF;buildPkgTable();
  // A ground-bg change must not clobber a face's own preview bg, must leave a
@@ -380,11 +380,11 @@ if(location.hash==='#beveltest'){let ok=true;const notes=[];const A=(c,n)=>{if(!
  A(bs3&&bs3.includes('rgb(255, 42, 42)')&&bs3.includes('rgb(143, 0, 0)'),'released style derives relief from explicit box color: '+bs3);
  PALETTE=[['#ff0000','red','red'],['#30343c','slate','slate']];
  buildUITable();
- const mlrow=document.querySelector('#uibody tr[data-face="mode-line"]'),boxCell=mlrow&&mlrow.cells[7],lineBtn=boxCell&&boxCell.querySelector('.boxbtn[data-style="line"]'),boxDd=boxCell&&boxCell.querySelector('.cdd');
+ const mlrow=document.querySelector('#uibody tr[data-face="mode-line"]'),boxCell=mlrow&&mlrow.cells[5],lineBtn=boxCell&&boxCell.querySelector('.boxbtn[data-style="line"]'),boxDd=boxCell&&boxCell.querySelector('.cdd');
  if(lineBtn&&boxDd){lineBtn.click();boxDd.click();const redRow=[...document.querySelectorAll('.cddpop .cddgc')].find(c=>(c.dataset.name||'').includes('red'));if(redRow)redRow.click();}
  A(UIMAP['mode-line'].box&&UIMAP['mode-line'].box.color==='#ff0000','UI box color dropdown writes box.color');
  const app=curApp(),face=APPS[app].faces[0][0];PKGMAP[app][face].box={style:'line',width:1,color:null};buildPkgTable();
- const prow=document.querySelector('#pkgbody tr[data-face="'+face+'"]'),pbox=prow&&prow.cells[6],pdd=pbox&&pbox.querySelector('.cdd');
+ const prow=document.querySelector('#pkgbody tr[data-face="'+face+'"]'),pbox=prow&&prow.cells[5],pdd=pbox&&pbox.querySelector('.cdd');
  if(pdd){pdd.click();const redRow=[...document.querySelectorAll('.cddpop .cddgc')].find(c=>(c.dataset.name||'').includes('red'));if(redRow)redRow.click();}
  A(PKGMAP[app][face].box&&PKGMAP[app][face].box.color==='#ff0000','package box color dropdown writes box.color');
  PALETTE=saveP;PKGMAP=savePK;for(const f in UIMAP)delete UIMAP[f];Object.assign(UIMAP,saveUI);buildUITable();buildPkgTable();
@@ -699,7 +699,7 @@ if(location.hash==='#viewtest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c
  const d=document.createElement('div');d.id='viewtest';d.textContent='VIEWTEST '+(ok?'PASS':'FAIL')+(notes.length?' fails='+notes.join(','):'');document.body.appendChild(d);}
 // Non-default-marker gate (open with #ndtest): a per-face setting cell gets the
 // .nd corner flag only when its value differs from the face's seed default. Cell
-// order in a pkg row: 0 lock, 1 label, 2 fg, 3 bg, 4 style, 5 contrast, 6 box.
+// order in a pkg row: 0 lock, 1 label, 2 fg, 3 bg, 4 style, 5 box, 6 contrast.
 // inherit + height live in the row expander, so a non-default height flags the
 // expander toggle (exp-nd) rather than an inline cell.
 if(location.hash==='#ndtest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c){ok=false;notes.push(n);}};
@@ -723,7 +723,7 @@ if(location.hash==='#ndtest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c){
 // bare colored number (no PASS/FAIL word); the WCAG verdict lives in the hover.
 if(location.hash==='#crtest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c){ok=false;notes.push(n);}};
  const app=curApp(),face=APPS[app].faces[0][0];buildPkgTable();
- const cell=document.querySelector('#pkgbody tr[data-face="'+face+'"]').cells[5];
+ const cell=document.querySelector('#pkgbody tr[data-face="'+face+'"]').cells[6];
  const span=cell&&cell.querySelector('span');
  A(span&&/^\d+\.\d$/.test(span.textContent.trim()),'contrast cell is a bare number: '+(span&&span.textContent));
  A(span&&!/PASS|FAIL/.test(span.textContent),'no PASS/FAIL word in the contrast cell');
@@ -814,7 +814,7 @@ if(location.hash==='#pickertest'){let ok=true;const notes=[];const A=(c,n)=>{if(
 if(location.hash==='#boxtest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c){ok=false;notes.push(n);}};
  LOCKED.clear();const f=UI_FACES[0][0];const saveBox=UIMAP[f].box;
  UIMAP[f].box=null;buildUITable();
- const cell=document.querySelector('#uibody tr[data-face="'+f+'"]').cells[7];
+ const cell=document.querySelector('#uibody tr[data-face="'+f+'"]').cells[5];
  A(!!cell.querySelector('.boxcluster'),'box-cluster-present');
  A(cell.querySelectorAll('.boxbtn').length===4,'four-box-buttons');
  const dd=cell.querySelector('.cstep');

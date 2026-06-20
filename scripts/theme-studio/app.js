@@ -366,7 +366,7 @@ function buildTable(){
     const lkTd=mkLockCell(kind,[dd,bgd,...stCtls,boxCtl,...exp.locks]);
     const c2=document.createElement('td');c2.className='cat';c2.title=composeHoverTitle(SYNTAX_DOCS[kind],c2.title);c2.appendChild(exp.btn);
     const c2lbl=document.createElement('span');c2lbl.textContent=' '+label;c2lbl.style.cursor='pointer';c2lbl.title='flash this category in the code';c2lbl.onclick=()=>flashTokens(kind);c2.appendChild(c2lbl);
-    tr.appendChild(lkTd);tr.appendChild(c2);tr.appendChild(c0);tr.appendChild(cB);tr.appendChild(stTd);tr.appendChild(crTd);tr.appendChild(exTd);tr.appendChild(cX);
+    tr.appendChild(lkTd);tr.appendChild(c2);tr.appendChild(c0);tr.appendChild(cB);tr.appendChild(stTd);tr.appendChild(cX);tr.appendChild(crTd);tr.appendChild(exTd);
     tb.appendChild(tr);tb.appendChild(exp.detail);}
   updateLockToggle('syntax');syncExpandAllBtns();
 }
@@ -725,7 +725,7 @@ function buildPkgTable(){
     const cL=mkLockCell('pkg:'+app+':'+face,[fgd,bgd,...pkCtls,boxCtl,...exp.locks]);
     if(nd.fg)cf.classList.add('nd');if(nd.bg)cb.classList.add('nd');if(nd.style)cw.classList.add('nd');
     if(nd.box)cx.classList.add('nd');
-    tr.append(cL,c0,cf,cb,cw,cc,cx);tb.appendChild(tr);tb.appendChild(exp.detail);
+    tr.append(cL,c0,cf,cb,cw,cx,cc);tb.appendChild(tr);tb.appendChild(exp.detail);
   }
   applyTableSort('pkgbody');
   updateLockToggle('pkg');syncExpandAllBtns();
@@ -812,7 +812,7 @@ function buildUITable(){
     const cP=document.createElement('td');cP.className='ex';cP.id='uiprev-'+face;cP.textContent=ex;cP.style.padding='4px 10px';cP.style.borderRadius='4px';
     const cX=document.createElement('td');const boxCtl=mkBoxControl(()=>UIMAP[face].box,b=>{UIMAP[face].box=b;paintUI(face);buildMockFrame();},{compact:true});cX.appendChild(boxCtl);
     const cL=mkLockCell('ui:'+face,[fgSel,bgSel,...stCtls,boxCtl,...exp.locks]);
-    tr.appendChild(cL);tr.appendChild(c0);tr.appendChild(cF);tr.appendChild(cB);tr.appendChild(cS);tr.appendChild(cC);tr.appendChild(cP);tr.appendChild(cX);tb.appendChild(tr);tb.appendChild(exp.detail);paintUI(face);
+    tr.appendChild(cL);tr.appendChild(c0);tr.appendChild(cF);tr.appendChild(cB);tr.appendChild(cS);tr.appendChild(cX);tr.appendChild(cC);tr.appendChild(cP);tb.appendChild(tr);tb.appendChild(exp.detail);paintUI(face);
   }
   applyTableSort('uibody');
   updateLockToggle('ui');syncExpandAllBtns();
