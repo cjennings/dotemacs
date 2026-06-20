@@ -12,6 +12,27 @@ function gate(id, body){
   d.textContent=verdict+(notes.length?' fails='+notes.join(','):'');
   document.body.appendChild(d);
 }
+function withSavedState(keys, body){
+  // Snapshot the named studio globals, run BODY, then restore them in a finally
+  // so opening the studio at a #gate hash doesn't leave its state mutated for
+  // interactive use. Each key maps to a [get, set, clone] triple over the live
+  // let-binding. Scope the keys to what the gate actually touches.
+  // JSON clone (not structuredClone): the studio data objects carry values
+  // structuredClone throws on, and a JSON round-trip of the data is exactly what
+  // the gates' own local saves already use.
+  const jc=x=>JSON.parse(JSON.stringify(x));
+  const reg={
+    PALETTE:[()=>PALETTE, v=>{PALETTE=v;}, jc],
+    MAP:[()=>MAP, v=>{MAP=v;}, jc],
+    SYNTAX:[()=>SYNTAX, v=>{SYNTAX=v;}, jc],
+    UIMAP:[()=>UIMAP, v=>{UIMAP=v;}, jc],
+    PKGMAP:[()=>PKGMAP, v=>{PKGMAP=v;}, jc],
+    LOCKED:[()=>LOCKED, v=>{LOCKED.clear();for(const k of v)LOCKED.add(k);}, s=>new Set(s)],
+  };
+  const snap=keys.map(k=>[k, reg[k][2](reg[k][0]())]);
+  try{ body(); }
+  finally{ for(const [k,v] of snap) reg[k][1](v); }
+}
 // Shared preview-face validator for the #mdtest / #mupreviewtest / #gnustest
 // gates: render HTML into a detached div, then assert it exercises at least
 // MINCOUNT data-faces, that every data-face is a real face of the package
@@ -52,7 +73,7 @@ if(location.hash==='#selftest')pkgSelftest();
 // preserve, across all three tiers. (1) Locking a row disables its controls via
 // the shared mkLockCell. (2) reset/erase batch actions update editable rows but
 // leave locked rows (syntax bare-kind, ui:, pkg: keys) untouched.
-if(location.hash==='#locktest')gate('locktest',A=>{
+if(location.hash==='#locktest')gate('locktest',A=>withSavedState(['PALETTE','MAP','SYNTAX','UIMAP','PKGMAP','LOCKED'],()=>{
  const cssRgb=h=>{const [r,g,b]=hex2rgb(h);return 'rgb('+r+', '+g+', '+b+')';};
  LOCKED.clear();buildTable();
  {const k=CATS.map(c=>c[0]).filter(k=>k!=='bg'&&k!=='p')[0];
@@ -122,7 +143,7 @@ if(location.hash==='#locktest')gate('locktest',A=>{
   if(filter&&faces.length>1){filter.value=faces[0];buildPkgTable();const b=document.getElementById('pkglocktoggle');b.click();
     A(faces.every(face=>LOCKED.has('pkg:'+app+':'+face)),'pkg lock-all covers the whole package even when filtered');
     filter.value='';buildPkgTable();}}
- });
+ }));
 // Sort gate (open with #sorttest): all three tables now share srtTable/cellVal.
 // Verifies the syntax table (which used to have its own srt) sorts by color
 // value and by element name, that a repeat click reverses, and that the UI and
@@ -142,7 +163,7 @@ if(location.hash==='#sorttest')gate('sorttest',A=>{
 // fixes so they cannot silently regress — overlay faces keep syntax colors and
 // honor their styles, the cursor sits on a glyph, line numbers honor weight, the
 // fringe shows its foreground indicator, and the mode-line carries its box.
-if(location.hash==='#mocktest')gate('mocktest',A=>{
+if(location.hash==='#mocktest')gate('mocktest',A=>withSavedState(['UIMAP','PKGMAP'],()=>{
  const Q=s=>document.querySelector('#mockframe '+s);
  buildMockFrame();
  A(Q('[data-face="highlight"] [data-k]'),'highlight-keeps-token-colors');
@@ -191,7 +212,7 @@ if(location.hash==='#mocktest')gate('mocktest',A=>{
  A(pkgWeight()&&pkgWeight().dataset.val==='','pkg weight dropdown starts empty when model is unset');
  pickEnum(pkgWeight(),'heavy');
  A(PKGMAP[app][face].weight==='heavy'&&PKGMAP[app][face].source==='user','pkg weight dropdown writes the model and marks the face edited');
- });
+ }));
 // Palette-generator gate (open with #generatortest): previewing is non-mutating,
 // clicking a generated tile loads the existing selector, adding creates a normal
 // singleton base column, and appending a preview column commits all span members
@@ -416,7 +437,7 @@ if(location.hash==='#beveltest')gate('beveltest',A=>{
 // is mutated. Covers: grid opens, every palette color has a cell, a cell click
 // fires onPick + updates the trigger, the pick highlights on reopen, the default
 // chip clears.
-if(location.hash==='#gallerytest')gate('gallerytest',A=>{
+if(location.hash==='#gallerytest')gate('gallerytest',A=>withSavedState(['MAP','SYNTAX'],()=>{
  let picked='__none__';
  const dd=mkColorDropdown(ddList(''),'',(hex)=>{picked=hex;},{});
  document.body.appendChild(dd);
@@ -440,7 +461,7 @@ if(location.hash==='#gallerytest')gate('gallerytest',A=>{
  trig.click();const defc=document.querySelector('.cddpop.cddgrid .cddgdef');if(defc)defc.click();
  A(picked==='','the default chip clears the assignment: '+JSON.stringify(picked));
  dd.remove();closeColorDropdown();
- });
+ }));
 // Preview-link gate (open with #previewlinktest): known bespoke-preview face
 // mappings stay wired to the face that Emacs actually uses.
 if(location.hash==='#previewlinktest')gate('previewlinktest',A=>{
@@ -461,7 +482,7 @@ if(location.hash==='#previewlinktest')gate('previewlinktest',A=>{
  });
 // Safe-lightness gate (open with #safetest): the OKLCH picker shades the unsafe
 // lightness band for a selected covered face and hides it when no face is selected.
-if(location.hash==='#safetest')gate('safetest',A=>{
+if(location.hash==='#safetest')gate('safetest',A=>withSavedState(['MAP','SYNTAX'],()=>{
  const saveMAP=Object.assign({},MAP);
  setSyntaxFg('p','#f0fef0');setSyntaxFg('kw','#67809c');setSyntaxFg('bg','#000000');
  document.getElementById('newhexstr').value='#202830';openPicker();setPkModel('oklch');
@@ -473,7 +494,7 @@ if(location.hash==='#safetest')gate('safetest',A=>{
  A(band&&band.style.display==='none','safe band hidden when no face is selected');
  for(const k in MAP)delete MAP[k];Object.assign(MAP,saveMAP);syncSyntaxFromCache();
  setPkModel('hsv');closePicker();
- });
+ }));
 // Gone-rebind gate (open with #healtest): deleting a named color then recreating
 // the name re-points face references stranded on the old hex to the new color.
 if(location.hash==='#healtest')gate('healtest',A=>{
@@ -714,7 +735,7 @@ if(location.hash==='#viewtest')gate('viewtest',A=>{
 // order in a pkg row: 0 lock, 1 label, 2 fg, 3 bg, 4 style, 5 box, 6 contrast.
 // inherit + height live in the row expander, so a non-default height flags the
 // expander toggle (exp-nd) rather than an inline cell.
-if(location.hash==='#ndtest')gate('ndtest',A=>{
+if(location.hash==='#ndtest')gate('ndtest',A=>withSavedState(['PKGMAP','LOCKED'],()=>{
  LOCKED.clear();
  const app=curApp(),row=APPS[app].faces[0],face=row[0];
  PKGMAP[app][face]=seedFace(row[2]||{});buildPkgTable();
@@ -729,7 +750,7 @@ if(location.hash==='#ndtest')gate('ndtest',A=>{
  A(tr2.cells[4].classList.contains('nd'),'toggled-weight-marks-style-box');
  A(!tr2.querySelector('.exptoggle').classList.contains('exp-nd'),'restored-height-unflags-expander');
  PKGMAP[app][face]=seedFace(row[2]||{});buildPkgTable();
- });
+ }));
 // Contrast-cell gate (open with #crtest): the per-face contrast column shows a
 // bare colored number (no PASS/FAIL word); the WCAG verdict lives in the hover.
 if(location.hash==='#crtest')gate('crtest',A=>{
@@ -920,7 +941,7 @@ if(location.hash==='#langtest')gate('langtest',A=>{
  });
 // View-lock-indicator gate (open with #viewlocktest): the view dropdown prefixes a
 // lock glyph on a view whose every element is locked, and clears it otherwise.
-if(location.hash==='#viewlocktest')gate('viewlocktest',A=>{
+if(location.hash==='#viewlocktest')gate('viewlocktest',A=>withSavedState(['LOCKED'],()=>{
  LOCKED.clear();updateViewLockIndicators();
  const s=document.getElementById('viewsel'),codeOpt=()=>[...s.options].find(o=>o.value==='@code');
  A(codeOpt()&&!codeOpt().textContent.startsWith('🔒'),'unlocked view shows no lock glyph: '+(codeOpt()&&codeOpt().textContent));
@@ -930,7 +951,7 @@ if(location.hash==='#viewlocktest')gate('viewlocktest',A=>{
  LOCKED.delete(syntaxLockKeys()[0]);updateViewLockIndicators();
  A(codeOpt()&&!codeOpt().textContent.startsWith('🔒'),'unlocking one element clears the glyph');
  LOCKED.clear();updateViewLockIndicators();
- });
+ }));
 // Detail-hover gate (open with #detailhovertest): every label in the expander
 // detail row carries an explanatory hover, the way the table-header labels do.
 if(location.hash==='#detailhovertest')gate('detailhovertest',A=>{
@@ -967,7 +988,7 @@ if(location.hash==='#expandalltest')gate('expandalltest',A=>{
 // Expander-persistence gate (open with #expandpersisttest): a package edit rebuilds
 // the whole table, so an open expander must reopen instead of collapsing under the
 // user. Editing a value inside the open expander must not close the row.
-if(location.hash==='#expandpersisttest')gate('expandpersisttest',A=>{
+if(location.hash==='#expandpersisttest')gate('expandpersisttest',A=>withSavedState(['PKGMAP'],()=>{
  EXPANDED.clear();
  const app=curApp(),face=APPS[app].faces[0][0];buildPkgTable();
  const row=()=>document.querySelector('#pkgbody tr[data-face="'+face+'"]');
@@ -981,7 +1002,7 @@ if(location.hash==='#expandpersisttest')gate('expandpersisttest',A=>{
  row().querySelector('.exptoggle').click();buildPkgTable();
  A(detail()&&detail().style.display==='none','a collapsed expander stays collapsed across a rebuild');
  EXPANDED.clear();buildPkgTable();
- });
+ }));
 // Palette default-state gate (open with #paldefaulttest): the studio opens with
 // the palette collapsed to base colors so the span tints don't crowd the first
 // view. initApp() ran at page load, so the live toggle reflects the opening state.
