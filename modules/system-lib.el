@@ -164,5 +164,29 @@ contributes its own modes regardless of load order."
     (setq font-lock-global-modes
           (cj/--font-lock-global-modes-excluding font-lock-global-modes mode))))
 
+(defun cj/format-region-with-program (program &rest args)
+  "Replace the current buffer with PROGRAM ARGS run over its contents, via argv.
+Runs PROGRAM (with ARGS) on the whole buffer through `call-process-region'
+-- no shell, so no quoting or word-splitting.  The buffer is replaced only
+when PROGRAM exits zero; on a non-zero exit the buffer is left untouched and
+a `user-error' is signalled with the program's stderr text.  Point is
+preserved as closely as the reformatted size allows.  Returns t on success."
+  (let* ((point (point))
+         (src (current-buffer))
+         (out (generate-new-buffer " *format-out*"))
+         (status (apply #'call-process-region
+                        (point-min) (point-max) program
+                        nil out nil args)))
+    (unwind-protect
+        (if (and (integerp status) (zerop status))
+            (progn
+              (with-current-buffer src
+                (replace-buffer-contents out)
+                (goto-char (min point (point-max))))
+              t)
+          (user-error "%s failed: %s" program
+                      (string-trim (with-current-buffer out (buffer-string)))))
+      (kill-buffer out))))
+
 (provide 'system-lib)
 ;;; system-lib.el ends here
