@@ -105,15 +105,7 @@ Preserves any unsaved changes and checks if the file exists."
   :bind
   (:map Info-mode-map
 		("m" . bookmark-set) ;; Rebind 'm' from Info-menu to bookmark-set
-		("M" . Info-menu))   ;; Move Info-menu to 'M' instead
-  :init
-  ;; Add personal info files BEFORE Info mode initializes
-  ;; (let ((personal-info-dir (expand-file-name "assets/info" user-emacs-directory)))
-  ;; 	(when (file-directory-p personal-info-dir)
-  ;;    (setq Info-directory-list (list personal-info-dir))))
-  ;; the above makes the directory the info list. the below adds it to the default list
-  ;;	(add-to-list 'Info-default-directory-list personal-info-dir)))
-  )
+		("M" . Info-menu)))   ;; Move Info-menu to 'M' instead
 
 (provide 'help-config)
 ;;; help-config.el ends here.

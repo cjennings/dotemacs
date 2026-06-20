@@ -44,9 +44,6 @@
   (setq org-startup-indented t)             ;; load org files indented
   (setq org-adapt-indentation t)            ;; adapt indentation to outline node level
 
-  ;; TASK: this variable doesn't exist. Remove
-  ;;  (setq org-indent-indentation-per-level 2) ;; indent two character-widths per level
-
   ;; IMAGES / MEDIA
   (setq org-startup-with-inline-images t)   ;; preview images by default
   (setq org-image-actual-width '(500))      ;; keep image sizes in check

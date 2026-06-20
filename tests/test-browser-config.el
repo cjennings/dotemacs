@@ -273,29 +273,6 @@
       (should (string= (plist-get loaded :name) "Second"))))
   (test-browser-teardown))
 
-;;; Public wrappers (message side-effects mocked)
-
-(ert-deftest test-browser-apply-wrapper-success-messages-name ()
-  "Normal: =cj/apply-browser-choice= reports the chosen name on success."
-  (test-browser-setup)
-  (let ((browser (test-browser-make-plist "Wrapper Test"))
-        (received nil))
-    (cl-letf (((symbol-function 'message)
-               (lambda (fmt &rest args) (setq received (apply #'format fmt args)))))
-      (cj/apply-browser-choice browser))
-    (should (string-match-p "Wrapper Test" received))
-    (should (string-match-p "Default browser set" received)))
-  (test-browser-teardown))
-
-(ert-deftest test-browser-apply-wrapper-invalid-plist-messages-error ()
-  "Error: =cj/apply-browser-choice= surfaces an error message for a bad plist."
-  (test-browser-setup)
-  (let ((received nil))
-    (cl-letf (((symbol-function 'message)
-               (lambda (fmt &rest args) (setq received (apply #'format fmt args)))))
-      (cj/apply-browser-choice nil))
-    (should (string-match-p "Invalid" received)))
-  (test-browser-teardown))
 
 (ert-deftest test-browser-initialize-wrapper-loaded-branch-applies ()
   "Normal: =cj/initialize-browser= applies the saved browser when one is loaded."

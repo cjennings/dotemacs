@@ -7,7 +7,6 @@
 ;;   cj/switch-themes
 ;;   cj/save-theme-to-file
 ;;   cj/get-active-theme-name
-;;   cj/load-fallback-theme
 
 ;;; Code:
 
@@ -67,23 +66,6 @@ does not raise."
                  (setq messaged (apply #'format fmt args)))))
       (cj/save-theme-to-file))
     (should (string-match-p "Cannot save theme" messaged))))
-
-;;; cj/load-fallback-theme
-
-(ert-deftest test-ui-theme-load-fallback-disables-then-loads ()
-  "Normal: load-fallback-theme disables all then loads the fallback."
-  (let ((fallback-theme-name "modus-vivendi")
-        (custom-enabled-themes '(old-one old-two))
-        disabled loaded)
-    (cl-letf (((symbol-function 'disable-theme)
-               (lambda (theme) (push theme disabled)))
-              ((symbol-function 'load-theme)
-               (lambda (theme &optional _no-confirm _no-enable)
-                 (push theme loaded)))
-              ((symbol-function 'message) #'ignore))
-      (cj/load-fallback-theme "boom"))
-    (should (equal (sort (copy-sequence disabled) #'string<) '(old-one old-two)))
-    (should (equal loaded '(modus-vivendi)))))
 
 ;;; cj/switch-themes
 

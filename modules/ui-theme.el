@@ -139,12 +139,6 @@ Returns fallback-theme-name if no theme is active."
       (message "Cannot save theme: %s is unwriteable" theme-file)
     (message "%s theme saved to %s" (cj/get-active-theme-name) theme-file)))
 
-(defun cj/load-fallback-theme (msg)
-  "Display MSG and load ui-theme fallback-theme-name.
-Used to handle errors with loading persisted theme."
-  (cj/theme-disable-all)
-  (cj/theme-load-fallback msg))
-
 (defun cj/load-theme-from-file ()
   "Apply the theme name contained in theme-file as the active UI theme.
 If the theme is nil, it disables all current themes. If an error occurs

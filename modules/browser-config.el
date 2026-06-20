@@ -109,12 +109,6 @@ Returns: \\='success if applied successfully,
           (set program-var (or path executable)))
         'success))))
 
-(defun cj/apply-browser-choice (browser-plist)
-  "Apply the browser settings from BROWSER-PLIST."
-  (pcase (cj/--do-apply-browser-choice browser-plist)
-    ('success (message "Default browser set to: %s" (plist-get browser-plist :name)))
-    ('invalid-plist (message "Invalid browser configuration"))))
-
 (defun cj/--do-choose-browser (browser-plist)
   "Save and apply BROWSER-PLIST as the default browser.
 Returns: \\='success if browser was saved and applied,

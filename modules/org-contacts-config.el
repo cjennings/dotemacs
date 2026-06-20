@@ -115,14 +115,6 @@
 Added: %U"
                  :prepare-finalize cj/org-contacts-finalize-birthday-timestamp)))
 
-;; TASK: What purpose did this serve?
-;; duplicate?!?
-;; (with-eval-after-load 'org-capture
-;;   (add-to-list 'org-capture-templates
-;;             '("C" "Contact" entry (file+headline contacts-file "Contacts")
-;;               "* %(cj/org-contacts-template-name)
-;; Added: %U")))
-
 (defun cj/org-contacts-template-name ()
   "Get name for contact template from context."
   (or (when (eq major-mode 'mu4e-headers-mode)

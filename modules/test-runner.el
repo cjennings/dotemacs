@@ -358,7 +358,6 @@ Returns a list of test name symbols defined in the file."
 	  (insert-file-contents file)
 	  (goto-char (point-min))
 	  ;; Find all (ert-deftest NAME ...) forms
-;;	  (while (re-search-forward "^\s-*(ert-deftest\s-+\\(\\(?:\\sw\\|\\s_\\)+\\)" nil t)
 	  (while (re-search-forward "^[[:space:]]*(ert-deftest[[:space:]]+\\(\\(?:\\sw\\|\\s_\\)+\\)" nil t)
 		(push (match-string 1) test-names)))
 	test-names))
