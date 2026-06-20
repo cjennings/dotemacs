@@ -66,6 +66,19 @@ Returns nil if `sounds-dir' does not exist."
   (message "Timer sound reset to default: %s"
 		   (file-name-nondirectory notification-sound)))
 
+(defun cj/tmr--current-sound-name ()
+  "Return the basename of the current `tmr-sound-file' if it exists, else nil."
+  (when (and tmr-sound-file (file-exists-p tmr-sound-file))
+    (file-name-nondirectory tmr-sound-file)))
+
+(defun cj/tmr--apply-sound-file (selected-file)
+  "Set `tmr-sound-file' to SELECTED-FILE, a basename within `sounds-dir'.
+Return the confirmation message string (noting when it is the default sound)."
+  (setq tmr-sound-file (expand-file-name selected-file sounds-dir))
+  (if (equal tmr-sound-file notification-sound)
+      (format "Timer sound set to default: %s" selected-file)
+    (format "Timer sound set to: %s" selected-file)))
+
 (defun cj/tmr-select-sound-file ()
   "Select a sound file from `sounds-dir' to use for tmr timers.
 
@@ -80,13 +93,9 @@ Present all audio files in the sounds directory and set the chosen file as
              (if (boundp 'sounds-dir) sounds-dir "<unset>")))
    (t
     (let ((sound-files (cj/tmr--available-sound-files)))
-      (cond
-       ((null sound-files)
-        (message "No audio files found in %s" sounds-dir))
-       (t
-        (let* ((current-file (when (and tmr-sound-file
-                                        (file-exists-p tmr-sound-file))
-                               (file-name-nondirectory tmr-sound-file)))
+      (if (null sound-files)
+          (message "No audio files found in %s" sounds-dir)
+        (let* ((current-file (cj/tmr--current-sound-name))
                (selected-file
                 (completing-read
                  (format "Select timer sound%s: "
@@ -94,14 +103,9 @@ Present all audio files in the sounds directory and set the chosen file as
                              (format " (current: %s)" current-file)
                            ""))
                  sound-files nil t nil nil current-file)))
-          (cond
-           ((or (null selected-file) (string-empty-p selected-file))
-            (message "No file selected"))
-           (t
-            (setq tmr-sound-file (expand-file-name selected-file sounds-dir))
-            (if (equal tmr-sound-file notification-sound)
-                (message "Timer sound set to default: %s" selected-file)
-              (message "Timer sound set to: %s" selected-file)))))))))))
+          (if (or (null selected-file) (string-empty-p selected-file))
+              (message "No file selected")
+            (message "%s" (cj/tmr--apply-sound-file selected-file)))))))))
 
 (use-package tmr
   :defer 0.5
