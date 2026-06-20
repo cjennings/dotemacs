@@ -143,6 +143,21 @@ GHOSTEL_SEED={
  "ghostel-color-blue":{"fg":"blue"},"ghostel-color-magenta":{"fg":"regal"},"ghostel-color-cyan":{"fg":"sage"},"ghostel-color-white":{"fg":"silver"},
  "ghostel-color-bright-black":{"fg":"steel"},"ghostel-color-bright-red":{"fg":"#de4949"},"ghostel-color-bright-green":{"fg":"#84b068"},"ghostel-color-bright-yellow":{"fg":"#eed376"},
  "ghostel-color-bright-blue":{"fg":"#7a9abe"},"ghostel-color-bright-magenta":{"fg":"#b07fd0"},"ghostel-color-bright-cyan":{"fg":"#7fc0a8"},"ghostel-color-bright-white":{"fg":"white"}}
+# ansi-color (built-in, not in the inventory): the 16 ANSI palette faces that every
+# ANSI consumer resolves -- vterm, eshell, compilation, and ghostel (whose
+# ghostel-color-* faces :inherit these).  Theming ansi-color-* drives the 16
+# colors everywhere at once.  Seed mirrors the ghostel palette so the two agree.
+# Note: a face left unset here inherits nothing extra; a consumer that sets its
+# own color directly (e.g. a seeded ghostel-color-red) overrides this inheritance.
+ANSI_COLOR_FACES=("ansi-color-black ansi-color-red ansi-color-green ansi-color-yellow "
+ "ansi-color-blue ansi-color-magenta ansi-color-cyan ansi-color-white "
+ "ansi-color-bright-black ansi-color-bright-red ansi-color-bright-green ansi-color-bright-yellow "
+ "ansi-color-bright-blue ansi-color-bright-magenta ansi-color-bright-cyan ansi-color-bright-white").split()
+ANSI_COLOR_SEED={
+ "ansi-color-black":{"fg":"pewter"},"ansi-color-red":{"fg":"terracotta"},"ansi-color-green":{"fg":"emerald"},"ansi-color-yellow":{"fg":"gold"},
+ "ansi-color-blue":{"fg":"blue"},"ansi-color-magenta":{"fg":"regal"},"ansi-color-cyan":{"fg":"sage"},"ansi-color-white":{"fg":"silver"},
+ "ansi-color-bright-black":{"fg":"steel"},"ansi-color-bright-red":{"fg":"#de4949"},"ansi-color-bright-green":{"fg":"#84b068"},"ansi-color-bright-yellow":{"fg":"#eed376"},
+ "ansi-color-bright-blue":{"fg":"#7a9abe"},"ansi-color-bright-magenta":{"fg":"#b07fd0"},"ansi-color-bright-cyan":{"fg":"#7fc0a8"},"ansi-color-bright-white":{"fg":"white"}}
 # auto-dim-other-buffers: non-selected windows recede to a faded fg on a near-black
 # bg.  The -hide face keeps org hidden text invisible in a dimmed window (fg=bg).
 AUTODIM_FACES=("auto-dim-other-buffers auto-dim-other-buffers-hide").split()
@@ -341,6 +356,7 @@ BESPOKE_APP_SPECS=[
  ("gnus","gnus (mu4e article view)","gnus",GNUS_FACES,"gnus-",GNUS_SEED),
  ("org-faces","org-faces","orgfaces",ORGFACES_FACES,"org-faces-",ORGFACES_SEED),
  ("ghostel","ghostel","ghostel",GHOSTEL_FACES,"ghostel-",GHOSTEL_SEED),
+ ("ansi-color","ansi-color (vterm/eshell/compilation/ghostel)","ansicolor",ANSI_COLOR_FACES,"ansi-color-",ANSI_COLOR_SEED),
  ("auto-dim-other-buffers","auto-dim","autodim",AUTODIM_FACES,"auto-dim-other-buffers-",AUTODIM_SEED),
  ("dashboard","dashboard","dashboard",DASHBOARD_FACES,"dashboard-",DASHBOARD_SEED),
  ("lsp-mode","lsp-mode","lsp",LSP_FACES,"lsp-",LSP_SEED),
