@@ -99,7 +99,12 @@ existing split does.  No-op when SIDE is nil."
   (when side
     (let ((new (split-window (selected-window) nil side)))
       (set-window-buffer new (other-buffer (current-buffer) t))
-      (minimize-window new)
+      ;; Shrink the reveal to the smallest window Emacs allows (~2 lines, the
+      ;; mode line) so the current window keeps almost the whole frame; the
+      ;; sticky `windsize' arrows grow the reveal from there.  `minimize-window'
+      ;; floors at `window-min-height' (4 by default), so bind it down to 1.
+      (let ((window-min-height 1))
+        (minimize-window new))
       new)))
 
 (defun cj/window-resize-sticky ()
