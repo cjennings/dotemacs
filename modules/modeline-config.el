@@ -71,6 +71,16 @@ Example: `my-very-long-name.el' → `my-ver...me.el'"
         (concat (substring str 0 half) "..." (substring str (- half))))
     str))
 
+(defun cj/--modeline-click-map (mouse-1 &optional mouse-3)
+  "Return a mode-line `local-map' binding mouse clicks to commands.
+\[mode-line mouse-1] runs MOUSE-1; when MOUSE-3 is non-nil, [mode-line mouse-3]
+runs it too.  Shared builder for the clickable modeline segments."
+  (let ((map (make-sparse-keymap)))
+    (define-key map [mode-line mouse-1] mouse-1)
+    (when mouse-3
+      (define-key map [mode-line mouse-3] mouse-3))
+    map))
+
 ;; -------------------------- Modeline Segments --------------------------------
 
 (defvar-local cj/modeline-buffer-name
@@ -82,10 +92,7 @@ Example: `my-very-long-name.el' → `my-ver...me.el'"
                                     name "\n"
                                     (or (buffer-file-name)
                                         (format "No file. Directory: %s" default-directory)))
-                        'local-map (let ((map (make-sparse-keymap)))
-                                     (define-key map [mode-line mouse-1] 'previous-buffer)
-                                     (define-key map [mode-line mouse-3] 'next-buffer)
-                                     map))))
+                        'local-map (cj/--modeline-click-map 'previous-buffer 'next-buffer))))
   "Buffer name in the mode line.
 Truncates in narrow windows.  Click to switch buffers.")
 
@@ -195,10 +202,7 @@ break it.  Caching nil degrades to \"no VC info\" instead."
                    'face face
                    'mouse-face 'mode-line-highlight
                    'help-echo (format "Branch: %s\nState: %s\nmouse-1: vc-diff\nmouse-3: vc-root-diff" branch state)
-                   'local-map (let ((map (make-sparse-keymap)))
-                                (define-key map [mode-line mouse-1] 'vc-diff)
-                                (define-key map [mode-line mouse-3] 'vc-root-diff)
-                                map))))))
+                   'local-map (cj/--modeline-click-map 'vc-diff 'vc-root-diff))))))
 
 (defvar-local cj/modeline-vc-branch
   '(:eval (when (mode-line-window-selected-p)  ; Only show in active window
@@ -215,9 +219,7 @@ Click to show diffs with `vc-diff' or `vc-root-diff'.")
                         'help-echo (if-let* ((parent (get mode-sym 'derived-mode-parent)))
                                        (format "Major mode: %s\nDerived from: %s\nmouse-1: describe-mode" mode-sym parent)
                                      (format "Major mode: %s\nmouse-1: describe-mode" mode-sym))
-                        'local-map (let ((map (make-sparse-keymap)))
-                                     (define-key map [mode-line mouse-1] 'describe-mode)
-                                     map))))
+                        'local-map (cj/--modeline-click-map 'describe-mode))))
   "Major mode name only (no minor modes).
 Click to show help with `describe-mode'.")
 
