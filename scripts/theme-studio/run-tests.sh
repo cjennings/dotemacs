@@ -41,18 +41,20 @@ if node --test ./*.mjs >/tmp/ts-node.log 2>&1; then
   pass_msg "Node unit tests ($(grep -E '^. tests' /tmp/ts-node.log | grep -oE '[0-9]+' | head -1) tests)"
 else fail_msg "Node unit tests"; grep -E 'not ok|AssertionError|Error' /tmp/ts-node.log | sed 's/^/        /' | head -20; fi
 
-# 3b. ERT tests for build-theme.el (the theme.json -> deftheme emitter). The
-# tests live in the repo's tests/ dir; run them headless. Skip cleanly if no
-# emacs is on PATH (the JS/Python gates still run).
+# 3b. ERT tests for the theme-studio Emacs code: build-theme.el (the theme.json
+# -> deftheme emitter, tests under the repo's tests/ dir) and face-docs-dump.el
+# (the hover-docstring asset generator, test alongside it here). Run them in one
+# headless batch. Skip cleanly if no emacs is on PATH (JS/Python gates still run).
 BT_TESTS="$HERE/../../tests/test-build-theme.el"
+FD_TESTS="$HERE/test-face-docs-dump.el"
 if command -v emacs >/dev/null 2>&1 && [ -f "$BT_TESTS" ]; then
   if emacs --batch --no-site-file --no-site-lisp \
        -L "$HERE/../.." -L "$HERE/../../modules" -L "$HERE/../../tests" -L "$HERE/../../themes" \
-       -l "$BT_TESTS" -f ert-run-tests-batch-and-exit >/tmp/ts-bt.log 2>&1; then
-    pass_msg "build-theme.el ERT tests ($(grep -oE 'Ran [0-9]+' /tmp/ts-bt.log | awk '{print $2}') tests)"
-  else fail_msg "build-theme.el ERT tests"; grep -E 'FAILED|Error' /tmp/ts-bt.log | sed 's/^/        /' | head -20; fi
+       -l "$BT_TESTS" -l "$FD_TESTS" -f ert-run-tests-batch-and-exit >/tmp/ts-bt.log 2>&1; then
+    pass_msg "theme-studio ERT tests ($(grep -oE 'Ran [0-9]+' /tmp/ts-bt.log | awk '{print $2}') tests)"
+  else fail_msg "theme-studio ERT tests"; grep -E 'FAILED|Error' /tmp/ts-bt.log | sed 's/^/        /' | head -20; fi
 else
-  skip_msg "build-theme.el ERT tests (no emacs on PATH)"
+  skip_msg "theme-studio ERT tests (no emacs on PATH)"
 fi
 
 # 4. Syntax-check the inlined page script.
