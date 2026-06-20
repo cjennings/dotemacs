@@ -962,6 +962,29 @@ if(location.hash==='#detailhovertest'){let ok=true;const notes=[];const A=(c,n)=
  A(inh&&/inherit/i.test(inh.title),'inherit field hover mentions inheritance: '+(inh&&inh.title));
  document.title='DETAILHOVERTEST '+(ok?'PASS':'FAIL');
  const dh=document.createElement('div');dh.id='detailhovertest';dh.textContent='DETAILHOVERTEST '+(ok?'PASS':'FAIL')+(notes.length?' fails='+notes.join(','):'');document.body.appendChild(dh);}
+// Expand/collapse-all gate (open with #expandalltest): the header toggle opens or
+// closes every row's detail at once, the per-row triangles track state (▶ closed,
+// ▼ open), and the header button's label follows the aggregate.
+if(location.hash==='#expandalltest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c){ok=false;notes.push(n);}};
+ buildUITable();
+ const tb=document.getElementById('uibody'),btn=document.getElementById('uiexpandall');
+ const details=()=>[...tb.querySelectorAll('tr.detailrow')];
+ const open=()=>details().filter(d=>d.style.display!=='none').length;
+ const firstTog=()=>tb.querySelector('.exptoggle');
+ A(firstTog()&&firstTog().textContent==='▶','row toggle starts collapsed (▶): '+(firstTog()&&firstTog().textContent));
+ A(btn&&btn.textContent.indexOf('▶')===0&&/expand all/.test(btn.textContent),'button starts ▶ expand all: '+(btn&&btn.textContent));
+ toggleAllExpanded('uiexpandall');
+ A(open()===details().length&&open()>0,'expand all opens every row: '+open()+'/'+details().length);
+ A(firstTog().textContent==='▼','row toggles flip to ▼ after expand all');
+ A(btn.textContent.indexOf('▼')===0&&/collapse all/.test(btn.textContent),'button flips to ▼ collapse all: '+btn.textContent);
+ toggleAllExpanded('uiexpandall');
+ A(open()===0,'collapse all closes every row');
+ A(firstTog().textContent==='▶','row toggles return to ▶ after collapse all');
+ firstTog().click();
+ A(open()===1,'a single row toggle opens just that row');
+ A(btn.textContent.indexOf('▼')===0,'button reflects a single open row as ▼ collapse all');
+ document.title='EXPANDALLTEST '+(ok?'PASS':'FAIL');
+ const ea=document.createElement('div');ea.id='expandalltest';ea.textContent='EXPANDALLTEST '+(ok?'PASS':'FAIL')+(notes.length?' fails='+notes.join(','):'');document.body.appendChild(ea);}
 // Palette default-state gate (open with #paldefaulttest): the studio opens with
 // the palette collapsed to base colors so the span tints don't crowd the first
 // view. initApp() ran at page load, so the live toggle reflects the opening state.

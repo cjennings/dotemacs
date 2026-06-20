@@ -244,7 +244,9 @@ function mkDetailEditor(face,onChange,opts={}){
 // right after the main row.
 function mkExpander(face,colspan,onChange,opts={}){
   const detail=document.createElement('tr');detail.className='detailrow';detail.style.display='none';
-  const btn=document.createElement('button');btn.className='exptoggle';btn.textContent='⋯';
+  const btn=document.createElement('button');btn.className='exptoggle';
+  // The disclosure triangle shows the row's state: ▶ collapsed, ▼ expanded.
+  const setGlyph=()=>{const open=detail.style.display!=='none';btn.textContent=open?'▼':'▶';btn.classList.toggle('on',open);};
   // Flag the toggle when collapsed and at least one hidden attribute differs from
   // the default, so a non-default attribute is never invisible. ndCheck re-runs
   // after every edit (for tiers whose onChange does not rebuild the row).
@@ -252,9 +254,28 @@ function mkExpander(face,colspan,onChange,opts={}){
   const refreshNd=()=>{const nd=ndCheck();btn.classList.toggle('exp-nd',nd);btn.title=nd?'more attributes (some differ from default)':'more attributes';};
   const wrapped=()=>{onChange();refreshNd();};
   const td=document.createElement('td');td.colSpan=colspan;const {el,locks}=mkDetailEditor(face,wrapped,opts);td.appendChild(el);detail.appendChild(td);
-  btn.onclick=()=>{const open=detail.style.display==='none';detail.style.display=open?'':'none';btn.classList.toggle('on',open);};
-  refreshNd();
+  btn.onclick=()=>{detail.style.display=detail.style.display==='none'?'':'none';setGlyph();syncExpandAllBtns();};
+  refreshNd();setGlyph();
   return {btn,detail,locks};}
+// Expand/collapse every row in a table at once, then sync the per-row triangles.
+function setAllExpanded(tableId,expand){
+  const tb=document.getElementById(tableId);if(!tb)return;
+  tb.querySelectorAll('tr.detailrow').forEach(d=>{d.style.display=expand?'':'none';});
+  tb.querySelectorAll('.exptoggle').forEach(b=>{b.textContent=expand?'▼':'▶';b.classList.toggle('on',expand);});
+}
+// The header-level expand/collapse-all toggle for a table. Its label and triangle
+// track the aggregate: any row open -> ▼ collapse all; all closed -> ▶ expand all.
+const EXPALL_TABLE={syntaxexpandall:'legbody',uiexpandall:'uibody',pkgexpandall:'pkgbody'};
+function syncExpandAllBtns(){
+  for(const id in EXPALL_TABLE){const btn=document.getElementById(id);const tb=document.getElementById(EXPALL_TABLE[id]);if(!btn||!tb)continue;
+    const anyOpen=[...tb.querySelectorAll('tr.detailrow')].some(d=>d.style.display!=='none');
+    btn.textContent=anyOpen?'▼ collapse all':'▶ expand all';}
+}
+function toggleAllExpanded(id){
+  const tableId=EXPALL_TABLE[id],tb=document.getElementById(tableId);if(!tb)return;
+  const anyOpen=[...tb.querySelectorAll('tr.detailrow')].some(d=>d.style.display!=='none');
+  setAllExpanded(tableId,!anyOpen);syncExpandAllBtns();
+}
 // Column count for a table's detail-row colspan, read from its header so the
 // expander never hardcodes a width that drifts when a column is added.
 function tableColCount(tableId){const h=document.querySelector('#'+tableId+' thead tr');return h?h.cells.length:1;}
@@ -339,7 +360,7 @@ function buildTable(){
     const c2lbl=document.createElement('span');c2lbl.textContent=' '+label;c2lbl.style.cursor='pointer';c2lbl.title='flash this category in the code';c2lbl.onclick=()=>flashTokens(kind);c2.appendChild(c2lbl);
     tr.appendChild(lkTd);tr.appendChild(c2);tr.appendChild(c0);tr.appendChild(cB);tr.appendChild(stTd);tr.appendChild(crTd);tr.appendChild(exTd);tr.appendChild(cX);
     tb.appendChild(tr);tb.appendChild(exp.detail);}
-  updateLockToggle('syntax');
+  updateLockToggle('syntax');syncExpandAllBtns();
 }
 PALETTE_ACTIONS_J
 function notify(msg,err){const m=document.getElementById('palmsg');if(!m)return;m.textContent=msg;m.style.color=err?'#cb6b4d':'#8a9496';m.style.opacity='1';clearTimeout(m._t);m._t=setTimeout(()=>{m.style.opacity='0';},err?4000:2800);}
@@ -699,7 +720,7 @@ function buildPkgTable(){
     tr.append(cL,c0,cf,cb,cw,cc,cx);tb.appendChild(tr);tb.appendChild(exp.detail);
   }
   applyTableSort('pkgbody');
-  updateLockToggle('pkg');
+  updateLockToggle('pkg');syncExpandAllBtns();
 }
 // The per-package preview renderers live in previews.js, spliced here so the
 // PACKAGE_PREVIEWS registry below can reference them.
@@ -786,7 +807,7 @@ function buildUITable(){
     tr.appendChild(cL);tr.appendChild(c0);tr.appendChild(cF);tr.appendChild(cB);tr.appendChild(cS);tr.appendChild(cC);tr.appendChild(cP);tr.appendChild(cX);tb.appendChild(tr);tb.appendChild(exp.detail);paintUI(face);
   }
   applyTableSort('uibody');
-  updateLockToggle('ui');
+  updateLockToggle('ui');syncExpandAllBtns();
 }
 // Generic header-click sort, shared by all three tables. Reads a swatch
 // dropdown's value, a select value, a numeric input, or cell text (numeric when

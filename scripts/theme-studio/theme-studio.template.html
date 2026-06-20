@@ -62,7 +62,7 @@ STYLES_CSS</style>
 <div id="view-code" class="viewblock">
 <div class="cols">
  <section class="pane">
-  <div class="legctl"><button id="syntaxlocktoggle" class="fbtn" onclick="toggleAllLocks('syntax')" title="lock or unlock every syntax row">lock all</button><button class="fbtn" onclick="resetUnlocked()" title="reset to captured defaults, preserving locked rows">&#8635; reset</button><button class="fbtn" onclick="clearUnlocked()" title="erase, preserving locked rows">erase</button></div>
+  <div class="legctl"><button id="syntaxlocktoggle" class="fbtn" onclick="toggleAllLocks('syntax')" title="lock or unlock every syntax row">lock all</button><button id="syntaxexpandall" class="fbtn" onclick="toggleAllExpanded('syntaxexpandall')" title="expand or collapse every row's detail">&#9654; expand all</button><button class="fbtn" onclick="resetUnlocked()" title="reset to captured defaults, preserving locked rows">&#8635; reset</button><button class="fbtn" onclick="clearUnlocked()" title="erase, preserving locked rows">erase</button></div>
   <table class="leg" id="legtable"><thead><tr><th title="lock a decided element↔color association"></th><th onclick="srtTable('legbody',1)">elements &#9651;</th><th onclick="srtTable('legbody',2)">fg &#9651;</th><th onclick="srtTable('legbody',3)">bg &#9651;</th><th>style</th><th title="WCAG contrast of this color on the background">contrast</th><th>example</th><th title="face :box (border)">box</th></tr></thead><tbody id="legbody"></tbody></table>
  </section>
  <section class="pane grow">
@@ -74,7 +74,7 @@ STYLES_CSS</style>
 <div id="view-ui" class="viewblock" style="display:none">
 <div class="cols stretch">
  <section class="pane">
-  <div class="legctl"><button id="uilocktoggle" class="fbtn" onclick="toggleAllLocks('ui')" title="lock or unlock every UI face row">lock all</button><button class="fbtn" onclick="resetUnlockedUI()" title="reset to captured defaults, preserving locked rows">&#8635; reset</button><button class="fbtn" onclick="clearUnlockedUI()" title="erase, preserving locked rows">erase</button></div>
+  <div class="legctl"><button id="uilocktoggle" class="fbtn" onclick="toggleAllLocks('ui')" title="lock or unlock every UI face row">lock all</button><button id="uiexpandall" class="fbtn" onclick="toggleAllExpanded('uiexpandall')" title="expand or collapse every row's detail">&#9654; expand all</button><button class="fbtn" onclick="resetUnlockedUI()" title="reset to captured defaults, preserving locked rows">&#8635; reset</button><button class="fbtn" onclick="clearUnlockedUI()" title="erase, preserving locked rows">erase</button></div>
   <table class="leg" id="uitable"><thead><tr><th title="lock a decided face"></th><th onclick="srtTable('uibody',1)">face &#9651;</th><th onclick="srtTable('uibody',2)" title="foreground">fg &#9651;</th><th onclick="srtTable('uibody',3)" title="background">bg &#9651;</th><th>style</th><th onclick="srtTable('uibody',5)" title="WCAG contrast: this face's foreground on its background (or the ground)">contrast &#9651;</th><th>preview</th><th title="face :box (border)">box</th></tr></thead><tbody id="uibody"></tbody></table>
  </section>
  <section class="pane grow" style="display:flex;flex-direction:column">
@@ -87,7 +87,7 @@ STYLES_CSS</style>
 <div class="pkgbar">
  <label style="color:#b4b1a2">filter</label><input id="pkgfilter" type="text" placeholder="face name" oninput="buildPkgTable()" style="background:#161412;border:1px solid #252321;color:#cdced1;border-radius:4px;padding:5px 8px;font:10pt monospace;width:160px">
  <button onclick="resetApp()" title="reset to captured defaults, preserving locked rows">&#8635; reset</button>
- <button id="pkglocktoggle" class="fbtn" onclick="toggleAllLocks('pkg')" title="lock or unlock every face row in the current package">lock all</button>
+ <button id="pkglocktoggle" class="fbtn" onclick="toggleAllLocks('pkg')" title="lock or unlock every face row in the current package">lock all</button><button id="pkgexpandall" class="fbtn" onclick="toggleAllExpanded('pkgexpandall')" title="expand or collapse every row's detail">&#9654; expand all</button>
  <button class="fbtn" onclick="clearUnlockedPkg()" title="erase, preserving locked rows">erase</button>
 </div>
 <div class="cols stretch">

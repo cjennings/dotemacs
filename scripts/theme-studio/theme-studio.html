@@ -248,7 +248,7 @@
 <div id="view-code" class="viewblock">
 <div class="cols">
  <section class="pane">
-  <div class="legctl"><button id="syntaxlocktoggle" class="fbtn" onclick="toggleAllLocks('syntax')" title="lock or unlock every syntax row">lock all</button><button class="fbtn" onclick="resetUnlocked()" title="reset to captured defaults, preserving locked rows">&#8635; reset</button><button class="fbtn" onclick="clearUnlocked()" title="erase, preserving locked rows">erase</button></div>
+  <div class="legctl"><button id="syntaxlocktoggle" class="fbtn" onclick="toggleAllLocks('syntax')" title="lock or unlock every syntax row">lock all</button><button id="syntaxexpandall" class="fbtn" onclick="toggleAllExpanded('syntaxexpandall')" title="expand or collapse every row's detail">&#9654; expand all</button><button class="fbtn" onclick="resetUnlocked()" title="reset to captured defaults, preserving locked rows">&#8635; reset</button><button class="fbtn" onclick="clearUnlocked()" title="erase, preserving locked rows">erase</button></div>
   <table class="leg" id="legtable"><thead><tr><th title="lock a decided element↔color association"></th><th onclick="srtTable('legbody',1)">elements &#9651;</th><th onclick="srtTable('legbody',2)">fg &#9651;</th><th onclick="srtTable('legbody',3)">bg &#9651;</th><th>style</th><th title="WCAG contrast of this color on the background">contrast</th><th>example</th><th title="face :box (border)">box</th></tr></thead><tbody id="legbody"></tbody></table>
  </section>
  <section class="pane grow">
@@ -260,7 +260,7 @@
 <div id="view-ui" class="viewblock" style="display:none">
 <div class="cols stretch">
  <section class="pane">
-  <div class="legctl"><button id="uilocktoggle" class="fbtn" onclick="toggleAllLocks('ui')" title="lock or unlock every UI face row">lock all</button><button class="fbtn" onclick="resetUnlockedUI()" title="reset to captured defaults, preserving locked rows">&#8635; reset</button><button class="fbtn" onclick="clearUnlockedUI()" title="erase, preserving locked rows">erase</button></div>
+  <div class="legctl"><button id="uilocktoggle" class="fbtn" onclick="toggleAllLocks('ui')" title="lock or unlock every UI face row">lock all</button><button id="uiexpandall" class="fbtn" onclick="toggleAllExpanded('uiexpandall')" title="expand or collapse every row's detail">&#9654; expand all</button><button class="fbtn" onclick="resetUnlockedUI()" title="reset to captured defaults, preserving locked rows">&#8635; reset</button><button class="fbtn" onclick="clearUnlockedUI()" title="erase, preserving locked rows">erase</button></div>
   <table class="leg" id="uitable"><thead><tr><th title="lock a decided face"></th><th onclick="srtTable('uibody',1)">face &#9651;</th><th onclick="srtTable('uibody',2)" title="foreground">fg &#9651;</th><th onclick="srtTable('uibody',3)" title="background">bg &#9651;</th><th>style</th><th onclick="srtTable('uibody',5)" title="WCAG contrast: this face's foreground on its background (or the ground)">contrast &#9651;</th><th>preview</th><th title="face :box (border)">box</th></tr></thead><tbody id="uibody"></tbody></table>
  </section>
  <section class="pane grow" style="display:flex;flex-direction:column">
@@ -273,7 +273,7 @@
 <div class="pkgbar">
  <label style="color:#b4b1a2">filter</label><input id="pkgfilter" type="text" placeholder="face name" oninput="buildPkgTable()" style="background:#161412;border:1px solid #252321;color:#cdced1;border-radius:4px;padding:5px 8px;font:10pt monospace;width:160px">
  <button onclick="resetApp()" title="reset to captured defaults, preserving locked rows">&#8635; reset</button>
- <button id="pkglocktoggle" class="fbtn" onclick="toggleAllLocks('pkg')" title="lock or unlock every face row in the current package">lock all</button>
+ <button id="pkglocktoggle" class="fbtn" onclick="toggleAllLocks('pkg')" title="lock or unlock every face row in the current package">lock all</button><button id="pkgexpandall" class="fbtn" onclick="toggleAllExpanded('pkgexpandall')" title="expand or collapse every row's detail">&#9654; expand all</button>
  <button class="fbtn" onclick="clearUnlockedPkg()" title="erase, preserving locked rows">erase</button>
 </div>
 <div class="cols stretch">
@@ -1753,7 +1753,9 @@ function mkDetailEditor(face,onChange,opts={}){
 // right after the main row.
 function mkExpander(face,colspan,onChange,opts={}){
   const detail=document.createElement('tr');detail.className='detailrow';detail.style.display='none';
-  const btn=document.createElement('button');btn.className='exptoggle';btn.textContent='⋯';
+  const btn=document.createElement('button');btn.className='exptoggle';
+  // The disclosure triangle shows the row's state: ▶ collapsed, ▼ expanded.
+  const setGlyph=()=>{const open=detail.style.display!=='none';btn.textContent=open?'▼':'▶';btn.classList.toggle('on',open);};
   // Flag the toggle when collapsed and at least one hidden attribute differs from
   // the default, so a non-default attribute is never invisible. ndCheck re-runs
   // after every edit (for tiers whose onChange does not rebuild the row).
@@ -1761,9 +1763,28 @@ function mkExpander(face,colspan,onChange,opts={}){
   const refreshNd=()=>{const nd=ndCheck();btn.classList.toggle('exp-nd',nd);btn.title=nd?'more attributes (some differ from default)':'more attributes';};
   const wrapped=()=>{onChange();refreshNd();};
   const td=document.createElement('td');td.colSpan=colspan;const {el,locks}=mkDetailEditor(face,wrapped,opts);td.appendChild(el);detail.appendChild(td);
-  btn.onclick=()=>{const open=detail.style.display==='none';detail.style.display=open?'':'none';btn.classList.toggle('on',open);};
-  refreshNd();
+  btn.onclick=()=>{detail.style.display=detail.style.display==='none'?'':'none';setGlyph();syncExpandAllBtns();};
+  refreshNd();setGlyph();
   return {btn,detail,locks};}
+// Expand/collapse every row in a table at once, then sync the per-row triangles.
+function setAllExpanded(tableId,expand){
+  const tb=document.getElementById(tableId);if(!tb)return;
+  tb.querySelectorAll('tr.detailrow').forEach(d=>{d.style.display=expand?'':'none';});
+  tb.querySelectorAll('.exptoggle').forEach(b=>{b.textContent=expand?'▼':'▶';b.classList.toggle('on',expand);});
+}
+// The header-level expand/collapse-all toggle for a table. Its label and triangle
+// track the aggregate: any row open -> ▼ collapse all; all closed -> ▶ expand all.
+const EXPALL_TABLE={syntaxexpandall:'legbody',uiexpandall:'uibody',pkgexpandall:'pkgbody'};
+function syncExpandAllBtns(){
+  for(const id in EXPALL_TABLE){const btn=document.getElementById(id);const tb=document.getElementById(EXPALL_TABLE[id]);if(!btn||!tb)continue;
+    const anyOpen=[...tb.querySelectorAll('tr.detailrow')].some(d=>d.style.display!=='none');
+    btn.textContent=anyOpen?'▼ collapse all':'▶ expand all';}
+}
+function toggleAllExpanded(id){
+  const tableId=EXPALL_TABLE[id],tb=document.getElementById(tableId);if(!tb)return;
+  const anyOpen=[...tb.querySelectorAll('tr.detailrow')].some(d=>d.style.display!=='none');
+  setAllExpanded(tableId,!anyOpen);syncExpandAllBtns();
+}
 // Column count for a table's detail-row colspan, read from its header so the
 // expander never hardcodes a width that drifts when a column is added.
 function tableColCount(tableId){const h=document.querySelector('#'+tableId+' thead tr');return h?h.cells.length:1;}
@@ -1848,7 +1869,7 @@ function buildTable(){
     const c2lbl=document.createElement('span');c2lbl.textContent=' '+label;c2lbl.style.cursor='pointer';c2lbl.title='flash this category in the code';c2lbl.onclick=()=>flashTokens(kind);c2.appendChild(c2lbl);
     tr.appendChild(lkTd);tr.appendChild(c2);tr.appendChild(c0);tr.appendChild(cB);tr.appendChild(stTd);tr.appendChild(crTd);tr.appendChild(exTd);tr.appendChild(cX);
     tb.appendChild(tr);tb.appendChild(exp.detail);}
-  updateLockToggle('syntax');
+  updateLockToggle('syntax');syncExpandAllBtns();
 }
 function clearPalette(){
   normalizePalette();
@@ -2459,7 +2480,7 @@ function buildPkgTable(){
     tr.append(cL,c0,cf,cb,cw,cc,cx);tb.appendChild(tr);tb.appendChild(exp.detail);
   }
   applyTableSort('pkgbody');
-  updateLockToggle('pkg');
+  updateLockToggle('pkg');syncExpandAllBtns();
 }
 // The per-package preview renderers live in previews.js, spliced here so the
 // PACKAGE_PREVIEWS registry below can reference them.
@@ -3009,7 +3030,7 @@ function buildUITable(){
     tr.appendChild(cL);tr.appendChild(c0);tr.appendChild(cF);tr.appendChild(cB);tr.appendChild(cS);tr.appendChild(cC);tr.appendChild(cP);tr.appendChild(cX);tb.appendChild(tr);tb.appendChild(exp.detail);paintUI(face);
   }
   applyTableSort('uibody');
-  updateLockToggle('ui');
+  updateLockToggle('ui');syncExpandAllBtns();
 }
 // Generic header-click sort, shared by all three tables. Reads a swatch
 // dropdown's value, a select value, a numeric input, or cell text (numeric when
@@ -3999,6 +4020,29 @@ if(location.hash==='#detailhovertest'){let ok=true;const notes=[];const A=(c,n)=
  A(inh&&/inherit/i.test(inh.title),'inherit field hover mentions inheritance: '+(inh&&inh.title));
  document.title='DETAILHOVERTEST '+(ok?'PASS':'FAIL');
  const dh=document.createElement('div');dh.id='detailhovertest';dh.textContent='DETAILHOVERTEST '+(ok?'PASS':'FAIL')+(notes.length?' fails='+notes.join(','):'');document.body.appendChild(dh);}
+// Expand/collapse-all gate (open with #expandalltest): the header toggle opens or
+// closes every row's detail at once, the per-row triangles track state (▶ closed,
+// ▼ open), and the header button's label follows the aggregate.
+if(location.hash==='#expandalltest'){let ok=true;const notes=[];const A=(c,n)=>{if(!c){ok=false;notes.push(n);}};
+ buildUITable();
+ const tb=document.getElementById('uibody'),btn=document.getElementById('uiexpandall');
+ const details=()=>[...tb.querySelectorAll('tr.detailrow')];
+ const open=()=>details().filter(d=>d.style.display!=='none').length;
+ const firstTog=()=>tb.querySelector('.exptoggle');
+ A(firstTog()&&firstTog().textContent==='▶','row toggle starts collapsed (▶): '+(firstTog()&&firstTog().textContent));
+ A(btn&&btn.textContent.indexOf('▶')===0&&/expand all/.test(btn.textContent),'button starts ▶ expand all: '+(btn&&btn.textContent));
+ toggleAllExpanded('uiexpandall');
+ A(open()===details().length&&open()>0,'expand all opens every row: '+open()+'/'+details().length);
+ A(firstTog().textContent==='▼','row toggles flip to ▼ after expand all');
+ A(btn.textContent.indexOf('▼')===0&&/collapse all/.test(btn.textContent),'button flips to ▼ collapse all: '+btn.textContent);
+ toggleAllExpanded('uiexpandall');
+ A(open()===0,'collapse all closes every row');
+ A(firstTog().textContent==='▶','row toggles return to ▶ after collapse all');
+ firstTog().click();
+ A(open()===1,'a single row toggle opens just that row');
+ A(btn.textContent.indexOf('▼')===0,'button reflects a single open row as ▼ collapse all');
+ document.title='EXPANDALLTEST '+(ok?'PASS':'FAIL');
+ const ea=document.createElement('div');ea.id='expandalltest';ea.textContent='EXPANDALLTEST '+(ok?'PASS':'FAIL')+(notes.length?' fails='+notes.join(','):'');document.body.appendChild(ea);}
 // Palette default-state gate (open with #paldefaulttest): the studio opens with
 // the palette collapsed to base colors so the span tints don't crowd the first
 // view. initApp() ran at page load, so the live toggle reflects the opening state.
