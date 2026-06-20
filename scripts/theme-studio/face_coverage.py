@@ -115,22 +115,37 @@ def load_managed():
 CORE_FILES = {'faces', 'frame'}
 
 
+def path_kind(path):
+    """Classify a defface source PATH into a coarse origin kind.
+    Returns one of: 'none' (no path), 'elpa', 'user', 'builtin', 'other'.
+    Shared by bucket_from_source and bucket_of_source, which each map the kind
+    to their own vocabulary."""
+    if not path:
+        return 'none'
+    if '/elpa/' in path:
+        return 'elpa'
+    if '/.emacs.d/modules' in path:
+        return 'user'
+    if path.startswith('/usr/share/emacs') or path.startswith('/usr/lib/emacs'):
+        return 'builtin'
+    return 'other'
+
+
 def bucket_from_source(path):
     """Derive a bucket name from a face's defface file, for faces that match no
     known family. elpa -> the package dir name (version stripped); built-in ->
     the source file basename; otherwise emacs-core (can't tell)."""
-    if not path:
-        return 'emacs-core'
-    if '/elpa/' in path:
+    kind = path_kind(path)
+    if kind == 'elpa':
         pkgdir = path.split('/elpa/', 1)[1].split('/', 1)[0]
         return re.sub(r'-[0-9].*$', '', pkgdir) or 'emacs-core'
-    if '/.emacs.d/modules' in path:
+    if kind == 'user':
         return 'user-config'
-    if path.startswith('/usr/share/emacs') or path.startswith('/usr/lib/emacs'):
+    if kind == 'builtin':
         base = os.path.basename(path)
         base = base[:-3] if base.endswith('.el') else base
         return 'emacs-core' if base in CORE_FILES else base
-    return 'emacs-core'
+    return 'emacs-core'  # 'none' or 'other'
 
 
 def make_group_of(families, src):
@@ -155,15 +170,8 @@ def make_group_of(families, src):
 
 
 def bucket_of_source(path):
-    if not path:
-        return 'unloaded'
-    if '/elpa/' in path:
-        return 'elpa'
-    if '/.emacs.d/modules' in path:
-        return 'user'
-    if path.startswith('/usr/share/emacs') or path.startswith('/usr/lib/emacs'):
-        return 'builtin'
-    return 'other'
+    return {'none': 'unloaded', 'elpa': 'elpa', 'user': 'user',
+            'builtin': 'builtin', 'other': 'other'}[path_kind(path)]
 
 
 def classify(name, items, src, pkgfaces):
