@@ -433,6 +433,18 @@ without deleting), nil when the window was deleted.  Consumed by
 buried agent in the current window (the only one) or splitting per
 the saved direction.")
 
+(defvar cj/--ai-term-last-toggle-deleted-split nil
+  "Non-nil when the last F9 toggle-off deleted the agent's own split window.
+
+Set t by `cj/--ai-term-toggle-off' only when it actually `delete-window's
+the agent (a multi-window layout where the agent had its own window);
+nil for a bury or a degenerate swap.  Consumed by
+`cj/--ai-term-reuse-edge-window': when set, the next toggle-on re-splits a
+fresh agent window instead of reusing a window at the edge.  Without this,
+toggling the agent off and on in a 3+ window layout would reuse the user's
+working window at the edge, displacing its buffer and collapsing the layout
+-- the toggle must be reversible (off then on returns the same windows).")
+
 (defvar cj/--ai-term-last-hidden-buffer nil
   "The agent buffer hidden by the most recent F9 toggle-off.
 
@@ -534,14 +546,22 @@ displaced buffer and the agent, never changing the window count.
 
 Runs after `cj/--ai-term-reuse-existing-agent', so an agent already on
 screen has been handled already; the window reused here always holds a
-non-agent buffer, which is replaced (it stays alive, just unshown)."
-  (let* ((direction (or cj/--ai-term-last-direction
-                        (cj/--ai-term-default-direction)))
-         (win (cj/window-at-edge direction)))
-    (when (and win (not (window-dedicated-p win)))
-      (display-buffer-record-window 'reuse win buffer)
-      (set-window-buffer win buffer)
-      win)))
+non-agent buffer, which is replaced (it stays alive, just unshown).
+
+Skipped entirely when the prior toggle-off deleted the agent's own split
+window (`cj/--ai-term-last-toggle-deleted-split'): re-showing then reuses a
+working window at the edge and collapses the layout.  Consume the flag and
+return nil so `cj/--ai-term-display-saved' re-splits a fresh agent window,
+keeping the toggle reversible."
+  (if cj/--ai-term-last-toggle-deleted-split
+      (progn (setq cj/--ai-term-last-toggle-deleted-split nil) nil)
+    (let* ((direction (or cj/--ai-term-last-direction
+                          (cj/--ai-term-default-direction)))
+           (win (cj/window-at-edge direction)))
+      (when (and win (not (window-dedicated-p win)))
+        (display-buffer-record-window 'reuse win buffer)
+        (set-window-buffer win buffer)
+        win))))
 
 (defun cj/--ai-term-display-saved (buffer alist)
   "Display-buffer action: split per saved direction and size.
@@ -824,6 +844,7 @@ Two cases, by window count:
    ((one-window-p)
     (cj/--ai-term-capture-state win)
     (setq cj/--ai-term-last-was-bury t)
+    (setq cj/--ai-term-last-toggle-deleted-split nil)
     (bury-buffer (window-buffer win))
     (when (and (window-live-p win)
                (cj/--ai-term-buffer-p (window-buffer win)))
@@ -833,9 +854,15 @@ Two cases, by window count:
     (setq cj/--ai-term-last-was-bury nil)
     (if (and (window-live-p win)
              (> (length (window-list (window-frame win) 'never)) 1))
-        (delete-window win)
+        (progn
+          (delete-window win)
+          ;; The agent had its own window in a multi-window layout, now gone:
+          ;; the next toggle-on must re-split it rather than reuse a working
+          ;; window at the edge (see `cj/--ai-term-reuse-edge-window').
+          (setq cj/--ai-term-last-toggle-deleted-split t))
       ;; Degenerate fallback (window became sole between dispatch and
       ;; here): swap to a non-agent buffer rather than leave the agent up.
+      (setq cj/--ai-term-last-toggle-deleted-split nil)
       (when (window-live-p win)
         (cj/--ai-term-swap-to-working-buffer win)))))
   nil)

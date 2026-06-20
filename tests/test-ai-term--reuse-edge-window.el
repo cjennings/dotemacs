@@ -269,5 +269,46 @@ most-recent agent, which would now be the other one."
       (when (get-buffer right-name) (kill-buffer right-name))
       (cj/test--kill-agent-buffers))))
 
+(ert-deftest test-ai-term--reuse-edge-window-3win-toggle-restores-own-window ()
+  "Regression: in a 3-window layout the agent has its own split, so toggling it
+off then on restores it as its own window without displacing a working window.
+Before the fix, toggle-on reused the bottom edge (the user's main window),
+collapsing three windows to two and hiding the main buffer.  A toggle must be
+reversible: off then on returns to the same layout."
+  (cj/test--kill-agent-buffers)
+  (let ((agent-name "agent [3win-toggle]")
+        (code-name "*test-3win-code*")
+        (main-name "*test-3win-main*")
+        (cj/--ai-term-last-direction nil)
+        (cj/--ai-term-last-size nil)
+        (cj/--ai-term-last-was-bury nil))
+    (unwind-protect
+        (save-window-excursion
+          (delete-other-windows)
+          (cl-letf (((symbol-function 'cj/--ai-term-default-direction) (lambda (&rest _) 'below)))
+            (let ((code-buf (get-buffer-create code-name))
+                  (main-buf (get-buffer-create main-name))
+                  (agent-buf (get-buffer-create agent-name)))
+              (set-window-buffer (selected-window) code-buf)
+              (let* ((main-win (split-window (selected-window) nil 'below))
+                     (agent-win (split-window main-win nil 'below)))
+                (set-window-buffer main-win main-buf)
+                (set-window-buffer agent-win agent-buf)
+                (should (= (count-windows) 3))
+                (let ((display-buffer-alist (cj/--ai-term-display-rule-list)))
+                  (select-window agent-win)
+                  (cj/test--call-as-gui #'cj/ai-term)   ; off -> code | main
+                  (should (= (count-windows) 2))
+                  (should-not (member agent-name (cj/test--displayed-buffer-names)))
+                  (cj/test--call-as-gui #'cj/ai-term)   ; on -> back to 3 windows
+                  (should (= (count-windows) 3))
+                  (let ((bufs (cj/test--displayed-buffer-names)))
+                    (should (member agent-name bufs))
+                    (should (member code-name bufs))
+                    (should (member main-name bufs))))))))
+      (when (get-buffer code-name) (kill-buffer code-name))
+      (when (get-buffer main-name) (kill-buffer main-name))
+      (cj/test--kill-agent-buffers))))
+
 (provide 'test-ai-term--reuse-edge-window)
 ;;; test-ai-term--reuse-edge-window.el ends here
