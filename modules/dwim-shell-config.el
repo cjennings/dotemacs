@@ -210,6 +210,41 @@ The timestamp is interpolated here with `format-time-string' so it can't sit
 dead inside the shell's single quotes the way a literal =$(date ...)= did."
   (format "cp -p '<<f>>' '<<f>>.%s.bak'" (format-time-string "%Y%m%d_%H%M%S")))
 
+(defun cj/dwim-shell--tar-gzip-command (single-p)
+  "Return the tar-gzip command template.
+SINGLE-P non-nil names the archive after the lone file (=<fne>.tar.gz=);
+otherwise a shared =archive.tar.gz= over all marked files."
+  (if single-p
+      "tar czf '<<fne>>.tar.gz' '<<f>>'"
+    "tar czf '<<archive.tar.gz(u)>>' '<<*>>'"))
+
+(defun cj/dwim-shell--text-to-speech-command (system voice)
+  "Return the text-to-speech command template for SYSTEM using VOICE.
+SYSTEM is a `system-type' symbol: `darwin' synthesizes with `say' and VOICE;
+any other system uses `espeak' (VOICE unused)."
+  (if (eq system 'darwin)
+      (format "say -v %s -o '<<fne>>.aiff' -f '<<f>>'" voice)
+    "espeak -f '<<f>>' -w '<<fne>>.wav'"))
+
+(defun cj/dwim-shell--video-trim-command (trim-type start end)
+  "Return the ffmpeg video-trim command template for TRIM-TYPE.
+TRIM-TYPE is \"Beginning\", \"End\", or \"Both\".  START trims that many
+seconds off the front, END off the back (each ignored for the side it does
+not apply to).  Signals a `user-error' when a used second count is negative."
+  (pcase trim-type
+    ("Beginning"
+     (when (< start 0) (user-error "Seconds must be non-negative"))
+     (format "ffmpeg -i '<<f>>' -y -ss %d -c:v copy -c:a copy '<<fne>>_trimmed.<<e>>'"
+             start))
+    ("End"
+     (when (< end 0) (user-error "Seconds must be non-negative"))
+     (format "ffmpeg -sseof -%d -i '<<f>>' -y -c:v copy -c:a copy '<<fne>>_trimmed.<<e>>'"
+             end))
+    ("Both"
+     (when (or (< start 0) (< end 0)) (user-error "Seconds must be non-negative"))
+     (format "ffmpeg -i '<<f>>' -y -ss %d -sseof -%d -c:v copy -c:a copy '<<fne>>_trimmed.<<e>>'"
+             start end))))
+
 ;; ----------------------------- Dwim Shell Command ----------------------------
 
 (use-package dwim-shell-command
@@ -357,9 +392,8 @@ Otherwise, unzip it to an appropriately named subdirectory "
 	"Tar gzip all marked files into archive.tar.gz."
 	(interactive)
 	(dwim-shell-command-on-marked-files
-	 "Tar gzip" (if (eq 1 (seq-length (dwim-shell-command--files)))
-					"tar czf '<<fne>>.tar.gz' '<<f>>'"
-				  "tar czf '<<archive.tar.gz(u)>>' '<<*>>'")
+	 "Tar gzip" (cj/dwim-shell--tar-gzip-command
+			  (eq 1 (seq-length (dwim-shell-command--files))))
 	 :utils "tar"))
 
   (defun cj/dwim-shell-commands-epub-to-org ()
@@ -448,34 +482,18 @@ process list, and the file is removed only after the spawned process exits."
 	"Trim video with options for beginning, end, or both."
 	(interactive)
 	(let* ((trim-type (completing-read "Trim from: "
-									   '("Beginning" "End" "Both")
-									   nil t))
-           (command (pcase trim-type
-					  ("Beginning"
-					   (let ((seconds (read-number "Seconds to trim from beginning: " 5)))
-						 (when (< seconds 0)
-						   (user-error "Seconds must be non-negative"))
-						 (format "ffmpeg -i '<<f>>' -y -ss %d -c:v copy -c:a copy '<<fne>>_trimmed.<<e>>'"
-								 seconds)))
-					  ("End"
-					   (let ((seconds (read-number "Seconds to trim from end: " 5)))
-						 (when (< seconds 0)
-						   (user-error "Seconds must be non-negative"))
-						 (format "ffmpeg -sseof -%d -i '<<f>>' -y -c:v copy -c:a copy '<<fne>>_trimmed.<<e>>'"
-								 seconds)))
-					  ("Both"
-					   (let ((start (read-number "Seconds to trim from beginning: " 5))
-							 (end (read-number "Seconds to trim from end: " 5)))
-						 (when (or (< start 0) (< end 0))
-						   (user-error "Seconds must be non-negative"))
-						 (format "ffmpeg -i '<<f>>' -y -ss %d -sseof -%d -c:v copy -c:a copy '<<fne>>_trimmed.<<e>>'"
-								 start end))))))
-      (dwim-shell-command-on-marked-files
+							   '("Beginning" "End" "Both")
+							   nil t))
+		   (start (if (member trim-type '("Beginning" "Both"))
+				  (read-number "Seconds to trim from beginning: " 5) 0))
+		   (end (if (member trim-type '("End" "Both"))
+				(read-number "Seconds to trim from end: " 5) 0))
+		   (command (cj/dwim-shell--video-trim-command trim-type start end)))
+	  (dwim-shell-command-on-marked-files
 	   (format "Trim video (%s)" trim-type)
 	   command
 	   :silent-success t
 	   :utils "ffmpeg")))
-
   (defun cj/dwim-shell-commands-drop-audio-from-video ()
 	"Drop audio from all marked videos."
 	(interactive)
@@ -694,9 +712,7 @@ all marked files rather than once per file."
 				   "en")))
 	  (dwim-shell-command-on-marked-files
 	   "Text to speech"
-	   (if (eq system-type 'darwin)
-		   (format "say -v %s -o '<<fne>>.aiff' -f '<<f>>'" voice)
-		 "espeak -f '<<f>>' -w '<<fne>>.wav'")
+	   (cj/dwim-shell--text-to-speech-command system-type voice)
 	   :utils (if (eq system-type 'darwin) "say" "espeak"))))
 
   (defun cj/dwim-shell-commands-remove-empty-directories ()
