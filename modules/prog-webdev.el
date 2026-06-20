@@ -82,37 +82,12 @@ via `call-process-region', so FILE can contain spaces or shell
 metacharacters without risk."
   (list "--stdin-filepath" file))
 
-(defun cj/--webdev-format-region (program &rest args)
-  "Replace the buffer with PROGRAM ARGS run over its contents, via argv.
-Runs PROGRAM (with ARGS) on the whole buffer through
-`call-process-region' — no shell, so no quoting or word-splitting.
-The buffer is replaced only when PROGRAM exits zero; on a non-zero
-exit the buffer is left untouched and an error is signalled with
-the program's stderr text.  Point is preserved as closely as the
-reformatted size allows.  Returns t on success."
-  (let* ((point (point))
-         (src (current-buffer))
-         (out (generate-new-buffer " *webdev-format-out*"))
-         (status (apply #'call-process-region
-                        (point-min) (point-max) program
-                        nil out nil args)))
-    (unwind-protect
-        (if (and (integerp status) (zerop status))
-            (progn
-              (with-current-buffer src
-                (replace-buffer-contents out)
-                (goto-char (min point (point-max))))
-              t)
-          (user-error "%s failed: %s" program
-                      (string-trim (with-current-buffer out (buffer-string)))))
-      (kill-buffer out))))
-
 (defun cj/webdev-format-buffer ()
   "Format the current buffer with prettier.
 Detects the file type automatically from the filename."
   (interactive)
   (if (executable-find prettier-path)
-      (apply #'cj/--webdev-format-region prettier-path
+      (apply #'cj/format-region-with-program prettier-path
              (cj/--webdev-format-args (or buffer-file-name "file.ts")))
     (user-error "prettier not found; install with: sudo pacman -S prettier")))
 
