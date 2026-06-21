@@ -205,7 +205,7 @@ flyspell-and-abbrev is the one Core-UX member (text-mode hooks).
 | =eshell-config= | 3 | D/P | eager | command | system-utils | add-hook, advice-add, package config | yes |
 | =eww-config= | 3 | D/P | eager | command | cl-lib | package config | yes |
 | =flyspell-and-abbrev= | 2 | C/P | eager | hook | cl-lib | mode-hook package config | yes |
-| =games-config= | 4 | O | command | command | none | package config | yes |
+| =games-config= | 4 | O | command | command | user-constants | package config | yes |
 | =gloss-config= | 4 | O/D/P | eager | command | none | package config | yes |
 | =httpd-config= | 4 | O/D/P | eager | command | none | package config | yes |
 | =jumper= | 4 | O/L | eager | command | cl-lib | jumper keymap | yes |

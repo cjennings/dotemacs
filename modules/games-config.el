@@ -6,37 +6,27 @@
 ;; Layer: 4 (Optional).
 ;; Category: O.
 ;; Load shape: command (deferred).
-;; Eager reason: none; loaded on first use of `malyon' or `2048-game'.
-;; Top-level side effects: package configuration via use-package (deferred).
-;; Runtime requires: none.
+;; Eager reason: none; loaded by init.el when malyon loads.
+;; Top-level side effects: sets malyon-stories-directory after malyon loads.
+;; Runtime requires: user-constants.
 ;; Direct test load: yes.
 ;;
 ;; Configuration for game packages.
 ;;
-;; - Malyon for playing interactive fiction and text adventures in Z-machine format
-;;  (stories directory: ~/sync/org/text.games/)
-;; - 2048 number-tile puzzle game
+;; - Malyon: interactive fiction / Z-machine player (stories under ~/sync/org/text.games/).
+;; - 2048: number-tile puzzle.
 ;;
-;; init.el autoloads `malyon' and `2048-game' to this module instead of
-;; requiring it eagerly, so the first invocation of either command loads
-;; games-config, which configures and then loads the package.
+;; malyon and 2048-game autoload their own commands via package.el, so this
+;; module owns neither command -- it only supplies malyon's stories directory.
+;; init.el loads it via `with-eval-after-load 'malyon', so it loads on first
+;; use rather than at startup.
 ;;
 ;;; Code:
 
-;; ----------------------------------- Malyon ----------------------------------
-;; text based adventure player
+(require 'user-constants)  ;; org-dir
 
-(use-package malyon
-  :defer t
-  :commands (malyon)
-  :config
+(with-eval-after-load 'malyon
   (setq malyon-stories-directory (concat org-dir "text.games/")))
-
-;; ------------------------------------ 2048 -----------------------------------
-;; combine numbered tiles to create the elusive number 2048.
-(use-package 2048-game
-  :defer t
-  :commands (2048-game))
 
 (provide 'games-config)
 ;;; games-config.el ends here.
