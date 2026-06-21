@@ -102,7 +102,7 @@ detached from Emacs."
   (interactive)
   (save-some-buffers)
   (kill-emacs))
-(keymap-global-set "C-<f10>" #'cj/server-shutdown)
+(keymap-global-set "C-x C" #'cj/server-shutdown)
 
 ;;; ---------------------------- History Persistence ----------------------------
 

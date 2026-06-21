@@ -26,27 +26,29 @@
   (should (eq (keymap-lookup ghostel-mode-map "<f9>") #'cj/ai-term)))
 
 (ert-deftest test-ai-term-f9-family-bound-in-ghostel-mode-map ()
-  "Normal: the C-/M-/C-S- F9 variants are bound in `ghostel-mode-map' too.
-`M-<f9>' and `C-S-<f9>' both close an agent via `cj/ai-term-close'."
+  "Normal: the C-/s-/M- F9 variants are bound in `ghostel-mode-map' too.
+`s-<f9>' steps to the next agent; `M-<f9>' closes an agent via
+`cj/ai-term-close'."
   (should (eq (keymap-lookup ghostel-mode-map "C-<f9>") #'cj/ai-term-pick-project))
-  (should (eq (keymap-lookup ghostel-mode-map "M-<f9>") #'cj/ai-term-close))
-  (should (eq (keymap-lookup ghostel-mode-map "C-S-<f9>") #'cj/ai-term-close)))
+  (should (eq (keymap-lookup ghostel-mode-map "s-<f9>") #'cj/ai-term-next))
+  (should (eq (keymap-lookup ghostel-mode-map "M-<f9>") #'cj/ai-term-close)))
 
 (ert-deftest test-ai-term-f9-still-bound-globally ()
   "Normal: the global F9 family bindings are intact.
 `<f9>' toggles the ai-term agent window; `C-<f9>' picks a project
-agent; `M-<f9>' and `C-S-<f9>' close an agent via `cj/ai-term-close'."
+agent; `s-<f9>' steps to the next agent; `M-<f9>' closes an agent
+via `cj/ai-term-close'."
   (should (eq (lookup-key (current-global-map) (kbd "<f9>")) #'cj/ai-term))
   (should (eq (lookup-key (current-global-map) (kbd "C-<f9>")) #'cj/ai-term-pick-project))
-  (should (eq (lookup-key (current-global-map) (kbd "M-<f9>")) #'cj/ai-term-close))
-  (should (eq (lookup-key (current-global-map) (kbd "C-S-<f9>")) #'cj/ai-term-close)))
+  (should (eq (lookup-key (current-global-map) (kbd "s-<f9>")) #'cj/ai-term-next))
+  (should (eq (lookup-key (current-global-map) (kbd "M-<f9>")) #'cj/ai-term-close)))
 
 (ert-deftest test-ai-term-f9-family-in-keymap-exceptions ()
   "Regression: the F9 family is in `ghostel-keymap-exceptions' so semi-char
 mode lets it reach Emacs instead of forwarding it to the terminal program.
 Binding in `ghostel-mode-map' alone is not enough -- the semi-char map outranks
 it and forwards any key not in the exceptions to the pty."
-  (dolist (key '("<f9>" "C-<f9>" "M-<f9>" "C-S-<f9>"))
+  (dolist (key '("<f9>" "C-<f9>" "s-<f9>" "M-<f9>"))
     (should (member key ghostel-keymap-exceptions)))
   ;; The rebuilt semi-char map must no longer forward <f9> to the pty.
   (should-not (eq (keymap-lookup ghostel-semi-char-mode-map "<f9>")

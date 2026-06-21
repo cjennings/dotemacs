@@ -52,15 +52,19 @@
 ;;          picker, even when an agent buffer is currently displayed.
 ;;          Used when the user wants to start a new project session
 ;;          instead of toggling the current one.
+;; - s-F9   `cj/ai-term-next' -- step to the next open agent in the
+;;          queue.  The queue is the live agent buffers in buffer-name
+;;          order (a stable rotation).  When an agent window is on
+;;          screen, swap it to the next agent and focus it, wrapping
+;;          after the last; when none is shown but agents exist, show
+;;          the first.  This is the "switch among existing agents"
+;;          surface F9 deliberately doesn't provide.
 ;; - M-F9   `cj/ai-term-close' -- gracefully close an agent: kill its
 ;;          tmux session (stopping the agent process), then its terminal
 ;;          buffer.  Its window stays in the layout (swapped to the
 ;;          working buffer), so closing never collapses a split.  Confirms
 ;;          first.  Targets the current agent, the sole live agent, or
 ;;          prompts among several.
-;; - C-S-F9 `cj/ai-term-close' -- same close command, second binding.
-;;          (M-F9 is the primary; C-S-F9 may be swallowed by the
-;;          Wayland/PGTK layer on some machines.)
 ;;
 ;; Existing windmove (Shift-arrows) handles code <-> agent focus
 ;; toggling.  Buffer-move (C-M-arrows) handles side-swap.  Neither
@@ -180,6 +184,21 @@ Order matches `buffer-list' on the selected frame, which is most-
 recently-selected first.  Non-AI-term buffers are filtered out via
 `cj/--ai-term-buffer-p'."
   (seq-filter #'cj/--ai-term-buffer-p (buffer-list)))
+
+(defun cj/--ai-term-next-agent-buffer (current buffers)
+  "Return the agent buffer after CURRENT in BUFFERS, wrapping to the first.
+
+BUFFERS is an ordered list of live agent buffers.  When CURRENT is the
+last element, wrap to the first.  When CURRENT is nil or not a member of
+BUFFERS, return the first buffer.  Returns nil when BUFFERS is empty.
+
+Pure decision helper (no buffer or window side effects) so the cycle
+order driving `cj/ai-term-next' (s-F9) is exercisable in tests."
+  (when buffers
+    (if (memq current buffers)
+        (or (cadr (memq current buffers))
+            (car buffers))
+      (car buffers))))
 
 (defun cj/--ai-term-most-recent-non-agent-buffer ()
   "Return the most-recently-selected live non-agent buffer, or nil.
@@ -882,7 +901,7 @@ With prefix ARG, display the buffer without selecting its window
 when a buffer is being shown (no effect on the toggle-off branch).
 
 See `cj/ai-term-pick-project' (C-F9) to force the project picker.
-M-F9 (and C-S-F9) close an agent via `cj/ai-term-close'."
+M-F9 closes an agent via `cj/ai-term-close'."
   (interactive "P")
   (pcase (cj/--ai-term-dispatch)
     (`(toggle-off . ,win)
@@ -952,7 +971,7 @@ buffers; nil when none are alive."
 Targets the current agent buffer, the sole live agent, or prompts when
 several are alive (see `cj/--ai-term-close-target').  Asks for
 confirmation first -- this kills the running agent process, which can
-interrupt work in progress.  Bound to M-<f9> (primary) and C-S-<f9>."
+interrupt work in progress.  Bound to M-<f9>."
   (interactive)
   (let ((buffer (cj/--ai-term-close-target)))
     (unless buffer
@@ -963,10 +982,42 @@ interrupt work in progress.  Bound to M-<f9> (primary) and C-S-<f9>."
         (cj/--ai-term-close-buffer buffer)
         (message "Closed agent %s." name)))))
 
+;; ------------------------- Step to the next agent ----------------------------
+
+(defun cj/ai-term-next ()
+  "Step to the next open AI-term agent in the queue.
+
+The queue is the live agent buffers ordered by buffer name -- a stable
+rotation, unaffected by which agent was most recently selected.  When an
+agent window is on screen, swap it to the next agent in the queue
+\(wrapping after the last) and select it.  When no agent is displayed but
+agents exist, show the first.  Signals `user-error' when none are open.
+
+Bound to s-<f9>.  Unlike <f9> (toggle the most-recent agent on/off), this
+is the \"switch among existing agents\" surface; C-<f9> opens the project
+picker and M-<f9> closes an agent."
+  (interactive)
+  (let* ((buffers (sort (cj/--ai-term-agent-buffers)
+                        (lambda (a b)
+                          (string< (buffer-name a) (buffer-name b)))))
+         (win (cj/--ai-term-displayed-agent-window))
+         (current (and win (window-buffer win)))
+         (next (cj/--ai-term-next-agent-buffer current buffers)))
+    (unless next
+      (user-error "No AI-term agent buffers open"))
+    (if win
+        (progn
+          (set-window-buffer win next)
+          (select-window win))
+      (display-buffer next)
+      (let ((w (get-buffer-window next)))
+        (when w (select-window w))))
+    (message "Agent: %s" (buffer-name next))))
+
 (keymap-global-set "<f9>"     #'cj/ai-term)
 (keymap-global-set "C-<f9>"   #'cj/ai-term-pick-project)
+(keymap-global-set "s-<f9>"   #'cj/ai-term-next)
 (keymap-global-set "M-<f9>"   #'cj/ai-term-close)
-(keymap-global-set "C-S-<f9>" #'cj/ai-term-close)
 
 ;; ghostel's semi-char mode forwards keys not in `ghostel-keymap-exceptions' to
 ;; the terminal program, so a plain <f9> typed while point is inside an agent
@@ -977,15 +1028,15 @@ interrupt work in progress.  Bound to M-<f9> (primary) and C-S-<f9>."
 (with-eval-after-load 'ghostel
   (keymap-set ghostel-mode-map "<f9>"     #'cj/ai-term)
   (keymap-set ghostel-mode-map "C-<f9>"   #'cj/ai-term-pick-project)
+  (keymap-set ghostel-mode-map "s-<f9>"   #'cj/ai-term-next)
   (keymap-set ghostel-mode-map "M-<f9>"   #'cj/ai-term-close)
-  (keymap-set ghostel-mode-map "C-S-<f9>" #'cj/ai-term-close)
   ;; The bindings above live in `ghostel-mode-map', but in semi-char mode
   ;; ghostel's own `ghostel-semi-char-mode-map' forwards every key not in
   ;; `ghostel-keymap-exceptions' to the pty -- and that map outranks the
   ;; major-mode map, so it would swallow the F9 family before the bindings
   ;; above fire.  Add the family to the exceptions and rebuild the semi-char
   ;; map so the keys fall through to `ghostel-mode-map' inside agent buffers.
-  (dolist (key '("<f9>" "C-<f9>" "M-<f9>" "C-S-<f9>"))
+  (dolist (key '("<f9>" "C-<f9>" "s-<f9>" "M-<f9>"))
     (add-to-list 'ghostel-keymap-exceptions key))
   (ghostel--rebuild-semi-char-keymap))
 
