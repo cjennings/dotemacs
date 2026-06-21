@@ -153,7 +153,10 @@
 ;; ------------------------------- Entertainment -------------------------------
 
 (require 'music-config)
-(require 'games-config)
+;; games-config: deferred (load-graph Phase 4).  malyon / 2048-game autoload the
+;; module, so it loads on first use instead of at startup.
+(autoload 'malyon "games-config" "Play interactive fiction; loads games-config." t)
+(autoload '2048-game "games-config" "Play 2048; loads games-config." t)
 
 ;; ------------------------------- Misc Modules --------------------------------
 
