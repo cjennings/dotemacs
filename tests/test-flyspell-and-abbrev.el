@@ -32,12 +32,12 @@
 (ert-deftest test-flyspell-require-spell-checker-present ()
   "Normal: a checker on PATH means no error."
   (cl-letf (((symbol-function 'executable-find)
-             (lambda (cmd) (equal cmd (car cj/--spell-checker-executables)))))
+             (lambda (cmd &rest _) (equal cmd (car cj/--spell-checker-executables)))))
     (should-not (cj/--require-spell-checker))))
 
 (ert-deftest test-flyspell-require-spell-checker-missing ()
   "Error: no checker on PATH signals user-error."
-  (cl-letf (((symbol-function 'executable-find) (lambda (_) nil)))
+  (cl-letf (((symbol-function 'executable-find) (lambda (_ &rest _) nil)))
     (should-error (cj/--require-spell-checker) :type 'user-error)))
 
 ;; --------------------- cj/find-previous-flyspell-overlay ---------------------

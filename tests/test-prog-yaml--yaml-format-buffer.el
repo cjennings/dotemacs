@@ -14,7 +14,7 @@
 (ert-deftest test-prog-yaml--yaml-format-buffer-invokes-prettier-argv ()
   "Normal: with prettier present, the formatter calls it via argv, no shell."
   (let (program args)
-    (cl-letf (((symbol-function 'executable-find) (lambda (_p) "/usr/bin/prettier"))
+    (cl-letf (((symbol-function 'executable-find) (lambda (_p &rest _) "/usr/bin/prettier"))
               ((symbol-function 'call-process-region)
                (lambda (_start _end prog &rest rest)
                  (setq program prog
@@ -29,7 +29,7 @@
 
 (ert-deftest test-prog-yaml--yaml-format-buffer-no-clobber-on-failure ()
   "Error: a non-zero prettier exit leaves the buffer untouched and errors."
-  (cl-letf (((symbol-function 'executable-find) (lambda (_p) "/usr/bin/prettier"))
+  (cl-letf (((symbol-function 'executable-find) (lambda (_p &rest _) "/usr/bin/prettier"))
             ((symbol-function 'call-process-region)
              (lambda (_start _end _prog _delete buffer &rest _)
                (with-current-buffer buffer (insert "[error] bad yaml"))
@@ -98,7 +98,7 @@
 
 (ert-deftest test-prog-yaml--yaml-format-buffer-error-no-prettier ()
   "Signals user-error when prettier is not found."
-  (cl-letf (((symbol-function 'executable-find) (lambda (_) nil)))
+  (cl-letf (((symbol-function 'executable-find) (lambda (_ &rest _) nil)))
     (with-temp-buffer
       (insert "key: value\n")
       (should-error (cj/yaml-format-buffer) :type 'user-error))))

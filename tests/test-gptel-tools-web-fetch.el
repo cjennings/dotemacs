@@ -106,13 +106,13 @@
 
 (ert-deftest test-gptel-tools-web-fetch-html-to-text-error-when-neither-on-path ()
   "Error: when neither pandoc nor w3m is on PATH, signals user-error."
-  (cl-letf (((symbol-function 'executable-find) (lambda (_) nil)))
+  (cl-letf (((symbol-function 'executable-find) (lambda (_ &rest _) nil)))
     (should-error (cj/gptel-web-fetch--html-to-text "<p>x</p>"))))
 
 (ert-deftest test-gptel-tools-web-fetch-html-to-text-error-on-tool-failure ()
   "Error: a failing HTML stripping command is reported."
   (cl-letf (((symbol-function 'executable-find)
-             (lambda (program) (and (equal program "pandoc") "/bin/pandoc")))
+             (lambda (program &rest _) (and (equal program "pandoc") "/bin/pandoc")))
             ((symbol-function 'call-process-region)
              (lambda (&rest _args) 9)))
     (should-error (cj/gptel-web-fetch--html-to-text "<p>x</p>"))))
@@ -121,7 +121,7 @@
   "Boundary: w3m is used when pandoc is unavailable."
   (let (called-program)
     (cl-letf (((symbol-function 'executable-find)
-               (lambda (program) (and (equal program "w3m") "/bin/w3m")))
+               (lambda (program &rest _) (and (equal program "w3m") "/bin/w3m")))
               ((symbol-function 'call-process-region)
                (lambda (start end program delete output display &rest _args)
                  (setq called-program program)

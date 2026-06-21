@@ -115,7 +115,7 @@
                   ((symbol-function 'org-id-uuid)
                    (lambda () "00000000-0000-0000-0000-000000000000"))
                   ((symbol-function 'find-file-noselect)
-                   (lambda (f) (get-buffer-create (concat "*test-" f "*")))))
+                   (lambda (f &rest _) (get-buffer-create (concat "*test-" f "*")))))
           (let ((path (cj/org-noter--create-notes-file)))
             (should (file-exists-p path))
             (with-temp-buffer
@@ -186,7 +186,7 @@
               ((symbol-function 'org-noter--get-doc-window)
                (lambda () 'doc-win))
               ((symbol-function 'select-window)
-               (lambda (w) (setq selected w))))
+               (lambda (w &rest _) (setq selected w))))
       (cj/org-noter-start))
     (should (eq selected 'doc-win))))
 
@@ -232,7 +232,7 @@
               ((symbol-function 'org-noter--get-doc-window)
                (lambda () 'doc-win))
               ((symbol-function 'select-window)
-               (lambda (w) (setq selected w)))
+               (lambda (w &rest _) (setq selected w)))
               ((symbol-function 'org-noter-insert-note)
                (lambda () (setq inserted t))))
       (cj/org-noter-insert-note-dwim))

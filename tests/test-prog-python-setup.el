@@ -71,7 +71,7 @@ electric-pair-local-mode all get called once."
                 ((symbol-function 'lsp-deferred)
                  (lambda (&rest _) (setq started t)))
                 ((symbol-function 'executable-find)
-                 (lambda (path) (when (equal path pyright-path)
+                 (lambda (path &rest _) (when (equal path pyright-path)
                                   "/usr/bin/pyright"))))
         (cj/python-setup))
       (should started))))
@@ -86,7 +86,7 @@ electric-pair-local-mode all get called once."
                 ((symbol-function 'electric-pair-local-mode) #'ignore)
                 ((symbol-function 'lsp-deferred)
                  (lambda (&rest _) (setq started t)))
-                ((symbol-function 'executable-find) (lambda (_) nil)))
+                ((symbol-function 'executable-find) (lambda (_ &rest _) nil)))
         (cj/python-setup))
       (should-not started))))
 

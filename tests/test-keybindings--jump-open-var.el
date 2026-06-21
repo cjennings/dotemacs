@@ -25,7 +25,7 @@ CAPTURE-VAR is set to the path passed to `find-file', or stays nil if
 the mock is never called."
   (declare (indent 1) (debug t))
   `(cl-letf (((symbol-function 'find-file)
-              (lambda (path) (setq ,capture-var path))))
+              (lambda (path &rest _) (setq ,capture-var path))))
      ,@body))
 
 (defmacro test-keybindings--with-fixture (value &rest body)

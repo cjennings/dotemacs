@@ -46,7 +46,7 @@
 (ert-deftest test-prog-webdev-format-buffer-runs-prettier-on-the-file ()
   "Normal: with prettier on PATH, the argv targets `buffer-file-name'."
   (let (program args)
-    (cl-letf (((symbol-function 'executable-find) (lambda (_p) "/usr/bin/prettier"))
+    (cl-letf (((symbol-function 'executable-find) (lambda (_p &rest _) "/usr/bin/prettier"))
               ((symbol-function 'call-process-region)
                (lambda (_start _end prog &rest rest)
                  ;; rest = (DELETE BUFFER DISPLAY &rest ARGS)
@@ -64,7 +64,7 @@
 (ert-deftest test-prog-webdev-format-buffer-falls-back-to-file-ts ()
   "Boundary: a buffer with no file uses the \"file.ts\" filename hint."
   (let (args)
-    (cl-letf (((symbol-function 'executable-find) (lambda (_p) "/usr/bin/prettier"))
+    (cl-letf (((symbol-function 'executable-find) (lambda (_p &rest _) "/usr/bin/prettier"))
               ((symbol-function 'call-process-region)
                (lambda (_start _end _prog &rest rest)
                  (setq args (nthcdr 3 rest))
@@ -77,7 +77,7 @@
 
 (ert-deftest test-prog-webdev-format-buffer-clamps-point-to-point-max ()
   "Boundary: after a format that shrinks the buffer, point clamps to point-max."
-  (cl-letf (((symbol-function 'executable-find) (lambda (_p) "/usr/bin/prettier"))
+  (cl-letf (((symbol-function 'executable-find) (lambda (_p &rest _) "/usr/bin/prettier"))
             ((symbol-function 'call-process-region)
              (lambda (_start _end _prog _delete buffer &rest _)
                ;; Simulate prettier writing a shorter result to the output buffer.
@@ -91,7 +91,7 @@
 
 (ert-deftest test-prog-webdev-format-buffer-replaces-on-success ()
   "Normal: a zero exit replaces the buffer with the formatter's output."
-  (cl-letf (((symbol-function 'executable-find) (lambda (_p) "/usr/bin/prettier"))
+  (cl-letf (((symbol-function 'executable-find) (lambda (_p &rest _) "/usr/bin/prettier"))
             ((symbol-function 'call-process-region)
              (lambda (_start _end _prog _delete buffer &rest _)
                (with-current-buffer buffer (insert "const x = 1;\n"))
@@ -103,7 +103,7 @@
 
 (ert-deftest test-prog-webdev-format-buffer-no-clobber-on-failure ()
   "Error: a non-zero exit leaves the buffer untouched and signals an error."
-  (cl-letf (((symbol-function 'executable-find) (lambda (_p) "/usr/bin/prettier"))
+  (cl-letf (((symbol-function 'executable-find) (lambda (_p &rest _) "/usr/bin/prettier"))
             ((symbol-function 'call-process-region)
              (lambda (_start _end _prog _delete buffer &rest _)
                (with-current-buffer buffer (insert "[error] syntax error"))
@@ -117,7 +117,7 @@
 (ert-deftest test-prog-webdev-format-buffer-errors-without-prettier ()
   "Error: prettier missing -> `user-error', nothing shells out."
   (let ((ran nil))
-    (cl-letf (((symbol-function 'executable-find) (lambda (_p) nil))
+    (cl-letf (((symbol-function 'executable-find) (lambda (_p &rest _) nil))
               ((symbol-function 'call-process-region)
                (lambda (&rest _) (setq ran t) 0)))
       (with-temp-buffer

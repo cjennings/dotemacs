@@ -18,7 +18,7 @@ EXECUTABLES is an alist of program name strings to executable paths."
   (declare (indent 1))
   `(let (test-mail-config--warnings)
      (cl-letf (((symbol-function 'executable-find)
-                (lambda (program)
+                (lambda (program &rest _)
                   (cdr (assoc program ,executables))))
                ((symbol-function 'display-warning)
                 (lambda (type message &rest _args)

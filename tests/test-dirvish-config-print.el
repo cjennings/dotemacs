@@ -50,18 +50,18 @@
 (ert-deftest test-dirvish-print-program-prefers-lp ()
   "Normal: `lp' is used when available."
   (cl-letf (((symbol-function 'executable-find)
-             (lambda (cmd) (when (equal cmd "lp") "/usr/bin/lp"))))
+             (lambda (cmd &rest _) (when (equal cmd "lp") "/usr/bin/lp"))))
     (should (equal (cj/--print-program) "/usr/bin/lp"))))
 
 (ert-deftest test-dirvish-print-program-falls-back-to-lpr ()
   "Boundary: `lpr' is used when `lp' is missing."
   (cl-letf (((symbol-function 'executable-find)
-             (lambda (cmd) (when (equal cmd "lpr") "/usr/bin/lpr"))))
+             (lambda (cmd &rest _) (when (equal cmd "lpr") "/usr/bin/lpr"))))
     (should (equal (cj/--print-program) "/usr/bin/lpr"))))
 
 (ert-deftest test-dirvish-print-program-none-available ()
   "Error: nil when neither `lp' nor `lpr' is on PATH."
-  (cl-letf (((symbol-function 'executable-find) (lambda (_cmd) nil)))
+  (cl-letf (((symbol-function 'executable-find) (lambda (_cmd &rest _) nil)))
     (should-not (cj/--print-program))))
 
 ;;; ---------------------------- cj/dirvish-print-file -------------------------

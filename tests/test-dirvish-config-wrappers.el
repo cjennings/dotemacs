@@ -40,7 +40,7 @@ puts the older one first)."
                   ((symbol-function 'ediff-files)
                    (lambda (a b) (setq ediff-args (list a b))))
                   ((symbol-function 'current-window-configuration)
-                   (lambda () nil))
+                   (lambda (&rest _) nil))
                   ((symbol-function 'add-hook) #'ignore))
           (cj/dired-ediff-files)
           ;; Pair returns (older . newer) so ediff-files sees (older newer).

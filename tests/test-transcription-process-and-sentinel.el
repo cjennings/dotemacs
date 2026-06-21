@@ -26,7 +26,7 @@
   (let (msg)
     (cl-letf (((symbol-function 'message)
                (lambda (fmt &rest args) (setq msg (apply #'format fmt args))))
-              ((symbol-function 'getenv) (lambda (_) nil)))
+              ((symbol-function 'getenv) (lambda (_ &rest _) nil)))
       (cj/--notify "Transcription" "started"))
     (should (equal msg "Transcription: started"))))
 
@@ -36,7 +36,7 @@ the title, body, and urgency."
   (let (notify-kwargs)
     (cl-letf (((symbol-function 'message) #'ignore)
               ((symbol-function 'getenv)
-               (lambda (var) (and (equal var "DISPLAY") ":0")))
+               (lambda (var &rest _) (and (equal var "DISPLAY") ":0")))
               ((symbol-function 'notifications-notify)
                (lambda (&rest kwargs) (setq notify-kwargs kwargs))))
       (cj/--notify "Transcription" "done" 'critical))

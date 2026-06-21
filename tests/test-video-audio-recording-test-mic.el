@@ -36,11 +36,11 @@
         (let ((temp-file nil))
           ;; Mock make-temp-file to capture filename
           (cl-letf (((symbol-function 'make-temp-file)
-                     (lambda (prefix _dir-flag suffix)
+                     (lambda (prefix _dir-flag suffix &rest _)
                        (setq temp-file (concat prefix "12345" suffix))
                        temp-file))
                     ((symbol-function 'shell-command)
-                     (lambda (_cmd) 0)))
+                     (lambda (_cmd &rest _) 0)))
             (cj/recording-test-mic)
             (should (string-match-p "\\.wav$" temp-file)))))
     (test-mic-teardown)))
@@ -54,7 +54,7 @@
         (let ((commands nil))
           ;; Mock shell-command to capture all commands
           (cl-letf (((symbol-function 'shell-command)
-                     (lambda (cmd) (push cmd commands) 0)))
+                     (lambda (cmd &rest _) (push cmd commands) 0)))
             (cj/recording-test-mic)
             (should (= 2 (length commands)))
             ;; First command should be ffmpeg (stored last in list due to push)
@@ -74,7 +74,7 @@
         (let ((commands nil))
           ;; Capture all shell commands
           (cl-letf (((symbol-function 'shell-command)
-                     (lambda (cmd) (push cmd commands) 0)))
+                     (lambda (cmd &rest _) (push cmd commands) 0)))
             (cj/recording-test-mic)
             (should (= 2 (length commands)))
             ;; Second command should be ffplay
@@ -93,7 +93,7 @@
           (cl-letf (((symbol-function 'message)
                      (lambda (fmt &rest args) (push (apply #'format fmt args) messages)))
                     ((symbol-function 'shell-command)
-                     (lambda (_cmd) 0)))
+                     (lambda (_cmd &rest _) 0)))
             (cj/recording-test-mic)
             (should (>= (length messages) 3))
             ;; Check for recording message
@@ -135,7 +135,7 @@
         (setq cj/recording-mic-device "test-mic-device")
         ;; Mock shell-command to fail
         (cl-letf (((symbol-function 'shell-command)
-                   (lambda (_cmd) 1)))  ;; Non-zero exit code
+                   (lambda (_cmd &rest _) 1)))  ;; Non-zero exit code
           ;; Should complete without crashing (ffmpeg errors are ignored)
           ;; No error is raised - function just completes
           (cj/recording-test-mic)

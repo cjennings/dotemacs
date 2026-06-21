@@ -113,7 +113,7 @@ test prelude inserts filler with `inhibit-read-only' bound."
   "Normal: when emms is already a feature, setup does not re-require."
   (let ((called nil))
     (cl-letf (((symbol-function 'featurep)
-               (lambda (sym) (eq sym 'emms)))
+               (lambda (sym &rest _) (eq sym 'emms)))
               ((symbol-function 'require)
                (lambda (&rest _) (setq called t) t)))
       (cj/emms--setup))
@@ -123,7 +123,7 @@ test prelude inserts filler with `inhibit-read-only' bound."
   "Boundary: when emms isn't yet loaded, setup requires it."
   (let ((required nil))
     (cl-letf (((symbol-function 'featurep)
-               (lambda (sym) (not (eq sym 'emms))))
+               (lambda (sym &rest _) (not (eq sym 'emms))))
               ((symbol-function 'require)
                (lambda (feat &rest _) (setq required feat) t)))
       (cj/emms--setup))

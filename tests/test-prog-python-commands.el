@@ -64,7 +64,7 @@
   "Normal: with mypy on PATH, `compile' gets the builder's command."
   (let ((mypy-path "mypy")
         compiled)
-    (cl-letf (((symbol-function 'executable-find) (lambda (_p) "/usr/bin/mypy"))
+    (cl-letf (((symbol-function 'executable-find) (lambda (_p &rest _) "/usr/bin/mypy"))
               ((symbol-function 'compile) (lambda (cmd &rest _) (setq compiled cmd))))
       (with-temp-buffer
         (setq buffer-file-name "/home/me/foo.py")
@@ -76,7 +76,7 @@
   "Boundary: no file -> the command targets `default-directory'."
   (let ((mypy-path "mypy")
         compiled)
-    (cl-letf (((symbol-function 'executable-find) (lambda (_p) "/usr/bin/mypy"))
+    (cl-letf (((symbol-function 'executable-find) (lambda (_p &rest _) "/usr/bin/mypy"))
               ((symbol-function 'compile) (lambda (cmd &rest _) (setq compiled cmd))))
       (with-temp-buffer
         (setq-local default-directory "/home/me/proj/")
@@ -88,7 +88,7 @@
   (let ((mypy-path "mypy")
         (compiled nil)
         (messaged nil))
-    (cl-letf (((symbol-function 'executable-find) (lambda (_p) nil))
+    (cl-letf (((symbol-function 'executable-find) (lambda (_p &rest _) nil))
               ((symbol-function 'compile) (lambda (&rest _) (setq compiled t)))
               ((symbol-function 'message) (lambda (fmt &rest args)
                                             (setq messaged (apply #'format fmt args)))))

@@ -138,7 +138,7 @@
     (cl-letf (((symbol-function 'process-live-p)
                (lambda (_) t))
               ((symbol-function 'kill-process)
-               (lambda (p) (setq killed p)))
+               (lambda (p &rest _) (setq killed p)))
               ((symbol-function 'message)
                (lambda (fmt &rest args)
                  (setq msg (apply #'format fmt args)))))

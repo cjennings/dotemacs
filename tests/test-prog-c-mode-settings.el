@@ -18,7 +18,7 @@
     (cl-letf (((symbol-function 'auto-fill-mode) (lambda (&rest _) nil))
               ((symbol-function 'electric-pair-local-mode) (lambda (&rest _) nil))
               ((symbol-function 'lsp-deferred) (lambda (&rest _) nil))
-              ((symbol-function 'executable-find) (lambda (_) nil)))
+              ((symbol-function 'executable-find) (lambda (_ &rest _) nil)))
       (cj/c-mode-settings))
     (should (eq indent-tabs-mode nil))
     (should (= c-basic-offset 4))
@@ -33,7 +33,7 @@
       (cl-letf (((symbol-function 'auto-fill-mode) (lambda (&rest _) nil))
                 ((symbol-function 'electric-pair-local-mode) (lambda (&rest _) nil))
                 ((symbol-function 'lsp-deferred) (lambda () (cl-incf lsp-calls)))
-                ((symbol-function 'executable-find) (lambda (_) "/usr/bin/clangd")))
+                ((symbol-function 'executable-find) (lambda (_ &rest _) "/usr/bin/clangd")))
         (cj/c-mode-settings)))
     (should (= lsp-calls 1))))
 
@@ -44,7 +44,7 @@
       (cl-letf (((symbol-function 'auto-fill-mode) (lambda (&rest _) nil))
                 ((symbol-function 'electric-pair-local-mode) (lambda (&rest _) nil))
                 ((symbol-function 'lsp-deferred) (lambda () (cl-incf lsp-calls)))
-                ((symbol-function 'executable-find) (lambda (_) nil)))
+                ((symbol-function 'executable-find) (lambda (_ &rest _) nil)))
         (cj/c-mode-settings)))
     (should (zerop lsp-calls))))
 

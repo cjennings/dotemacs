@@ -21,7 +21,7 @@
   "Wayland command pipes wf-recorder to ffmpeg."
   (let ((cj/recording-mic-boost 2.0)
         (cj/recording-system-volume 1.0))
-    (cl-letf (((symbol-function 'executable-find) (lambda (_prog) t)))
+    (cl-letf (((symbol-function 'executable-find) (lambda (_prog &rest _) t)))
       (let ((cmd (cj/recording--build-video-command "mic" "sys" "/tmp/out.mkv" t)))
         (should (string-match-p "wf-recorder.*|.*ffmpeg" cmd))
         (should (string-match-p "-i pipe:0" cmd))
@@ -60,7 +60,7 @@
   "Device names with special characters are shell-quoted in Wayland mode."
   (let ((cj/recording-mic-boost 1.0)
         (cj/recording-system-volume 1.0))
-    (cl-letf (((symbol-function 'executable-find) (lambda (_prog) t)))
+    (cl-letf (((symbol-function 'executable-find) (lambda (_prog &rest _) t)))
       (let ((cmd (cj/recording--build-video-command
                   "device with spaces" "sys" "/tmp/out.mkv" t)))
         ;; shell-quote-argument escapes spaces with backslashes
@@ -70,7 +70,7 @@
   "Output filename with spaces is shell-quoted in Wayland mode."
   (let ((cj/recording-mic-boost 1.0)
         (cj/recording-system-volume 1.0))
-    (cl-letf (((symbol-function 'executable-find) (lambda (_prog) t)))
+    (cl-letf (((symbol-function 'executable-find) (lambda (_prog &rest _) t)))
       (let ((cmd (cj/recording--build-video-command
                   "mic" "sys" "/tmp/my recording.mkv" t)))
         ;; Filename should be quoted/escaped
@@ -103,7 +103,7 @@
 
 (ert-deftest test-video-audio-recording--build-video-command-error-wayland-no-wf-recorder ()
   "Wayland mode signals error when wf-recorder is not installed."
-  (cl-letf (((symbol-function 'executable-find) (lambda (_prog) nil)))
+  (cl-letf (((symbol-function 'executable-find) (lambda (_prog &rest _) nil)))
     (should-error (cj/recording--build-video-command "mic" "sys" "/tmp/out.mkv" t)
                   :type 'user-error)))
 

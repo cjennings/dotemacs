@@ -24,9 +24,9 @@
 ;; Helper to call template with deterministic date and author
 (defun test-reveal--header (title)
   "Call cj/--reveal-header-template with TITLE, mocking time and user."
-  (cl-letf (((symbol-function 'user-full-name) (lambda () "Test Author"))
+  (cl-letf (((symbol-function 'user-full-name) (lambda (&rest _) "Test Author"))
             ((symbol-function 'format-time-string)
-             (lambda (_fmt) "2026-02-14")))
+             (lambda (_fmt &rest _) "2026-02-14")))
     (cj/--reveal-header-template title)))
 
 ;;; Normal Cases

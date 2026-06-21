@@ -111,7 +111,7 @@ runner instead of erroring as unsupported."
   (let ((compile-called nil))
     (cl-letf (((symbol-function 'compile)
                (lambda (cmd) (setq compile-called cmd)))
-              ((symbol-function 'executable-find) (lambda (_) nil)))
+              ((symbol-function 'executable-find) (lambda (_ &rest _) nil)))
       (cj/--f6-current-file-tests-impl
        "/home/u/proj/src/foo.test.ts" "/home/u/proj/")
       (should (stringp compile-called))

@@ -67,7 +67,7 @@ electric-pair-local-mode all get called."
                 ((symbol-function 'lsp-deferred)
                  (lambda (&rest _) (setq started t)))
                 ((symbol-function 'executable-find)
-                 (lambda (path) (when (equal path ts-language-server-path)
+                 (lambda (path &rest _) (when (equal path ts-language-server-path)
                                   "/usr/bin/typescript-language-server"))))
         (cj/webdev-setup))
       (should started))))
@@ -82,7 +82,7 @@ electric-pair-local-mode all get called."
                 ((symbol-function 'electric-pair-local-mode) #'ignore)
                 ((symbol-function 'lsp-deferred)
                  (lambda (&rest _) (setq started t)))
-                ((symbol-function 'executable-find) (lambda (_) nil)))
+                ((symbol-function 'executable-find) (lambda (_ &rest _) nil)))
         (cj/webdev-setup))
       (should-not started))))
 

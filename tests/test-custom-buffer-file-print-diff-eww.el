@@ -30,14 +30,14 @@
   (let ((cj/print-spooler-command "lpr")
         (cj/print--spooler-cache nil))
     (cl-letf (((symbol-function 'executable-find)
-               (lambda (cmd) (when (equal cmd "lpr") "/usr/bin/lpr"))))
+               (lambda (cmd &rest _) (when (equal cmd "lpr") "/usr/bin/lpr"))))
       (should (equal (cj/print--resolve-spooler) "lpr")))))
 
 (ert-deftest test-cbf-resolve-spooler-explicit-string-missing-errors ()
   "Error: explicit string spooler not on PATH signals user-error."
   (let ((cj/print-spooler-command "notathing")
         (cj/print--spooler-cache nil))
-    (cl-letf (((symbol-function 'executable-find) (lambda (_) nil)))
+    (cl-letf (((symbol-function 'executable-find) (lambda (_ &rest _) nil)))
       (should-error (cj/print--resolve-spooler) :type 'user-error))))
 
 (ert-deftest test-cbf-resolve-spooler-auto-detects-lpr-first ()
@@ -45,7 +45,7 @@
   (let ((cj/print-spooler-command 'auto)
         (cj/print--spooler-cache nil))
     (cl-letf (((symbol-function 'executable-find)
-               (lambda (cmd) (when (equal cmd "lpr") "/usr/bin/lpr"))))
+               (lambda (cmd &rest _) (when (equal cmd "lpr") "/usr/bin/lpr"))))
       (should (equal (cj/print--resolve-spooler) "lpr"))
       (should (equal cj/print--spooler-cache "lpr")))))
 
@@ -54,14 +54,14 @@
   (let ((cj/print-spooler-command 'auto)
         (cj/print--spooler-cache nil))
     (cl-letf (((symbol-function 'executable-find)
-               (lambda (cmd) (when (equal cmd "lp") "/usr/bin/lp"))))
+               (lambda (cmd &rest _) (when (equal cmd "lp") "/usr/bin/lp"))))
       (should (equal (cj/print--resolve-spooler) "lp")))))
 
 (ert-deftest test-cbf-resolve-spooler-auto-no-tool-errors ()
   "Error: `auto' with neither lpr nor lp signals user-error."
   (let ((cj/print-spooler-command 'auto)
         (cj/print--spooler-cache nil))
-    (cl-letf (((symbol-function 'executable-find) (lambda (_) nil)))
+    (cl-letf (((symbol-function 'executable-find) (lambda (_ &rest _) nil)))
       (should-error (cj/print--resolve-spooler) :type 'user-error))))
 
 (ert-deftest test-cbf-resolve-spooler-auto-returns-cached-value ()
@@ -69,7 +69,7 @@
   (let ((cj/print-spooler-command 'auto)
         (cj/print--spooler-cache "cached-cmd"))
     (cl-letf (((symbol-function 'executable-find)
-               (lambda (_) (error "should not be called"))))
+               (lambda (_ &rest _) (error "should not be called"))))
       (should (equal (cj/print--resolve-spooler) "cached-cmd")))))
 
 (ert-deftest test-cbf-resolve-spooler-invalid-value-errors ()
@@ -87,7 +87,7 @@
     (with-temp-buffer
       (rename-buffer "*test-cbf-copy-name*" t)
       (cl-letf (((symbol-function 'kill-new)
-                 (lambda (s) (setq killed s)))
+                 (lambda (s &rest _) (setq killed s)))
                 ((symbol-function 'message)
                  (lambda (fmt &rest args)
                    (setq msg (apply #'format fmt args)))))

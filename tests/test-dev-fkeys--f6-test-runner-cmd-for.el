@@ -126,13 +126,13 @@ neither tool is present, the user gets a clear runner-not-found error
 rather than a silent nil that F6's outer wrapper interprets as
 \"language unsupported.\""
   (cl-letf (((symbol-function 'executable-find)
-             (lambda (_) nil)))
+             (lambda (_ &rest _) nil)))
     (should (equal
              (cj/--f6-test-runner-cmd-for
               'typescript t "src/foo.test.ts" "foo" "src")
              "npx --no-install jest src/foo.test.ts")))
   (cl-letf (((symbol-function 'executable-find)
-             (lambda (p) (when (equal p "vitest") "/usr/bin/vitest"))))
+             (lambda (p &rest _) (when (equal p "vitest") "/usr/bin/vitest"))))
     (should (equal
              (cj/--f6-test-runner-cmd-for
               'typescript t "src/foo.test.ts" "foo" "src")

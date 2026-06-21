@@ -75,7 +75,7 @@ RESPONSES is an alist of (ARGS EXIT-CODE OUTPUT)."
           (cl-letf (((symbol-function 'get-buffer-process)
                      (lambda (_buffer) 'fake-process))
                     ((symbol-function 'process-tty-name)
-                     (lambda (_process) "/dev/pts/8")))
+                     (lambda (_process &rest _) "/dev/pts/8")))
             (test-term-tmux-history--with-tmux-mock
                 '((("list-clients" "-F" "#{client_tty}\t#{pane_id}") 0
                    "/dev/pts/8\t%8\n")
@@ -106,7 +106,7 @@ the terminal's frame slot rather than splitting or popping a new window."
             (cl-letf (((symbol-function 'get-buffer-process)
                        (lambda (_buffer) 'fake-process))
                       ((symbol-function 'process-tty-name)
-                       (lambda (_process) "/dev/pts/8")))
+                       (lambda (_process &rest _) "/dev/pts/8")))
               (test-term-tmux-history--with-tmux-mock
                   '((("list-clients" "-F" "#{client_tty}\t#{pane_id}") 0
                      "/dev/pts/8\t%8\n")
@@ -194,7 +194,7 @@ ghostel-mode terminal."
           (cl-letf (((symbol-function 'get-buffer-process)
                      (lambda (_buffer) 'fake-process))
                     ((symbol-function 'process-tty-name)
-                     (lambda (_process) "/dev/pts/8")))
+                     (lambda (_process &rest _) "/dev/pts/8")))
             (test-term-tmux-history--with-tmux-mock
                 '((("list-clients" "-F" "#{client_tty}\t#{pane_id}") 0
                    "/dev/pts/1\t%1\n/dev/pts/8\t%8\n"))
@@ -210,7 +210,7 @@ ghostel-mode terminal."
           (cl-letf (((symbol-function 'get-buffer-process)
                      (lambda (_buffer) 'fake-process))
                     ((symbol-function 'process-tty-name)
-                     (lambda (_process) "/dev/pts/8")))
+                     (lambda (_process &rest _) "/dev/pts/8")))
             (test-term-tmux-history--with-tmux-mock
                 '((("list-clients" "-F" "#{client_tty}\t#{pane_id}") 0
                    "/dev/pts/8\t%8\n"))
@@ -226,7 +226,7 @@ ghostel-mode terminal."
           (cl-letf (((symbol-function 'get-buffer-process)
                      (lambda (_buffer) 'fake-process))
                     ((symbol-function 'process-tty-name)
-                     (lambda (_process) "/dev/pts/8")))
+                     (lambda (_process &rest _) "/dev/pts/8")))
             (test-term-tmux-history--with-tmux-mock
                 '((("list-clients" "-F" "#{client_tty}\t#{pane_id}") 0
                    "/dev/pts/1\t%1\n"))
@@ -242,7 +242,7 @@ ghostel-mode terminal."
           (cl-letf (((symbol-function 'get-buffer-process)
                      (lambda (_buffer) 'fake-process))
                     ((symbol-function 'process-tty-name)
-                     (lambda (_process) "/dev/pts/8")))
+                     (lambda (_process &rest _) "/dev/pts/8")))
             (test-term-tmux-history--with-tmux-mock
                 '((("list-clients" "-F" "#{client_tty}\t#{pane_id}") 1
                    "no server running"))
@@ -273,7 +273,7 @@ puts it at column 0 so it runs up the left."
           (cl-letf (((symbol-function 'get-buffer-process)
                      (lambda (_buffer) 'fake-process))
                     ((symbol-function 'process-tty-name)
-                     (lambda (_process) "/dev/pts/8"))
+                     (lambda (_process &rest _) "/dev/pts/8"))
                     ((symbol-function 'ghostel-send-string)
                      (lambda (s) (push s sent)))
                     ((symbol-function 'ghostel-copy-mode)
@@ -301,7 +301,7 @@ scrolling, parity with the tmux branch's trailing C-a."
           (cl-letf (((symbol-function 'get-buffer-process)
                      (lambda (_buffer) 'fake-process))
                     ((symbol-function 'process-tty-name)
-                     (lambda (_process) "/dev/pts/8"))
+                     (lambda (_process &rest _) "/dev/pts/8"))
                     ((symbol-function 'ghostel-send-string)
                      (lambda (s) (push s sent)))
                     ((symbol-function 'ghostel-copy-mode)

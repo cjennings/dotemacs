@@ -132,7 +132,7 @@
         (cl-letf (((symbol-function 'cj/music--playlist-modified-p)
                    (lambda () nil))
                   ((symbol-function 'find-file-other-window)
-                   (lambda (p) (setq opened p))))
+                   (lambda (p &rest _) (setq opened p))))
           (cj/music-playlist-edit))
         (should (equal opened tmp))
         (delete-file tmp))

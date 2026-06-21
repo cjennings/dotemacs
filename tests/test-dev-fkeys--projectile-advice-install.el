@@ -16,7 +16,7 @@
   "When Projectile is not loaded, registration should use `eval-after-load'."
   (let (registered-feature registered-form install-called)
     (cl-letf (((symbol-function 'featurep)
-               (lambda (feature) (and (not (eq feature 'projectile))
+               (lambda (feature &rest _) (and (not (eq feature 'projectile))
                                       (featurep feature))))
               ((symbol-function 'eval-after-load)
                (lambda (feature form)
@@ -33,7 +33,7 @@
   "When Projectile is already loaded, registration should install immediately."
   (let (install-called eval-after-load-called)
     (cl-letf (((symbol-function 'featurep)
-               (lambda (feature) (eq feature 'projectile)))
+               (lambda (feature &rest _) (eq feature 'projectile)))
               ((symbol-function 'eval-after-load)
                (lambda (&rest _args) (setq eval-after-load-called t)))
               ((symbol-function 'cj/--projectile-install-revert-advice)

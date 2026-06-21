@@ -20,7 +20,7 @@
 (ert-deftest test-video-audio-recording-check-ffmpeg-normal-ffmpeg-found-returns-t ()
   "Test that function returns t when ffmpeg is found."
   (cl-letf (((symbol-function 'executable-find)
-             (lambda (cmd)
+             (lambda (cmd &rest _)
                (when (equal cmd "ffmpeg") "/usr/bin/ffmpeg"))))
     (let ((result (cj/recording-check-ffmpeg)))
       (should (eq t result)))))
@@ -30,13 +30,13 @@
 (ert-deftest test-video-audio-recording-check-ffmpeg-error-ffmpeg-not-found-signals-error ()
   "Test that function signals user-error when ffmpeg is not found."
   (cl-letf (((symbol-function 'executable-find)
-             (lambda (_cmd) nil)))
+             (lambda (_cmd &rest _) nil)))
     (should-error (cj/recording-check-ffmpeg) :type 'user-error)))
 
 (ert-deftest test-video-audio-recording-check-ffmpeg-error-message-mentions-pacman ()
   "Test that error message includes installation command."
   (cl-letf (((symbol-function 'executable-find)
-             (lambda (_cmd) nil)))
+             (lambda (_cmd &rest _) nil)))
     (condition-case err
         (cj/recording-check-ffmpeg)
       (user-error

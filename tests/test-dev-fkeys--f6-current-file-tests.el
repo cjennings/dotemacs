@@ -16,7 +16,7 @@
 (ert-deftest test-dev-fkeys-f6-current-file-tests-routes-to-impl ()
   "Normal: C-F6 invokes the orchestrator with buffer file and projectile root."
   (let (seen-file seen-root)
-    (cl-letf (((symbol-function 'buffer-file-name) (lambda () "/p/foo.el"))
+    (cl-letf (((symbol-function 'buffer-file-name) (lambda (&rest _) "/p/foo.el"))
               ((symbol-function 'cj/--f4-project-root) (lambda () "/p/"))
               ((symbol-function 'cj/--f6-current-file-tests-impl)
                (lambda (file root)

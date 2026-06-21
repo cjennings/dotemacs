@@ -128,7 +128,7 @@
 (ert-deftest test-ai-config-add-this-buffer-calls-gptel-add-with-prefix ()
   "Normal: `cj/gptel-add-this-buffer' calls `gptel-add' with the (4) prefix arg."
   (let ((arg nil))
-    (cl-letf (((symbol-function 'featurep) (lambda (_) t))
+    (cl-letf (((symbol-function 'featurep) (lambda (_ &rest _) t))
               ((symbol-function 'gptel-add)
                (lambda (a) (setq arg a)))
               ((symbol-function 'message) #'ignore))
@@ -144,7 +144,7 @@
          (deleted nil))
     (unwind-protect
         (cl-letf (((symbol-function 'get-buffer-window)
-                   (lambda (_b) 'fake-window))
+                   (lambda (_b &rest _) 'fake-window))
                   ((symbol-function 'delete-window)
                    (lambda (w) (setq deleted w))))
           (cj/toggle-gptel))

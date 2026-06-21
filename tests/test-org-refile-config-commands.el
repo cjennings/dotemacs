@@ -54,7 +54,7 @@
     (with-temp-buffer
       (setq buffer-file-name "/tmp/notes.org")
       (cl-letf (((symbol-function 'call-interactively)
-                 (lambda (_fn)
+                 (lambda (_fn &rest _)
                    (setq seen-targets org-refile-targets)))
                 ((symbol-function 'save-buffer) #'ignore))
         (cj/org-refile-in-file))
@@ -73,7 +73,7 @@
       (setq buffer-file-name "/tmp/notes.org")
       (cl-letf (((symbol-function 'call-interactively) #'ignore)
                 ((symbol-function 'save-buffer)
-                 (lambda () (setq saved t))))
+                 (lambda (&rest _) (setq saved t))))
         (cj/org-refile-in-file))
       (setq buffer-file-name nil))
     (should saved)))

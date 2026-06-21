@@ -54,7 +54,7 @@
                 ((symbol-function 'lsp-deferred)
                  (lambda (&rest _) (setq started t)))
                 ((symbol-function 'executable-find)
-                 (lambda (path) (when (equal path gopls-path) "/usr/bin/gopls"))))
+                 (lambda (path &rest _) (when (equal path gopls-path) "/usr/bin/gopls"))))
         (cj/go-setup))
       (should started))))
 
@@ -66,7 +66,7 @@
                 ((symbol-function 'electric-pair-local-mode) #'ignore)
                 ((symbol-function 'lsp-deferred)
                  (lambda (&rest _) (setq started t)))
-                ((symbol-function 'executable-find) (lambda (_) nil)))
+                ((symbol-function 'executable-find) (lambda (_ &rest _) nil)))
         (cj/go-setup))
       (should-not started))))
 
@@ -104,7 +104,7 @@
   "Normal: with delve on PATH, `gud-gdb' is called with `dlv debug'."
   (let (started)
     (cl-letf (((symbol-function 'executable-find)
-               (lambda (path) (when (equal path dlv-path) "/usr/bin/dlv")))
+               (lambda (path &rest _) (when (equal path dlv-path) "/usr/bin/dlv")))
               ((symbol-function 'file-executable-p) (lambda (_) nil))
               ((symbol-function 'gud-gdb)
                (lambda (cmd &rest _) (setq started cmd))))
@@ -117,7 +117,7 @@
   "Error: delve missing -> message + no gud-gdb call."
   (let ((started nil)
         (msg nil))
-    (cl-letf (((symbol-function 'executable-find) (lambda (_) nil))
+    (cl-letf (((symbol-function 'executable-find) (lambda (_ &rest _) nil))
               ((symbol-function 'file-executable-p) (lambda (_) nil))
               ((symbol-function 'gud-gdb)
                (lambda (&rest _) (setq started t)))

@@ -40,7 +40,7 @@
     (unwind-protect
         (progn
           (cl-letf (((symbol-function 'projectile-project-root) (lambda () root))
-                    ((symbol-function 'find-file-other-window) (lambda (f) (setq opened f))))
+                    ((symbol-function 'find-file-other-window) (lambda (f &rest _) (setq opened f))))
             (setq result (cj/open-project-daily-prep)))
           (should-not opened)
           (should (string-match-p "No daily-prep.org" result)))
@@ -50,7 +50,7 @@
   "Error: outside a Projectile project, do not open; report it."
   (let (opened result)
     (cl-letf (((symbol-function 'projectile-project-root) (lambda () nil))
-              ((symbol-function 'find-file-other-window) (lambda (f) (setq opened f))))
+              ((symbol-function 'find-file-other-window) (lambda (f &rest _) (setq opened f))))
       (setq result (cj/open-project-daily-prep)))
     (should-not opened)
     (should (string-match-p "Not in a Projectile project" result))))

@@ -70,7 +70,7 @@ non-visited entry, not the second."
                            (setq buffer-file-name "/tmp/alive.txt"))
                          b))))
               ((symbol-function 'find-file)
-               (lambda (f) (setq opened f))))
+               (lambda (f &rest _) (setq opened f))))
       (unwind-protect
           (cj/undo-kill-buffer 1)
         (when (get-buffer "*test-alive*") (kill-buffer "*test-alive*"))))
@@ -93,7 +93,7 @@ currently-open most-recent file was never skipped."
                            (setq buffer-file-name "/tmp/alive.txt"))
                          b))))
               ((symbol-function 'find-file)
-               (lambda (f) (setq opened f))))
+               (lambda (f &rest _) (setq opened f))))
       (unwind-protect
           (cj/undo-kill-buffer 1)
         (when (get-buffer "*test-alive*") (kill-buffer "*test-alive*"))))
@@ -108,7 +108,7 @@ currently-open most-recent file was never skipped."
               ((symbol-function 'recentf-mode) (lambda (&rest _) t))
               ((symbol-function 'buffer-list) (lambda (&rest _) nil))
               ((symbol-function 'find-file)
-               (lambda (f) (setq opened f))))
+               (lambda (f &rest _) (setq opened f))))
       (cj/undo-kill-buffer 2))
     (should (equal opened "/tmp/b.org"))))
 
@@ -121,7 +121,7 @@ currently-open most-recent file was never skipped."
               ((symbol-function 'recentf-mode) (lambda (&rest _) t))
               ((symbol-function 'buffer-list) (lambda (&rest _) nil))
               ((symbol-function 'find-file)
-               (lambda (f) (setq opened f))))
+               (lambda (f &rest _) (setq opened f))))
       (cj/undo-kill-buffer 0))
     (should-not opened)))
 
@@ -134,7 +134,7 @@ not a wrong-type-argument from find-file on nil."
     (cl-letf (((symbol-function 'require) (lambda (&rest _) t))
               ((symbol-function 'recentf-mode) (lambda (&rest _) t))
               ((symbol-function 'buffer-list) (lambda (&rest _) nil))
-              ((symbol-function 'find-file) (lambda (f) (setq opened f))))
+              ((symbol-function 'find-file) (lambda (f &rest _) (setq opened f))))
       (should-error (cj/undo-kill-buffer 5) :type 'user-error))
     (should-not opened)))
 

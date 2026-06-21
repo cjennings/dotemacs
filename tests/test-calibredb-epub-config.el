@@ -29,8 +29,8 @@
   `(with-temp-buffer
      (setq-local major-mode 'nov-mode)
      (cl-letf (((symbol-function 'get-buffer-window) (lambda (&rest _) 'win))
-               ((symbol-function 'window-body-width) (lambda (_) 200))
-               ((symbol-function 'window-margins) (lambda (_) '(nil . nil)))
+               ((symbol-function 'window-body-width) (lambda (&rest _) 200))
+               ((symbol-function 'window-margins) (lambda (&rest _) '(nil . nil)))
                ((symbol-function 'set-window-margins) (lambda (&rest _) nil))
                ((symbol-function 'set-window-fringes) (lambda (&rest _) nil)))
        ,@body)))
@@ -73,8 +73,8 @@ below 50% of the usable columns."
   (let ((cj/nov-margin-percent 25)
         (cj/nov-min-text-width 40))
     (cl-letf (((symbol-function 'get-buffer-window) (lambda (&rest _) 'win))
-              ((symbol-function 'window-body-width) (lambda (_) 120))
-              ((symbol-function 'window-margins) (lambda (_) '(nil . nil))))
+              ((symbol-function 'window-body-width) (lambda (&rest _) 120))
+              ((symbol-function 'window-margins) (lambda (&rest _) '(nil . nil))))
       (should (= 60 (cj/nov--text-width-for-window))))))
 
 (ert-deftest test-calibredb-epub-nov-text-width-for-window-idempotent ()
@@ -85,8 +85,8 @@ this, every layout pass would shave the column by another margin fraction."
   (let ((cj/nov-margin-percent 25)
         (cj/nov-min-text-width 40))
     (cl-letf (((symbol-function 'get-buffer-window) (lambda (&rest _) 'win))
-              ((symbol-function 'window-body-width) (lambda (_) 60))
-              ((symbol-function 'window-margins) (lambda (_) '(30 . 30))))
+              ((symbol-function 'window-body-width) (lambda (&rest _) 60))
+              ((symbol-function 'window-margins) (lambda (&rest _) '(30 . 30))))
       (should (= 60 (cj/nov--text-width-for-window))))))
 
 (ert-deftest test-calibredb-epub-nov-text-width-for-window-no-window ()
@@ -214,15 +214,15 @@ so nov's `shr' fills the text itself rather than relying on visual-fill-column."
 (ert-deftest test-calibredb-epub-nov-natural-window-width-no-margins ()
   "Normal: with no margins set, the natural width equals `window-body-width'."
   (cl-letf (((symbol-function 'get-buffer-window) (lambda (&rest _) 'win))
-            ((symbol-function 'window-body-width) (lambda (_) 100))
-            ((symbol-function 'window-margins) (lambda (_) '(nil . nil))))
+            ((symbol-function 'window-body-width) (lambda (&rest _) 100))
+            ((symbol-function 'window-margins) (lambda (&rest _) '(nil . nil))))
     (should (= 100 (cj/nov--natural-window-width)))))
 
 (ert-deftest test-calibredb-epub-nov-natural-window-width-adds-margins ()
   "Boundary: with margins set, the natural width adds them back to the body."
   (cl-letf (((symbol-function 'get-buffer-window) (lambda (&rest _) 'win))
-            ((symbol-function 'window-body-width) (lambda (_) 60))
-            ((symbol-function 'window-margins) (lambda (_) '(20 . 20))))
+            ((symbol-function 'window-body-width) (lambda (&rest _) 60))
+            ((symbol-function 'window-margins) (lambda (&rest _) '(20 . 20))))
     (should (= 100 (cj/nov--natural-window-width)))))
 
 (ert-deftest test-calibredb-epub-nov-natural-window-width-no-window-fallback ()

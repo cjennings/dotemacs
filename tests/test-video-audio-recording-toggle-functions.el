@@ -84,7 +84,7 @@
       (let ((prompt-called nil)
             (recorded-dir nil))
         (cl-letf (((symbol-function 'read-directory-name)
-                   (lambda (_prompt) (setq prompt-called t) "/custom/path/"))
+                   (lambda (_prompt &rest _) (setq prompt-called t) "/custom/path/"))
                   ((symbol-function 'file-directory-p)
                    (lambda (_dir) t))  ; Directory exists
                   ((symbol-function 'cj/ffmpeg-record-video)
@@ -139,7 +139,7 @@
       (let ((prompt-called nil)
             (recorded-dir nil))
         (cl-letf (((symbol-function 'read-directory-name)
-                   (lambda (_prompt) (setq prompt-called t) "/custom/path/"))
+                   (lambda (_prompt &rest _) (setq prompt-called t) "/custom/path/"))
                   ((symbol-function 'file-directory-p)
                    (lambda (_dir) t))  ; Directory exists
                   ((symbol-function 'cj/ffmpeg-record-audio)

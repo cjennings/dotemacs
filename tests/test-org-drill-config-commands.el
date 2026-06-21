@@ -38,7 +38,7 @@
   (let (opened (drilled 0))
     (cl-letf (((symbol-function 'cj/--drill-pick-file)
                (lambda (_dir) "/decks/german.org"))
-              ((symbol-function 'find-file) (lambda (f) (setq opened f)))
+              ((symbol-function 'find-file) (lambda (f &rest _) (setq opened f)))
               ((symbol-function 'org-drill)
                (lambda (&rest _) (cl-incf drilled))))
       (cj/drill-edit))
@@ -54,7 +54,7 @@
           (with-temp-file (expand-file-name "latin.org" tmp))
           (cl-letf (((symbol-function 'read-directory-name) (lambda (&rest _) tmp))
                     ((symbol-function 'completing-read) (lambda (&rest _) "latin.org"))
-                    ((symbol-function 'find-file) (lambda (f) (setq opened f))))
+                    ((symbol-function 'find-file) (lambda (f &rest _) (setq opened f))))
             (cj/drill-edit t))
           (should (equal (expand-file-name "latin.org" tmp) opened)))
       (delete-directory tmp t))))
@@ -85,7 +85,7 @@ and validation)."
               ((symbol-function 'directory-files)
                (lambda (&rest _) '("/WRONG/raw.org")))
               ((symbol-function 'call-interactively)
-               (lambda (fn)
+               (lambda (fn &rest _)
                  (setq called-fn fn
                        seen-targets org-refile-targets))))
       (cj/drill-refile))
@@ -101,7 +101,7 @@ survives the call instead of being permanently replaced."
   (let ((drill-dir "/tmp/cj-drill/")
         (org-refile-targets '((sentinel :maxlevel . 9))))
     (cl-letf (((symbol-function 'cj/--drill-files-or-error) (lambda (_dir) '("a.org")))
-              ((symbol-function 'call-interactively) (lambda (_fn) nil)))
+              ((symbol-function 'call-interactively) (lambda (_fn &rest _) nil)))
       (cj/drill-refile))
     (should (equal org-refile-targets '((sentinel :maxlevel . 9))))))
 
@@ -112,7 +112,7 @@ the shared validated helper, instead of a low-level error, and never reaches
   (let ((drill-dir (expand-file-name "cj-drill-nonexistent-XYZ/"
                                      temporary-file-directory))
         (called nil))
-    (cl-letf (((symbol-function 'call-interactively) (lambda (_fn) (setq called t))))
+    (cl-letf (((symbol-function 'call-interactively) (lambda (_fn &rest _) (setq called t))))
       (should-error (cj/drill-refile) :type 'user-error))
     (should-not called)))
 

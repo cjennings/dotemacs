@@ -39,7 +39,7 @@
 (ert-deftest test-elfeed-extract-stream-url-normal-returns-url ()
   "Normal: a successful yt-dlp run returns the trimmed https stream URL."
   (cl-letf (((symbol-function 'executable-find)
-             (lambda (p) (and (equal p "yt-dlp") "/usr/bin/yt-dlp")))
+             (lambda (p &rest _) (and (equal p "yt-dlp") "/usr/bin/yt-dlp")))
             ((symbol-function 'cj/log-silently) #'ignore)
             ((symbol-function 'call-process)
              (lambda (_prog _infile _dest _disp &rest _args)
@@ -49,7 +49,7 @@
 
 (ert-deftest test-elfeed-extract-stream-url-boundary-non-url-output-is-nil ()
   "Boundary: output that is not an http(s) URL yields nil, not the raw text."
-  (cl-letf (((symbol-function 'executable-find) (lambda (_) "/usr/bin/yt-dlp"))
+  (cl-letf (((symbol-function 'executable-find) (lambda (_ &rest _) "/usr/bin/yt-dlp"))
             ((symbol-function 'cj/log-silently) #'ignore)
             ((symbol-function 'call-process)
              (lambda (_p _i _d _disp &rest _) (insert "ERROR: unavailable\n") 0)))
@@ -57,7 +57,7 @@
 
 (ert-deftest test-elfeed-extract-stream-url-boundary-nonzero-exit-is-nil ()
   "Boundary: a nonzero yt-dlp exit code yields nil."
-  (cl-letf (((symbol-function 'executable-find) (lambda (_) "/usr/bin/yt-dlp"))
+  (cl-letf (((symbol-function 'executable-find) (lambda (_ &rest _) "/usr/bin/yt-dlp"))
             ((symbol-function 'cj/log-silently) #'ignore)
             ((symbol-function 'call-process)
              (lambda (_p _i _d _disp &rest _) (insert "boom") 1)))
@@ -65,7 +65,7 @@
 
 (ert-deftest test-elfeed-extract-stream-url-error-without-yt-dlp ()
   "Error: a missing yt-dlp signals before attempting the call."
-  (cl-letf (((symbol-function 'executable-find) (lambda (_) nil)))
+  (cl-letf (((symbol-function 'executable-find) (lambda (_ &rest _) nil)))
     (should-error (cj/extract-stream-url "u" "best") :type 'error)))
 
 ;;; cj/elfeed-process-entries

@@ -118,19 +118,19 @@ does not run the command."
 
 (ert-deftest test-system-cmd-service-available-true-on-zero-exit ()
   "Normal: service is available when systemctl exists and `cat' exits 0."
-  (cl-letf (((symbol-function 'executable-find) (lambda (_p) "/usr/bin/systemctl"))
+  (cl-letf (((symbol-function 'executable-find) (lambda (_p &rest _) "/usr/bin/systemctl"))
             ((symbol-function 'call-process) (lambda (&rest _) 0)))
     (should (cj/system-cmd--emacs-service-available-p))))
 
 (ert-deftest test-system-cmd-service-available-false-on-nonzero-exit ()
   "Boundary: a nonzero exit (no such unit) means not available."
-  (cl-letf (((symbol-function 'executable-find) (lambda (_p) "/usr/bin/systemctl"))
+  (cl-letf (((symbol-function 'executable-find) (lambda (_p &rest _) "/usr/bin/systemctl"))
             ((symbol-function 'call-process) (lambda (&rest _) 1)))
     (should-not (cj/system-cmd--emacs-service-available-p))))
 
 (ert-deftest test-system-cmd-service-available-false-when-systemctl-absent ()
   "Error: with no systemctl on PATH the service can't be available."
-  (cl-letf (((symbol-function 'executable-find) (lambda (_p) nil))
+  (cl-letf (((symbol-function 'executable-find) (lambda (_p &rest _) nil))
             ((symbol-function 'call-process)
              (lambda (&rest _) (error "must not shell out without systemctl"))))
     (should-not (cj/system-cmd--emacs-service-available-p))))
@@ -220,7 +220,7 @@ kill-emacs directly (the service owns the daemon lifecycle)."
     (cl-letf (((symbol-function 'completing-read)
                (lambda (&rest _) "Lock Screen"))
               ((symbol-function 'call-interactively)
-               (lambda (cmd) (setq called cmd))))
+               (lambda (cmd &rest _) (setq called cmd))))
       (cj/system-command-menu))
     (should (eq called 'cj/system-cmd-lock))))
 

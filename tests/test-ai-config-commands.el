@@ -86,7 +86,7 @@ globally and reports via `message'."
          added)
     (unwind-protect
         (cl-letf (((symbol-function 'featurep)
-                   (lambda (sym) (not (eq sym 'projectile))))
+                   (lambda (sym &rest _) (not (eq sym 'projectile))))
                   ((symbol-function 'read-file-name)
                    (lambda (&rest _) target))
                   ((symbol-function 'gptel-add-file)
@@ -133,7 +133,7 @@ globally and reports via `message'."
     (cl-letf (((symbol-function 'gptel-context-remove-all)
                (lambda () (setq called t)))
               ((symbol-function 'call-interactively)
-               (lambda (fn) (funcall fn)))
+               (lambda (fn &rest _) (funcall fn)))
               ((symbol-function 'message)
                (lambda (fmt &rest args) (setq msg (apply #'format fmt args)))))
       (cj/gptel-context-clear))

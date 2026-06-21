@@ -16,7 +16,7 @@
 (ert-deftest test-prog-json--json-format-buffer-invokes-jq-argv ()
   "Normal: with jq present, the formatter calls jq via argv, no shell."
   (let (program args)
-    (cl-letf (((symbol-function 'executable-find) (lambda (_p) "/usr/bin/jq"))
+    (cl-letf (((symbol-function 'executable-find) (lambda (_p &rest _) "/usr/bin/jq"))
               ((symbol-function 'call-process-region)
                (lambda (_start _end prog &rest rest)
                  (setq program prog
@@ -31,7 +31,7 @@
 
 (ert-deftest test-prog-json--json-format-buffer-no-clobber-on-failure ()
   "Error: a non-zero jq exit leaves the buffer untouched and signals an error."
-  (cl-letf (((symbol-function 'executable-find) (lambda (_p) "/usr/bin/jq"))
+  (cl-letf (((symbol-function 'executable-find) (lambda (_p &rest _) "/usr/bin/jq"))
             ((symbol-function 'call-process-region)
              (lambda (_start _end _prog _delete buffer &rest _)
                (with-current-buffer buffer (insert "jq: parse error"))
@@ -112,7 +112,7 @@
 
 (ert-deftest test-prog-json--json-format-buffer-fallback-formats-without-jq ()
   "Falls back to built-in formatter when jq is not found."
-  (cl-letf (((symbol-function 'executable-find) (lambda (_) nil)))
+  (cl-letf (((symbol-function 'executable-find) (lambda (_ &rest _) nil)))
     (with-temp-buffer
       (insert "{\"b\":1,\"a\":2}")
       (cj/json-format-buffer)

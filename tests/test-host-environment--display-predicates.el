@@ -26,7 +26,7 @@ GRAPHIC-P becomes the return of `(display-graphic-p)'."
   `(cl-letf (((symbol-function 'window-system)
               (lambda (&optional _) ,window-system-value))
              ((symbol-function 'getenv)
-              (lambda (name)
+              (lambda (name &rest _)
                 (when (string= name "WAYLAND_DISPLAY") ,wayland-display)))
              ((symbol-function 'display-graphic-p)
               (lambda (&optional _) ,graphic-p)))

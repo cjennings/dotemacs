@@ -79,7 +79,7 @@ Components integrated:
                (lambda (&rest _) "Current file's tests"))
               ((symbol-function 'projectile-test-project) (lambda (_arg) nil))
               ((symbol-function 'cj/--f4-project-root) (lambda () "/p/"))
-              ((symbol-function 'buffer-file-name) (lambda () "/p/foo.el"))
+              ((symbol-function 'buffer-file-name) (lambda (&rest _) "/p/foo.el"))
               ((symbol-function 'cj/--f6-current-file-tests-impl)
                (lambda (file root)
                  (setq seen-file file seen-root root))))

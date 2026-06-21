@@ -34,7 +34,7 @@
   "Normal: an `.org' file at point is opened and drilled."
   (let (opened (drilled 0))
     (cl-letf (((symbol-function 'dired-get-filename) (lambda (&rest _) "/tmp/decks/cards.org"))
-              ((symbol-function 'find-file) (lambda (f) (setq opened f)))
+              ((symbol-function 'find-file) (lambda (f &rest _) (setq opened f)))
               ((symbol-function 'cj/drill-this-file) (lambda (&rest _) (cl-incf drilled))))
       (cj/dirvish-drill-file))
     (should (equal "/tmp/decks/cards.org" opened))
@@ -44,7 +44,7 @@
   "Boundary: the `.org' check ignores case."
   (let (opened)
     (cl-letf (((symbol-function 'dired-get-filename) (lambda (&rest _) "/tmp/decks/CARDS.ORG"))
-              ((symbol-function 'find-file) (lambda (f) (setq opened f)))
+              ((symbol-function 'find-file) (lambda (f &rest _) (setq opened f)))
               ((symbol-function 'cj/drill-this-file) #'ignore))
       (cj/dirvish-drill-file))
     (should (equal "/tmp/decks/CARDS.ORG" opened))))

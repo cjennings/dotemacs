@@ -21,7 +21,7 @@ effects."
   (declare (indent 1) (debug t))
   `(with-temp-buffer
      (setq buffer-file-name ,path)
-     (cl-letf (((symbol-function 'save-buffer) (lambda () nil)))
+     (cl-letf (((symbol-function 'save-buffer) (lambda (&rest _) nil)))
        ,@body)))
 
 (ert-deftest test-config-utilities-compile-buffer-not-elisp-raises ()
@@ -47,7 +47,7 @@ effects."
                 ((symbol-function 'native-compile)
                  (lambda (_) (error "should not call sync native-compile")))
                 ((symbol-function 'byte-compile-file)
-                 (lambda (_) (error "should not call byte-compile-file"))))
+                 (lambda (&rest _) (error "should not call byte-compile-file"))))
         (cj/compile-this-elisp-buffer)
         (should (equal called-with "/tmp/some.el"))))))
 
@@ -60,7 +60,7 @@ effects."
                 ((symbol-function 'native-compile)
                  (lambda (file) (setq called-with file)))
                 ((symbol-function 'byte-compile-file)
-                 (lambda (_) (error "should not call byte-compile-file"))))
+                 (lambda (&rest _) (error "should not call byte-compile-file"))))
         (cj/compile-this-elisp-buffer)
         (should (equal called-with "/tmp/some.el"))))))
 
@@ -71,7 +71,7 @@ effects."
       (cl-letf (((symbol-function 'fboundp)
                  (lambda (sym) (eq sym 'byte-compile-file)))
                 ((symbol-function 'byte-compile-file)
-                 (lambda (file) (setq called-with file) "/tmp/some.elc")))
+                 (lambda (file &rest _) (setq called-with file) "/tmp/some.elc")))
         (cj/compile-this-elisp-buffer)
         (should (equal called-with "/tmp/some.el"))))))
 
