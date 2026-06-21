@@ -336,14 +336,15 @@ instead of being forwarded to the terminal program."
   (should-not (eq (keymap-lookup ghostel-semi-char-mode-map "C-M-<left>")
                   'ghostel--send-event)))
 
-(ert-deftest test-term-f10-music-and-shutdown-in-keymap-exceptions ()
-  "Regression: F10 (music playlist toggle) and C-F10 (server shutdown) are in
-`ghostel-keymap-exceptions' so they reach Emacs from inside a ghostel buffer
-instead of being forwarded to the terminal program.  Both are global bindings,
-so dropping them from the semi-char map lets the lookup fall through to the
-global map."
-  (dolist (key '("<f10>" "C-<f10>"))
-    (should (member key ghostel-keymap-exceptions)))
+(ert-deftest test-term-f10-music-in-keymap-exceptions ()
+  "Regression: F10 (music playlist toggle) is in `ghostel-keymap-exceptions'
+so it reaches Emacs from inside a ghostel buffer instead of being forwarded
+to the terminal program.  It is a global binding, so dropping it from the
+semi-char map lets the lookup fall through to the global map.  Server
+shutdown moved off C-F10 to C-x C, which is deliberately NOT an exception
+(C-x C stays forwarding to the terminal program inside an agent buffer)."
+  (should (member "<f10>" ghostel-keymap-exceptions))
+  (should-not (member "C-<f10>" ghostel-keymap-exceptions))
   (should-not (eq (keymap-lookup ghostel-semi-char-mode-map "<f10>")
                   'ghostel--send-event)))
 
