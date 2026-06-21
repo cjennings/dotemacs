@@ -1,0 +1,159 @@
+#+TITLE: Native Compilation vs. Mocking C Primitives in Tests
+#+AUTHOR: Craig Jennings
+#+DATE: 2026-06-21
+
+* What this is
+
+A reference for a real, recurring trap: tests that redefine an Emacs C
+primitive (a "subr") with =cl-letf=, =fset=, =setf=, or =advice-add= behave
+differently once native compilation is enabled, and the failures are
+intermittent. We hit it head-on after re-enabling native-comp config-wide
+(early-init.el, commit 3fd28987, 2026-06-20). This document records the
+mechanism, the research, and the decision so we don't re-derive it.
+
+* The symptom
+
+After native-comp was re-enabled, tests that had been green for months started
+failing, with no change to their source. The errors looked like:
+
+: wrong-number-of-arguments #[nil (nil) (t)] 1
+
+That is a zero-argument mock lambda being called with one argument. The 8 tests
+that first tripped were in =test-dirvish-config-wrappers.el= and
+=test-calibredb-epub-config.el=, all mocking window primitives
+(=current-window-configuration=, =window-body-width=, =window-margins=,
+=get-buffer-window=).
+
+The failures were intermittent across the session: the same test passed, then
+crashed, then passed again. That non-determinism is the tell.
+
+* The mechanism
+
+Native-comp emits *direct* calls to primitives for speed. So when Lisp code
+redefines or advises a primitive (which is exactly what a test mock does),
+natively-compiled callers would normally bypass the redefinition entirely. To
+prevent that, Emacs generates a small per-primitive *trampoline* (a =.eln=
+under =eln-cache/=) the first time a primitive is redefined. The trampoline
+reroutes calls to the primitive through its Lisp function cell, where the mock
+lives.
+
+The trampoline is generated lazily and cached on disk, and that is the source
+of the non-determinism: whether a given mock "works" depends on whether the
+trampoline for that primitive has been compiled into the eln-cache yet. As
+native-comp compiles more in the background, more mocks start routing through
+trampolines.
+
+** Three distinct failure modes
+
+Because behavior depends on trampoline state, the same mock can fail three
+different ways:
+
+1. *Generation failure.* The trampoline =.eln= can't be built or loaded
+   (notably under =emacs --batch=), giving
+   =native-lisp-load-failed "... subr--trampoline-*.eln"=. This is the mode our
+   older CLAUDE.md insight first documented.
+2. *Silent bypass.* When a trampoline isn't available and can't be generated,
+   the manual states natively-compiled callers *ignore* the redefinition and
+   call the real primitive. The mock does nothing, so the test passes for the
+   wrong reason or asserts against real behavior.
+3. *Arity mismatch.* The trampoline *is* built and routes to the mock, but
+   calls it with the primitive's *maximum* arity (filling optionals with nil),
+   not the arity the source used. A fixed-arity mock narrower than the
+   primitive then throws =wrong-number-of-arguments=. This is the mode that bit
+   us this session (every one of the 8 was this).
+
+* Important: this is a test-only artifact
+
+Production code never redefines a C primitive, so these trampolines are never
+generated for this reason in normal use. Nothing here is a defect in the
+config. It is an incompatibility between *mocking primitives in tests* and
+native-comp, confined to the test suite.
+
+* What the wider community has found
+
+This is well known and genuinely hard. It is not us doing something wrong.
+
+- [[https://lists.gnu.org/archive/html/bug-gnu-emacs/2021-10/msg00971.html][bug#51140 (emacs-devel)]] — "cl-letf appears not to work with native-comp."
+  Redefining a built-in like =process-exit-status= via =cl-letf= breaks under
+  native compilation. Confirms the core problem.
+- [[https://github.com/jorgenschaefer/emacs-buttercup/issues/230][buttercup issue #230]] — the buttercup test framework's =spy-on= on primitives
+  (=file-exists-p=, =buffer-file-name=) fails with the
+  =native-lisp-load-failed ... subr--trampoline-*.eln= error (failure mode 1).
+  Our scenario exactly, in a mainstream test framework.
+- [[https://groups.google.com/g/linux.debian.bugs.dist/c/n9P2xhpruDE][Debian bug#1021842]] — buttercup's *own self-tests* hit the trampoline
+  compilation error. Even the test framework's maintainers run into it.
+- [[https://lists.gnu.org/archive/html/bug-gnu-emacs/2023-03/msg00076.html][bug#61880 (emacs-devel)]] — native compilation fails to generate trampolines
+  in certain sequential cases (failure mode 1, deterministic variant).
+- [[https://lists.gnu.org/archive/html/emacs-diffs/2023-03/msg00145.html][emacs-29 commit (bug-fix)]] — Emacs added a warning when you redefine a
+  primitive that the trampoline machinery itself depends on
+  ("Redefining '%s' might break trampoline native compilation"). Shows the
+  maintainers' stance: redefining primitives is discouraged.
+- [[https://www.gnu.org/software/emacs/manual/html_node/elisp/Native_002dCompilation-Variables.html][ELisp Manual: Native-Compilation Variables]] — documents
+  =native-comp-enable-subr-trampolines=. Default on; generates trampolines on
+  the fly. When *off* and no cached trampoline exists, "calls to that primitive
+  from natively-compiled Lisp will ignore redefinitions and advices" (this is
+  failure mode 2, and the catch in the common workaround below).
+
+** The two commonly-cited workarounds, and their costs
+
+- *Disable subr trampolines for tests* (=native-comp-enable-subr-trampolines
+  nil=). The most-cited quick fix. One line. But per the manual it makes
+  natively-compiled callers *ignore* the mock (failure mode 2). It only works
+  reliably when the code under test runs interpreted, not natively compiled.
+  With native-comp aggressively compiling our modules, the code under test is
+  increasingly native, so this risks silent mock-bypass: tests that pass while
+  asserting against the real primitive. Worse than a loud failure.
+- *Don't mock primitives at all.* The maintainers' and our own
+  =elisp-testing.md='s position: inject dependencies or test pure helpers
+  instead. The only fix immune to all three failure modes. Also the most work.
+
+* Our decision (2026-06-21)
+
+We chose a pragmatic middle path with a clear long-term direction.
+
+1. *Make subr mocks variadic.* The arity mode (3) is the only one we have
+   actually suffered. A mock written =(lambda (&rest _) VALUE)= tolerates the
+   trampoline's full-arity call. We swept every arity-narrow subr mock in the
+   suite to append =&rest _= to its arglist (preserving any named args the
+   body uses). This is deterministic and keeps trampolines on, so mocks still
+   route correctly (no silent bypass).
+2. *Enforce it with a meta-test.* =tests/test-meta-subr-mock-arity.el= statically
+   scans every test file for =symbol-function= / =fset= redefinitions of a
+   subr and fails =make test= if any mock can't accept the primitive's maximum
+   arity (=func-arity=). It is deterministic (a pure source read; no dependence
+   on eln-cache state), so a new arity-narrow mock can't merge silently. The
+   rule it enforces is NOT "never mock a subr" (the suite mocks subrs like
+   =message= and =completing-read= hundreds of times, all fine) but "a subr
+   mock must accept the primitive's arity."
+3. *Treat "migrate off primitive-mocking" as a long-term test-quality project.*
+   The variadic sweep fixes the mode we hit but leaves modes 1 and 2 latent
+   (we haven't hit them, but they exist). The durable fix the ecosystem points
+   to is restructuring tests to not redefine primitives at all. Filed as a
+   standalone TODO rather than forced now.
+
+** Why not just disable trampolines for tests?
+
+Because of failure mode 2 (silent bypass) above. In our native-comp-heavy
+setup, disabling trampolines would let natively-compiled code under test ignore
+the mocks, producing tests that pass while testing nothing. A loud
+=wrong-number-of-arguments= that the meta-test prevents up front is strictly
+safer than a quiet false pass.
+
+* Practical rule for writing tests (today)
+
+When you mock a C primitive (subr) in a test, make the replacement variadic:
+
+: (cl-letf (((symbol-function 'window-body-width) (lambda (&rest _) 200)))
+:   ...)
+
+not
+
+: (cl-letf (((symbol-function 'window-body-width) (lambda (_) 200)))   ; breaks under native-comp
+:   ...)
+
+If the body needs the argument, keep it and append =&rest _=:
+
+: (lambda (cmd &rest _) (member cmd allowed))
+
+The meta-test will catch you if you forget. Better still, when practical, don't
+mock the primitive: pass the value in as a parameter, or test a pure helper.
