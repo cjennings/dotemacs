@@ -212,18 +212,13 @@ appears only once per session."
 (setq custom-safe-themes t)                   ;; treat all themes as safe (stop asking)
 (setq server-client-instructions nil)         ;; I already know what to do when done with the frame
 
-;; ------------------ Reduce Garbage Collections In Minibuffer -----------------
-
-(defun cj/minibuffer-setup-hook ()
-  "Hook to prevent garbage collection while user's in minibuffer."
-  (setq gc-cons-threshold most-positive-fixnum))
-
-(defun cj/minibuffer-exit-hook ()
-  "Hook to trigger garbage collection when exiting minibuffer."
-  (setq gc-cons-threshold 800000))
-
-(add-hook 'minibuffer-setup-hook #'cj/minibuffer-setup-hook)
-(add-hook 'minibuffer-exit-hook #'cj/minibuffer-exit-hook)
+;; ----------------------------- Garbage Collection ----------------------------
+;; GC is managed by gcmh in modules/gcmh-config.el: it keeps gc-cons-threshold
+;; high during activity and collects on idle, replacing the old stock-800KB
+;; scheme (an early-init restore plus a minibuffer setup/exit bump). gcmh lives
+;; in its own module rather than here because system-defaults.el is pre-loaded
+;; by the comp-errors test harness, which has no package system -- an `:ensure'
+;; package loaded here would error at load time and break those tests.
 
 ;; ----------------------------- Bookmark Settings -----------------------------
 

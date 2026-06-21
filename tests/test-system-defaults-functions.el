@@ -79,20 +79,6 @@
   (should (eq (cj/disabled) nil))
   (should (commandp #'cj/disabled)))
 
-;;; cj/minibuffer-setup-hook / cj/minibuffer-exit-hook
-
-(ert-deftest test-system-defaults-minibuffer-setup-inflates-gc-threshold ()
-  "Normal: entering the minibuffer raises `gc-cons-threshold' to most-positive-fixnum."
-  (let ((gc-cons-threshold 800000))
-    (cj/minibuffer-setup-hook)
-    (should (= gc-cons-threshold most-positive-fixnum))))
-
-(ert-deftest test-system-defaults-minibuffer-exit-restores-gc-threshold ()
-  "Normal: leaving the minibuffer restores `gc-cons-threshold' to 800000."
-  (let ((gc-cons-threshold most-positive-fixnum))
-    (cj/minibuffer-exit-hook)
-    (should (= gc-cons-threshold 800000))))
-
 ;;; unpropertize-kill-ring
 
 (ert-deftest test-system-defaults-unpropertize-kill-ring-strips-properties ()

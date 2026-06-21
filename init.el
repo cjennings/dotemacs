@@ -26,6 +26,7 @@
 (require 'host-environment)      ;; convenience functions re: host environment
 (require 'keyboard-compat)       ;; terminal/GUI keyboard compatibility
 (require 'system-defaults)       ;; native comp; log; unicode, backup, exec path
+(require 'gcmh-config)           ;; garbage collection strategy (gcmh)
 (require 'keybindings)           ;; system-wide keybindings and keybinding discovery
 
 ;; -------------------------- Utilities And Libraries --------------------------

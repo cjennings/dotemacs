@@ -60,14 +60,23 @@
           (lambda ()
             (setq debug-on-error nil)))
 
-;; ------------------------------ Bug Workarounds ------------------------------
+;; ------------------------------ Native Compilation ---------------------------
 
-;; Disable async native compilation to prevent "Selecting deleted buffer" errors
-;; This is a known issue in Emacs 30.x where async compilation buffers get
-;; deleted before the compilation process completes. Synchronous compilation
-;; is slower initially but avoids these race conditions.
-(setq native-comp-deferred-compilation nil)  ;; Disable async/deferred compilation
-(setq native-comp-async-report-warnings-errors nil)  ;; Silence async warnings
+;; Enable JIT native compilation. Packages are natively compiled on first load
+;; (asynchronously, in the background) and cached as .eln for later sessions.
+;; This was previously disabled via `(setq native-comp-deferred-compilation
+;; nil)' -- the obsolete alias of `native-comp-jit-compilation'. Despite the old
+;; comment, setting it nil turns JIT OFF entirely (not "synchronous"), so most
+;; modules ran interpreted for the daemon's lifetime and the
+;; `native-comp-speed'/jobs settings in system-defaults.el were dead. The old
+;; "Selecting deleted buffer" async race that prompted the disable was an Emacs
+;; 28/29 issue; this is 30.2.
+(setq native-comp-jit-compilation t)
+
+;; Log async-compile warnings to the *Async-native-compile-log* buffer rather
+;; than popping a window. (system-defaults.el also routes `comp' display-warnings
+;; to a file via `cj/log-comp-warning'.)
+(setq native-comp-async-report-warnings-errors 'silent)
 
 ;; ------------------------------- Load Freshness ------------------------------
 ;; Prefer newer .el source over stale .elc byte-compiled files. Without this,
@@ -99,11 +108,13 @@ local repos."
   :group 'cj)
 
 ;; ---------------------------- Startup Performance ----------------------------
-;; increases garbage collection threshold and turns off file-name-handler
-;; during startup and restores the settings once emacs has loaded.
+;; Bump the GC threshold and turn off the file-name-handler during startup for
+;; speed. The file-name-handler is restored once Emacs has loaded. The GC
+;; threshold is deliberately NOT restored here -- `gcmh' (configured in
+;; system-defaults.el) owns `gc-cons-threshold' for the rest of the session,
+;; keeping it high during activity and collecting on idle. Restoring the stock
+;; 800KB here would fight gcmh and bring back frequent GC pauses.
 
-(defvar cj/orig-gc-cons-threshold gc-cons-threshold
-  "Temporary variable to allow restoration of value post-startup.")
 (setq gc-cons-threshold most-positive-fixnum)
 
 (defvar cj/orig-file-name-handler-alist file-name-handler-alist
@@ -112,8 +123,7 @@ local repos."
 
 (add-hook 'emacs-startup-hook
 		  (lambda ()
-			(setq gc-cons-threshold cj/orig-gc-cons-threshold
-				  file-name-handler-alist cj/orig-file-name-handler-alist)))
+			(setq file-name-handler-alist cj/orig-file-name-handler-alist)))
 
 ;; ------------------------------ Site Start Files -----------------------------
 ;; don't load site-start or default.el files

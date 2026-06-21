@@ -63,19 +63,6 @@ test clears it first to capture the path derived from the sandbox."
                                  (expand-file-name dir)))
         (should (string-suffix-p "backups" (directory-file-name dir)))))))
 
-;;; minibuffer GC hooks
-
-(ert-deftest test-system-defaults-minibuffer-gc-hooks-registered ()
-  "Normal: the minibuffer GC raise/restore hooks are installed.
-Their bodies are tested in test-system-defaults-functions.el; this asserts
-they are actually wired onto the minibuffer hooks."
-  (test-system-defaults--with-load-environment
-    (let ((minibuffer-setup-hook nil)
-          (minibuffer-exit-hook nil))
-      (test-system-defaults--load)
-      (should (memq 'cj/minibuffer-setup-hook minibuffer-setup-hook))
-      (should (memq 'cj/minibuffer-exit-hook minibuffer-exit-hook)))))
-
 ;;; Customize-save warning
 
 (ert-deftest test-system-defaults-customize-save-warns-once ()
