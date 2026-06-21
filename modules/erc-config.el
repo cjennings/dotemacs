@@ -338,16 +338,15 @@ NICK is the sender and MESSAGE is the message text."
   :after erc
   :hook (erc-mode . erc-nicks-mode))
 
-;; ------------------------------ ERC Yank To Gist -----------------------------
-;; automatically create a Gist if pasting more than 5 lines
-;; this module requires https://github.com/defunkt/gist
-;; via ruby: 'gem install gist' via the aur: yay -S gist
-
-(use-package erc-yank
-  :after erc
-  :bind
-  (:map erc-mode-map
-        ("C-y" . erc-yank)))
+;; -------------------------------- ERC Yank ----------------------------------
+;; The erc-yank package was dropped 2026-06-20: a paste over 5 lines became a
+;; PUBLIC gist (it called `gist -P', the clipboard paste flag, with no
+;; `--private'), behind only a single y-or-n-p and with no guard if the `gist'
+;; binary was absent -- a one-keystroke path to publishing whatever sat on the
+;; system clipboard.  No replacement binding is needed: erc-mode-map defines no
+;; C-y of its own, so with erc-yank gone C-y falls through to the ordinary
+;; global `yank' and a paste stays local.  Gist a large snippet by hand when
+;; that's actually wanted.
 
 (provide 'erc-config)
 ;;; erc-config.el ends here
