@@ -249,6 +249,27 @@ Signals `user-error' for any other SCOPE."
 	(maphash (lambda (k _v) (push k keys)) table)
 	(sort keys #'<)))
 
+(defun cj/--coverage-relativize-keys (table root)
+  "Return a copy of TABLE with each file-path key made relative to ROOT.
+An absolute key is relativized against ROOT via `file-relative-name'; an
+already-relative key is kept as-is.  Line-set values are shared, not copied.
+
+`cj/--coverage-parse-simplecov' emits absolute path keys (simplecov reports
+absolute source paths) while `cj/--coverage-parse-diff-output' emits
+repo-relative keys (git's \"+++ b/<path>\").  Both must be normalized to
+repo-relative before `cj/--coverage-intersect' joins them by key, or every
+diff-aware match misses and each changed file reads `:tracked nil'."
+  (let ((result (make-hash-table :test 'equal)))
+	(when table
+	  (maphash
+	   (lambda (path lines)
+		 (let ((key (if (file-name-absolute-p path)
+						(file-relative-name path root)
+					  path)))
+		   (puthash key lines result)))
+	   table))
+	result))
+
 (defun cj/--coverage-intersect (covered changed)
   "Combine COVERED (LCOV) with CHANGED (git diff) into per-file records.
 COVERED and CHANGED are each hash tables from file path to a hash table
@@ -479,10 +500,14 @@ line in the simplecov data — the intersect then classifies each line
 as covered or uncovered.  For diff-aware scopes, the changed set
 comes from `git diff' via `cj/--coverage-changed-lines'."
   (let* ((report-path (funcall (plist-get backend :report-path)))
-		 (covered (cj/--coverage-parse-simplecov report-path))
-		 (changed (if (eq scope 'whole-project)
-					  (cj/--coverage-simplecov-executable-lines report-path)
-					(cj/--coverage-changed-lines scope)))
+		 (root (cj/--coverage-project-root))
+		 (covered (cj/--coverage-relativize-keys
+				   (cj/--coverage-parse-simplecov report-path) root))
+		 (changed (cj/--coverage-relativize-keys
+				   (if (eq scope 'whole-project)
+					   (cj/--coverage-simplecov-executable-lines report-path)
+					 (cj/--coverage-changed-lines scope))
+				   root))
 		 (records (cj/--coverage-intersect covered changed)))
 	(cj/--coverage-render-to-buffer records scope)))
 
