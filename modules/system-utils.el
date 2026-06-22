@@ -123,7 +123,8 @@ detached from Emacs."
           read-char-history
           face-name-history
           bookmark-history
-          file-name-history))
+          file-name-history
+          wttrin--location-history))
 
   (put 'minibuffer-history         'history-length 50)
   (put 'file-name-history          'history-length 50)
