@@ -1,0 +1,340 @@
+#+TITLE: Design: VAMP — a standalone Emacs music player
+#+AUTHOR: Craig Jennings
+#+DATE: 2026-06-22
+#+OPTIONS: toc:nil num:nil
+
+Status: Draft
+
+VAMP = "VAMP Audio Music Player" (recursive backronym; /vamp/ is itself a
+musical term — a short repeated passage). Namespace =vamp-=, repo =~/code/vamp=.
+
+This design came out of a 2026-06-22 brainstorm. It supersedes parts of the
+earlier EMMS-removal work and confirms others — see "Relationship to Prior
+Work" below.
+
+* Problem
+
+=modules/music-config.el= (925 lines) is an EMMS configuration layer welded
+into =.emacs.d=: it mixes genuinely reusable logic (M3U management, fuzzy add,
+random-history navigation, radio-station creation, consume mode) with personal
+config (ncmpcpp-aligned keybindings, paths, dashboard wiring), and it depends
+on the EMMS package for its playlist model, player backend, and track info.
+The goal is a standalone, publishable Emacs music player — derived from a
+maintained subset of EMMS, depending on the EMMS package not at all — that
+Craig uses as his primary player, launchable from Hyprland like dirvish.
+
+* Relationship to Prior Work
+
+A spec and a detailed review already exist and remain partly authoritative:
+
+- =docs/specs/music-config-without-emms-spec.org= — the EMMS-removal spec.
+- =docs/design/music-config-without-emms-review.org= — third-pass review
+  (2026-05-15) with a go/no-go and a 14-item decision punch list.
+
+This brainstorm *confirms* four of that review's decisions, independently
+re-derived: long-running MPV + JSON IPC from day one (B1); a state-change hook
+contract firing STARTED/STOPPED/PAUSED/RESUMED/FINISHED (B2); a fake-backend
+testutil with an events ledger (B4); metadata via MPV IPC on the STARTED event
+(S3).
+
+It *pivots* the direction in four ways the prior work assumed otherwise:
+
+- Publishable from the start (old spec: personal-first, public "later").
+- Two adapters — MPV and mpd — behind a generalized adapter API (old: MPV-only,
+  a single backend protocol). This is the largest change; it turns their single
+  "backend protocol" into a real multi-backend seam.
+- Name VAMP (old candidate: =cadenza=).
+- Desktop integration as a first-class concern: a Hyprland Super+/ launcher, a
+  daemon-singleton instance model, q-closes-frame-while-playback-continues, and
+  an m3u MIME association — none of which the prior work addressed.
+
+The prior review's cross-platform decision is absorbed unchanged: Linux + macOS
+ship full-feature; Windows is best-effort (play/stop/next/previous only) per
+Craig's 2026-05-15 call.
+
+Next step (tracked below): revise the spec to this direction before
+=/start-work=.
+
+* Non-Goals
+
+- No music-library database, tag index, or browser UI (light metadata only).
+- No mid-track position resume on backend switch (v1 re-cues from track start).
+- No persisted session state across daemon restarts (M3U save/load is the only
+  way a playlist comes back).
+- The package does not install OS wiring — the Hyprland bind, the launcher
+  script, window rules, the =.desktop= file, and =xdg-mime= defaults all live
+  in archsetup.
+- No full tag-reading in v1 (deferred to the first post-v1 enhancement).
+
+* Assumptions
+
+Researched facts (verified this session):
+
+- EMMS is GPLv3+ (read from =emms.el=); any code derived from it makes VAMP
+  GPLv3+. Fine for MELPA, which prefers GPL.
+- The EMMS core subset VAMP would draw from is ~6–7k lines: =emms.el= (1741),
+  =emms-playlist-mode.el= (685), =emms-player-mpv.el= (772),
+  =emms-player-mpd.el= (1367), the M3U sources (~800), native tag readers
+  (~1080), playing-time (258). The ~16k excluded surface is browser, filters,
+  tag-editor, lyrics, mpris, scrobblers, musicbrainz.
+- The dirvish-popup / quick-capture launcher pattern (emacsclient named frame +
+  Hyprland window rules + q-to-close, single-instance focus-existing) is the
+  established model on Craig's machine.
+- mpd is installed and running; Craig will use it to test the second adapter.
+
+Assumptions to confirm before/early in build:
+
+- mpd driven as a "dumb" single-file player (clear queue → add one file → play
+  → idle for end-of-track) behaves cleanly. mpd is designed to own a queue;
+  the dumb-player contract must be validated against real mpd behavior.
+- The m3u XDG MIME association works on Craig's exact Hyprland/xdg setup
+  (mechanism is standard; prototype the =.desktop= early per Craig's request).
+
+* Approaches Considered
+
+** Recommended: B/A hybrid — clean core, ported adapter internals
+
+Write a small, fresh playlist/playback/navigation core with an adapter API of
+VAMP's own design (B); port only the fiddly MPV-IPC and mpd-protocol internals
+from EMMS as reference (A), since that protocol handling is the hard-won part
+not worth reinventing. The core owns the queue and all play-modes; adapters are
+thin single-file players.
+
+Pros: a small core Craig fully understands and can maintain solo; a clean
+adapter API shaped for the two-backend goal; reuses EMMS's proven IPC/protocol
+code without inheriting its whole design.
+
+Cons: GPLv3+ (from the ported adapter code); real upfront design effort on the
+core + adapter API before any feature lands; risk of missing subtle
+player-process lifecycle behavior EMMS already handles.
+
+What it trades away: the option of a non-GPL license, and a fast feature-first
+start.
+
+** Rejected: vendor-and-trim (A alone)
+
+Copy the ~8 core EMMS files, delete the rest, renamespace, keep EMMS's backend
+pattern as VAMP's own. Fastest to feature-complete, but inherits 6–7k lines of
+someone else's idioms to "maintain yourself" — works against the maintainability
+goal that motivated the project.
+
+** Rejected: thin core, delegate to backends (C)
+
+Lean hard on the backend (mpd owns its queue; MPV gets a minimal one). Least
+code, but backend asymmetry leaks into inconsistent behavior and fat adapters —
+and the brainstorm chose core-owns-queue precisely for uniform behavior and
+seamless backend switching. C survives only as an adapter-capability detail
+(let mpd do server-side work as a future optimization).
+
+** Rejected: wrap existing client libraries (D)
+
+Build on mpdel + mpv.el as a thin UX layer. Directly contradicts the
+"depend on nothing / maintain it myself" goal.
+
+** Rejected: MPRIS/D-Bus as the one universal adapter (E)
+
+Drive any MPRIS player over D-Bus. "Many players" almost free, but MPRIS is
+control-only — it can't reliably own playlists or load arbitrary files across
+players. Kept in the back pocket as a possible future adapter class, not a v1
+foundation.
+
+** Rejected: external daemon + JSON-RPC (F)
+
+Move player logic to an external process, Emacs as thin client. Ships a
+non-Elisp component — packaging burden, not a pure-Elisp MELPA package. Overkill
+for local playback.
+
+* Design
+
+** Architecture
+
+Standalone repo at =~/code/vamp=, Eask-based like pearl (Eask, Makefile,
+autoloads, =tests/=, README, LICENSE — GPLv3+). Three layers:
+
+- *Core* (backend-agnostic, owns all stateful logic): the queue model (track
+  list, current index, play-modes — shuffle, repeat-playlist, repeat-track,
+  random + history ring, consume); the playback controller (orchestrates
+  load + play on the current track, handles end-of-track, advances per mode);
+  sources (add files/dirs/recursive, URLs, M3U load/save/clear/reload/edit;
+  radio-station creation); the playlist-mode buffer + window toggle/show;
+  light metadata.
+- *Adapter layer* (the extensibility seam): a =cl-defgeneric= protocol every
+  backend implements. Ships with MPV (spawned subprocess + JSON IPC socket) and
+  mpd (daemon connection, driven as a dumb single-file player).
+- *=.emacs.d= glue* (=vamp-config.el=): keybindings (C-; m map, playlist-mode
+  keys), music-root path, dashboard wiring, customize values. No logic.
+
+Three-project split: VAMP ships the elisp + entry points; =.emacs.d= keeps
+keybindings/glue; archsetup owns the OS wiring (Super+/ bind, launcher script,
+window rules, =.desktop=, =xdg-mime=).
+
+** Adapter API
+
+A backend is a class implementing generic methods. The contract is deliberately
+narrow (transport + metadata), because the core owns the queue and modes:
+
+- =load-file= — load a track URL/path (do not advance anything)
+- =play= / =pause= / =stop=
+- =seek= — to an absolute or relative position
+- =position= — current playback position
+- =report-metadata= — title/artist/album/duration the backend knows about
+- an *end-of-track notification* — each adapter translates its native
+  "track finished" signal (MPV: the IPC =end-file= event; mpd: the idle
+  =player= subsystem) into one uniform core callback
+
+This is the review's B2 state-change contract, generalized across backends. A
+new backend is a new class + method implementations; nothing in the core
+changes.
+
+** Backend switching
+
+The payoff of core-owns-queue: the queue and current track are backend-agnostic
+state in the core, so a runtime switch is just — stop the outgoing adapter
+(kill the MPV subprocess / drop the mpd connection), set the active adapter,
+and the next play re-issues =load-file= to the new backend on the same current
+track. Nothing in the queue moves; the selected song stays selected. An
+interactive =vamp-switch-backend= command (completing-read over self-registered
+adapters) is bound under C-; m and in playlist-mode. v1 re-cues from track
+start on switch; mid-track position-resume is a post-v1 addition (the contract
+already has =seek=, so it's additive).
+
+** Data flow / control loop
+
+A user action (play / next / previous) updates queue state in the core (current
+index advanced per the active play-mode), then the core calls the active
+adapter's =load-file= + =play=. End-of-track is the one hard cross-backend
+signal: the adapter fires the uniform callback, and the core's handler consults
+the play-mode and advances — repeat-track replays, repeat-playlist wraps, random
+pushes history and picks next, consume drops the finished track, normal advances
+or stops at the end. A track is a struct (url/path + type slot + cached light
+metadata); the queue is an ordered track list + current index + mode flags + the
+random-history ring.
+
+** Presentation / faces
+
+Every stateful UI surface gets a named =defface=, so status is shown by face,
+not hardcoded color: playlist current/played/consumed lines and metadata
+columns; play state (playing/paused/stopped); each play-mode with a lit (on) and
+dimmed (off) face; the active-backend indicator (MPV vs mpd); backend
+health (e.g. mpd-disconnected as an error face). These render in a header-line
+status strip in the playlist buffer (and feed the mode-line); the mode/transport
+indicators light via their on-face and dim via their off-face.
+
+Base palette: faces ship with defaults that *inherit from standard Emacs faces*
+(=success=, =warning=, =error=, =shadow=, =highlight=, =font-lock-*=) so they
+look right under any user theme out of the box and adapt automatically. A
+separate, optional =vamp-theme.el= carries the opinionated palette. Every face
+stays individually overridable. The selected-track line uses a single reused
+overlay repositioned on each STARTED event (review B3).
+
+Testing the palette: because they're standard deffaces, theme studio (the
+=.emacs.d= tool) renders them directly — load the VAMP faces, preview the
+playlist buffer + status strip, check legibility against the modus contrast
+targets, iterate.
+
+** Desktop integration + instance model
+
+Launcher: a =vamp-popup= script (mirror of dirvish-popup) bound to Super+/ in
+Hyprland; ncmpcpp moves to Shift+Super+/. The script focuses an existing
+"vamp" frame if one is open, else spawns a floating frame running
+=(vamp-popup)=; Hyprland window rules float/size/center the "vamp"-named frame.
+
+Instance model: one player instance = the daemon's global state (queue, active
+adapter, the live MPV subprocess / mpd connection). Super+/ attaches a view
+frame to it. q closes that frame but *playback continues in the daemon* — close
+the window, music plays on, reopen to see it again. A separate command (or Q)
+fully stops and tears down the player. The launcher's focus-existing behavior
+enforces an at-most-one view frame, so there are no competing instances. The
+non-daemon case (standalone Emacs) is its own instance — an edge case, since
+Craig runs the daemon.
+
+m3u MIME association: a =.desktop= file with
+=MimeType=audio/x-mpegurl;audio/mpegurl;application/x-mpegurl;application/vnd.apple.mpegurl=
+and =Exec=music-open %f= (wrapper → emacsclient … =(vamp-open-m3u "%f")=), then
+=xdg-mime default=. Opening any =.m3u= from a file manager or =xdg-open= then
+launches/raises VAMP and loads that playlist. The package only needs the
+=vamp-open-m3u FILE= entry point; the =.desktop= + =xdg-mime= live in archsetup.
+
+** Persistence
+
+Playlists: M3U save/load/clear/reload/edit, file-based, same as today. No
+session state — each daemon start is empty (today's behavior).
+
+** Metadata
+
+v1: adapter-reported metadata for the playing track only (MPV =get_property
+metadata= on STARTED; mpd reports tags from its DB). The playlist shows
+filename/path-derived labels (today's =track-description= behavior); the current
+track shows the real title/duration the backend reports. Post-v1: vendor
+=emms-info-native= (~1080 lines; mp3/ogg/flac) for real artist/album tags across
+the whole playlist, which is what unlocks sort-by-tag.
+
+** Error handling
+
+Failures surface via =user-error= / =message=, never silently — the
+music-config history (the silent Slack-notify and lock-screen bugs) is the
+cautionary tale. A missing/dead backend (mpd not running, mpv binary absent)
+reports clearly and is reflected in the header-line health face.
+
+** Testing
+
+The adapter is the system boundary (subprocess / IPC / network), so that is the
+only thing mocked — never the core. A *test adapter* (null backend, review B4's
+=testutil-music-backend.el=) implements the protocol, records
+=load-file=/=play=/=stop= calls in an events ledger, and lets a test fire the
+end-of-track callback on demand. With it, the entire control loop and every
+play-mode is testable as pure logic — no MPV, no mpd, no audio. This is
+dependency-injection rather than primitive-mocking, which also sidesteps the
+native-comp subr-mock trap the suite recently fought (see
+=docs/native-comp-subr-mocking.org=): a fake adapter is injected, not a subr
+=cl-letf='d. Core-logic tests (queue, navigation, M3U parse/write, fuzzy add,
+source expansion) are largely the existing ~193 music-config tests, ported with
+renamed symbols. Per-adapter tests mock the IPC socket / protocol connection and
+assert the native-event → uniform-callback translation. One or two integration
+tests drive the real core through the test adapter.
+
+** Observability
+
+A debug log buffer captures raw adapter I/O (the IPC/protocol traffic) for
+diagnosing backend issues (EMMS has this for mpv; worth keeping). State changes
+surface in the header-line + mode-line. A =vamp-doctor= command reports backend
+availability and, on Windows, the degraded-mode limitation.
+
+** Cross-platform stance
+
+Linux + macOS ship full-feature (IPC over unix domain sockets). Windows is
+best-effort — play/stop/next/previous only, no pause/seek/volume — via
+=start-process= + stdin or one-shot =call-process=, because Emacs's
+=make-network-process= doesn't natively support Windows named pipes. Documented
+in the README and surfaced by =vamp-doctor=. (Craig, 2026-05-15.)
+
+* Open Questions
+
+- [ ] mpd dumb-single-file-player contract — validate that clear-queue → add →
+  play → idle-for-end behaves cleanly against real mpd; decide the exact command
+  sequence. Candidate for an early spike.
+- [ ] Exact mpd end-of-track signal handling (idle =player= vs polling) and how
+  it maps to the uniform callback without races.
+- [ ] =.desktop= + =xdg-mime= prototype on Craig's Hyprland setup — confirm m3u
+  opens VAMP early (Craig asked to de-risk this first).
+- [ ] Floating-frame geometry / Hyprland window rules for the "vamp" frame
+  (archsetup detail).
+- [ ] v1 parity catalog — confirm the 13 EMMS features from the review's S1 all
+  carry into the playlist-mode keymap (seek, volume, one-shot shuffle, info,
+  center, kill-track, bury, append-to-M3U, active-window tint, dired/dirvish
+  add).
+
+* Next Steps
+
+- *Reconcile the spec.* Revise =docs/specs/music-config-without-emms-spec.org=
+  to this direction — publishable-now, two adapters + generalized adapter API,
+  VAMP name, desktop integration + instance model — keeping the review's
+  confirmed B1/B2/B4/S3 decisions and the 14-item punch list still relevant.
+- *Spike the risky assumptions* (the two mpd open questions, the m3u =.desktop=)
+  before committing the adapter API shape.
+- Open questions that are genuine decisions → =arch-decide= as ADRs.
+- Implementation → =/start-work= against the revised spec; pure-helper
+  extraction (review's Migration Plan step 1) is the safe first phase and can
+  start independently.
+- Link this doc from the =todo.org= task "Extract music-config into a standalone
+  plugin."
