@@ -114,7 +114,8 @@ marker's buffer with point at the marker (within `save-current-buffer' and
 marker."
   (let* ((reg (aref jumper--registers index))
          (marker (get-register reg)))
-    (when (and marker (markerp marker))
+    (when (and marker (markerp marker)
+               (buffer-live-p (marker-buffer marker)))
       (save-current-buffer
         (set-buffer (marker-buffer marker))
         (save-excursion
@@ -156,6 +157,20 @@ Indices whose marker is no longer valid are skipped (their
            for fmt = (jumper--format-location i)
            when fmt collect (cons fmt i)))
 
+(defun jumper--first-free-register ()
+  "Return the lowest register char in 0..N-1 not held by a live slot.
+N is `jumper-max-locations'.  Only the live slice (indices 0 through
+`jumper--next-index' minus 1) is consulted, so a char freed by a removal is
+reused on the next store instead of colliding with a surviving slot's
+register and silently overwriting its marker."
+  (let ((used (make-hash-table :test 'eql)))
+    (dotimes (i jumper--next-index)
+      (let ((r (aref jumper--registers i)))
+        (when r (puthash r t used))))
+    (cl-loop for c from ?0 below (+ ?0 jumper-max-locations)
+             unless (gethash c used)
+             return c)))
+
 (defun jumper--do-store-location ()
   "Store current location in the next free register.
 Returns: \\='already-exists if location is already stored,
@@ -165,7 +180,7 @@ Returns: \\='already-exists if location is already stored,
    ((jumper--location-exists-p) 'already-exists)
    ((not (jumper--register-available-p)) 'no-space)
    (t
-    (let ((reg (+ ?0 jumper--next-index)))
+    (let ((reg (jumper--first-free-register)))
       (point-to-register reg)
       (aset jumper--registers jumper--next-index reg)
       (setq jumper--next-index (1+ jumper--next-index))
@@ -190,7 +205,13 @@ Returns: \\='no-locations if no locations stored,
    ;; Toggle behavior when target-idx is nil and only 1 location
    ((and (null target-idx) (= jumper--next-index 1))
     (if (jumper--location-exists-p)
-        'already-there
+        ;; Already at the only location: toggle back to where we came from
+        ;; when a last-location is recorded, otherwise report no movement.
+        (if (get-register jumper--last-location-register)
+            (progn
+              (jump-to-register jumper--last-location-register)
+              'jumped-back)
+          'already-there)
       (let ((reg (aref jumper--registers 0)))
         (point-to-register jumper--last-location-register)
         (jump-to-register reg)
@@ -217,6 +238,7 @@ Returns: \\='no-locations if no locations stored,
    ((= jumper--next-index 1)
     (pcase (jumper--do-jump-to-location nil)
       ('already-there (message "You're already at the stored location"))
+      ('jumped-back (message "Jumped back to previous location"))
       ('jumped (message "Jumped to location"))))
    ;; Multiple locations - prompt user
    (t
@@ -233,13 +255,16 @@ Returns: \\='no-locations if no locations stored,
       (message "Jumped to location")))))
 
 (defun jumper--reorder-registers (removed-idx)
-  "Reorder registers after removing the one at REMOVED-IDX."
-  (when (< removed-idx (1- jumper--next-index))
-	;; Shift all higher registers down
-	(cl-loop for i from removed-idx below (1- jumper--next-index)
-			 do (let ((next-reg (aref jumper--registers (1+ i))))
-				  (aset jumper--registers i next-reg))))
-  (setq jumper--next-index (1- jumper--next-index)))
+  "Reorder registers after removing the one at REMOVED-IDX.
+Shift the higher registers down and clear the freed register so its marker
+no longer pins its buffer."
+  (let ((freed (aref jumper--registers removed-idx)))
+    (when (< removed-idx (1- jumper--next-index))
+      ;; Shift all higher registers down
+      (cl-loop for i from removed-idx below (1- jumper--next-index)
+               do (aset jumper--registers i (aref jumper--registers (1+ i)))))
+    (setq jumper--next-index (1- jumper--next-index))
+    (when freed (set-register freed nil))))
 
 (defun jumper--do-remove-location (index)
   "Remove location at INDEX.
