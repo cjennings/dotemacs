@@ -411,6 +411,101 @@ Uses feh on X11, swww on Wayland."
         (message "Wallpaper set: %s (%s)"
                  (file-name-nondirectory file) (car cmd))))))
 
+;;; ------------------------- Dirvish Hyprland Popup ----------------------------
+
+;; The Hyprland Super+F popup opens an emacsclient frame named "dirvish" (window
+;; rules float/size/center it by that name) and runs `cj/dirvish-popup', rooted
+;; at home.  `q' in that frame runs `cj/dirvish-popup-quit', which quits Dirvish
+;; and deletes the popup frame so a stray launch never orphans it; `q' in any
+;; other frame quits Dirvish normally.  The launcher script calls this command
+;; instead of plain `dirvish'.  This mirrors the Super+Shift+N quick-capture
+;; popup (see `cj/quick-capture' in org-capture-config.el).
+
+(defun cj/--dirvish-popup-frame ()
+  "Return a live frame named \"dirvish\" (the Hyprland popup), or nil."
+  (seq-find (lambda (f)
+              (and (frame-live-p f)
+                   (equal (frame-parameter f 'name) "dirvish")))
+            (frame-list)))
+
+(defun cj/dirvish-popup ()
+  "Open Dirvish in the Hyprland popup frame (frame \"dirvish\"), rooted at home.
+The launcher script calls this through =emacsclient -c -e=.  `q'
+(`cj/dirvish-popup-quit') closes the frame.
+
+Selects the \"dirvish\" frame by name before opening rather than trusting the
+ambient selected frame: the launching =emacsclient -c -e= runs before Hyprland
+settles focus on the new float, so =(selected-frame)= is still the daemon's main
+frame and Dirvish would otherwise open there."
+  (interactive)
+  (let ((frame (cj/--dirvish-popup-frame)))
+    (when frame (select-frame-set-input-focus frame))
+    (dirvish (expand-file-name "~/"))))
+
+(defun cj/dirvish-popup-focus-existing ()
+  "Raise and focus the live dirvish popup frame, returning t; nil if none.
+The launcher script calls this before creating a frame, so a second Super+F
+re-uses the open popup instead of spawning a second one (the popup is a
+single-instance, transient launcher -- use =C-x d= for several independent
+Dirvish sessions)."
+  (let ((popup (cj/--dirvish-popup-frame)))
+    (when popup
+      (select-frame-set-input-focus popup)
+      t)))
+
+(defun cj/dirvish-popup-quit ()
+  "Quit Dirvish.  In the Hyprland popup frame (\"dirvish\"), delete the frame too.
+Bound to `q' in `dirvish-mode-map'.  A normal Dirvish session (any other frame)
+quits as usual; only the popup frame is torn down, so the Super+F launch never
+leaves an empty frame behind."
+  (interactive)
+  (let ((popup (cj/--dirvish-popup-frame)))
+    (if (and popup (eq popup (selected-frame)))
+        (progn
+          (ignore-errors (dirvish-quit))
+          (when (frame-live-p popup) (delete-frame popup)))
+      (dirvish-quit))))
+
+(defun cj/--dirvish-popup-selected-p ()
+  "Return non-nil when the selected frame is the dirvish popup frame."
+  (let ((popup (cj/--dirvish-popup-frame)))
+    (and popup (eq popup (selected-frame)))))
+
+(defun cj/dirvish-popup-find-file ()
+  "Open the file at point.
+In the Hyprland popup frame the popup is a context-free launcher: files open
+through the OS handler (`cj/xdg-open' -> xdg-open), so nothing lands inside the
+throwaway frame and the launch is independent of the running Emacs session (a
+text/code file opens its own new emacsclient frame, not your working session --
+use =C-x d= when you want a file in the session you're in).  Directories are
+entered normally so you can keep browsing.  The popup then dismisses itself on
+focus loss.  Outside the popup this is exactly `dired-find-file'."
+  (interactive)
+  (if (cj/--dirvish-popup-selected-p)
+      (let ((file (dired-get-file-for-visit)))
+        (if (file-directory-p file)
+            (dired-find-file)
+          (cj/xdg-open file)))
+    (dired-find-file)))
+
+(defun cj/--dirvish-popup-focus-watch (&rest _)
+  "Dismiss the dirvish popup frame once it loses focus.
+Armed only after the popup has actually held focus (a per-frame flag), so the
+frame is never torn down during its own creation, before Hyprland settles focus
+on the new float.  Installed on `after-focus-change-function'; a no-op whenever
+no popup frame is live."
+  (let ((popup (cj/--dirvish-popup-frame)))
+    (when popup
+      (if (frame-focus-state popup)
+          (set-frame-parameter popup 'cj-dirvish-popup-had-focus t)
+        (when (frame-parameter popup 'cj-dirvish-popup-had-focus)
+          (delete-frame popup))))))
+
+;; Install idempotently: remove any prior copy before adding, so re-loading the
+;; module updates the watch rather than stacking duplicate copies.
+(remove-function after-focus-change-function #'cj/--dirvish-popup-focus-watch)
+(add-function :after after-focus-change-function #'cj/--dirvish-popup-focus-watch)
+
 ;;; ---------------------------------- Dirvish ----------------------------------
 
 (use-package dirvish
@@ -515,7 +610,8 @@ Uses feh on X11, swww on Wayland."
    ("bg"      . cj/set-wallpaper)
    ("/"       . dirvish-narrow)
    ("<left>"  . dired-up-directory)
-   ("<right>" . dired-find-file)
+   ("RET"     . cj/dirvish-popup-find-file)   ; popup: launch file externally; else normal
+   ("<right>" . cj/dirvish-popup-find-file)
    ("C-,"     . dirvish-history-go-backward)
    ("C-."     . dirvish-history-go-forward)
    ("F"       . dirvish-file-info-menu)
@@ -537,6 +633,7 @@ Uses feh on X11, swww on Wayland."
    ("O"       . cj/open-file-with-command)  ; Prompts for command to run
    ("p"       . (lambda () (interactive) (cj/dired-copy-path-as-kill nil t)))
    ("P"       . cj/dirvish-print-file)
+   ("q"       . cj/dirvish-popup-quit)   ; quit; in the Hyprland popup frame, close it
    ("r"       . dirvish-rsync)
    ("S"       . cj/dirvish-drill-file)  ; Study: org-drill the .org file at point
    ("s"       . dirvish-quicksort)
