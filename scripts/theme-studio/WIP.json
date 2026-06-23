@@ -1495,7 +1495,8 @@
   "pkg:rainbow-delimiters:rainbow-delimiters-unmatched-face",
   "pkg:shr:shr-link",
   "pkg:shr:shr-selected-link",
-  "pkg:shr:shr-strike-through"
+  "pkg:shr:shr-strike-through",
+  "pkg:vertico:vertico-current"
  ],
  "packages": {
   "org-mode": {
@@ -7390,7 +7391,7 @@
   },
   "orderless": {
    "orderless-match-face-0": {
-    "fg": "#cbd0d6",
+    "fg": "#e0c266",
     "bg": null,
     "weight": "bold",
     "slant": "italic",
@@ -7398,7 +7399,7 @@
     "source": "user"
    },
    "orderless-match-face-1": {
-    "fg": "#c99990",
+    "fg": "#8ea85e",
     "bg": null,
     "weight": "bold",
     "slant": "italic",
@@ -7406,7 +7407,7 @@
     "source": "user"
    },
    "orderless-match-face-2": {
-    "fg": "#c5d4ae",
+    "fg": "#8255b5",
     "bg": null,
     "weight": "bold",
     "slant": "italic",
@@ -7414,7 +7415,7 @@
     "source": "user"
    },
    "orderless-match-face-3": {
-    "fg": "#bea9dc",
+    "fg": "#0096b0",
     "bg": null,
     "weight": "bold",
     "slant": "italic",
@@ -7894,10 +7895,12 @@
   },
   "vertico": {
    "vertico-current": {
-    "fg": null,
+    "fg": "#dab53d",
     "bg": null,
+    "weight": "bold",
+    "slant": "italic",
     "inherit": "highlight",
-    "source": "default"
+    "source": "user"
    },
    "vertico-group-separator": {
     "fg": null,
