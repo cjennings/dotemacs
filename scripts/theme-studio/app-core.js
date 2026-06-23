@@ -555,4 +555,166 @@ function composeHoverTitle(doc,base){
   return doc||base;
 }
 
-export { nameToHex, migrateLegacyFace, cssWeight, faceDecoration, boxCss, faceCss, composeHoverTitle, normalizePkgFace, buildPkgmap, packagesForExport, mergePackagesInto, effResolve, resolveSyntaxFg, resolveUiAttr, paletteOptionList, galleryModel, appViewKeysSorted, faceBoxNonDefaults, overflowNonDefault, clampHeight, HEIGHT_MIN, HEIGHT_MAX, stepViewIndex, spanNeighborHex, slugify, fgSetFor, floor, lMax, COVERED_FACES, columnsFromPalette, usedPaletteHexes, paletteUsages, regenColumn, rankByLightness, stepRepointPlan, sortColumns, sortColumnMembers, groundRoleOfEntry, groundColumnMembersFromPalette, clearPalettePlan, deletePaletteColumnPlan, areAllLocked, lockToggleLabel, toggleLockSet };
+// --- preview-locate registry (preview-locate spec, Phase 0) ------------------
+// Pure helpers that turn the assignment state into a map from every data-face
+// previewed element back to its owning app, effective rendered value, and the
+// source of that value. All state is passed in; these return data, never HTML.
+// The one stateful piece -- previewSpan, which reads the live globals and emits
+// escaped HTML -- lives in previews.js, not here.
+
+const UI_SECTION_LABEL='UI faces';
+
+// Owner-qualified registry key. owner is '@ui' for the UI surface or an app-key
+// for a package; the owner already disambiguates the surface, so (owner, face) is
+// the unique identity. The space separator is safe because Emacs face and app
+// keys never contain spaces, so the same face name under two owners can never
+// collapse to one key.
+function locateKey(owner,face){return owner+' '+face;}
+
+// Walk an inherit chain for ATTR from FACENAME, returning {value, from}:
+//   value -- the first truthy value up the chain, or null
+//   from  -- the face name the value was actually set on when it was reached by
+//            inheritance, or null when FACENAME carries it directly
+// getFace(name) returns the face object; nextName(name) gives the parent face name
+// (the face's own :inherit for a package, the UI_INHERIT entry for a ui face). A
+// seen-set guards against a cycle. Mirrors effResolve / resolveUiAttr's truthiness
+// so the resolved value matches what the preview actually renders.
+function resolveLocateAttr(faceName,getFace,nextName,attr){
+  const seen={};let name=faceName,origin=true;
+  while(name&&!seen[name]){
+    seen[name]=1;
+    const f=getFace(name);
+    if(f&&f[attr])return {value:f[attr],from:origin?null:name};
+    name=nextName(name);origin=false;
+  }
+  return {value:null,from:null};
+}
+
+// The non-default structural attributes worth naming in a locate title. Weight
+// 'normal'/slant 'normal'/height 1 are the defaults and stay out.
+function locateAttrs(f){
+  f=f||{};const out={};
+  if(f.weight&&f.weight!=='normal')out.weight=f.weight;
+  if(f.slant&&f.slant!=='normal')out.slant=f.slant;
+  if(f.underline)out.underline=true;
+  if(f.strike)out.strike=true;
+  if(f.box)out.box=true;
+  if(f.inverse)out.inverse=true;
+  if(f.extend)out.extend=true;
+  if(f.height&&f.height!==1)out.height=f.height;
+  if(f.inherit)out.inherit=f.inherit;
+  return out;
+}
+
+// Build one registry entry: effective fg/bg (matching the rendered pixels) plus a
+// per-attribute source note. fg floors to the default foreground (floorFg) when
+// nothing up the chain is set; bg has no floor (an unset bg draws no background),
+// so an unset, non-cleared bg simply has no value and no note. A 'cleared' face
+// notes the cleared state so the tooltip explains the rendered default.
+function locateEntry(surface,owner,face,section,f,resolve,floorFg){
+  f=f||{};
+  const rf=resolve('fg'),rb=resolve('bg');
+  let fgVal,fgSrc;
+  if(rf.value){fgVal=rf.value;fgSrc=rf.from?{kind:'inherited',from:rf.from}:{kind:'direct',from:null};}
+  else{fgVal=floorFg;fgSrc=(f.source==='cleared')?{kind:'cleared',from:null}:{kind:'default',from:null};}
+  let bgVal=null,bgSrc=null;
+  if(rb.value){bgVal=rb.value;bgSrc=rb.from?{kind:'inherited',from:rb.from}:{kind:'direct',from:null};}
+  else if(f.source==='cleared'){bgSrc={kind:'cleared',from:null};}
+  return {surface,owner,face,section,value:{fg:fgVal,bg:bgVal},attrs:locateAttrs(f),sources:{fg:fgSrc,bg:bgSrc}};
+}
+
+// The derived {surface, owner, face} -> value/attributes/source registry over the
+// two data-face surfaces: package faces (PKGMAP, keyed by app-key, inherit via the
+// face's own :inherit) and UI faces (UIMAP, keyed by '@ui', inherit via the
+// built-in UI_INHERIT chain). map carries the ground floors (map.p default fg).
+// Pure: every dependency is a parameter, no globals, no DOM.
+function buildLocateRegistry(apps,pkgmap,uimap,map){
+  const reg={},floorFg=(map&&map.p)||null;
+  for(const app in (pkgmap||{})){
+    const section=(apps&&apps[app]&&apps[app].label)||app,faces=pkgmap[app];
+    for(const face in faces){
+      reg[locateKey(app,face)]=locateEntry('package',app,face,section,faces[face],
+        attr=>resolveLocateAttr(face,n=>faces[n],n=>(faces[n]&&faces[n].inherit)||null,attr),floorFg);
+    }
+  }
+  for(const face in (uimap||{})){
+    reg[locateKey('@ui',face)]=locateEntry('ui','@ui',face,UI_SECTION_LABEL,uimap[face],
+      attr=>resolveLocateAttr(face,n=>uimap[n],n=>UI_INHERIT[n]||null,attr),floorFg);
+  }
+  return reg;
+}
+
+// Look up one owner-qualified face's meta. A face not in the registry resolves to
+// no owning app -- an {unassigned} marker the caller renders hover-only (never a
+// dead click), not a thrown error.
+function locateFaceMeta(owner,face,registry){
+  const e=registry&&registry[locateKey(owner,face)];
+  return e||{owner,face,unassigned:true};
+}
+
+// The owner-aware membership check the preview gate calls: the entry's attributes
+// when (owner, face) is a known face of that owner, null when it isn't (a bad
+// owner is rejected). A known face with no non-default attributes returns {} --
+// still truthy, so membership reads cleanly off the result.
+function previewFaceAttrs(owner,face,registry){
+  const e=registry&&registry[locateKey(owner,face)];
+  return e?e.attrs:null;
+}
+
+// Clickable predicate: an element is on-pane only when its owner is the pane being
+// viewed. Recomputed from the current view at render time (never stored in the
+// registry), since switching panes changes clickability but not ownership.
+function isLocateOnPane(owner,currentApp){return owner===currentApp;}
+
+// The human source note for one resolved attribute, or null when there's no note.
+function locateSourceNote(src,attr){
+  if(!src)return null;
+  if(src.kind==='direct')return 'direct';
+  if(src.kind==='inherited')return 'inherited from '+src.from;
+  if(src.kind==='cleared')return 'cleared, rendering as default';
+  if(src.kind==='default')return attr==='bg'?'default background':'default foreground';
+  return null;
+}
+
+// The non-default structural attributes as a flat label list for the title.
+function locateAttrsList(attrs){
+  attrs=attrs||{};const parts=[];
+  if(attrs.weight)parts.push(attrs.weight);
+  if(attrs.slant)parts.push(attrs.slant);
+  if(attrs.underline)parts.push('underline');
+  if(attrs.strike)parts.push('strike');
+  if(attrs.box)parts.push('box');
+  if(attrs.inverse)parts.push('inverse');
+  if(attrs.extend)parts.push('extend');
+  if(attrs.height)parts.push('height '+attrs.height);
+  if(attrs.inherit)parts.push('inherit '+attrs.inherit);
+  return parts;
+}
+
+// The comma-separated title string from a meta: section, element, effective value
+// (fg always; bg when set), per-attribute source note, then non-default attributes.
+// An unassigned meta reads "<face>, unassigned" (no section -- it has no owner).
+function formatLocateTitle(meta){
+  if(!meta||meta.unassigned)return (meta&&meta.face?meta.face+', ':'')+'unassigned';
+  const parts=[meta.section,meta.face],s=meta.sources||{};
+  const fgNote=locateSourceNote(s.fg,'fg');
+  parts.push('fg '+meta.value.fg+(fgNote?' ('+fgNote+')':''));
+  if(meta.value.bg){
+    const bgNote=locateSourceNote(s.bg,'bg');
+    parts.push('bg '+meta.value.bg+(bgNote?' ('+bgNote+')':''));
+  }else if(s.bg&&s.bg.kind==='cleared'){
+    parts.push('bg cleared, rendering as default');
+  }
+  return parts.concat(locateAttrsList(meta.attrs)).join(', ');
+}
+
+// The immediate-wayfinding info line shown in the preview-label area on hover:
+// "section > face — value" (effective fg, plus bg when set). An unassigned meta
+// reads "<face> — unassigned". Terser than the title; the title is the full record.
+function locateInfoLine(meta){
+  if(!meta||meta.unassigned)return (meta&&meta.face?meta.face:'')+' — unassigned';
+  const val=meta.value.fg+(meta.value.bg?' / '+meta.value.bg:'');
+  return meta.section+' > '+meta.face+' — '+val;
+}
+
+export { nameToHex, migrateLegacyFace, cssWeight, faceDecoration, boxCss, faceCss, composeHoverTitle, normalizePkgFace, buildPkgmap, packagesForExport, mergePackagesInto, effResolve, resolveSyntaxFg, resolveUiAttr, paletteOptionList, galleryModel, appViewKeysSorted, faceBoxNonDefaults, overflowNonDefault, clampHeight, HEIGHT_MIN, HEIGHT_MAX, stepViewIndex, spanNeighborHex, slugify, fgSetFor, floor, lMax, COVERED_FACES, columnsFromPalette, usedPaletteHexes, paletteUsages, regenColumn, rankByLightness, stepRepointPlan, sortColumns, sortColumnMembers, groundRoleOfEntry, groundColumnMembersFromPalette, clearPalettePlan, deletePaletteColumnPlan, areAllLocked, lockToggleLabel, toggleLockSet, buildLocateRegistry, locateFaceMeta, formatLocateTitle, previewFaceAttrs, isLocateOnPane, locateInfoLine };

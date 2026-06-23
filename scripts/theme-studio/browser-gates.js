@@ -40,10 +40,18 @@ function withSavedState(keys, body){
 // present. A is the gate's assertion collector; NAME labels the failure note.
 function assertPreviewFaces(A, html, faces, minCount, name, required){
   const box=document.createElement('div');box.innerHTML=html;
-  const valid=new Set((faces||[]).map(r=>r[0]));
-  const used=[...box.querySelectorAll('[data-face]')].map(e=>e.dataset.face);
+  const els=[...box.querySelectorAll('[data-face]')];
+  const used=els.map(e=>e.dataset.face);
   A(used.length>=minCount,'preview exercises many faces ('+used.length+')');
-  const bad=used.filter(f=>!valid.has(f));
+  // Owner-aware validity: an element's owner is its data-owner-app, defaulting to
+  // this preview's app (the one whose face rows are in FACES) when the attribute is
+  // absent. A package owner's valid faces come from APPS[owner].faces; the @ui
+  // owner's from UIMAP keys. An unknown owner has no face set, so its elements are
+  // flagged -- an intentional off-pane span (real face of a real owner) passes,
+  // while a bad owner fails.
+  const defaultValid=new Set((faces||[]).map(r=>r[0]));
+  const facesOf=owner=>owner==='@ui'?new Set(Object.keys(UIMAP)):(APPS[owner]?new Set(APPS[owner].faces.map(r=>r[0])):null);
+  const bad=els.filter(e=>{const o=e.dataset.ownerApp,valid=o?facesOf(o):defaultValid;return !valid||!valid.has(e.dataset.face);}).map(e=>e.dataset.face);
   A(bad.length===0,'every data-face is a real '+name+' face; bad='+bad.join(','));
   for(const f of required) A(used.includes(f),'preview includes '+f);
 }
@@ -1114,3 +1122,136 @@ if(location.hash==='#savetest'){(async()=>{let ok=true;const notes=[];const A=(c
  finally{window.showSaveFilePicker=orig;}
  document.title='SAVETEST '+(ok?'PASS':'FAIL');
  const d=document.createElement('div');d.id='savetest';d.textContent='SAVETEST '+(ok?'PASS':'FAIL')+(notes.length?' fails='+notes.join(','):'');document.body.appendChild(d);})();}
+// Preview-locate registry gate (open with #locatetest): the cached LOCATE_REG is
+// built over both data-face surfaces, keyed owner-qualified, and rebuilt (no stale
+// entry) when an assignment changes. Grows across the locate phases.
+if(location.hash==='#locatetest')gate('locatetest',A=>withSavedState(['PKGMAP','UIMAP','MAP'],()=>{
+ const app=curApp(),pface=APPS[app].faces[0][0],uface=UI_FACES[0][0];
+ rebuildLocateRegistry();
+ const pkg=locateFaceMeta(app,pface,LOCATE_REG);
+ A(pkg&&pkg.surface==='package'&&pkg.owner===app,'package face is a package-owned registry entry: '+(pkg&&pkg.owner));
+ const ui=locateFaceMeta('@ui',uface,LOCATE_REG);
+ A(ui&&ui.surface==='ui'&&ui.owner==='@ui','ui face is a @ui-owned registry entry: '+(ui&&ui.owner));
+ // owner-qualified: a package face name under the @ui owner must not resolve to
+ // the package entry (and vice versa) — the key carries the owner.
+ A(locateFaceMeta('@ui',pface,LOCATE_REG).unassigned,'a package face under the @ui owner is unassigned, not collided');
+ // rebuild-after-edit: a changed fg shows up only after the registry rebuilds.
+ PKGMAP[app][pface].fg='#abcdef';PKGMAP[app][pface].source='user';
+ rebuildLocateRegistry();
+ A(locateFaceMeta(app,pface,LOCATE_REG).value.fg==='#abcdef','registry rebuild reflects the edited fg, no stale value');
+ // Phase 2a: os delegates to previewSpan, which emits the locate attributes and
+ // classes an on-pane (current-app) span.
+ const box=document.createElement('div');box.innerHTML=os(app,pface,'x');
+ const sp=box.querySelector('[data-face]');
+ A(sp&&sp.dataset.ownerApp===app,'os span carries data-owner-app = the owning app: '+(sp&&sp.dataset.ownerApp));
+ A(sp&&sp.dataset.face===pface,'os span keeps data-face');
+ A(sp&&sp.classList.contains('locate-onpane'),'an on-pane (current-app) span gets the locate-onpane class');
+ const other=Object.keys(APPS).find(k=>k!==app);
+ if(other){const oface=APPS[other].faces[0][0],b2=document.createElement('div');b2.innerHTML=previewSpan(other,oface,'y');const s2=b2.querySelector('[data-face]');
+  A(s2&&s2.dataset.ownerApp===other&&!s2.classList.contains('locate-onpane'),'an off-pane owner span carries its owner and no locate-onpane class');}
+ // Phase 2c: previewSpan renders a @ui face off a package preview in its real
+ // color (the cross-surface path), and marks it off-pane while a package is viewed.
+ const ub=document.createElement('div');ub.innerHTML=previewSpan('@ui',uface,'z');
+ const us=ub.querySelector('[data-face]');
+ const uiFg=effFg(resolveUiAttr(uface,'fg',UIMAP));
+ A(us&&us.dataset.ownerApp==='@ui'&&us.dataset.face===uface,'cross-surface @ui span carries owner @ui + data-face');
+ A(us&&us.getAttribute('style').includes('color:'+uiFg),'cross-surface @ui span renders the ui face effective fg: '+(us&&us.getAttribute('style')));
+ A(us&&!us.classList.contains('locate-onpane'),'a @ui span off a package preview is off-pane (no locate-onpane)');
+ // Phase 2b: the owner-aware assertPreviewFaces accepts intentional off-pane and
+ // @ui spans but rejects a bad owner.
+ {const other2=Object.keys(APPS).find(k=>k!==app);
+  const okHtml=os(app,pface,'a')+(other2?previewSpan(other2,APPS[other2].faces[0][0],'b'):'')+previewSpan('@ui',uface,'c');
+  const probe=(h)=>{let fails=0;assertPreviewFaces((c)=>{if(!c)fails++;},h,APPS[app].faces,1,app,[]);return fails;};
+  A(probe(okHtml)===0,'owner-aware validator accepts intentional off-pane + @ui spans');
+  A(probe('<span data-owner-app="nope" data-face="'+pface+'">x</span>')>0,'owner-aware validator rejects a bad owner');}
+}));
+// Gate-only showcase fixture (open with #showcasetest): a synthetic host
+// package-preview context renders one package-owned off-pane span and one @ui
+// (minibuffer-prompt) off-pane span. Each appears in its owner's real color, is
+// hover-only (no locate-onpane class), and passes the owner-aware validator. No
+// user-facing preview changes -- the first real cross-owner preview (org-agenda or
+// the completion preview) becomes the organic showcase later.
+if(location.hash==='#showcasetest')gate('showcasetest',A=>withSavedState(['PKGMAP','UIMAP','MAP'],()=>{
+ const host=curApp(),other=Object.keys(APPS).find(k=>k!==host);
+ A(!!other,'a second package app exists to own an off-pane span');
+ A(!!UIMAP['minibuffer-prompt'],'minibuffer-prompt is a real UI face');
+ rebuildLocateRegistry();
+ const oface=other&&APPS[other].faces[0][0];
+ const fixture=os(host,APPS[host].faces[0][0],'host')
+   +(other?previewSpan(other,oface,'pkg-offpane'):'')
+   +previewSpan('@ui','minibuffer-prompt','prompt');
+ const box=document.createElement('div');box.innerHTML=fixture;
+ const pkgSpan=other&&box.querySelector('[data-owner-app="'+other+'"]'),uiSpan=box.querySelector('[data-owner-app="@ui"]');
+ if(other){const want=(ofs(other,oface).match(/color:([^;]+)/)||[])[1];
+  A(pkgSpan&&want&&pkgSpan.getAttribute('style').includes('color:'+want),'package-owned off-pane span renders its owner color: '+want);}
+ const uiWant=effFg(resolveUiAttr('minibuffer-prompt','fg',UIMAP));
+ A(uiSpan&&uiSpan.getAttribute('style').includes('color:'+uiWant),'@ui off-pane span renders the minibuffer-prompt color: '+uiWant);
+ A(pkgSpan&&!pkgSpan.classList.contains('locate-onpane'),'package off-pane span is hover-only (no locate-onpane)');
+ A(uiSpan&&!uiSpan.classList.contains('locate-onpane'),'@ui off-pane span is hover-only (no locate-onpane)');
+ let fails=0;assertPreviewFaces((c)=>{if(!c)fails++;},fixture,APPS[host].faces,1,host,[]);
+ A(fails===0,'the owner-aware validator passes the showcase fixture');
+}));
+// Hover gate (open with #locatehovertest): every previewSpan element carries the
+// full locate title (effective value + source note), and hovering an element
+// updates the preview-label info line to "section > face — value", restored on
+// leave. The title is the deterministic fallback; the info line is the immediate
+// surface.
+if(location.hash==='#locatehovertest')gate('locatehovertest',A=>withSavedState(['PKGMAP','UIMAP','MAP'],()=>{
+ const app=curApp(),face=APPS[app].faces[0][0];
+ PKGMAP[app][face]={fg:'#123456',bg:null,inherit:null,source:'user'};
+ rebuildLocateRegistry();
+ const box=document.createElement('div');box.innerHTML=os(app,face,'x');
+ const sp=box.querySelector('[data-face]');
+ A(sp&&sp.getAttribute('title')===formatLocateTitle(locateFaceMeta(app,face,LOCATE_REG)),'span title equals formatLocateTitle: '+(sp&&sp.getAttribute('title')));
+ A(sp&&/fg #123456 \(direct\)/.test(sp.getAttribute('title')),'direct-fg title shows the effective fg + direct note');
+ PKGMAP[app][face]={fg:null,bg:null,inherit:null,source:'cleared'};
+ rebuildLocateRegistry();
+ const cb=document.createElement('div');cb.innerHTML=os(app,face,'x');
+ A(/cleared, rendering as default/.test(cb.querySelector('[data-face]').getAttribute('title')),'cleared face title carries the cleared-rendering note');
+ // info line on hover
+ PKGMAP[app][face]={fg:'#abcdef',bg:null,inherit:null,source:'user'};
+ buildPkgPreview();
+ const p=document.getElementById('pkgpreview'),lbl=document.getElementById('pkgprevlabel'),base=lbl.textContent;
+ rebuildLocateRegistry();
+ p.innerHTML=os(app,face,'hover me');
+ p.querySelector('[data-owner-app]').dispatchEvent(new MouseEvent('mouseover',{bubbles:true}));
+ A(lbl.textContent===locateInfoLine(locateFaceMeta(app,face,LOCATE_REG)),'hover updates the info line to section > face — value: '+lbl.textContent);
+ A(/ > .* — /.test(lbl.textContent),'info line uses the section > face — value shape');
+ p.dispatchEvent(new MouseEvent('mouseleave'));
+ A(lbl.textContent===base,'leaving the preview restores the base label: '+lbl.textContent);
+}));
+// Click + cursor gate (open with #locateclicktest): an on-pane element carries the
+// locate-onpane class (pointer cursor) and clicking flashes its assignment row via
+// the unified locateClick dispatcher; an off-pane element has no class (default
+// cursor) and clicking flashes nothing. The UI mock's bare spans still flash their
+// row through the same dispatcher (Phase 5 unification).
+if(location.hash==='#locateclicktest')gate('locateclicktest',A=>withSavedState(['PKGMAP','UIMAP','MAP','LOCKED'],()=>{
+ LOCKED.clear();
+ const app=curApp(),face=APPS[app].faces[0][0];
+ buildPkgTable();buildPkgPreview();rebuildLocateRegistry();
+ const p=document.getElementById('pkgpreview');
+ // on-pane: class present, click flashes the assignment row
+ p.innerHTML=os(app,face,'click me');
+ const onSpan=p.querySelector('[data-owner-app]');
+ A(onSpan&&onSpan.classList.contains('locate-onpane'),'on-pane span carries the locate-onpane class (pointer cursor)');
+ const prow=()=>document.querySelector('#pkgbody tr[data-face="'+face+'"]');
+ if(prow())prow().classList.remove('flash');
+ onSpan.dispatchEvent(new MouseEvent('click',{bubbles:true}));
+ A(prow()&&prow().classList.contains('flash'),'clicking an on-pane span flashes its assignment row');
+ // off-pane: no class, click flashes nothing
+ const other=Object.keys(APPS).find(k=>k!==app);
+ if(other){const oface=APPS[other].faces[0][0];
+  p.innerHTML=previewSpan(other,oface,'off');
+  const offSpan=p.querySelector('[data-owner-app]');
+  A(offSpan&&!offSpan.classList.contains('locate-onpane'),'off-pane span has no locate-onpane class (default cursor)');
+  [...document.querySelectorAll('#pkgbody tr')].forEach(tr=>tr.classList.remove('flash'));
+  offSpan.dispatchEvent(new MouseEvent('click',{bubbles:true}));
+  A(document.querySelectorAll('#pkgbody tr.flash').length===0,'clicking an off-pane span leaves all rows unflashed');}
+ // Phase 5: the UI mock's bare data-face spans still flash their row via locateClick
+ buildUITable();buildMockFrame();
+ const mface=UI_FACES[0][0],mspan=document.querySelector('#mockframe [data-face="'+mface+'"]');
+ if(mspan){const urow=()=>document.querySelector('#uibody tr[data-face="'+mface+'"]');
+  if(urow())urow().classList.remove('flash');
+  mspan.dispatchEvent(new MouseEvent('click',{bubbles:true}));
+  A(urow()&&urow().classList.contains('flash'),'a UI mock span still flashes its row through the unified dispatcher');}
+}));

@@ -3,7 +3,27 @@
 // they reference shared globals (PKGMAP, MAP, faceCss, effFg, ...) and are
 // inlined into the page's single script element via the PREVIEWS_J token in app.js.
 function ofs(app,face){const f=PKGMAP[app][face]||{},fg=effFg(pkgEffFg(app,face)),bg=pkgEffBg(app,face);return faceCss(f,fg,bg,{fontSize:(f.height||1),boxBg:bg||MAP['bg']});}
-function os(app,face,txt){return `<span data-face="${face}" style="${ofs(app,face)}">${txt}</span>`;}
+// The CSS for a UI-owned face rendered off any preview surface: effective fg
+// (floored to the default fg) and bg, following the built-in UI inherit chain so
+// the rendered color matches what the registry reports. The @ui counterpart to ofs.
+function ulocateCss(face){const o=UIMAP[face]||{},fg=effFg(resolveUiAttr(face,'fg',UIMAP)),bg=resolveUiAttr(face,'bg',UIMAP)||null;return faceCss(o,fg,bg,{boxBg:bg||MAP['bg']});}
+// previewSpan -- the one stateful locate adapter (preview-locate spec). Reads the
+// live globals (PKGMAP / UIMAP / MAP), dispatches by the owner's surface to the
+// package (ofs / PKGMAP) or @ui (UIMAP) style path, and emits the shared locate
+// attributes: data-owner-app (the internal owner key), data-face, and the
+// locate-onpane class when the owner is the pane currently viewed. TEXT is trusted
+// preview HTML -- callers pre-escape entities, matching the old os() contract, so
+// previewSpan does not re-escape it (that would double-escape &lt; etc.). os
+// delegates here for package owners; an @ui or cross-package owner makes an
+// off-pane, hover-only span.
+function attresc(s){return esc(String(s)).replace(/"/g,'&quot;');}
+function previewSpan(owner,face,text){
+  const style=owner==='@ui'?ulocateCss(face):ofs(owner,face);
+  const cls=isLocateOnPane(owner,curApp())?' class="locate-onpane"':'';
+  const title=attresc(formatLocateTitle(locateFaceMeta(owner,face,LOCATE_REG)));
+  return `<span data-owner-app="${owner}" data-face="${face}"${cls} title="${title}" style="${style}">${text}</span>`;
+}
+function os(app,face,txt){return previewSpan(app,face,txt);}
 // Shared wrapper for the line-based package previews: a monospace pre block.
 // Each renderer builds its own L array of os(...) lines and returns previewLines(L).
 function previewLines(L){return `<div style="padding:12px 16px;font:12pt/1.7 monospace;white-space:pre">${L.join('\n')}</div>`;}

@@ -20,6 +20,16 @@ const DEFAULT_SYNTAX=JSON.parse(JSON.stringify(SYNTAX));
 function pname(n){return nameToHex(n,PALETTE);}
 function seedPkgmap(){return buildPkgmap(APPS,PALETTE);}
 let PKGMAP=seedPkgmap();
+// Preview-locate registry (preview-locate spec). One cached, module-level
+// registry rebuilt once per assignment / import / reset / view-switch batch — at
+// the top of the two preview renderers (buildPkgPreview, buildMockFrame), which
+// every such path funnels through before spans render. Never rebuilt per hover or
+// per span. locate-onpane is recomputed from the current view at render time
+// (isLocateOnPane), never stored here. Built lazily (not at declaration): the
+// inlined buildLocateRegistry / UI_INHERIT from app-core.js are spliced below
+// this point, so an init call here would hit the const's temporal dead zone.
+let LOCATE_REG={};
+function rebuildLocateRegistry(){LOCATE_REG=buildLocateRegistry(APPS,PKGMAP,UIMAP,MAP);return LOCATE_REG;}
 function esc(t){return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 // Pure color-math core (lin/rl/contrast/rating/hsv2rgb/rgb2hsv/hex2rgb/rgb2hex,
 // plus OKLab/OKLCH/APCA/deltaE), inlined verbatim from colormath.js.
@@ -558,6 +568,21 @@ function mkBoxControl(get,set,opts={}){
     get,set,
     Object.assign({styled:true,toState:(v,cur)=>({style:v,width:(cur&&cur.width)||1,color:(cur&&cur.color)||null})},opts));}
 function flashRow(tr){if(!tr)return;tr.scrollIntoView({block:'center',behavior:'smooth'});tr.classList.remove('flash');void tr.offsetWidth;tr.classList.add('flash');}
+// Unified preview-locate click dispatch (preview-locate spec, Phases 4-5). One
+// handler for every preview surface replaces the per-surface data-face branches:
+// find the clicked data-face element, resolve its owner (data-owner-app, or
+// DEFAULTOWNER for a bare span emitted by the generic / auto-dim / UI-mock
+// renderers that pre-date previewSpan), and flash its assignment row only when it
+// is on-pane. An owner-tagged off-pane / unassigned element is inert; a bare span
+// is a current-pane element by construction, so it stays clickable. No persistent
+// selection — flashRow is scroll + flash only. The data-k syntax-click path stays
+// separate (handled by each caller before delegating here).
+function locateClick(e,defaultOwner){
+  const u=e.target.closest('[data-face]');if(!u)return;
+  if(u.dataset.ownerApp&&!u.classList.contains('locate-onpane'))return;
+  const owner=u.dataset.ownerApp||defaultOwner;
+  if(owner==='@ui')flashUi(u.dataset.face);else flashPkg(u.dataset.face);
+}
 function flashEl(el){if(!el)return;el.scrollIntoView({block:'nearest',inline:'nearest',behavior:'smooth'});el.classList.remove('flashtok');void el.offsetWidth;el.classList.add('flashtok');}
 // Flash every matching element but scroll only the first into view, so a face
 // that maps to several preview spans still lands the viewport on the first.
@@ -573,6 +598,7 @@ function uiCss(o,fgv,bgv,opts={}){const fg=fgv===undefined?effFg(o.fg):fgv,bg=bg
 function syncMockHeight(){const t=document.getElementById('uitable'),m=document.getElementById('mockframe');if(!t||!m)return;const lb=m.previousElementSibling,lbh=lb?lb.getBoundingClientRect().height+10:30;m.style.height=Math.max(t.getBoundingClientRect().height-lbh,220)+'px';}
 function buildMockFrame(){
   const fr=document.getElementById('mockframe');if(!fr)return;
+  rebuildLocateRegistry();
   const bg=MAP['bg'],fg=MAP['p'];
   const ln=uf('line-number'),lnc=uf('line-number-current-line'),hl=uf('hl-line'),hil=uf('highlight'),reg=uf('region'),isr=uf('isearch'),isf=uf('isearch-fail'),laz=uf('lazy-highlight'),par=uf('show-paren-match'),parx=uf('show-paren-mismatch'),cur=uf('cursor'),ml=uf('mode-line'),mli=uf('mode-line-inactive'),mlh=uf('mode-line-highlight'),mb=uf('minibuffer-prompt'),frng=uf('fringe'),vb=uf('vertical-border'),lnk=uf('link'),err=uf('error'),wrn=uf('warning'),suc=uf('success');
   const lines=[
@@ -641,7 +667,7 @@ function buildMockFrame(){
   html+=`<div class="echo" style="color:${fg}"><span data-face="minibuffer-prompt" style="${uiCss(mb,mb.fg||fg,mb.bg||null)}">I-search:</span> count   <span data-face="isearch-fail" style="${uiCss(isf,isf.fg||fg,isf.bg||'transparent')}">zzz [no match]</span></div>`;
   html+=`<div class="echo"><span data-face="link" style="${uiCss(lnk,lnk.fg||fg,lnk.bg||null)}">https://gnu.org</span>   <span data-face="error" style="${uiCss(err,err.fg||fg,err.bg||null)}">error</span>   <span data-face="warning" style="${uiCss(wrn,wrn.fg||fg,wrn.bg||null)}">warning</span>   <span data-face="success" style="${uiCss(suc,suc.fg||fg,suc.bg||null)}">ok</span></div>`;
   fr.innerHTML=html;fr.style.background=bg;fr.style.color=fg;
-  fr.onclick=(e)=>{const u=e.target.closest('[data-face]');if(u){flashUi(u.dataset.face);return;}const k=e.target.closest('[data-k]');if(k)flashAssign(k.dataset.k);};
+  fr.onclick=(e)=>{if(e.target.closest('[data-face]')){locateClick(e,'@ui');return;}const k=e.target.closest('[data-k]');if(k)flashAssign(k.dataset.k);};
 }
 // All three tiers share one dropdown — the swatch div from mkColorDropdown. The
 // native <select> rendered swatch colors unreliably on Linux Chrome, so it is
@@ -743,11 +769,18 @@ const PACKAGE_PREVIEWS={
 };
 function buildPkgPreview(){
   const app=curApp(),p=document.getElementById('pkgpreview');if(!p)return;
+  rebuildLocateRegistry();
   const renderer=PACKAGE_PREVIEWS[APPS[app].preview];
   p.innerHTML=renderer?renderer():genericPreview(app);
   p.style.background=MAP['bg'];
-  p.onclick=(e)=>{const u=e.target.closest('[data-face]');if(u)flashPkg(u.dataset.face);};
-  const lbl=document.getElementById('pkgprevlabel');if(lbl)lbl.textContent=renderer?(APPS[app].label+' preview'):'preview (generic — face names in their own colors)';
+  p.onclick=(e)=>locateClick(e,app);
+  const lbl=document.getElementById('pkgprevlabel'),baseLabel=renderer?(APPS[app].label+' preview'):'preview (generic — face names in their own colors)';
+  if(lbl)lbl.textContent=baseLabel;
+  // Immediate-wayfinding info line: hovering an element shows "section > face —
+  // value" in the label area (the element's title is the deterministic fallback);
+  // leaving the preview restores the base label.
+  p.onmouseover=(e)=>{const u=e.target.closest('[data-owner-app]');if(!u||!lbl)return;lbl.textContent=locateInfoLine(locateFaceMeta(u.dataset.ownerApp,u.dataset.face,LOCATE_REG));};
+  p.onmouseleave=()=>{if(lbl)lbl.textContent=baseLabel;};
 }
 function resetApp(){const app=curApp();for(const [face,,d] of APPS[app].faces)if(!LOCKED.has('pkg:'+app+':'+face))PKGMAP[app][face]=seedFace(d);pkgChanged();notify('reset editable '+app+' faces to package defaults',false);}
 function syncPkgHeight(){const t=document.getElementById('pkgtable'),m=document.getElementById('pkgpreview');if(!t||!m)return;const lb=m.previousElementSibling,lbh=lb?lb.getBoundingClientRect().height+10:30;m.style.height=Math.max(t.getBoundingClientRect().height-lbh,220)+'px';}

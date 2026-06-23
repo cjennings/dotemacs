@@ -180,6 +180,9 @@
  .mock .fr{width:14px;flex:0 0 auto;border-right:1px solid #ffffff14} .mock .num{width:36px;flex:0 0 auto;text-align:right;padding-right:10px}
  .mock .cd{flex:1;padding-left:8px} .mock .bar,.mock .echo{padding:4px 10px;white-space:pre}
  #codepre [data-k],.mock [data-k],.mock [data-face]{cursor:pointer}
+ /* preview-locate: an on-pane element clicks to its assignment row, so it shows a
+    pointer; off-pane / unassigned elements are hover-only and keep the default cursor. */
+ .locate-onpane{cursor:pointer}
  @keyframes flashcell{0%,55%{background:#e8bd3066}100%{background:transparent}}
  tr.flash td{animation:flashcell 1.1s ease-out}
  @keyframes flashtok{0%,55%{background:#e8bd30aa;color:#000}100%{background:transparent}}
