@@ -1,0 +1,211 @@
+#+TITLE: Theme Studio Minibuffer-Completion Preview — Spec
+#+AUTHOR: Craig Jennings
+#+DATE: 2026-06-23
+#+TODO: TODO | DONE SUPERSEDED CANCELLED
+
+* Metadata
+| Status   | Not ready — first Codex review found implementation-readiness blockers (2026-06-23) |
+|----------+-----------------------------------------------------------------------------|
+| Owner    | Craig Jennings                                                              |
+|----------+-----------------------------------------------------------------------------|
+| Reviewer | Craig Jennings                                                             |
+|----------+-----------------------------------------------------------------------------|
+| Related  | [[file:../../todo.org][todo.org: theme-studio minibuffer-completion preview]] |
+|----------+-----------------------------------------------------------------------------|
+
+* Summary
+
+Add a single "minibuffer completion" entry to theme-studio's application dropdown that previews the completing-read surface — the prompt you see at M-x, switch-buffer, or a Slack channel pick. The entry composes itself from the package inventory: a vanilla *Completions* baseline that's always present, plus Vertico, Orderless, and Marginalia sections that appear only when those packages are installed. A container radio and modifier checkboxes let the designer flip between the vanilla list and Vertico and watch what orderless and marginalia layer on. It exists because the completion surface spans several packages plus two built-in faces, and theme-studio currently previews each package alone, so a designer can never see their actual prompt assembled.
+
+* Problem / Context
+
+theme-studio previews one package at a time. But a real completion prompt is composited from several sources at once: a frontend draws the candidate list (Vertico, or Ivy, or the built-in *Completions* buffer), a matching layer highlights the typed input (orderless, or ivy's own match faces, or the built-in completions-common-part), an annotation layer adds detail (marginalia, or ivy-rich), and two built-in faces — minibuffer-prompt and highlight — sit underneath everything (vertico-current inherits highlight, which is why a selected row with no highlight background looks the way it does). Nothing in theme-studio shows these together, so the designer assigns vertico-current, orderless-match-face-0..3, and minibuffer-prompt in three different places and never sees the result until they export, deploy, and open a real prompt.
+
+It also has to work for other people, not just this machine. A user of theme-studio may have none of these packages (stock Emacs, vanilla *Completions*), or Vertico+Orderless+Marginalia, or Ivy+Counsel, or any combination. The preview has to adapt to what's installed rather than assume one stack.
+
+* Goals and Non-Goals
+
+** Goals
+- One application-dropdown entry that renders a faithful, composited completion prompt.
+- Inventory-driven composition: only installed providers contribute sections; their faces come from the inventory, so the lists stay accurate per machine.
+- A vanilla *Completions* baseline that is always present, including on a stock Emacs with no completion packages.
+- A container radio (vanilla / Vertico) plus modifier checkboxes (orderless, marginalia) that reflect the real coupling — modifiers apply under the default/Vertico family and are inert under Ivy.
+- The entry owns the completion-specific faces (completions-*, vertico-*, orderless-*, marginalia-*); the redundant generic vertico/orderless/marginalia entries are suppressed so each face is assignable in exactly one place.
+- Faithful rendering: match faces stack over the current row, and face inheritance is honored (vertico-current shows highlight's value, no background).
+
+** Non-Goals
+- No hover/click-to-locate in this spec — that's the separate preview-locate feature ([[file:theme-studio-preview-locate-spec.org][theme-studio-preview-locate-spec.org]]); this entry consumes it when it lands and uses a caption until then.
+- Not in-buffer completion (company / corfu) — a different surface (popup while typing in a buffer), out of scope.
+- Not non-completion minibuffer reads (read-string, y-or-n-p) — nothing to render.
+- Not Swiper's in-buffer search highlight in the candidate list — Swiper is a search surface, not a candidate frontend.
+- No change to theme-studio's face data model.
+
+** Scope tiers
+- v1: the dropdown entry; the inventory composer; the vanilla baseline plus Vertico / Orderless / Marginalia sections; the container radio + modifier checkboxes; dedup of the generic vertico/orderless/marginalia entries; a caption naming the off-entry built-ins; the renderer plus browser-gates coverage.
+- Out of scope: click/hover locate (preview-locate owns it); company/corfu; Swiper in the candidate list.
+- vNext (log to todo.org): the Ivy / Counsel provider section; a separate Swiper "Search" preview; consult / embark sections.
+
+* Design
+
+** For the user
+
+You pick "minibuffer completion (vertico / orderless)" from the application dropdown — the same selector where org-faces, mu4e, and elfeed live. The pane shows a mock prompt: a prompt label, a typed query, and a list of candidate rows with one row selected, all drawn in your real theme-in-design colors. Above it sit controls. A container radio chooses how the list is drawn — vanilla *Completions* or Vertico (and Ivy, once that section exists) — and starts on your actual frontend. Modifier checkboxes — Orderless, Marginalia — toggle the match coloring and the annotations so you can see exactly what each one adds on top of the bare list. Flip the radio to vanilla and you see the stock *Completions* buffer that every Emacs has; tick Orderless and the matched characters light up; tick Marginalia and annotations appear. A caption under the preview names the two faces that come from elsewhere — minibuffer-prompt and highlight, both in the UI Faces pane — so you know where to tune the prompt color and the selected-row background.
+
+What you see is gated by what you have: with only Vertico, Orderless, and Marginalia installed, the radio offers vanilla and Vertico and the two modifier checkboxes; there's no Ivy option. On a stock Emacs the radio has only vanilla and the modifiers are absent — you still get a real, themed *Completions* preview.
+
+** For the implementer
+
+The entry is assembled at generate time from the inventory, not hardcoded. A small provider table names each completion provider, the package key that detects it (the same key build-inventory.el writes into package-inventory.json), and the preview fragment it contributes. At build, the composer walks the table, keeps the providers whose package is present, unions their inventory faces with the always-present baseline faces (minibuffer-prompt plus the built-in completions-* set), and produces two things: the entry's assignable face list, and an "active providers" descriptor the renderer reads. The composer also adds the present provider package keys to the bespoke-suppression set so add_inventory_apps stops emitting their generic swatch entries — the faces then live only in the completion entry.
+
+The renderer, renderCompletionPreview in previews.js, reads the active-providers descriptor and the current control state and builds the sections with the existing os(app, face, text) / previewLines helpers, exactly like the other package previews. The baseline section is always emitted; provider sections are emitted when present and enabled. Match highlighting is drawn with whichever face the active container's family uses — orderless-match-face-N under default/Vertico, completions-common-part / completions-first-difference under bare vanilla — because the matching layer is frontend-specific, not universal.
+
+The controls are the one genuinely new piece: theme-studio previews are static today, rendered once by buildPkgPreview. This entry needs a small block of interactive state (selected container, enabled modifiers) that, on change, re-renders the preview through the same path. State is local to the entry and ephemeral — not persisted, not part of the exported theme.
+
+The shared built-in faces (minibuffer-prompt, highlight) stay owned by the UI Faces pane. The preview renders them for context by resolving their current value from shared state — the same cross-pane rendering the preview-locate spec already describes — and they are the hover-only, non-clickable elements once locate ships.
+
+* Alternatives Considered
+
+** A — Attach the preview to the existing "vertico" entry
+- Good, because it's the cheapest: one PREVIEW_KEYS line, no composer.
+- Bad, because the orderless match faces show in the preview but are assigned under a different entry, so the thing you judge and the controls for it are split; and the built-in prompt face is elsewhere again.
+- Neutral, because it still reuses the inventory and the os() helpers.
+
+** B — Wire the same renderer to both the vertico and orderless entries
+- Good, because each face stays in its package home and both entries show the shared preview.
+- Bad, because there's still no single owner for the surface, minibuffer-prompt is still off in the UI table, and a stock-Emacs user with neither package gets nothing.
+- Neutral, because it's a small change over A.
+
+** C — A synthetic, inventory-composed "minibuffer completion" entry (chosen)
+- Good, because it's one stop for the whole surface, matches theme-studio's existing cross-surface grouping (shr (HTML: nov/eww/mail), ansi-color (vterm/eshell/…), gnus (mu4e article view)), and degrades to a useful vanilla baseline for any install.
+- Bad, because it needs the inventory composer, the dedup, and the first interactive-control preview — more than a static entry.
+- Neutral, because the renderer is the same shape as every other package preview.
+
+** Controls: auto-show sections from the inventory, no toggles
+- Good, because it's simpler — render whatever's installed.
+- Bad, because it can't show "what does orderless add" — the explicit goal — and can't show the vanilla baseline to a Vertico user.
+- Neutral, because the composer work is identical; only the renderer's control surface differs.
+
+* Decisions [/]
+
+** DONE Entry shape — one synthetic "minibuffer completion" entry
+- Context: the surface spans vertico + orderless + marginalia (or ivy, or vanilla) plus built-in faces; theme-studio previews packages singly.
+- Decision: We will add one synthetic, inventory-composed entry rather than attaching the preview to an existing package entry.
+- Consequences: easier — a single design surface, matches house grouping, degrades to vanilla. Harder — needs the composer + dedup + the first interactive preview.
+
+** DONE Control model — container radio + modifier checkboxes, two families
+- Context: frontends take over completing-read globally and only one runs at a time; orderless/marginalia are additive but coupled to the default/Vertico machinery and inert under Ivy.
+- Decision: We will use a radio for the mutually-exclusive container (vanilla / Vertico / Ivy) and checkboxes for the additive modifiers (orderless, marginalia), with modifiers disabled when the container is Ivy.
+- Consequences: easier — truthful "see what each layer adds" interaction. Harder — introduces interactive control state into a previously-static preview.
+
+** DONE Discoverability — delegate to preview-locate, caption in the interim
+- Context: minibuffer-prompt and highlight shape the prompt but belong to the UI Faces pane, not this entry.
+- Decision: We will not build click/hover here; we depend on [[file:theme-studio-preview-locate-spec.org][preview-locate]] for hover/locate and ship a caption naming the off-entry built-ins until it lands.
+- Consequences: easier — no duplicated navigation logic, one mechanism for all previews. Harder — full discoverability waits on a second not-started feature; the caption is the stopgap.
+
+** TODO Entry label text
+- Owner / by-when: Craig / before build
+- Context: "completing-read" names the Elisp call and is jargon; "Completions" collides with the built-in *Completions* buffer and with in-buffer completion.
+- Decision: We will label it "minibuffer completion (<active frontends>)" — e.g. "minibuffer completion (vertico / orderless)".
+- Consequences: easier — names the visual surface, disambiguates from company/corfu, reads to non-Lisp users. Harder — the parenthetical is dynamic per inventory, so the label is composed, not a constant.
+
+** TODO Face dedup — suppress the generic vertico/orderless/marginalia entries
+- Owner / by-when: Craig / before build
+- Context: a synthetic entry pulls in vertico-current and the orderless/marginalia faces, but those packages still appear as their own generic inventory entries, so a face would be assignable in two places.
+- Decision: We will add the present provider package keys to the bespoke-suppression set so the generic entries disappear and each completion face is assignable only in the completion entry; the built-in minibuffer-prompt / highlight stay in the UI Faces pane.
+- Consequences: easier — one place per face, no divergent values. Harder — a user who looked for "vertico" in the dropdown now finds those faces under "minibuffer completion" instead; needs the caption/label to make that discoverable.
+
+** TODO Ivy / Counsel — v1 or vNext
+- Owner / by-when: Craig / before build
+- Context: shareability argues for Ivy support, but ivy isn't installed on the owner's machine, so an Ivy section can't be rendered or verified here.
+- Decision: We will defer the Ivy / Counsel section to vNext and build the composer provider-generic so adding it later is a provider-table row plus a render fragment, validated by someone running Ivy.
+- Consequences: easier — v1 ships only what's testable on the owner's machine. Harder — the shareable promise is partial until the Ivy fast-follow lands.
+
+** TODO Swiper — separate Search preview, not in the candidate list
+- Owner / by-when: Craig / before build
+- Context: Swiper's faces highlight the buffer during in-buffer search, not the minibuffer candidate list.
+- Decision: We will keep Swiper out of the completion candidate list and, if wanted, give it its own small "Search" preview (vNext).
+- Consequences: easier — the completion preview stays honest about the candidate-list surface. Harder — Swiper users get no preview until the separate Search one exists.
+
+* Review findings [0/6]
+
+** TODO Open decisions still block implementation readiness :blocking:
+The workflow's readiness gate requires the =* Decisions= cookie to be complete, but this spec still has four =TODO= decisions: entry label text, face dedup, Ivy/Counsel scope, and Swiper scope. These are not bookkeeping-only; they affect generated app labels, suppression behavior, v1 test cases, and user-visible scope. Resolve or explicitly defer each decision before implementation begins. In particular, the spec should not say v1 includes an Ivy-disabled control path if the Ivy decision is vNext, and it should not leave the dedup behavior as both a goal and an undecided item. (blocking)
+
+** TODO Locate-preview dependency is not explicit enough in the phase plan :blocking:
+Craig clarified this feature will wait for preview-locate's =previewSpan= API. The spec still says =renderCompletionPreview= uses the existing =os(app, face, text)= / =previewLines= helpers "exactly like the other package previews", and Phase 1 promises the entry can appear with a static render before the locate work. That is unsafe because this preview must render UI-owned faces (=minibuffer-prompt= and =highlight=) inside a package-style preview; the pre-locate =os= path only styles package faces through =PKGMAP=. Add an explicit prerequisite phase: preview-locate v1, including =previewSpan(owner, face, text)= and owner-aware gates, must land first. Then update the renderer contract to use =previewSpan= for both package-owned completion faces and =@ui= built-ins, not raw =os= for cross-owner spans. (blocking)
+
+** TODO Always-present baseline faces are not sourced from current data :blocking:
+The spec says the vanilla baseline always includes built-in =completions-*= faces, but current =package-inventory.json= does not contain those faces, and the generic inventory path in =app_inventory.add_inventory_apps= only emits installed-package inventory rows. =minibuffer-prompt= and =highlight= exist in =UI_FACES=, but =completions-common-part=, =completions-first-difference=, =completions-annotations=, and related built-ins are currently only available in the captured defaults snapshot, not as app rows. Define the baseline face source explicitly: name the exact built-in completion face list, say whether these rows are synthetic package-owned rows under the new completion app, and seed them via =DefaultFaces.seed(face)= even though they are absent from package inventory. Add a generation test for a stock inventory proving the completion app still contains the baseline faces and their defaults. (blocking)
+
+** TODO Generated app descriptor schema is underspecified :blocking:
+The spec says the composer emits an "active providers" descriptor that the renderer reads, but today's =APPS= entries only carry =label=, =preview=, and =faces=, and =buildPkgPreview= only passes the current app key through the global =APPS[app].preview= lookup. Without a concrete schema, the implementer has to invent where provider presence, default selected container, modifier availability, and dynamic label parts live. Define the generated app key and full =APPS[completion-key]= shape, for example =label=, =preview: "completion"=, =faces=, and a =completion= descriptor with =containers=, =modifiers=, =defaultContainer=, and =suppressedPackageKeys=. Also state how tests inspect it and how =renderCompletionPreview= obtains it. (blocking)
+
+** TODO V1 Ivy behavior is contradictory :blocking:
+Scope tiers defer Ivy/Counsel to vNext, but the v1 design and acceptance criteria still say the container radio includes Ivy "once that section exists", modifiers are disabled under Ivy, and browser-gates verify modifier controls are inert under the Ivy container. If Ivy is vNext, there should be no Ivy container in v1 and no v1 gate requiring an Ivy state. If the disabled-under-Ivy rule is meant to be contract-tested now, the spec needs a synthetic Ivy descriptor fixture even though no owner machine has Ivy installed. Choose one: remove Ivy from v1 controls/tests entirely while keeping the provider-table extension point, or add a fixture-only Ivy test contract. (blocking)
+
+** TODO Interactive control lifecycle and DOM contract are not precise enough :blocking:
+This is the first package preview with local controls, but the spec only says "a small block of interactive state" re-renders the preview. Current =buildPkgPreview= replaces =#pkgpreview.innerHTML= wholesale and =#pkgprevlabel= is a plain label, so the implementation must decide where controls live, whether they are rebuilt on every render, how state is keyed and reset when leaving/re-entering the entry, and how defaults are chosen from the generated descriptor. Specify the DOM contract and lifecycle: whether controls are inside =#pkgpreview= or the label/control bar, the state object shape, initialization from =defaultContainer= + installed modifiers, reset behavior on view switches/import/regenerate, and exact browser gates for toggling container/modifiers without losing assignment-table state. (blocking)
+
+* Implementation phases
+
+** Phase 1 — Inventory composer
+Add the provider table and the composer in app_inventory.py / generate.py: detect present providers from package-inventory.json, union their inventory faces with the always-present baseline (minibuffer-prompt + completions-*), emit the entry plus an active-providers descriptor, and add present provider keys to the bespoke-suppression set. Leaves the tree working: the entry appears in the dropdown with a static stacked render and the generic entries are gone. Covered by test_generate.py.
+
+** Phase 2 — renderCompletionPreview
+Add the renderer to previews.js and register it (PACKAGE_PREVIEWS + the entry's preview key). Render the baseline plus present provider sections statically from the descriptor, using os()/previewLines. Match coloring uses the family-correct face. browser-gates asserts every data-face is a real face and that section presence tracks the simulated inventory. Sample candidate data is generic (no real channel/contact names) since the tool is shared.
+
+** Phase 3 — Interactive controls
+Add the container radio + modifier checkboxes in app.js; thread their state into the render so a change re-renders through the existing preview path; gate modifier availability on the container family. Keep the state local and ephemeral.
+
+** Phase 4 — Caption + locate hook
+Add the caption naming minibuffer-prompt + highlight as living in UI Faces. When preview-locate ships, the off-entry built-ins become its hover-only elements with no further work here.
+
+* Acceptance criteria
+- [ ] "minibuffer completion (…)" appears in the application dropdown.
+- [ ] On the owner's inventory (vertico + orderless + marginalia, no ivy): preview shows the vanilla baseline plus a Vertico section with orderless match coloring and marginalia annotations; no Ivy option in the radio.
+- [ ] On a stock-Emacs inventory (no completion packages): preview shows only the vanilla *Completions* block; no modifier checkboxes.
+- [ ] The container radio switches vanilla / Vertico; the modifier checkboxes toggle orderless and marginalia; modifiers are disabled when the container is Ivy.
+- [ ] vertico-current renders with no background (inherits highlight), matching live Emacs.
+- [ ] The generic vertico / orderless / marginalia entries no longer appear separately; their faces are assignable under the completion entry.
+- [ ] Every data-face in the preview is a real face (browser-gates passes).
+- [ ] A caption names minibuffer-prompt and highlight as living in the UI Faces pane.
+
+* Readiness dimensions
+- Data model & ownership: faces are inventory-generated; the entry owns the completion-specific faces, the UI Faces pane owns the built-in minibuffer-prompt / highlight; the active-providers descriptor is generated at build; control state is ephemeral UI state, never persisted or exported.
+- Errors, empty states & failure: the empty state (no providers) is a first-class render — the vanilla baseline. Read-only preview, so no partial-failure or data-loss path. A provider in the table but absent from the inventory is simply skipped.
+- Security & privacy: N/A — no credentials. One concrete rule: the shipped sample candidate data must be generic (no real Slack channels or contact names), since the tool is shared. The /tmp spike used realistic names; the product must not.
+- Observability: N/A for a preview tool; browser-gates + test_generate.py are the checks that it renders correctly.
+- Performance & scale: trivial — a static render of a dozen mock rows; re-render on a control toggle is cheap.
+- Reuse & lost opportunities: reuses the inventory model, os()/previewLines, the PACKAGE_PREVIEWS registry, the bespoke-suppression mechanism, and — for discoverability — the preview-locate feature. Nothing here reinvents those.
+- Architecture fit & weak points: integration points are the app composer (app_inventory.py / generate.py), the PACKAGE_PREVIEWS registry, the app.js control rendering, and browser-gates. Weak point: the interactive controls are the first of their kind in theme-studio. Mitigation — keep the state local to this entry and re-render through the existing buildPkgPreview path; do not generalize a controls framework until a second preview needs one.
+- Config surface: the provider table (package key → section + fragment) and the sample candidate data are the knobs. Defaults: container starts on the detected frontend, modifiers on if installed.
+- Documentation plan: a short note in theme-studio's README and a mention in theme-coloring-guide.org; the dropdown label is otherwise self-documenting.
+- Dev tooling: existing — make theme-studio (regenerate), run-tests.sh / browser-gates, test_generate.py. Add cases for the composer and the renderer; no new targets.
+- Rollout, compatibility & rollback: additive (new dropdown entry). The dedup removes the generic vertico/orderless/marginalia entries — a mild behavior change, but the faces remain assignable in the new entry. Rollback = remove the entry and the suppression. No persisted-data migration.
+- External APIs & deps: N/A — no external API. Depends on build-inventory.el having captured installed packages' faces (theme-studio's existing model). Ivy/Counsel face names are verified-when-installed, which is why that section is deferred.
+
+* Risks, Rabbit Holes, and Drawbacks
+- First interactive-control preview — risk of sliding into a general preview-controls framework. Dodge: keep the controls local to this entry; generalize only when a second preview needs it.
+- Inventory variance across machines — relies on build-inventory.el being refreshed. Dodge: the vanilla baseline renders with zero providers, so the entry is never empty.
+- Ivy can't be verified on the owner's machine. Dodge: defer Ivy to vNext; keep the composer provider-generic so the fast-follow is a table row plus a fragment.
+
+* Testing / Verification / Rollout
+- test_generate.py: given a synthetic inventory dict, the composed entry's face list equals the expected union and the generic provider entries are suppressed; given an empty inventory, only the baseline faces are present.
+- browser-gates: every data-face in renderCompletionPreview is a real face; section presence tracks the simulated inventory; modifier controls are inert under the Ivy container.
+- Manual: open theme-studio in Chrome on the owner's inventory and confirm the Vertico section + baseline render, orderless/marginalia toggle, and vertico-current shows no background.
+
+* References / Appendix
+- Reuse: [[file:theme-studio-preview-locate-spec.org][theme-studio-preview-locate-spec.org]] (hover/click locate), [[file:theme-studio-package-faces-spec-doing.org][theme-studio-package-faces-spec-doing.org]].
+- Spike: /tmp completion-face-preview.el (verified render; not committed — informs this spec, not grown into it).
+- Live face values captured 2026-06-23 (WIP theme): minibuffer-prompt #899bb1/#100f0f bold; orderless-match-face-0..3 #cbd0d6 / #c99990 / #c5d4ae / #bea9dc bold italic; vertico-current inherits highlight (#eddba7 bold, no background).
+
+* Review and iteration history
+** 2026-06-23 Tue @ 12:18:04 -0400 — Craig Jennings — author
+- What: initial draft.
+- Why: a multi-layer, shared-tool feature with a new interactive-preview pattern and several open sub-decisions warranted speccing before code.
+- Artifacts: docs/specs/theme-studio-completion-preview-spec.org; todo.org task; the /tmp spike.
+
+** 2026-06-23 Tue @ 13:07:57 -0400 — Codex (emacs-d) — reviewer
+- *What changed or was recommended:* First review, =Not ready=. Added six blocking findings: the remaining TODO decisions block readiness; the phase plan must explicitly wait for preview-locate's =previewSpan= API; the always-present built-in completion baseline needs a concrete source outside package inventory; the generated =APPS= descriptor schema is underspecified; v1 Ivy behavior contradicts the vNext deferral; and the first interactive preview needs an explicit DOM/state lifecycle.
+- *Why:* The existing implementation has package previews wired through =APPS[app].preview= and =PACKAGE_PREVIEWS=, with generic inventory rows coming only from =package-inventory.json=. Vertico/orderless/marginalia are inventory packages, but the built-in =completions-*= baseline is not, and the pre-locate =os= path cannot style =@ui= faces in a package preview. Those gaps would force implementers to invent architecture and tests mid-build.
+- *Artifacts:* findings [0/6]; code read: =scripts/theme-studio/app_inventory.py= (=add_inventory_apps= / =PREVIEW_KEYS=), =scripts/theme-studio/generate.py= (=APPS= generation), =scripts/theme-studio/app.js= (=buildPkgPreview= / =PACKAGE_PREVIEWS= / =curApp=), =scripts/theme-studio/previews.js= (=os= path), =scripts/theme-studio/package-inventory.json= (provider packages present, built-in completions faces absent), =docs/specs/theme-studio-preview-locate-spec.org= (=previewSpan= prerequisite).
