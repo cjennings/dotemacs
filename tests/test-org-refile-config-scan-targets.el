@@ -101,9 +101,10 @@ maxlevel rules when no roam tags and no code/projects todo files exist."
           (should (= 1 hits)))
       (delete-directory tmp t))))
 
-(ert-deftest test-org-refile-scan-targets-includes-roam-project-and-topic-files ()
-  "Normal: when the roam helpers are available, Project and Topic files
-become additional refile targets."
+(ert-deftest test-org-refile-scan-targets-includes-roam-topic-not-project ()
+  "Normal: roam Topic files become refile targets; Project files do NOT.
+Project notes were dropped as refile targets (2026-06-24) -- roam Projects are
+no longer scanned for refile."
   (let* ((tmp (file-name-as-directory (make-temp-file "cj-refile-roam-" t)))
          (inbox-file "/tmp/test-inbox.org")
          (reference-file "/tmp/test-reference.org")
@@ -121,8 +122,8 @@ become additional refile targets."
                    (lambda () nil)))
           (let* ((result (cj/--org-refile-scan-targets))
                  (paths (mapcar #'car result)))
-            (should (member "/notes/alpha.org" paths))
-            (should (member "/notes/topic.org" paths))))
+            (should (member "/notes/topic.org" paths))
+            (should-not (member "/notes/alpha.org" paths))))
       (delete-directory tmp t))))
 
 (ert-deftest test-org-refile-scan-targets-survives-permission-denied ()

@@ -36,7 +36,8 @@
 
 ;; ----------------------------- Org Refile Targets ----------------------------
 ;; sets refile targets
-;; - adds project files in org-roam to the refile targets
+;; - adds org-roam notes tagged "Topic" to the refile targets
+;;   (roam "Project" notes were dropped as refile targets 2026-06-24)
 ;; - adds todo.org files in subdirectories of the code and project directories
 
 (defvar cj/--org-refile-targets-cache (cj/cache-make :ttl 3600)
@@ -100,11 +101,9 @@ Returns the list to assign to `org-refile-targets'.  Slow -- walks
           (cons schedule-file  '(:maxlevel . 1)))))
     (when (and (fboundp 'cj/org-roam-list-notes-by-tag)
                (fboundp 'org-roam-node-list))
-      (let* ((project-and-topic-files
-              (append (cj/org-roam-list-notes-by-tag "Project")
-                      (cj/org-roam-list-notes-by-tag "Topic")))
-             (file-rule '(:maxlevel . 1)))
-        (dolist (file project-and-topic-files)
+      (let ((topic-files (cj/org-roam-list-notes-by-tag "Topic"))
+            (file-rule '(:maxlevel . 1)))
+        (dolist (file topic-files)
           (unless (assoc file new-files)
             (push (cons file file-rule) new-files)))))
     (let ((file-rule '(:maxlevel . 1)))
