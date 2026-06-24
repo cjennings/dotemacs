@@ -32,7 +32,6 @@
 (setq undercover-force-coverage t)
 
 (undercover "modules/*.el"
-            "gptel-tools/*.el"
 			(:report-format 'simplecov)
 			(:report-file ".coverage/simplecov.json")
 			(:merge-report t)

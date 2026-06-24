@@ -6,8 +6,7 @@ Personal Emacs configuration. Pure Elisp, modular, no framework (not
 Doom, not Spacemacs). Used daily for real work — this is a lived-in
 config, not a demo.
 
-Still in active development; the GPTel integration and its tool
-implementations in particular are a work in progress.
+Still in active development.
 
 * Status
 
@@ -37,7 +36,6 @@ my habits. Feel free to read, borrow, or steal; no support promised.
 ├── snippets/            yasnippet templates
 ├── themes/              local themes
 ├── scripts/             helper shell scripts (elpa mirror, setup, etc.)
-├── gptel-tools/         GPTel tool implementations for LLM access
 ├── org-roam-templates/  capture templates for org-roam
 ├── githooks/            optional git hooks (pre-commit, etc.)
 └── Makefile             test / lint / validate / profile targets
@@ -63,8 +61,6 @@ my habits. Feel free to read, borrow, or steal; no support promised.
   project directories, surfaces dirty/unpushed repos for review.
 - *Mu4e + org-msg + org-contacts* — integrated mail workflow.
 - *Reveal.js and ox-hugo* — slide decks and blog publishing from org.
-- *GPTel tools* — buffer / filesystem tools exposed to LLM chats
-  (work in progress).
 - *Custom keymap* under =C-;= prefix for personal commands.
 
 * Development

@@ -302,7 +302,7 @@ COVERAGE_TESTS = $(filter-out $(COVERAGE_EXCLUDE),$(UNIT_TESTS))
 
 coverage: coverage-clean $(COVERAGE_DIR)
 	@echo "[i] Deleting compiled coverage targets so undercover can instrument sources..."
-	@rm -f $(MODULE_DIR)/*.elc gptel-tools/*.elc
+	@rm -f $(MODULE_DIR)/*.elc
 	@echo "[i] Running coverage across $(words $(COVERAGE_TESTS)) test files..."
 	@echo "    (this is slower than 'make test' — each file runs in its own Emacs)"
 	@echo "    excluded from coverage: $(notdir $(COVERAGE_EXCLUDE))"

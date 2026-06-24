@@ -141,7 +141,6 @@
 
 ;; -------------------------- AI Integration And Tools -------------------------
 
-(require 'ai-config)            ;; LLM integration with GPTel and friends
 (require 'restclient-config)    ;; REST API client for API exploration
 
 ;; ------------------------- Personal Workflow Related -------------------------

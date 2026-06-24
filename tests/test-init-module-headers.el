@@ -94,7 +94,6 @@
     "org-webclipper"
     "hugo-config"
     ;; Batch 8 — Domain / integration / optional modules (Layer 2-4)
-    "ai-config"
     "ai-term"
     "browser-config"
     "calendar-sync"

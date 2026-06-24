@@ -265,13 +265,12 @@ the fontset repeatedly is harmless, so it can be called from
   (setq emojify-display-style (if (env-gui-p) 'image 'unicode))
   (setq emojify-emoji-styles '(ascii unicode github))
 
-  ;; Disable emojify in programming and gptel modes
+  ;; Disable emojify in programming modes
   (defun cj/disable-emojify-mode ()
 	"Disable emojify-mode in the current buffer."
 	(emojify-mode -1))
 
-  (add-hook 'prog-mode-hook #'cj/disable-emojify-mode)
-  (add-hook 'gptel-mode-hook #'cj/disable-emojify-mode))
+  (add-hook 'prog-mode-hook #'cj/disable-emojify-mode))
 
 ;; -------------------------- Display Available Fonts --------------------------
 ;; display all available fonts on the system in a side panel
