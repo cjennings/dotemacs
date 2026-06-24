@@ -1,0 +1,93 @@
+[
+  {
+    "key": "ext:el",
+    "label": "init.el",
+    "face": "nerd-icons-purple",
+    "category": "extension",
+    "glyph": ""
+  },
+  {
+    "key": "ext:py",
+    "label": "app.py",
+    "face": "nerd-icons-dblue",
+    "category": "extension",
+    "glyph": ""
+  },
+  {
+    "key": "ext:org",
+    "label": "notes.org",
+    "face": "nerd-icons-lgreen",
+    "category": "extension",
+    "glyph": ""
+  },
+  {
+    "key": "ext:md",
+    "label": "README.md",
+    "face": "nerd-icons-lblue",
+    "category": "extension",
+    "glyph": ""
+  },
+  {
+    "key": "ext:ts",
+    "label": "main.ts",
+    "face": "nerd-icons-blue-alt",
+    "category": "extension",
+    "glyph": "󰛦"
+  },
+  {
+    "key": "ext:html",
+    "label": "index.html",
+    "face": "nerd-icons-orange",
+    "category": "extension",
+    "glyph": ""
+  },
+  {
+    "key": "ext:rs",
+    "label": "lib.rs",
+    "face": "nerd-icons-maroon",
+    "category": "extension",
+    "glyph": ""
+  },
+  {
+    "key": "ext:js",
+    "label": "app.js",
+    "face": "nerd-icons-yellow",
+    "category": "extension",
+    "glyph": ""
+  },
+  {
+    "key": "ext:yml",
+    "label": "ci.yml",
+    "face": "nerd-icons-dyellow",
+    "category": "extension",
+    "glyph": ""
+  },
+  {
+    "key": "ext:c",
+    "label": "main.c",
+    "face": "nerd-icons-blue",
+    "category": "extension",
+    "glyph": ""
+  },
+  {
+    "key": "dir",
+    "label": "src/",
+    "face": "nerd-icons-yellow",
+    "category": "dir",
+    "glyph": ""
+  },
+  {
+    "key": "cmd",
+    "label": "M-x command",
+    "face": "nerd-icons-blue",
+    "category": "command",
+    "glyph": ""
+  },
+  {
+    "key": "buf",
+    "label": "*scratch*",
+    "face": "nerd-icons-purple",
+    "category": "buffer",
+    "glyph": ""
+  }
+]

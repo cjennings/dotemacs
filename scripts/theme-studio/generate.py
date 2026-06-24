@@ -12,6 +12,38 @@ def read_text(name):
 def read_json(name):
     return json.loads(read_text(name))
 
+NERD_ICONS_LEGEND_FIELDS = ("key", "label", "face", "category", "glyph")
+
+def load_nerd_icons_legend(path=None):
+    """Return the nerd-icons legend rows, or None when the artifact is unusable.
+
+    The legend is captured by build-nerd-icons-legend.el into nerd-icons-legend.json.
+    Absent, malformed, empty, or carrying a row without all five string fields
+    (key/label/face/category/glyph) -> None, with a warning, so the caller falls
+    back to the generic nerd-icons app instead of erroring. nerd-icons not being
+    installed at capture time yields an empty/absent file, which lands here as None.
+    """
+    path = path or os.path.join(HERE, "nerd-icons-legend.json")
+    if not os.path.exists(path):
+        print(f"WARNING: nerd-icons legend absent ({path}); generic nerd-icons app")
+        return None
+    try:
+        with open(path) as src:
+            rows = json.load(src)
+    except (json.JSONDecodeError, OSError) as exc:
+        print(f"WARNING: nerd-icons legend malformed ({path}: {exc}); generic nerd-icons app")
+        return None
+    if not isinstance(rows, list) or not rows:
+        print(f"WARNING: nerd-icons legend empty ({path}); generic nerd-icons app")
+        return None
+    for row in rows:
+        if not (isinstance(row, dict)
+                and all(isinstance(row.get(f), str) and row.get(f)
+                        for f in NERD_ICONS_LEGEND_FIELDS)):
+            print(f"WARNING: nerd-icons legend row invalid ({row!r}); generic nerd-icons app")
+            return None
+    return rows
+
 def strip_exports(src):
     """Drop ES-module `export`/`import` lines so the body loads as a classic <script>.
 

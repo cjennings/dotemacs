@@ -597,5 +597,50 @@ class GeneratedDefaults(unittest.TestCase):
         self.assertEqual(generate.SYNTAX["str"]["slant"], "italic")
 
 
+class NerdIconsLegend(unittest.TestCase):
+    """The committed nerd-icons-legend.json artifact and the loader fallback."""
+
+    def _write(self, content):
+        path = os.path.join(tempfile.mkdtemp(), "nerd-icons-legend.json")
+        with open(path, "w") as out:
+            out.write(content)
+        return path
+
+    def test_committed_artifact_has_valid_rows(self):
+        rows = generate.load_nerd_icons_legend()
+        self.assertIsNotNone(rows, "committed nerd-icons-legend.json should load")
+        self.assertTrue(rows)
+        for row in rows:
+            for field in generate.NERD_ICONS_LEGEND_FIELDS:
+                self.assertIsInstance(row.get(field), str)
+                self.assertTrue(row[field])
+            self.assertTrue(row["face"].startswith("nerd-icons-"))
+            self.assertIn(row["category"], ("extension", "dir", "command", "buffer"))
+
+    def test_absent_artifact_falls_back_to_none(self):
+        with redirect_stdout(io.StringIO()) as out:
+            self.assertIsNone(generate.load_nerd_icons_legend("/no/such/legend.json"))
+        self.assertIn("absent", out.getvalue())
+
+    def test_malformed_artifact_falls_back_to_none(self):
+        path = self._write("{not json")
+        with redirect_stdout(io.StringIO()) as out:
+            self.assertIsNone(generate.load_nerd_icons_legend(path))
+        self.assertIn("malformed", out.getvalue())
+
+    def test_empty_artifact_falls_back_to_none(self):
+        path = self._write("[]")
+        with redirect_stdout(io.StringIO()) as out:
+            self.assertIsNone(generate.load_nerd_icons_legend(path))
+        self.assertIn("empty", out.getvalue())
+
+    def test_row_missing_a_field_falls_back_to_none(self):
+        path = self._write(json.dumps([{"key": "ext:el", "label": "init.el",
+                                        "face": "nerd-icons-purple", "category": "extension"}]))
+        with redirect_stdout(io.StringIO()) as out:
+            self.assertIsNone(generate.load_nerd_icons_legend(path))
+        self.assertIn("invalid", out.getvalue())
+
+
 if __name__ == "__main__":
     unittest.main()
