@@ -20,14 +20,13 @@
   :mode (("README\\.md\\'" . gfm-mode)
 		 ("\\.md\\'"       . markdown-mode)
          ("\\.markdown\\'" . markdown-mode))
-  :bind (:map markdown-mode-map
-			  ("<f2>" . cj/markdown-preview)) ;; use same key as compile for consistency
   :init (setq markdown-command "multimarkdown"))
 
 ;; Register markdown as a known org-src-block language so `org-lint'
 ;; stops warning on `#+begin_src markdown ... #+end_src' and `C-c ''
 ;; inside such a block opens it in `markdown-mode' instead of falling
 ;; back to fundamental-mode.
+(defvar org-src-lang-modes)
 (with-eval-after-load 'org
   (add-to-list 'org-src-lang-modes '("markdown" . markdown)))
 
@@ -39,6 +38,8 @@
   :defer t)
 
 ;;;; --------------------- WIP: Markdown-Preview ---------------------
+
+(declare-function imp--notify-clients "impatient-mode")
 
 (defun cj/markdown-preview-server-start ()
   "Start the simple-httpd listener that serves the live markdown preview.
@@ -74,6 +75,13 @@ lives in a separate command."
 		   (format "<!DOCTYPE html><html><title>Impatient Markdown</title><xmp theme=\"united\" style=\"display:none;\"> %s  </xmp><script src=\"http://ndossougbe.github.io/strapdown/dist/strapdown.js\"></script></html>"
 				   (buffer-substring-no-properties (point-min) (point-max))))
 		 (current-buffer)))
+
+;; Bind the preview key after the defun so use-package's `:bind' autoload
+;; stub doesn't collide with this file's own definition of the command
+;; (that collision is the "defined multiple times" byte-compile warning).
+;; Same key as compile, for consistency.
+(with-eval-after-load 'markdown-mode
+  (keymap-set markdown-mode-map "<f2>" #'cj/markdown-preview))
 
 (provide 'markdown-config)
 ;;; markdown-config.el ends here

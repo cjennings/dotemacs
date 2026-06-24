@@ -29,21 +29,26 @@
 (require 'system-lib)
 (require 'media-utils)
 
+(declare-function elfeed "elfeed")
+(declare-function elfeed-update "elfeed")
+(declare-function elfeed-entry-link "elfeed")
+(declare-function elfeed-untag "elfeed")
+(declare-function elfeed-search-selected "elfeed")
+(declare-function elfeed-search-tag-all "elfeed")
+(declare-function elfeed-search-update-entry "elfeed")
+(declare-function elfeed-search-update--force "elfeed")
+(declare-function elfeed-search-untag-all-unread "elfeed")
+(declare-function eww-browse-url "eww")
+(declare-function eww-readable "eww")
+
 ;; ------------------------------- Elfeed Config -------------------------------
 
 (use-package elfeed
   :bind
-  ("M-S-r" . cj/elfeed-open)  ;; was M-R
   (:map elfeed-show-mode-map
         ("w"  . eww-open-in-new-buffer))
   (:map elfeed-search-mode-map
-        ("w"   . cj/elfeed-eww-open)            ;; opens in eww
-        ("b"   . cj/elfeed-browser-open)        ;; opens in external browser
-        ("d"   . cj/elfeed-youtube-dl)          ;; async download with yt-dlp and tsp
-        ("v"   . cj/play-with-video-player))              ;; async play with mpv
-  ("V"   . cj/select-media-player)       ;; Capital V to select player
-  ("R"   . cj/elfeed-mark-all-as-read)    ;; capital marks all as read, since upper case marks one as read
-  ("U"   . cj/elfeed-mark-all-as-unread) ;; capital marks all as unread, since lower case marks one as unread
+        ("V"   . cj/select-media-player))       ;; Capital V to select player
   :config
   (setq elfeed-db-directory (concat user-emacs-directory ".elfeed-db"))
   (setq-default elfeed-search-title-max-width 150)
@@ -90,19 +95,22 @@
   (elfeed)
   (elfeed-update)
   (elfeed-search-update--force))
+(keymap-global-set "M-S-r" #'cj/elfeed-open)  ;; was M-R
 
 ;; -------------------------- Elfeed Filter Functions --------------------------
 
 (defun cj/elfeed-mark-all-as-read ()
   "Remove the \='unread\=' tag from all visible entries in search buffer."
   (interactive)
-  (mark-whole-buffer)
+  (goto-char (point-min))
+  (push-mark (point-max) nil t)
   (elfeed-search-untag-all-unread))
 
 (defun cj/elfeed-mark-all-as-unread ()
   "Add the \='unread\=' tag from all visible entries in the search buffer."
   (interactive)
-  (mark-whole-buffer)
+  (goto-char (point-min))
+  (push-mark (point-max) nil t)
   (elfeed-search-tag-all 'unread))
 
 (defun cj/elfeed-set-filter-and-update (filterstring)
@@ -301,6 +309,19 @@ TYPE should be either \='channel or \='playlist."
     (when (called-interactively-p 'interactive)
       (insert result))
     result))
+
+;; --------------------------- Search-Mode Keybindings -------------------------
+;; Bound here (not in use-package :bind) because these commands are defined in
+;; this file; a :bind autoload stub plus the defun triggers a "defined multiple
+;; times" byte-compile warning.
+
+(with-eval-after-load 'elfeed
+  (keymap-set elfeed-search-mode-map "w" #'cj/elfeed-eww-open)        ;; opens in eww
+  (keymap-set elfeed-search-mode-map "b" #'cj/elfeed-browser-open)    ;; opens in external browser
+  (keymap-set elfeed-search-mode-map "d" #'cj/elfeed-youtube-dl)      ;; async download with yt-dlp and tsp
+  (keymap-set elfeed-search-mode-map "v" #'cj/play-with-video-player) ;; async play with mpv
+  (keymap-set elfeed-search-mode-map "R" #'cj/elfeed-mark-all-as-read)    ;; capital R marks all read (lower case marks one)
+  (keymap-set elfeed-search-mode-map "U" #'cj/elfeed-mark-all-as-unread)) ;; capital U marks all unread (lower case marks one)
 
 (provide 'elfeed-config)
 ;;; elfeed-config.el ends here.

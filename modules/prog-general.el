@@ -59,13 +59,16 @@
 (declare-function treesit-auto-add-to-auto-mode-alist "treesit-auto")
 (declare-function treesit-auto-recipe-lang "treesit-auto")
 (declare-function highlight-indent-guides-mode "highlight-indent-guides")
+(declare-function electric-pair-default-inhibit "elec-pair")
+(declare-function yas-reload-all "yasnippet")
+(declare-function yas-activate-extra-mode "yasnippet")
 
 ;; Forward declarations for treesit-auto variables
 (defvar treesit-auto-recipe-list)
+(defvar electric-pair-inhibit-predicate)
 
 ;; Forward declarations for functions defined later in this file
 (declare-function cj/project-switch-actions "prog-general")
-(declare-function cj/deadgrep--initial-term "prog-general")
 
 (defun cj/find-project-root-file (regexp)
   "Return first file in the current Projectile project root matching REGEXP.
