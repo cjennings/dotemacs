@@ -32,6 +32,24 @@
 ;; capture template never reaches org-roam-dailies (the foreign-special-var trap).
 (defvar org-roam-dailies-capture-templates)
 
+;; External variables, declared special so byte-compilation doesn't treat them
+;; as free references/assignments. Owned by org and org-roam-dailies.
+(defvar org-agenda-timegrid-use-ampm)
+(defvar org-roam-dailies-map)
+(defvar org-last-state)
+
+;; External functions, declared so the byte-compiler knows they're defined at
+;; runtime by their respective packages.
+(declare-function org-roam-node-tags "org-roam")
+(declare-function org-roam-node-file "org-roam")
+(declare-function org-roam-node-list "org-roam")
+(declare-function org-roam-dailies--capture "org-roam-dailies")
+(declare-function org-capture-get "org-capture")
+(declare-function org-at-heading-p "org")
+(declare-function org-heading-components "org")
+(declare-function org-copy-subtree "org")
+(declare-function org-cut-subtree "org")
+
 ;; ---------------------------------- Org Roam ---------------------------------
 
 (defconst cj/--org-roam-dailies-head
@@ -76,8 +94,6 @@ FILETAGS and TITLE must sit on separate lines so Org parses the
   :bind (("C-c n l" . org-roam-buffer-toggle)
          ("C-c n f" . org-roam-node-find)
          ("C-c n p" . cj/org-roam-find-node-project)
-         ("C-c n r" . cj/org-roam-find-node-recipe)
-         ("C-c n t" . cj/org-roam-find-node-topic)
          ("C-c n i" . org-roam-node-insert)
          ("C-c n w" . cj/org-roam-find-node-webclip)
          :map org-mode-map
@@ -190,6 +206,11 @@ created in that subdirectory of `org-roam-directory'."
   "List nodes of type \"Recipe\" in completing read for selection or creation."
   (interactive)
   (cj/org-roam-find-node "Recipe" "r" (concat roam-dir "templates/recipe.org") "recipes/"))
+
+;; Bound after their defuns (not in the use-package :bind) so the byte-compiler
+;; doesn't see both a :bind autoload and the real defun as two definitions.
+(keymap-global-set "C-c n r" #'cj/org-roam-find-node-recipe)
+(keymap-global-set "C-c n t" #'cj/org-roam-find-node-topic)
 
 ;; ---------------------- Org Capture After Finalize Hook ----------------------
 

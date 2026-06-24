@@ -60,14 +60,14 @@ at the top level."
   "Sparse-tree commands sit directly under `C-; O' (flat).
 Lowercase creates, capital of the same letter cancels: `s' /
 `S' for match-sparse-tree, `t' / `T' for show-todo-tree.  Both
-capitals resolve to `org-show-all' -- the user's mental model is
+capitals resolve to `org-fold-show-all' -- the user's mental model is
 \"capital cancels the lowercase I just ran\" without having to
 remember which letter the cancel actually lives on.  `R' is
 `org-reveal' (no lowercase pair -- `r' is the table-row sub-prefix)."
   (should (eq (keymap-lookup cj/org-map "s") #'org-match-sparse-tree))
-  (should (eq (keymap-lookup cj/org-map "S") #'org-show-all))
+  (should (eq (keymap-lookup cj/org-map "S") #'org-fold-show-all))
   (should (eq (keymap-lookup cj/org-map "t") #'org-show-todo-tree))
-  (should (eq (keymap-lookup cj/org-map "T") #'org-show-all))
+  (should (eq (keymap-lookup cj/org-map "T") #'org-fold-show-all))
   (should (eq (keymap-lookup cj/org-map "R") #'org-reveal)))
 
 (ert-deftest test-org-config-keymap-ownership-regression-no-duplicate-org-keymap ()

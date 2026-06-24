@@ -17,6 +17,72 @@
 
 (require 'keybindings)  ;; provides cj/custom-keymap (used in :init below)
 
+;; Declare org variables and functions used before org is loaded so this module
+;; byte-compiles standalone.  Plain `defvar' (no value) marks the symbol special
+;; without assigning anything, so org's own defaults still apply at runtime.
+(defvar org-dir)
+(defvar org-mode-map)
+(defvar org-mouse-map)
+(defvar org-modules)
+(defvar org-startup-folded)
+(defvar org-cycle-open-archived-trees)
+(defvar org-cycle-hide-drawers)
+(defvar org-id-locations-file)
+(defvar org-return-follows-link)
+(defvar org-list-allow-alphabetical)
+(defvar org-startup-indented)
+(defvar org-adapt-indentation)
+(defvar org-startup-with-inline-images)
+(defvar org-image-actual-width)
+(defvar org-yank-image-save-method)
+(defvar org-bookmark-names-plist)
+(defvar org-file-apps)
+(defvar org-ellipsis)
+(defvar org-hide-emphasis-markers)
+(defvar org-hide-leading-stars)
+(defvar org-pretty-entities)
+(defvar org-pretty-entities-include-sub-superscripts)
+(defvar org-fontify-emphasized-text)
+(defvar org-fontify-whole-heading-line)
+(defvar org-tags-column)
+(defvar org-agenda-tags-column)
+(defvar org-todo-keywords)
+(defvar org-highest-priority)
+(defvar org-lowest-priority)
+(defvar org-default-priority)
+(defvar org-enforce-todo-dependencies)
+(defvar org-enforce-todo-checkbox-dependencies)
+(defvar org-deadline-warning-days)
+(defvar org-treat-insert-todo-heading-as-state-change)
+(defvar org-log-into-drawer)
+(defvar org-log-done)
+(defvar org-use-property-inheritance)
+
+(declare-function org-current-level "org")
+(declare-function org-add-planning-info "org")
+(declare-function org-get-heading "org")
+(declare-function org-edit-headline "org")
+(declare-function org-priority "org")
+(declare-function org-heading-components "org")
+(declare-function org-todo "org")
+(declare-function org-get-todo-state "org")
+(declare-function org-back-to-heading "org")
+(declare-function org-sort-entries "org")
+(declare-function org-eval-in-calendar "org")
+(declare-function org-open-at-point "org")
+(declare-function org-backward-heading-same-level "org")
+(declare-function org-forward-heading-same-level "org")
+(declare-function org-reveal "org")
+(declare-function org-show-todo-tree "org")
+(declare-function org-fold-show-all "org-fold")
+(declare-function outline-next-heading "outline")
+(declare-function org-element-cache-reset "org-element")
+(declare-function org-element-context "org-element")
+(declare-function org-element-type "org-element-ast")
+(declare-function org-superstar-configure-like-org-bullets "org-superstar")
+(declare-function cj/--org-follow-link-same-window "org-config")
+(declare-function cj/org-follow-link-at-mouse-same-window "org-config")
+
 ;; ---------------------------- Org General Settings ---------------------------
 
 (defun cj/org-general-settings ()
@@ -250,14 +316,14 @@ whole row line."
   (keymap-set cj/org-map "<" #'cj/org-narrow-backwards)
 
   ;; Sparse trees: lowercase creates, capital of the same letter cancels.
-  ;; Both `S' and `T' resolve to `org-show-all' -- same cancel command,
+  ;; Both `S' and `T' resolve to `org-fold-show-all' -- same cancel command,
   ;; paired with each lowercase create so the mental model is "capital
   ;; cancels the lowercase command I just ran" without having to recall
   ;; which letter the cancel actually lives on.
   (keymap-set cj/org-map "s" #'org-match-sparse-tree)
-  (keymap-set cj/org-map "S" #'org-show-all)
+  (keymap-set cj/org-map "S" #'org-fold-show-all)
   (keymap-set cj/org-map "t" #'org-show-todo-tree)
-  (keymap-set cj/org-map "T" #'org-show-all)
+  (keymap-set cj/org-map "T" #'org-fold-show-all)
   (keymap-set cj/org-map "R" #'org-reveal)
   :bind
   ("C-c c" . org-capture)
@@ -273,8 +339,7 @@ whole row line."
         ("C-c N"     . org-narrow-to-subtree)
         ("C-c >"     . cj/org-narrow-forward)
         ("C-c <"     . cj/org-narrow-backwards)
-        ("C-c <ESC>" . widen)
-        ("C-c C-a"   . cj/org-appear-toggle))
+        ("C-c <ESC>" . widen))
   (:map cj/org-map
         ("r i" . org-table-insert-row)
         ("r d" . org-table-kill-row)
@@ -401,6 +466,11 @@ especially in tables with long URLs)."
     (org-appear-mode 1)
     (message "org-appear enabled (links/emphasis show when editing)")))
 
+;; Bound here (after the defun) rather than in the org use-package `:bind' so
+;; the command isn't autoloaded into a stub that shadows this definition.
+(with-eval-after-load 'org
+  (keymap-set org-mode-map "C-c C-a" #'cj/org-appear-toggle))
+
 ;; --------------------------------- Org-Tidy ----------------------------------
 
 ;; Hide :PROPERTIES: drawers behind a small inline marker so headings stay
@@ -444,7 +514,7 @@ with a file, the function will throw an error."
   "Clear the org-element cache for the current buffer or all buffers.
 By default, clear cache for all org buffers. With prefix argument, clear only
 the current buffer's cache. Useful when encountering parsing errors like
-'wrong-type-argument stringp nil' during agenda generation."
+\"wrong-type-argument stringp nil\" during agenda generation."
   (interactive)
   (if current-prefix-arg
       (if (derived-mode-p 'org-mode)

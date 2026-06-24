@@ -103,6 +103,37 @@
 ;; orderless never see the binding (the lexical-binding foreign-special-var trap).
 (defvar orderless-smart-case)
 (defvar emms-source-playlist-ask-before-overwrite)
+(defvar emms-playlist-buffer-p)
+(defvar emms-playlist-buffer)
+(defvar emms-random-playlist)
+(defvar emms-playlist-selected-marker)
+(defvar emms-source-file-default-directory)
+(defvar emms-player-mpv-parameters)
+(defvar emms-player-mpv-regexp)
+(defvar emms-player-playing-p)
+(defvar emms-player-paused-p)
+(defvar emms-playlist-mode-map)
+(defvar dirvish-mode-map)
+
+;; Foreign functions used lazily after their packages load.
+(declare-function emms-playlist-mode "emms-playlist-mode")
+(declare-function emms-playlist-track-at "emms-playlist-mode")
+(declare-function emms-playlist-mode-kill-track "emms-playlist-mode")
+(declare-function emms-track-name "emms")
+(declare-function emms-track-type "emms")
+(declare-function emms-track-get "emms")
+(declare-function emms-track-simple-description "emms")
+(declare-function emms-playlist-current-selected-track "emms")
+(declare-function emms-playlist-select "emms")
+(declare-function emms-playlist-clear "emms")
+(declare-function emms-playlist-save "emms-source-playlist")
+(declare-function emms-start "emms")
+(declare-function emms-random "emms")
+(declare-function emms-next "emms")
+(declare-function emms-previous "emms")
+(declare-function dired-get-marked-files "dired")
+(declare-function dired-get-file-for-visit "dired")
+(declare-function face-remap-remove-relative "face-remap")
 
 ;;; Settings (no Customize)
 
@@ -619,26 +650,26 @@ Initializes EMMS if needed."
 
 ;;; Dired/Dirvish integration
 
-(with-eval-after-load 'dirvish
-  (defun cj/music-add-dired-selection ()
-    "Add selected files/dirs in Dired/Dirvish to the EMMS playlist.
+(defun cj/music-add-dired-selection ()
+  "Add selected files/dirs in Dired/Dirvish to the EMMS playlist.
 Dirs added recursively."
-    (interactive)
-    (unless (derived-mode-p 'dired-mode)
-      (user-error "This command must be run in a Dired buffer"))
-    (cj/music--ensure-playlist-buffer)
-    (let ((files (if (use-region-p)
-                     (dired-get-marked-files)
-                   (list (dired-get-file-for-visit)))))
-      (when (null files)
-        (user-error "No files selected"))
-      (dolist (file files)
-        (cond
-         ((file-directory-p file) (cj/music-add-directory-recursive file))
-         ((cj/music--valid-file-p file) (emms-add-file file))
-         (t (message "Skipping non-music file: %s" file))))
-      (message "Added %d item(s) to playlist" (length files))))
+  (interactive)
+  (unless (derived-mode-p 'dired-mode)
+    (user-error "This command must be run in a Dired buffer"))
+  (cj/music--ensure-playlist-buffer)
+  (let ((files (if (use-region-p)
+                   (dired-get-marked-files)
+                 (list (dired-get-file-for-visit)))))
+    (when (null files)
+      (user-error "No files selected"))
+    (dolist (file files)
+      (cond
+       ((file-directory-p file) (cj/music-add-directory-recursive file))
+       ((cj/music--valid-file-p file) (emms-add-file file))
+       (t (message "Skipping non-music file: %s" file))))
+    (message "Added %d item(s) to playlist" (length files))))
 
+(with-eval-after-load 'dirvish
   (keymap-set dirvish-mode-map "+" #'cj/music-add-dired-selection))
 
 ;;; EMMS setup and keybindings
@@ -680,6 +711,130 @@ Dirs added recursively."
     "C-; m z" "random"
     "C-; m x" "consume"))
 
+;;; Playlist display helpers
+;;
+;; Defined at top level (not inside the `emms' use-package `:config') so the
+;; byte-compiler sees them; they touch EMMS only at call time, after load.
+
+(defun cj/music--after-playlist-clear (&rest _)
+  "Forget the associated M3U file after the playlist is cleared."
+  (when-let ((buf (get-buffer cj/music-playlist-buffer-name)))
+    (with-current-buffer buf
+      (setq cj/music-playlist-file nil))))
+
+(defun cj/music--format-duration (seconds)
+  "Convert SECONDS to a \"M:SS\" string."
+  (when (and seconds (numberp seconds) (> seconds 0))
+    (format "%d:%02d" (/ seconds 60) (mod seconds 60))))
+
+(defun cj/music--track-description (track)
+  "Return a human-readable description of TRACK.
+For tagged tracks: \"Artist - Title [M:SS]\".
+For file tracks without tags: filename without path or extension.
+For URL tracks: decoded URL."
+  (let ((type (emms-track-type track))
+        (title (emms-track-get track 'info-title))
+        (artist (emms-track-get track 'info-artist))
+        (duration (emms-track-get track 'info-playing-time))
+        (name (emms-track-name track)))
+    (cond
+     ;; Tagged track with title
+     (title
+      (let ((dur-str (cj/music--format-duration duration))
+            (parts '()))
+        (when artist (push artist parts))
+        (push title parts)
+        (let ((desc (string-join (nreverse parts) " - ")))
+          (if dur-str (format "%s  [%s]" desc dur-str) desc))))
+     ;; File without tags — show clean filename
+     ((eq type 'file)
+      (file-name-sans-extension (file-name-nondirectory name)))
+     ;; URL — decode percent-encoded characters
+     ((eq type 'url)
+      (decode-coding-string (url-unhex-string name) 'utf-8))
+     ;; Fallback
+     (t (emms-track-simple-description track)))))
+
+;; Multi-line header overlay
+(defvar-local cj/music--header-overlay nil
+  "Overlay displaying the playlist header.")
+
+(defun cj/music--header-text ()
+  "Build a multi-line header string for the playlist buffer overlay."
+  (let* ((pl-name (if cj/music-playlist-file
+                      (file-name-sans-extension
+                       (file-name-nondirectory cj/music-playlist-file))
+                    "Untitled"))
+         (track-count (count-lines (point-min) (point-max)))
+         (now-playing (cond
+                       ((not emms-player-playing-p) "Stopped")
+                       (emms-player-paused-p "Paused")
+                       (t (let ((track (emms-playlist-current-selected-track)))
+                            (if track
+                                (cj/music--track-description track)
+                              "Playing")))))
+         (mode-indicator
+          (lambda (key label active)
+            (let ((face (if active 'cj/music-mode-on-face 'cj/music-mode-off-face)))
+              (propertize (format "[%s] %s" key label) 'face face)))))
+    (concat
+     (propertize "Playlist" 'face 'cj/music-header-face)
+     (propertize " : " 'face 'cj/music-header-face)
+     (propertize (format "%s (%d)" pl-name track-count) 'face 'cj/music-header-value-face)
+     "\n"
+     (propertize "Current " 'face 'cj/music-header-face)
+     (propertize " : " 'face 'cj/music-header-face)
+     (propertize now-playing 'face 'cj/music-header-value-face)
+     "\n"
+     (propertize "Mode    " 'face 'cj/music-header-face)
+     (propertize " : " 'face 'cj/music-header-face)
+     (funcall mode-indicator "r" "repeat" (bound-and-true-p emms-repeat-playlist))
+     "  "
+     (funcall mode-indicator "t" "single" (bound-and-true-p emms-repeat-track))
+     "  "
+     (funcall mode-indicator "z" "random" (bound-and-true-p emms-random-playlist))
+     "  "
+     (funcall mode-indicator "x" "consume" cj/music-consume-mode)
+     "\n"
+     (propertize "Keys    " 'face 'cj/music-header-face)
+     (propertize " : " 'face 'cj/music-header-face)
+     (propertize "a:add  c:clear  L:load  S:save  SPC:pause  <>:skip  ↑↓:move  C-↑↓:reorder  q:dismiss"
+                 'face 'cj/music-keyhint-face)
+     "\n\n")))
+
+(defun cj/music--update-header ()
+  "Insert or update the multi-line header overlay in the playlist buffer."
+  (when-let ((buf (get-buffer cj/music-playlist-buffer-name)))
+    (with-current-buffer buf
+      (unless cj/music--header-overlay
+        (setq cj/music--header-overlay (make-overlay (point-min) (point-min)))
+        (overlay-put cj/music--header-overlay 'priority 100))
+      (move-overlay cj/music--header-overlay (point-min) (point-min))
+      (overlay-put cj/music--header-overlay 'before-string
+                   (cj/music--header-text)))))
+
+(defvar-local cj/music--bg-remap-cookie nil
+  "Cookie for the active-window background face remapping.")
+
+(defun cj/music--update-active-bg (&rest _)
+  "Toggle playlist buffer background based on whether its window is selected."
+  (when-let ((buf (get-buffer cj/music-playlist-buffer-name)))
+    (with-current-buffer buf
+      (let ((active (eq buf (window-buffer (selected-window)))))
+        (cond
+         ((and active (not cj/music--bg-remap-cookie))
+          (setq cj/music--bg-remap-cookie
+                (face-remap-add-relative 'default :background "#1d1b19")))
+         ((and (not active) cj/music--bg-remap-cookie)
+          (face-remap-remove-relative cj/music--bg-remap-cookie)
+          (setq cj/music--bg-remap-cookie nil)))))))
+
+(defun cj/music--setup-playlist-display ()
+  "Set up header overlay and focus tracking in the playlist buffer."
+  (setq header-line-format nil)
+  (cj/music--update-header)
+  (add-hook 'window-selection-change-functions #'cj/music--update-active-bg nil t))
+
 (use-package emms
   :defer t
   :init
@@ -704,7 +859,7 @@ Dirs added recursively."
   (emms-all)
 
   ;; Disable modeline display (keep modeline clean)
-  (emms-playing-time-disable-display)
+  (emms-playing-time-display-mode -1)
   (emms-mode-line-mode -1)
 
   ;; MPV configuration
@@ -718,133 +873,15 @@ Dirs added recursively."
                 (regexp-opt cj/music-file-extensions)
                 "\\'\\)"))
 
-  ;; Keep cj/music-playlist-file in sync if playlist is cleared
-  (defun cj/music--after-playlist-clear (&rest _)
-    (when-let ((buf (get-buffer cj/music-playlist-buffer-name)))
-      (with-current-buffer buf
-        (setq cj/music-playlist-file nil))))
-
-  ;; Ensure we don't stack duplicate advice on reload
+  ;; Keep cj/music-playlist-file in sync if playlist is cleared.
+  ;; Ensure we don't stack duplicate advice on reload.
   (advice-remove 'emms-playlist-clear #'cj/music--after-playlist-clear)
   (advice-add 'emms-playlist-clear :after #'cj/music--after-playlist-clear)
 
   ;;; Playlist display
 
   ;; Track description: show "Artist - Title [M:SS]" instead of file paths
-  (defun cj/music--format-duration (seconds)
-    "Convert SECONDS to a \"M:SS\" string."
-    (when (and seconds (numberp seconds) (> seconds 0))
-      (format "%d:%02d" (/ seconds 60) (mod seconds 60))))
-
-  (defun cj/music--track-description (track)
-    "Return a human-readable description of TRACK.
-For tagged tracks: \"Artist - Title [M:SS]\".
-For file tracks without tags: filename without path or extension.
-For URL tracks: decoded URL."
-    (let ((type (emms-track-type track))
-          (title (emms-track-get track 'info-title))
-          (artist (emms-track-get track 'info-artist))
-          (duration (emms-track-get track 'info-playing-time))
-          (name (emms-track-name track)))
-      (cond
-       ;; Tagged track with title
-       (title
-        (let ((dur-str (cj/music--format-duration duration))
-              (parts '()))
-          (when artist (push artist parts))
-          (push title parts)
-          (let ((desc (string-join (nreverse parts) " - ")))
-            (if dur-str (format "%s  [%s]" desc dur-str) desc))))
-       ;; File without tags — show clean filename
-       ((eq type 'file)
-        (file-name-sans-extension (file-name-nondirectory name)))
-       ;; URL — decode percent-encoded characters
-       ((eq type 'url)
-        (decode-coding-string (url-unhex-string name) 'utf-8))
-       ;; Fallback
-       (t (emms-track-simple-description track)))))
-
   (setq emms-track-description-function #'cj/music--track-description)
-
-  ;; Multi-line header overlay
-  (defvar-local cj/music--header-overlay nil
-    "Overlay displaying the playlist header.")
-
-  (defun cj/music--header-text ()
-    "Build a multi-line header string for the playlist buffer overlay."
-    (let* ((pl-name (if cj/music-playlist-file
-                        (file-name-sans-extension
-                         (file-name-nondirectory cj/music-playlist-file))
-                      "Untitled"))
-           (track-count (count-lines (point-min) (point-max)))
-           (now-playing (cond
-                         ((not emms-player-playing-p) "Stopped")
-                         (emms-player-paused-p "Paused")
-                         (t (let ((track (emms-playlist-current-selected-track)))
-                              (if track
-                                  (cj/music--track-description track)
-                                "Playing")))))
-           (mode-indicator
-            (lambda (key label active)
-              (let ((face (if active 'cj/music-mode-on-face 'cj/music-mode-off-face)))
-                (propertize (format "[%s] %s" key label) 'face face)))))
-      (concat
-       (propertize "Playlist" 'face 'cj/music-header-face)
-       (propertize " : " 'face 'cj/music-header-face)
-       (propertize (format "%s (%d)" pl-name track-count) 'face 'cj/music-header-value-face)
-       "\n"
-       (propertize "Current " 'face 'cj/music-header-face)
-       (propertize " : " 'face 'cj/music-header-face)
-       (propertize now-playing 'face 'cj/music-header-value-face)
-       "\n"
-       (propertize "Mode    " 'face 'cj/music-header-face)
-       (propertize " : " 'face 'cj/music-header-face)
-       (funcall mode-indicator "r" "repeat" (bound-and-true-p emms-repeat-playlist))
-       "  "
-       (funcall mode-indicator "t" "single" (bound-and-true-p emms-repeat-track))
-       "  "
-       (funcall mode-indicator "z" "random" (bound-and-true-p emms-random-playlist))
-       "  "
-       (funcall mode-indicator "x" "consume" cj/music-consume-mode)
-       "\n"
-       (propertize "Keys    " 'face 'cj/music-header-face)
-       (propertize " : " 'face 'cj/music-header-face)
-       (propertize "a:add  c:clear  L:load  S:save  SPC:pause  <>:skip  ↑↓:move  C-↑↓:reorder  q:dismiss"
-                   'face 'cj/music-keyhint-face)
-       "\n\n")))
-
-  (defun cj/music--update-header ()
-    "Insert or update the multi-line header overlay in the playlist buffer."
-    (when-let ((buf (get-buffer cj/music-playlist-buffer-name)))
-      (with-current-buffer buf
-        (unless cj/music--header-overlay
-          (setq cj/music--header-overlay (make-overlay (point-min) (point-min)))
-          (overlay-put cj/music--header-overlay 'priority 100))
-        (move-overlay cj/music--header-overlay (point-min) (point-min))
-        (overlay-put cj/music--header-overlay 'before-string
-                     (cj/music--header-text)))))
-
-  (defvar-local cj/music--bg-remap-cookie nil
-    "Cookie for the active-window background face remapping.")
-
-  (defun cj/music--update-active-bg (&rest _)
-    "Toggle playlist buffer background based on whether its window is selected."
-    (when-let ((buf (get-buffer cj/music-playlist-buffer-name)))
-      (with-current-buffer buf
-        (let ((active (eq buf (window-buffer (selected-window)))))
-          (cond
-           ((and active (not cj/music--bg-remap-cookie))
-            (setq cj/music--bg-remap-cookie
-                  (face-remap-add-relative 'default :background "#1d1b19")))
-           ((and (not active) cj/music--bg-remap-cookie)
-            (face-remap-remove-relative cj/music--bg-remap-cookie)
-            (setq cj/music--bg-remap-cookie nil)))))))
-
-  (defun cj/music--setup-playlist-display ()
-    "Set up header overlay and focus tracking in the playlist buffer."
-    (setq header-line-format nil)
-    (cj/music--update-header)
-    (add-hook 'window-selection-change-functions #'cj/music--update-active-bg nil t))
 
   (add-hook 'emms-playlist-mode-hook #'cj/music--setup-playlist-display)
   (add-hook 'emms-player-started-hook #'cj/music--record-random-history)
@@ -897,8 +934,6 @@ For URL tracks: decoded URL."
         ("S-<down>" . emms-playlist-mode-shift-track-down)
         ("C-<up>"   . emms-playlist-mode-shift-track-up)
         ("C-<down>" . emms-playlist-mode-shift-track-down)
-        ;; Radio
-        ("R" . cj/music-create-radio-station)
         ;; Volume
         ("+" . emms-volume-raise)
         ("=" . emms-volume-raise)
@@ -926,6 +961,11 @@ For URL tracks: decoded URL."
     (with-temp-file file
       (insert content))
     (message "Created radio station: %s" (file-name-nondirectory file))))
+
+;; Bound here rather than in the emms `:bind' so use-package does not emit a
+;; redundant autoload that collides with this same-file definition.
+(with-eval-after-load 'emms
+  (keymap-set emms-playlist-mode-map "R" #'cj/music-create-radio-station))
 
 (provide 'music-config)
 ;;; music-config.el ends here
