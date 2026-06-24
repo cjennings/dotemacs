@@ -16,7 +16,8 @@ my habits. Feel free to read, borrow, or steal; no support promised.
 
 * Requirements
 
-- Emacs 29 or newer (uses ~lexical-binding~, ~use-package~, native comp)
+- Emacs 30 or newer (developed on 30.2; uses ~lexical-binding~,
+  ~use-package~, native comp)
 - Linux / macOS / FreeBSD / Windows — the config checks host via
   =host-environment.el= and degrades where platform features are missing
 - Several modules shell out to external tools (e.g. =ffmpeg=,
@@ -29,13 +30,14 @@ my habits. Feel free to read, borrow, or steal; no support promised.
 .
 ├── early-init.el        startup perf, package system, local repos
 ├── init.el              module loader (one require per feature)
-├── modules/             feature modules — one domain per file (~100 files)
+├── modules/             feature modules — one domain per file (~120 files)
 ├── tests/               ERT tests — test-<module>*.el, testutil-*.el
 ├── assets/              data files checked into git
 ├── custom/              user customizations and overrides
 ├── snippets/            yasnippet templates
 ├── themes/              local themes
-├── scripts/             helper shell scripts (elpa mirror, setup, etc.)
+├── scripts/             helper scripts + theme-studio (the theming tool)
+├── docs/                specs and design documentation
 ├── org-roam-templates/  capture templates for org-roam
 ├── githooks/            optional git hooks (pre-commit, etc.)
 └── Makefile             test / lint / validate / profile targets
@@ -61,6 +63,15 @@ my habits. Feel free to read, borrow, or steal; no support promised.
   project directories, surfaces dirty/unpushed repos for review.
 - *Mu4e + org-msg + org-contacts* — integrated mail workflow.
 - *Reveal.js and ox-hugo* — slide decks and blog publishing from org.
+- *Theme Studio* (=scripts/theme-studio/=) — an in-house, browser-based
+  theme builder: edit faces across packages with live previews, contrast
+  readouts, and export to a loadable theme. Carries its own test pyramid
+  (=run-tests.sh=: Python + Node + headless-browser gates).
+- *Native terminal* (=modules/term-config.el=) — ghostel (over
+  libghostty-vt) with an F12 toggle and a tmux-aware copy-mode; replaced
+  vterm.
+- *AI agent terminals* (=modules/ai-term.el=) — launch and switch between
+  per-project Claude/agent sessions in ghostel under =C-; a=.
 - *Custom keymap* under =C-;= prefix for personal commands.
 
 * Development
@@ -73,6 +84,7 @@ make test               # Run all ERT tests
 make test-file FILE=test-foo.el         # One test file
 make test-name TEST=pattern             # Match by test name
 make coverage           # Generate .coverage/simplecov.json
+make coverage-summary   # Per-file + project coverage table (the watched number)
 make validate-parens    # Check for unbalanced parens in modules
 make validate-modules   # Load all modules to verify they compile
 make compile            # Byte-compile modules
