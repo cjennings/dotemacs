@@ -29,6 +29,12 @@
   (setq org-src-fontify-natively t)                                     ;; fontify the code in blocks
   (setq org-src-tab-acts-natively t)                                    ;; tabs act like in language major mode buffer
   (setq org-src-window-setup 'current-window)                           ;; don't split window when source editing wih C-c '
+  ;; Treat cj comment blocks (#+begin_src cj: comment ...) as org for editing
+  ;; and fontification: the "cj:" language token maps to org-mode, so C-c '
+  ;; opens an org buffer and the block's prose gets org font-lock in place.
+  ;; The block stays a src block (the cj: grep marker is unchanged); org markup
+  ;; is highlighted and editable, though links are followed from the C-c ' buffer.
+  (add-to-list 'org-src-lang-modes '("cj:" . org))
   (setq org-confirm-babel-evaluate t)                                   ;; confirm before running babel; toggle with C-; k
   (setq org-babel-default-header-args
         (cons '(:tangle . "yes")
