@@ -59,7 +59,8 @@
 
 (defcustom cj/org-agenda-window-height 0.75
   "Fraction of the selected frame used for the org agenda window."
-  :type 'number)
+  :type 'number
+  :group 'org-agenda)
 
 (defun cj/--org-agenda-display-rule ()
   "Return the display-buffer rule for the org agenda buffer."

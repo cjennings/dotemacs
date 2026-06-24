@@ -32,7 +32,6 @@ This function is designed to work with mu4e's compose buffers."
                     (re-search-backward "\\(\\`\\|[\n:,]\\)[ \t]*" nil t)
                     (goto-char (match-end 0))
                     (point)))
-           (initial (buffer-substring-no-properties start end))
            (contacts (cj/get-all-contact-emails)))
       (when contacts
         (list start end

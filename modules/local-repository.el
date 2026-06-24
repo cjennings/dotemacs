@@ -25,23 +25,33 @@
 
 ;; ------------------------------- Customizations ------------------------------
 
+(defgroup localrepo nil
+  "Local last-known-good package repository."
+  :group 'package)
+
 (defcustom localrepo-repository-id "localrepo"
   "The name used to identify the local repository internally.
 
-Used for the package-archive and package-archive-priorities lists.")
+Used for the package-archive and package-archive-priorities lists."
+  :type 'string
+  :group 'localrepo)
 
 (defcustom localrepo-repository-priority 100
   "The value for the local repository in the package-archive-priority list.
 
 A higher value means higher priority. If you want your local packages to be
-preferred, this must be a higher number than any other repositories.")
+preferred, this must be a higher number than any other repositories."
+  :type 'integer
+  :group 'localrepo)
 
 (defcustom localrepo-repository-location
   (concat user-emacs-directory "/.localrepo")
   "The location of the local repository.
 
 It's a good idea to keep this with the rest of your configuration files and
-keep them in source control.")
+keep them in source control."
+  :type 'directory
+  :group 'localrepo)
 
 (defun cj/update-localrepo-repository ()
   "Update the local repository with currently installed packages."
