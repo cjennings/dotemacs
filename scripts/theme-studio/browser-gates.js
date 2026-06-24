@@ -835,6 +835,15 @@ if(location.hash==='#nerdiconstest')gate('nerdiconstest',A=>{
    A(els.length===mapped.length,'every '+target+' row rendered ('+els.length+'/'+mapped.length+')');
    A(els.length>0&&els.every(e=>/#abcdef/i.test(e.getAttribute('style')||'')),'recolor repaints the mapped rows');
   });
+  // Export/import round-trip over an assigned nerd-icons color; the separate
+  // nerd-icons-completion app (dir-face) is untouched by the nerd-icons pane.
+  const m=seedPkgmap();
+  m['nerd-icons']['nerd-icons-blue']={fg:'#123456',bg:null,weight:null,slant:null,inherit:null,height:1,source:'user'};
+  const exp=packagesForExport(m);
+  A(exp['nerd-icons']&&exp['nerd-icons']['nerd-icons-blue']&&exp['nerd-icons']['nerd-icons-blue'].fg==='#123456','assigned nerd-icons color exports');
+  const round=seedPkgmap();mergePackagesInto(round,exp);
+  A(round['nerd-icons']&&round['nerd-icons']['nerd-icons-blue'].fg==='#123456','nerd-icons color re-imports to the same state');
+  A(!(exp['nerd-icons']&&('nerd-icons-completion-dir-face' in exp['nerd-icons'])),'dir-face stays out of the nerd-icons app');
  }
  });
 // picker-distinct gate (open with #pickertest): the color picker panel must stand

@@ -53,5 +53,20 @@ renders would stack `nerd-icons-yellow' over and over on the cached string."
            (yellows (cl-count 'nerd-icons-yellow specs)))
       (should (= yellows 1)))))
 
+(ert-deftest test-nerd-icons-config--color-dir-precedence-over-completion-face ()
+  "Normal: when the dir icon already carries nerd-icons-completion-dir-face
+\(what `nerd-icons-completion-get-icon' passes), the advice prepends
+nerd-icons-yellow so it is first in the face list and wins the merge.  Locks
+the dir-precedence decision: the prepended advice face outranks the package's
+:face, even though that face lives in a different package."
+  (let* ((icon (propertize "X" 'face 'nerd-icons-completion-dir-face))
+         (result (cj/--nerd-icons-color-dir icon))
+         (faces (ensure-list (get-text-property 0 'face result))))
+    (should (memq 'nerd-icons-yellow faces))
+    (should (memq 'nerd-icons-completion-dir-face faces))
+    (should (= 0 (cl-position 'nerd-icons-yellow faces)))
+    (should (< (cl-position 'nerd-icons-yellow faces)
+               (cl-position 'nerd-icons-completion-dir-face faces)))))
+
 (provide 'test-nerd-icons-config--color-dir)
 ;;; test-nerd-icons-config--color-dir.el ends here
