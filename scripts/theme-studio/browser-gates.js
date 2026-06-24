@@ -810,6 +810,33 @@ if(location.hash==='#gnustest')gate('gnustest',A=>{
  assertPreviewFaces(A, renderGnusPreview(), APPS['gnus']&&APPS['gnus'].faces, 20, 'gnus',
   ['gnus-header-name','gnus-header-from','gnus-header-subject','gnus-cite-1','gnus-cite-attribution','gnus-signature','gnus-button','gnus-emphasis-highlight-words']);
  });
+// nerd-icons legend gate (open with #nerdiconstest): nerd-icons is a bespoke
+// filetype-legend app; every glyph span is a real nerd-icons face, the dir row
+// models nerd-icons-yellow, and recoloring a face repaints every row mapped to it.
+if(location.hash==='#nerdiconstest')gate('nerdiconstest',A=>{
+ A(!!APPS['nerd-icons'],'nerd-icons is a registered app');
+ A(APPS['nerd-icons']&&APPS['nerd-icons'].preview==='nerdicons','nerd-icons uses the nerdicons preview renderer');
+ A(!!PACKAGE_PREVIEWS['nerdicons'],'nerdicons renderer registered');
+ const legend=(APPS['nerd-icons']&&APPS['nerd-icons'].legend)||[];
+ A(Array.isArray(legend)&&legend.length>=10,'legend has the curated rows ('+legend.length+')');
+ const dir=legend.find(r=>r.key==='dir');
+ A(dir&&dir.face==='nerd-icons-yellow','dir row models nerd-icons-yellow');
+ if(PACKAGE_PREVIEWS['nerdicons']&&APPS['nerd-icons']){
+  assertPreviewFaces(A, renderNerdIconsPreview(), APPS['nerd-icons'].faces, 10, 'nerd-icons',
+   ['nerd-icons-purple','nerd-icons-yellow','nerd-icons-blue','nerd-icons-dblue']);
+  // Recoloring a face repaints every legend row mapped to it (os reads the live registry).
+  withSavedState(['PKGMAP'],()=>{
+   const target='nerd-icons-purple',mapped=legend.filter(r=>r.face===target);
+   A(mapped.length>=1,'at least one row maps to '+target);
+   PKGMAP['nerd-icons']=PKGMAP['nerd-icons']||{};
+   PKGMAP['nerd-icons'][target]={fg:'#abcdef',bg:null,weight:null,slant:null,inherit:null,height:1,source:'user'};
+   const box=document.createElement('div');box.innerHTML=renderNerdIconsPreview();
+   const els=[...box.querySelectorAll('[data-face="'+target+'"]')];
+   A(els.length===mapped.length,'every '+target+' row rendered ('+els.length+'/'+mapped.length+')');
+   A(els.length>0&&els.every(e=>/#abcdef/i.test(e.getAttribute('style')||'')),'recolor repaints the mapped rows');
+  });
+ }
+ });
 // picker-distinct gate (open with #pickertest): the color picker panel must stand
 // out from the page background. It carries a highlighted gold accent border, and its
 // background is meaningfully lighter than the body so the two are easy to tell apart.

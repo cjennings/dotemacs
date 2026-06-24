@@ -765,7 +765,8 @@ const PACKAGE_PREVIEWS={
   dashboard:renderDashboardPreview,mu4e:renderMu4ePreview,gnus:renderGnusPreview,orgfaces:renderOrgFacesPreview,lsp:renderLspPreview,gitgutter:renderGitGutterPreview,
   flycheck:renderFlycheckPreview,dired:renderDiredPreview,dirvish:renderDirvishPreview,calibredb:renderCalibredbPreview,
   erc:renderErcPreview,orgdrill:renderOrgdrillPreview,orgnoter:renderOrgnoterPreview,signel:renderSignelPreview,
-  pearl:renderPearlPreview,slack:renderSlackPreview,telega:renderTelegaPreview,shr:renderShrPreview
+  pearl:renderPearlPreview,slack:renderSlackPreview,telega:renderTelegaPreview,shr:renderShrPreview,
+  nerdicons:renderNerdIconsPreview
 };
 function buildPkgPreview(){
   const app=curApp(),p=document.getElementById('pkgpreview');if(!p)return;

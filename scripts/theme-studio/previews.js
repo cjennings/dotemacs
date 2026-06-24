@@ -481,3 +481,14 @@ function renderMarkdownPreview(){const a='markdown-mode',L=[];
   L.push(os(a,'markdown-html-tag-delimiter-face','&lt;')+os(a,'markdown-html-tag-name-face','kbd')+os(a,'markdown-html-tag-delimiter-face','&gt;')+'Ctrl-C'+os(a,'markdown-html-tag-delimiter-face','&lt;/')+os(a,'markdown-html-tag-name-face','kbd')+os(a,'markdown-html-tag-delimiter-face','&gt;'));
   L.push(os(a,'markdown-footnote-marker-face','[^1]:')+' '+os(a,'markdown-footnote-text-face','the footnote text.'));
   return previewLines(L);}
+// nerd-icons legend preview: each curated filetype's real nerd-font glyph drawn
+// in its mapped color face, then the sample name. The legend rides
+// APPS['nerd-icons'].legend (captured by build-nerd-icons-legend.el); recoloring
+// a face repaints every row mapped to it because os() reads the live registry.
+// Falls back to the generic preview if the legend is missing (the bespoke app
+// only registers with a valid one, so that path is defensive).
+function renderNerdIconsPreview(){
+  const a='nerd-icons',rows=(APPS[a]&&APPS[a].legend)||[],L=[];
+  if(!rows.length)return genericPreview(a);
+  for(const r of rows) L.push(os(a,r.face,r.glyph)+'  '+r.label);
+  return previewLines(L);}

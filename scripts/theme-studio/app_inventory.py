@@ -50,6 +50,31 @@ def add_inventory_apps(apps: dict[str, Any], inventory_path: str) -> dict[str, A
     return apps
 
 
+def add_nerd_icons_app(apps: dict[str, Any], inventory_path: str, legend: Any) -> dict[str, Any]:
+    """Register nerd-icons as a bespoke legend app from its inventory faces.
+
+    The 34 nerd-icons color faces stay editable rows; LEGEND (the validated rows
+    from generate.load_nerd_icons_legend) rides the app so the bespoke previews.js
+    renderer can draw each filetype glyph in its mapped face color. A no-op when
+    LEGEND is falsy or the inventory lacks nerd-icons -- the caller guards on a
+    valid legend, and add_inventory_apps then creates the generic fallback app.
+    Must run before add_inventory_apps so the generic path skips nerd-icons.
+    """
+    if not legend or not os.path.exists(inventory_path):
+        return apps
+    with open(inventory_path) as src:
+        faces = json.load(src).get("nerd-icons")
+    if not faces:
+        return apps
+    apps["nerd-icons"] = {
+        "label": "nerd-icons",
+        "preview": "nerdicons",
+        "faces": [[face, face_label(face, "nerd-icons-"), {}] for face in faces],
+        "legend": legend,
+    }
+    return apps
+
+
 def apply_default_face_seeds(apps: dict[str, Any], defaults: Any) -> None:
     if not defaults.available:
         return

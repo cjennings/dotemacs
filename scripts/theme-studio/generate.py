@@ -1,5 +1,5 @@
 import json, os, re
-from app_inventory import add_inventory_apps, apply_default_face_seeds, apply_package_overrides, face_rows
+from app_inventory import add_inventory_apps, add_nerd_icons_app, apply_default_face_seeds, apply_package_overrides, face_rows
 from default_faces import DefaultFaces
 from face_data import *
 from face_specs import face_spec, ui_face_spec, migrate_legacy
@@ -297,6 +297,10 @@ def _build():
     # Phase 6: merge the generated all-package inventory (refresh with build-inventory.el).
     # Bespoke apps stay; every other installed package becomes an editable generic app.
     _inv_path=os.path.join(HERE,"package-inventory.json")
+    # nerd-icons becomes a bespoke filetype-legend app when its captured legend is
+    # valid; otherwise add_inventory_apps below makes it a plain generic app (the
+    # fallback). Must precede add_inventory_apps so the generic path skips it.
+    add_nerd_icons_app(APPS, _inv_path, load_nerd_icons_legend())
     add_inventory_apps(APPS, _inv_path)
     apply_default_face_seeds(APPS, DEFAULTS)
     # Apply seed theme package overrides when THEME_STUDIO_SEED is set: each full

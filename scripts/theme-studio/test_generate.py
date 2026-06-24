@@ -641,6 +641,21 @@ class NerdIconsLegend(unittest.TestCase):
             self.assertIsNone(generate.load_nerd_icons_legend(path))
         self.assertIn("invalid", out.getvalue())
 
+    def test_nerd_icons_registered_as_bespoke_legend_app(self):
+        app = generate.APPS.get("nerd-icons")
+        self.assertIsNotNone(app, "nerd-icons should be a bespoke app with the legend present")
+        self.assertEqual(app["preview"], "nerdicons")
+        self.assertTrue(app.get("legend"))
+        self.assertGreaterEqual(len(app["faces"]), 30)
+        # The dir-completion face is a different package and keeps its own app.
+        self.assertIn("nerd-icons-completion", generate.APPS)
+
+    def test_nerd_icons_app_faces_are_seeded_with_native_colors(self):
+        # apply_default_face_seeds fills the editable rows from emacs-default-faces.json.
+        rows = {r[0]: r[2] for r in generate.APPS["nerd-icons"]["faces"]}
+        self.assertIn("nerd-icons-blue", rows)
+        self.assertTrue(rows["nerd-icons-blue"], "nerd-icons-blue should carry a native seed")
+
 
 if __name__ == "__main__":
     unittest.main()
