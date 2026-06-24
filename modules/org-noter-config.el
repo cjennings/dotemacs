@@ -39,9 +39,32 @@
 
 ;; Forward declarations
 (declare-function org-id-uuid "org-id")
+(declare-function org-entry-get "org")
 (declare-function nov-mode "ext:nov")
 (declare-function pdf-view-mode "ext:pdf-view")
+;; pdf-tools fit commands (lazily loaded with pdf-tools)
+(declare-function pdf-view-fit-width-to-window "pdf-view")
+(declare-function pdf-view-fit-height-to-window "pdf-view")
+(declare-function pdf-view-fit-page-to-window "pdf-view")
+;; face-remap is built in but loaded lazily
+(declare-function face-remap-remove-relative "face-remap")
+;; org-noter session/sync/skeleton commands (lazily loaded with org-noter)
+(declare-function org-noter--get-notes-window "org-noter")
+(declare-function org-noter--get-doc-window "org-noter")
+(declare-function org-noter-insert-note "org-noter")
+(declare-function org-noter-enable-org-roam-integration "org-noter")
+(declare-function org-noter-sync-next-note "org-noter")
+(declare-function org-noter-sync-prev-note "org-noter")
+(declare-function org-noter-sync-current-note "org-noter")
+(declare-function org-noter-create-skeleton "org-noter")
+(declare-function org-noter-kill-session "org-noter")
+(declare-function org-noter-toggle-notes-window-location "org-noter")
 (defvar nov-file-name)
+;; org-noter package variables assigned at session start / config time
+(defvar org-noter-notes-window-location)
+(defvar org-noter-use-pdftools-link-location)
+(defvar org-noter-use-org-id)
+(defvar org-noter-use-unique-org-id)
 ;;; Configuration Variables
 
 (defvar cj/org-noter-notes-directory roam-dir

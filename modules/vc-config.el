@@ -27,6 +27,27 @@
 (require 'user-constants)  ;; provides code-dir
 (require 'keybindings)  ;; provides cj/custom-keymap
 
+;; Forward declaration: cj/vc-map is defined later in this file (see
+;; `defvar-keymap' below) but referenced earlier in a use-package :bind form.
+(defvar cj/vc-map)
+
+;; External package variables (assigned in :config blocks of lazily-loaded
+;; packages, so not loaded at byte-compile time).
+(defvar forge-pull-notifications)
+(defvar forge-topic-list-limit)
+
+;; External package functions (from lazily-loaded packages).
+(declare-function git-gutter:next-hunk "git-gutter")
+(declare-function git-gutter:previous-hunk "git-gutter")
+(declare-function git-timemachine--start "git-timemachine")
+(declare-function git-timemachine--revisions "git-timemachine")
+(declare-function git-timemachine-show-revision "git-timemachine")
+(declare-function forge-current-repository "forge")
+(declare-function forge-create-issue "forge")
+
+;; Defined later in this file; referenced earlier in `cj/git-timemachine'.
+(declare-function cj/git-timemachine-show-selected-revision "vc-config")
+
 ;; ---------------------------- Magit Configuration ----------------------------
 
 (use-package magit

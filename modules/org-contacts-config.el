@@ -22,6 +22,36 @@
 
 (require 'user-constants)
 
+;; Function declarations -- these live in lazily-loaded packages, so the
+;; byte-compiler can't see their definitions when this module compiles
+;; standalone.
+(declare-function org-contacts-db "org-contacts")
+(declare-function org-contacts-anniversaries "org-contacts")
+(declare-function org-contacts-files "org-contacts")
+(declare-function org-columns "org-colview")
+(declare-function org-reveal "org")
+(declare-function org-fold-show-entry "org-fold")
+(declare-function org-heading-components "org")
+(declare-function org-map-entries "org")
+(declare-function org-entry-get "org")
+(declare-function outline-next-heading "outline")
+(declare-function calendar-current-date "calendar")
+(declare-function mu4e-message-at-point "mu4e-message")
+(declare-function mu4e-message-field "mu4e-message")
+(declare-function which-key-add-key-based-replacements "which-key")
+
+;; External package variables referenced below; declared so the compiler
+;; treats them as special rather than free.
+(defvar org-capture-plist)
+(defvar org-capture-templates)
+(defvar mu4e~view-message)
+(defvar org-agenda-include-diary)
+(defvar org-agenda-custom-commands)
+(defvar mu4e-org-contacts-file)
+(defvar mu4e-headers-actions)
+(defvar mu4e-view-actions)
+(defvar mu4e-compose-complete-addresses)
+
 ;; Set `org-contacts-files' eagerly at require time.  Setting it in the
 ;; `use-package' form below would only apply when org-contacts loads, which is
 ;; deferred behind `:after (org mu4e)' -- later than the first
@@ -42,10 +72,13 @@
   (defun cj/org-contacts-anniversaries-safe ()
     "Safely call org-contacts-anniversaries with required bindings."
     (require 'diary-lib)
-    ;; These need to be dynamically bound for diary functions
-    (defvar date)
-    (defvar entry)
-    (defvar original-date)
+    ;; `date', `entry', and `original-date' are diary special vars that the
+    ;; diary functions read dynamically.  Declare them special locally; the
+    ;; suppressed warning is the unprefixed-name lint on these calendar names.
+    (with-suppressed-warnings ((lexical date entry original-date))
+      (defvar date)
+      (defvar entry)
+      (defvar original-date))
     (let ((date (calendar-current-date))
           (entry "")
           (original-date (calendar-current-date)))
@@ -186,9 +219,10 @@ Added: %U"
 
 (defun cj/--parse-email-string (name email-string)
   "Parse EMAIL-STRING and return formatted entries for NAME.
-EMAIL-STRING may contain multiple emails separated by commas, semicolons, or spaces.
-Returns a list of strings formatted as 'Name <email>'.
-Returns nil if EMAIL-STRING is nil or contains only whitespace."
+EMAIL-STRING may contain multiple emails separated by commas,
+semicolons, or spaces.  Returns a list of strings formatted as
+\"Name <email>\".  Returns nil if EMAIL-STRING is nil or contains only
+whitespace."
   (when (and email-string (string-match-p "[^[:space:]]" email-string))
     (let ((emails (split-string email-string "[,;[:space:]]+" t)))
       (mapcar (lambda (email)

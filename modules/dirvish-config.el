@@ -41,6 +41,24 @@
 
 (declare-function cj/drill-this-file "org-drill-config")
 
+;; Dirvish/Dired functions called from lazy-loaded packages.
+(declare-function dirvish-peek-mode "dirvish")
+(declare-function dirvish-side-follow-mode "dirvish")
+(declare-function dirvish-quit "dirvish")
+(declare-function dired-get-marked-files "dired")
+(declare-function dired-dwim-target-directory "dired-aux")
+(declare-function dired-get-file-for-visit "dired")
+(declare-function dired-get-filename "dired")
+(declare-function dired-mark "dired")
+(declare-function dired-current-directory "dired")
+(declare-function dired-file-name-at-point "dired-x")
+(declare-function dired-find-file "dired")
+(declare-function project-roots "project")
+
+;; External package variables referenced before their package loads.
+(defvar ediff-after-quit-hook-internal)
+(defvar dirvish-side-attributes)
+
 ;; mark files in dirvish, attach in mu4e
 (add-hook 'dired-mode-hook 'turn-on-gnus-dired-mode)
 
@@ -349,7 +367,8 @@ Shadows dired's `P' (`dired-do-print') with this type-aware version."
 
 (defun cj/dirvish-drill-file ()
   "Open the Org file at point and start an `org-drill' session on it.
-Bound to `S' (\"study\") in `dirvish-mode-map'; refuses anything but a `.org' file."
+Bound to `S' (\"study\") in `dirvish-mode-map'; refuses anything but
+a `.org' file."
   (interactive)
   (let ((file (dired-get-filename nil t)))
     (unless (and file (not (file-directory-p file)) (string-suffix-p ".org" file t))

@@ -223,7 +223,7 @@ Example: -21600 for CST (UTC-6), -28800 for PST (UTC-8)."
 
 (defun calendar-sync--format-timezone-offset (offset)
   "Format timezone OFFSET (in seconds) as human-readable string.
-Example: -21600 → 'UTC-6' or 'UTC-6:00'."
+Example: -21600 → `UTC-6' or `UTC-6:00'."
   (if (null offset)
       "unknown"
     (let* ((hours (/ offset 3600))
@@ -289,7 +289,7 @@ Example: -21600 → 'UTC-6' or 'UTC-6:00'."
   "Normalize line endings in CONTENT to Unix format (LF only).
 Removes all carriage return characters (\\r) from CONTENT.
 The iCalendar format (RFC 5545) uses CRLF line endings, but Emacs
-and 'org-mode' expect LF only. This function ensures consistent line
+and `org-mode' expect LF only. This function ensures consistent line
 endings throughout the parsing pipeline.
 
 Returns CONTENT with all \\r characters removed."
@@ -423,14 +423,16 @@ Handles both simple values and values with parameters like TZID."
 
 (defun calendar-sync--get-recurrence-id-line (event-str)
   "Extract full RECURRENCE-ID line from EVENT-STR, including parameters.
-Returns the complete line like 'RECURRENCE-ID;TZID=Europe/Tallinn:20260203T170000'.
+Returns the complete line like
+`RECURRENCE-ID;TZID=Europe/Tallinn:20260203T170000'.
 Returns nil if not found."
   (when (and event-str (stringp event-str))
     (calendar-sync--get-property-line event-str "RECURRENCE-ID")))
 
 (defun calendar-sync--parse-ics-datetime (value)
   "Parse iCal datetime VALUE into (year month day hour minute) list.
-Returns nil for invalid input. For date-only values, returns (year month day nil nil).
+Returns nil for invalid input. For date-only values, returns
+(year month day nil nil).
 Handles formats: 20260203T090000Z, 20260203T090000, 20260203."
   (when (and value
              (stringp value)
@@ -493,7 +495,8 @@ start time fail to parse.  The plist holds :recurrence-id (localized),
 (defun calendar-sync--collect-recurrence-exceptions (ics-content)
   "Collect all RECURRENCE-ID events from ICS-CONTENT.
 Returns hash table mapping UID to list of exception event plists.
-Each exception plist contains :recurrence-id (parsed), :start, :end, :summary, etc."
+Each exception plist contains :recurrence-id (parsed), :start, :end,
+:summary, etc."
   (let ((exceptions (make-hash-table :test 'equal)))
     (when (and ics-content (stringp ics-content))
       (dolist (event-str (calendar-sync--split-events ics-content))
@@ -571,7 +574,8 @@ Returns new list with matching occurrences replaced by exception times."
 
 (defun calendar-sync--get-exdates (event-str)
   "Extract all EXDATE values from EVENT-STR.
-Returns list of datetime strings (without TZID parameters), or nil if none found.
+Returns list of datetime strings (without TZID parameters), or nil if
+none found.
 Handles both simple values and values with parameters like TZID."
   (when (and event-str (stringp event-str) (not (string-empty-p event-str)))
     (let ((exdates '())
@@ -584,7 +588,8 @@ Handles both simple values and values with parameters like TZID."
 
 (defun calendar-sync--get-exdate-line (event-str exdate-value)
   "Find the full EXDATE line containing EXDATE-VALUE from EVENT-STR.
-Returns the complete line like 'EXDATE;TZID=America/New_York:20260210T130000'.
+Returns the complete line like
+`EXDATE;TZID=America/New_York:20260210T130000'.
 Returns nil if not found."
   (when (and event-str (stringp event-str) exdate-value)
     (let ((pattern (format "^\\(EXDATE[^:]*:%s\\)" (regexp-quote exdate-value))))
@@ -618,7 +623,8 @@ Converts TZID-qualified and UTC times to local time."
 (defun calendar-sync--exdate-matches-p (occurrence-start exdate)
   "Check if OCCURRENCE-START matches EXDATE.
 OCCURRENCE-START is (year month day hour minute).
-EXDATE is (year month day hour minute) or (year month day nil nil) for date-only.
+EXDATE is (year month day hour minute) or (year month day nil nil) for
+date-only.
 Date-only EXDATE matches any time on that day."
   (and occurrence-start exdate
        (= (nth 0 occurrence-start) (nth 0 exdate))  ; year
@@ -682,7 +688,8 @@ Returns nil if property not found."
 
 (defun calendar-sync--get-property-line (event property)
   "Extract full PROPERTY line from EVENT string, including parameters.
-Returns the complete line like 'DTSTART;TZID=Europe/Lisbon:20260202T190000'.
+Returns the complete line like
+`DTSTART;TZID=Europe/Lisbon:20260202T190000'.
 Returns nil if property not found."
   (when (string-match (format "^\\(%s[^\n]*\\)$" (regexp-quote property)) event)
     (match-string 1 event)))
@@ -790,8 +797,8 @@ Returns URL string or nil."
 
 (defun calendar-sync--extract-tzid (property-line)
   "Extract TZID parameter value from PROPERTY-LINE.
-PROPERTY-LINE is like 'DTSTART;TZID=Europe/Lisbon:20260202T190000'.
-Returns timezone string like 'Europe/Lisbon', or nil if no TZID.
+PROPERTY-LINE is like `DTSTART;TZID=Europe/Lisbon:20260202T190000'.
+Returns timezone string like `Europe/Lisbon', or nil if no TZID.
 Returns nil for malformed lines (missing colon separator)."
   (when (and property-line
              (stringp property-line)
@@ -813,7 +820,7 @@ Returns list (year month day hour minute) in local timezone."
 
 (defun calendar-sync--convert-tz-to-local (year month day hour minute source-tz)
   "Convert datetime from SOURCE-TZ timezone to local time.
-SOURCE-TZ is a timezone name like 'Europe/Lisbon' or 'Asia/Yerevan'.
+SOURCE-TZ is a timezone name like `Europe/Lisbon' or `Asia/Yerevan'.
 Returns list (year month day hour minute) in local timezone, or nil on error.
 
 Uses Emacs built-in timezone support (encode-time/decode-time with ZONE
@@ -837,8 +844,10 @@ TZ database as the `date' command."
   "Convert PARSED datetime to local time using timezone info.
 PARSED is (year month day hour minute) or (year month day nil nil).
 IS-UTC non-nil means the value had a Z suffix.
+
 TZID is a timezone string like \"Europe/Lisbon\", or nil.
-Returns PARSED converted to local time, or PARSED unchanged if no conversion needed."
+Returns PARSED converted to local time, or PARSED unchanged if no
+conversion needed."
   (cond
    (is-utc
     (calendar-sync--convert-utc-to-local
@@ -856,7 +865,8 @@ Returns PARSED converted to local time, or PARSED unchanged if no conversion nee
   "Parse iCal timestamp string TIMESTAMP-STR.
 Returns (year month day hour minute) or (year month day) for all-day events.
 Converts UTC times (ending in Z) to local time.
-If TZID is provided (e.g., 'Europe/Lisbon'), converts from that timezone to local.
+If TZID is provided (e.g., `Europe/Lisbon'), converts from that timezone
+to local.
 Returns nil if parsing fails."
   (cond
    ;; DateTime format: 20251116T140000Z or 20251116T140000
@@ -913,7 +923,8 @@ Returns string like '<2025-11-16 Sun 14:00-15:00>' or '<2025-11-16 Sun>'."
 (defun calendar-sync--date-to-time (date)
   "Convert DATE to time value for comparison.
 DATE should be a list starting with (year month day ...).
-Only the first three elements are used; extra elements (hour, minute) are ignored."
+Only the first three elements are used; extra elements (hour, minute) are
+ignored."
   (let ((day (nth 2 date))
         (month (nth 1 date))
         (year (nth 0 date)))
@@ -1082,7 +1093,8 @@ Returns nil if event lacks required fields (DTSTART, SUMMARY).
 Skips events with RECURRENCE-ID (individual instances of recurring events
 are handled separately via exception collection).
 Handles TZID-qualified timestamps by converting to local time.
-Cleans text fields (description, location, summary) via `calendar-sync--clean-text'."
+Cleans text fields (description, location, summary) via
+`calendar-sync--clean-text'."
   ;; Skip individual instances of recurring events (they're collected as exceptions)
   (unless (calendar-sync--get-property event-str "RECURRENCE-ID")
     (let* ((uid (calendar-sync--get-property event-str "UID"))
