@@ -4,7 +4,7 @@
 #+TODO: TODO | DONE SUPERSEDED CANCELLED
 
 * Metadata
-| Status   | draft                                                      |
+| Status   | Ready pending Craig's go — Codex review incorporated 2026-06-23 |
 |----------+------------------------------------------------------------|
 | Owner    | Craig                                                      |
 |----------+------------------------------------------------------------|
@@ -49,13 +49,25 @@ theme-studio gains a nerd-icons pane. On the left, the 34 =nerd-icons-*= color f
 
 Three integration points, plus the config removal.
 
-1. Data capture. The inventory dump (=build-inventory.el=, or a sibling dump) also emits, for nerd-icons: the *native* defface default foreground of each of the 34 color faces (read from the face's defface spec, not =face-attribute= at runtime, since the live value is already the tint), plus a curated filetype→face legend derived from =nerd-icons-extension-icon-alist= (the =:face= of each entry). =generate.py= embeds both alongside the existing face inventory.
+1. Data capture — two artifacts, two owners. Native seed colors are *not* captured here. They already ride theme-studio's existing default-face pipeline (=capture-default-faces.py= → =emacs-default-faces.json= → =apply_default_face_seeds= in =app_inventory.py=), which runs in clean =emacs -Q --batch= and stores each face's untinted =face-default-spec=. All 34 color faces plus =nerd-icons-completion-dir-face= are already present there with native colors (e.g. =nerd-icons-blue= #6A9FB5), so the seed is correct and untinted with no new code. The only *new* capture is the legend metadata: a generated artifact (emitted by =build-inventory.el= or a sibling dump, embedded by =generate.py=) listing the curated legend rows. The schema is in "Legend data contract" below.
 
 2. Bespoke preview. nerd-icons moves from a generic inventory app to a bespoke app (a =BESPOKE_APP_SPECS= / =PREVIEW_KEYS= entry) with a new renderer in =previews.js= that draws the legend rows: for each curated filetype, its glyph + name styled with the effective color of its mapped face, read through the same registry the other previews use. The 34 faces remain editable rows.
 
 3. Export/theme. The package-export path already serializes edited package faces into the theme; nerd-icons rides it. Confirm =build-theme.el= emits =nerd-icons-*= face specs and that WIP round-trips.
 
 4. Config. Remove =cj/nerd-icons-tint-color=, =cj/--nerd-icons-color-faces=, =cj/nerd-icons-apply-tint=, and its two call sites in =nerd-icons-config.el=. The dir-icon advice (=cj/--nerd-icons-color-dir=, which layers =nerd-icons-yellow= onto directory glyphs that otherwise carry no color face) stays — its problem is independent of the tint — but now points at a theme-owned face.
+
+** Legend data contract
+
+The legend artifact is an array of rows, captured once in Emacs (it reads the nerd-icons alists), embedded by =generate.py= like the rest of =APPS=, and rendered by a =previews.js= renderer. Each row is:
+
+- =key= — unique row id (=ext:el=, =dir=, =cmd=, =buf=).
+- =label= — the sample name the row shows (=init.el=, =src/=, =M-x command=, =*scratch*=).
+- =face= — the owner =nerd-icons-*= color face being themed. The swatch reads its effective color through the same registry the other previews use, so recoloring the face repaints the row live.
+- =category= — =extension= | =dir= | =command= | =buffer=, naming the source.
+- =glyph= — the nerd-font glyph string, captured for vNext; the v1 swatch renderer does not use it (see the rendering decision).
+
+Source per category: =extension= rows from the =:face= of =nerd-icons-extension-icon-alist= entries; =dir= rows from =nerd-icons-yellow= (the dir-advice face) and =nerd-icons-completion-dir-face=; =command=/symbol rows from the face in =nerd-icons-completion-category-icons=; =buffer= rows from the face resolved through =nerd-icons-mode-icon-alist=. v1 includes the curated extension rows plus one representative row each for dir, command, and buffer — the categories that actually surface in completing-read. A row whose face is unset (e.g. =nerd-icons-completion-dir-face=) falls back to the dir-advice face for its swatch.
 
 * Alternatives Considered
 
@@ -77,42 +89,56 @@ Three integration points, plus the config removal.
 - Good, because it is less code.
 - Bad, because the generic preview renders face-name rows; it cannot draw icon glyphs grouped by filetype, which is the whole representation.
 
-* Decisions [/]
+* Decisions [6/6]
 
-** TODO Color model: theme the 34 shared faces, not per-filetype
-- Owner / by-when: Craig / before Phase 2
+** DONE Color model: theme the 34 shared faces, not per-filetype
 - Context: 330 filetypes map onto 34 shared color faces; the data fixes the granularity.
 - Decision: We will expose the 34 =nerd-icons-*= color faces as the editable surface and use the filetype list only as a read-only legend.
 - Consequences: easier — small editable surface, matches nerd-icons. Harder — a user wanting one filetype a different color from its face-mates can't, without nerd-icons changes (out of scope).
 
-** TODO Legend scope: curated representative filetypes in v1
-- Owner / by-when: Craig / before Phase 1
-- Context: 330 entries is too noisy to preview; a representative set communicates the mapping.
+** DONE Legend scope: curated representative filetypes in v1
+- Context: 330 entries is too noisy to preview; a representative set communicates the mapping. The row schema is in "Legend data contract".
 - Decision: We will hand-curate a representative legend (common languages, a dir, a command, a buffer) covering the faces that actually appear in Craig's completion/dirvish use, and mark the set as the v1 legend.
 - Consequences: easier — a clean, readable preview. Harder — the curated set needs occasional maintenance as nerd-icons' alist shifts; an uncovered face has no legend row (still themeable).
 
-** TODO Seed colors: capture nerd-icons native defface defaults
-- Owner / by-when: Claude / Phase 1
-- Context: the live runtime foreground is the tint (darkgoldenrod), not nerd-icons' native palette; theme-studio needs the real defaults to seed from.
-- Decision: We will read each color face's default from its defface spec (bypassing the runtime value) and seed theme-studio with the native nerd-icons palette.
-- Consequences: easier — theme-studio opens on the true nerd-icons colors, not the tint. Harder — the dump must read defface specs, a slightly more involved capture than =face-attribute=.
+** DONE Seed colors: native colors ride the existing default-face pipeline
+- Context: theme-studio needs nerd-icons' native palette, not the runtime tint, to seed from.
+- Decision: We rely on theme-studio's existing default-face capture (=capture-default-faces.py= → =emacs-default-faces.json= → =apply_default_face_seeds=), which already runs in clean =emacs -Q --batch= and stores each face's untinted =face-default-spec=. No new color capture in =build-inventory.el=.
+- Consequences: easier — zero new color-capture code, and the seed is already untinted. Harder — none. Supersedes the original draft's "build-inventory.el emits native defaults" (finding 3), which would have double-seeded. Verified: all 34 color faces + =nerd-icons-completion-dir-face= already present with native colors (=nerd-icons-blue= #6A9FB5).
 
-** TODO Config sequencing: order of dropping the tint vs assigning theme colors
-- Owner / by-when: Craig / before Phase 3
+** DONE Config sequencing: assign theme colors in the change that drops the tint
 - Context: dropping the tint before the theme assigns the 34 faces makes completion icons jump from uniform darkgoldenrod to nerd-icons' native multicolor palette until the theme overrides them.
-- Decision: We will (proposed) seed the theme with explicit nerd-icons colors in the same change that drops the tint, so there is no uncolored interim — i.e. Phase 4 (theme assignment) lands with or before Phase 3 (config drop).
+- Decision: We land the theme's explicit nerd-icons color assignments (Phase 4) in or before the change that removes the tint (Phase 3), so there is no uncolored interim. (Proposed by the author; reopen if you'd rather drop the tint standalone and accept the native-palette interim.)
 - Consequences: easier — no ugly interim, one coherent switch. Harder — couples the config change to a theme edit rather than landing independently.
 
-** TODO Dir advice + nerd-icons-completion-dir-face
-- Owner / by-when: Craig / before Phase 3
+** DONE Dir advice + nerd-icons-completion-dir-face
 - Context: directory glyphs carry no intrinsic color face; =cj/--nerd-icons-color-dir= layers =nerd-icons-yellow= so a =default= face-remap doesn't catch them. =nerd-icons-completion-dir-face= is unset.
-- Decision: We will keep the dir advice (its problem is independent of the tint) and let it point at the now-theme-owned =nerd-icons-yellow=; we will optionally also theme =nerd-icons-completion-dir-face=.
-- Consequences: easier — dir icons stay correctly colored and become themeable. Harder — one more face to reason about in the legend.
+- Decision: We keep the dir advice (its problem is independent of the tint), now pointing at the theme-owned =nerd-icons-yellow=. =nerd-icons-completion-dir-face= is in scope — it is already inventoried and seeded, so it is a themeable row and the legend's dir row's owner face (falling back to =nerd-icons-yellow= while unset).
+- Consequences: easier — dir icons stay colored and become themeable. Harder — one more face in the legend (the dir row).
+
+** DONE Legend rendering: color swatch + filetype label in v1, not the nerd-font glyph
+- Context: the icons are private-use nerd-font glyphs; rendering them in the browser needs the Symbols Nerd Font loaded into =theme-studio.html=, an added dependency the page does not carry today.
+- Decision: v1 legend rows render a color swatch + the sample filetype label + the owner face name, colored by the face's effective color. The captured =glyph= rides along unused; rendering the real glyph is vNext, gated on loading the nerd font into the page.
+- Consequences: easier — no browser-font dependency, and swatch + label already answers "which filetype gets which color". Harder — the preview is not a pixel mirror of completing-read (no glyph shape); acceptable, since color, not shape, is what is being themed.
+
+* Review findings [3/3]
+
+** DONE Open decisions block implementation readiness :blocking:
+Disposition (accepted): all six decisions are now resolved — the original five plus the legend-rendering decision the schema work surfaced — and the =[6/6]= cookie reads complete. Sequencing (Phase 4 lands with/before Phase 3) and the =nerd-icons-completion-dir-face= scope are both settled; two author-proposed calls (sequencing, glyph rendering) are marked reopen-if-disagree.
+The spec still has five =TODO= decisions, including the sequencing of the tint removal relative to theme assignment and whether =nerd-icons-completion-dir-face= is in scope. That blocks readiness because an implementer would have to decide whether Phase 3 can land before Phase 4, and whether the directory completion face is part of the exported/verified surface. Resolve or explicitly risk-accept every decision before implementation starts. (blocking)
+
+** DONE Legend row contract is underspecified :blocking:
+Disposition (accepted): added the "Legend data contract" section — row schema (=key= / =label= / =face= / =category= / =glyph=), the per-category source for each row, and the v1 scope call (curated extension rows plus one representative dir / command / buffer row each). The browser data shape and the non-extension sources are now concrete.
+The design says the legend includes filetypes plus "a directory, a command, a buffer," but Phase 1 only names =nerd-icons-extension-icon-alist= as the source. In the current code, package preview data is embedded through =APPS= in =scripts/theme-studio/generate.py= and rendered by =scripts/theme-studio/previews.js=, so the implementer needs a concrete browser data shape: the curated row key, display label/sample name, glyph text, owner face, source category, and what source supplies non-extension rows. Define that schema and state whether v1 really includes directory/command/buffer rows or only extension-backed rows. (blocking)
+
+** DONE Native-palette capture path conflicts with the current seed pipeline :blocking:
+Disposition (accepted): the finding is right — native colors are already owned by the existing default-face pipeline, which runs in =emacs -Q --batch= and stores untinted =face-default-spec= (verified: 35 nerd-icons faces already in =emacs-default-faces.json= with native colors). Dropped the draft's "build-inventory.el emits native defaults" entirely (it would have double-seeded). The only new capture is the legend metadata; the Seed-colors decision was rewritten to match.
+The spec says =build-inventory.el= should emit native defface defaults, but the current Theme Studio default-color path already lives in =scripts/theme-studio/capture-default-faces.py= / =emacs-default-faces.json= and is applied in =scripts/theme-studio/app_inventory.py= via =apply_default_face_seeds=. =build-inventory.el= currently emits only package→face ownership. If the implementation adds native colors in the wrong artifact, nerd-icons could be seeded twice or the package default snapshot could keep carrying the runtime tint. Specify the intended owner: either extend the default-face capture to preserve the untinted =face-default-spec= values for =nerd-icons-*=, or add a separate nerd-icons metadata artifact and define exactly how it overrides =apply_default_face_seeds=. (blocking)
 
 * Implementation phases
 
-** Phase 1 — Data capture
-Extend the inventory dump to emit nerd-icons' native defface default colors (34 faces) and a curated filetype→face legend from =nerd-icons-extension-icon-alist=; wire both through =generate.py= into the page. Tree stays working (data only; no UI change yet).
+** Phase 1 — Legend capture
+Emit the curated legend rows (=key= / =label= / =face= / =category= / =glyph=) into a generated artifact and wire it through =generate.py=. Native seed colors are *not* captured here — they already ride the existing default-face pipeline (=capture-default-faces.py= / =emacs-default-faces.json= / =apply_default_face_seeds=), which stores untinted =face-default-spec= values; confirm nerd-icons' faces are present (verified: 35 captured). Tree stays working (data only; no UI change yet).
 
 ** Phase 2 — Bespoke nerd-icons preview
 Register nerd-icons as a bespoke app with a legend renderer in =previews.js= drawing each curated filetype's glyph + name in its mapped face's effective color, live-updating on recolor. Browser-gated; existing previews unaffected.
@@ -155,3 +181,13 @@ Seed/assign the 34 nerd-icons colors in WIP, confirm export → =WIP-theme.el= a
 - What: initial draft.
 - Why: Craig chose to spec the drop-the-tint + theme-studio filetype-legend feature before building (spans config + three theme-studio layers + the theme, with real trade-offs on color model, legend scope, seeding, and sequencing).
 - Artifacts: docs/specs/theme-studio-nerd-icons-colors-spec.org; todo.org task (to be created at hand-off).
+
+** 2026-06-23 Tue @ 22:29:01 -0400 — Codex (emacs-d) — reviewer
+- *What changed or was recommended:* First review, =Not ready=. Added three blocking findings: unresolved decisions still gate readiness; the legend needs a concrete generated data contract, especially for non-extension rows; and native-palette capture must be assigned to the existing default-face seed pipeline or to a clearly defined metadata override.
+- *Why:* The code read confirmed the main direction fits the current implementation: =modules/nerd-icons-config.el= owns the bulk tint and dir advice; Theme Studio package views are generated from =BESPOKE_APP_SPECS= / =APPS= and rendered through =PACKAGE_PREVIEWS=; package export already serializes package face specs. The remaining gaps would still force implementers to invent schema, seed ownership, and sequencing behavior mid-build.
+- *Artifacts:* findings [0/3]; code read: =modules/nerd-icons-config.el= (=cj/nerd-icons-apply-tint=, =cj/--nerd-icons-color-dir=), =scripts/theme-studio/build-inventory.el=, =scripts/theme-studio/capture-default-faces.py= / =emacs-default-faces.json=, =scripts/theme-studio/app_inventory.py=, =scripts/theme-studio/face_data.py=, =scripts/theme-studio/generate.py=, =scripts/theme-studio/previews.js=, =scripts/theme-studio/build-theme.el=, =tests/test-nerd-icons-config--apply-tint.el=, =tests/test-nerd-icons-config--color-dir.el=, =todo.org=.
+
+** 2026-06-23 Tue @ 22:37:50 -0400 — Claude — responder
+- *What changed:* All three blocking findings accepted and folded in. Added a "Legend data contract" section (row schema + per-category sources + v1 scope). Corrected the data-capture story: native seed colors are owned by the existing default-face pipeline (verified untinted in =emacs-default-faces.json=), so the draft's =build-inventory.el= native-color capture is dropped; only the legend metadata is newly captured. Resolved all five open decisions and added a sixth (legend renders a swatch + label in v1, not the nerd-font glyph). Phase 1 retitled to "Legend capture".
+- *Why:* The findings were correct against the code read. The seed-pipeline conflict was the load-bearing one — capturing native colors in =build-inventory.el= would have double-seeded against =apply_default_face_seeds=. Two calls (sequencing, glyph rendering) are author-proposed and marked reopen-if-disagree.
+- *Artifacts:* findings [3/3]; decisions [6/6]; code verified this session: =capture-default-faces.py= (reads =face-default-spec= under =-Q=), =emacs-default-faces.json= (35 nerd-icons faces, native colors), =nerd-icons-extension-icon-alist= (330) / =nerd-icons-dir-icon-alist= (27) / =nerd-icons-completion-category-icons= sources.
