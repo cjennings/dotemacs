@@ -174,9 +174,10 @@ Checks if process is actually alive, not just if variable is set."
 (defun cj/recording-process-sentinel (process event)
   "Sentinel for recording processes — handles unexpected exits.
 PROCESS is the ffmpeg shell process, EVENT describes what happened.
-This is called by Emacs when the process changes state (exits, is killed, etc.).
-It clears the process variable and updates the modeline so the recording indicator
-disappears even if the recording crashes or is killed externally."
+This is called by Emacs when the process changes state (exits, is
+killed, etc.).  It clears the process variable and updates the modeline
+so the recording indicator disappears even if the recording crashes or
+is killed externally."
   (when (memq (process-status process) '(exit signal))
     (cond
      ((eq process cj/audio-recording-ffmpeg-process)

@@ -145,7 +145,8 @@ Persists the choice for future sessions."
 (defun cj/--do-initialize-browser ()
   "Initialize browser configuration.
 Returns: (cons \\='loaded browser-plist) if saved choice was loaded,
-         (cons \\='first-available browser-plist) if using first discovered browser,
+         (cons \\='first-available browser-plist) if using first
+         discovered browser,
          (cons \\='no-browsers nil) if no browsers found."
   (let ((saved-choice (cj/load-browser-choice)))
     (if saved-choice

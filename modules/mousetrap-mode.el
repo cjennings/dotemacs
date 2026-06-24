@@ -67,7 +67,8 @@ Categories can be combined in profiles to allow specific interaction patterns.")
   "Mouse interaction profiles for different use cases.
 
 Each profile specifies which event categories are allowed.
-Available categories: primary-click, secondary-click, drags, multi-clicks, scroll.
+Available categories: primary-click, secondary-click, drags,
+multi-clicks, scroll.
 
 Profiles:
   - disabled: Block all mouse events
@@ -88,7 +89,7 @@ Modes not listed here will use `mouse-trap-default-profile'.
 When checking, the mode hierarchy is respected via `derived-mode-p'.")
 
 (defvar mouse-trap-default-profile 'disabled
-  "Default profile to use when current major mode is not in `mouse-trap-mode-profiles'.")
+  "Default profile when the major mode is not in `mouse-trap-mode-profiles'.")
 
 ;;; Keymap Builder
 
@@ -186,6 +187,11 @@ Used via `emulation-mode-map-alists' so each buffer gets its own keymap.")
 (add-to-list 'emulation-mode-map-alists 'mouse-trap--emulation-alist)
 
 ;;; Minor Mode Definition
+
+;; Forward declaration: the minor-mode variable is defined by the
+;; `define-minor-mode' form below, but referenced earlier in the lighter
+;; keymap and lighter-string helpers.
+(defvar mouse-trap-mode)
 
 (defvar mouse-trap--lighter-keymap
   (let ((map (make-sparse-keymap)))

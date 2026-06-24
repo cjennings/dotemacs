@@ -18,6 +18,9 @@
 (require 'user-constants)
 (require 'system-lib)
 
+(defvar org-agenda-files)
+(declare-function cj/build-org-agenda-list "org-agenda-config")
+
 ;; ---------------------------- Debug Functions --------------------------------
 
 ;;;###autoload

@@ -100,6 +100,16 @@
 (require 'cl-lib)
 (require 'system-lib)  ;; cj/confirm-strong (permanent file destruction confirm)
 
+;; Function declarations (lazily-loaded packages and sibling modules).
+(declare-function dwim-shell-command-on-marked-files "dwim-shell-command")
+(declare-function dwim-shell-command-read-file-name "dwim-shell-command")
+(declare-function dwim-shell-command--files "dwim-shell-command")
+(declare-function cj/xdg-open "external-open")
+(declare-function dwim-shell-commands-menu "dwim-shell-config")
+
+;; Forward declaration: external variable provided by the dirvish package.
+(defvar dirvish-mode-map)
+
 ;; --------------------------- Password-file helpers ---------------------------
 
 (defun cj/dwim-shell--password-cleanup-callback (temp-file)

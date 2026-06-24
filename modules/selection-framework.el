@@ -26,6 +26,12 @@
 ;;
 ;;; Code:
 
+;; External variables and lazily-loaded functions referenced below.
+(defvar xref-show-xrefs-function)
+(defvar xref-show-definitions-function)
+(declare-function consult-dir-projectile-dirs "consult-dir")
+(declare-function prescient-persist-mode "prescient")
+
 ;; ---------------------------------- Vertico ----------------------------------
 ;; Vertical completion UI
 

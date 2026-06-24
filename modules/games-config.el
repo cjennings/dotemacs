@@ -25,6 +25,8 @@
 
 (require 'user-constants)  ;; org-dir
 
+(defvar malyon-stories-directory)
+
 (with-eval-after-load 'malyon
   (setq malyon-stories-directory (concat org-dir "text.games/")))
 

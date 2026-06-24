@@ -32,6 +32,8 @@
 
 (require 'cl-lib)
 
+(declare-function eww-add-bookmark "eww")
+
 (defgroup my-eww-user-agent nil
   "EWW-only User-Agent management."
   :group 'eww)

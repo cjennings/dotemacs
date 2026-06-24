@@ -7,6 +7,10 @@
 
 ;;; Code:
 
+(defvar mu4e-compose-complete-only-personal)
+(defvar mu4e-compose-complete-only-after)
+(declare-function cj/activate-mu4e-org-contacts-integration "mu4e-org-contacts-integration")
+
 ;; Load the integration module.  Activation only runs when the module loaded
 ;; cleanly AND mu4e is present; otherwise this file is a no-op so the rest
 ;; of the config can load without mu4e installed.

@@ -32,6 +32,10 @@
 ;;
 ;;; Code:
 
+;; Lazily-loaded functions referenced below.
+(declare-function devdocs-go-back "devdocs")
+(declare-function devdocs-go-forward "devdocs")
+
 ;; ---------------------------------- Devdocs ----------------------------------
 
 (use-package devdocs

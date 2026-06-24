@@ -19,13 +19,13 @@
 (use-package simple-httpd
   :defer 1
   :preface
-  (defconst wwwdir (concat user-emacs-directory "www"))
-  (defun check-or-create-wwwdir ()
-    (unless (file-exists-p wwwdir)
-      (make-directory wwwdir)))
-  :init (check-or-create-wwwdir)
+  (defconst cj/httpd-wwwdir (concat user-emacs-directory "www"))
+  (defun cj/httpd-check-or-create-wwwdir ()
+    (unless (file-exists-p cj/httpd-wwwdir)
+      (make-directory cj/httpd-wwwdir)))
+  :init (cj/httpd-check-or-create-wwwdir)
   :config
-  (setq httpd-root wwwdir)
+  (setq httpd-root cj/httpd-wwwdir)
   (setq httpd-show-backtrace-when-error t)
   (setq httpd-serve-files t))
 

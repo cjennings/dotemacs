@@ -3,6 +3,14 @@
 
 ;;; Commentary:
 
+;;; Code:
+
+;; ------------------------------- Declarations --------------------------------
+
+(declare-function ledger-mode-clean-buffer "ledger-mode")
+(defvar ledger-mode-map)
+(defvar company-backends)
+
 ;; -------------------------------- Ledger Mode --------------------------------
 ;; edit files in ledger format
 
@@ -16,7 +24,8 @@
     (interactive)
     (save-excursion
       (when (buffer-modified-p)
-        (with-demoted-errors (ledger-mode-clean-buffer))
+        (with-demoted-errors "Error cleaning ledger buffer: %S"
+          (ledger-mode-clean-buffer))
         (save-buffer))))
   :bind
   (:map ledger-mode-map

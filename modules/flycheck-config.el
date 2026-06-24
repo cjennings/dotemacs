@@ -45,6 +45,14 @@
 
 (require 'keybindings) ;; provides cj/custom-keymap (use-package :map below)
 
+;; ------------------------------- Declarations --------------------------------
+
+(declare-function flycheck-mode "flycheck")
+(declare-function flycheck-list-errors "flycheck")
+(declare-function flycheck-add-mode "flycheck")
+(declare-function flycheck-buffer "flycheck")
+(declare-function cj/flycheck-prose-on-demand "flycheck-config")
+
 (defun cj/prose-helpers-on ()
   "Ensure that `abbrev-mode' and `flycheck-mode' are on in the current buffer."
   (interactive)

@@ -30,6 +30,7 @@
 (defvar org-complex-heading-regexp-format)
 
 (declare-function cj/--drill-pick-file "org-drill-config")
+(declare-function cj/org-capture--date-prefix "org-capture-config")
 (declare-function org-at-encrypted-entry-p "org-crypt")
 (declare-function org-at-heading-p "org")
 (declare-function org-back-to-heading "org")
@@ -170,7 +171,7 @@ letter upcased: \"~/.emacs.d/\" -> \"Emacs.d\", \"~/code/duet/\" -> \"Duet\"."
 ROOT is the projectile project root (or nil); INBOX is the global inbox
 file path.  Return a plist (:file F :open-work BOOL :project NAME :warn MSG):
 - ROOT with a todo.org -> F is that todo.org, :open-work t.
-- ROOT without a todo.org -> F is INBOX, :open-work nil, :warn names the project.
+- ROOT without a todo.org -> F is INBOX, :open-work nil, :warn names project.
 - ROOT nil -> F is INBOX, :open-work nil, :warn nil."
   (if (and (stringp root) (not (string-empty-p root)))
       (let ((todo (expand-file-name "todo.org" root))

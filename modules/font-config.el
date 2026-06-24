@@ -56,6 +56,9 @@
 (require 'host-environment)
 (require 'keybindings)  ;; establishes the C-z prefix used for "C-z F" below
 
+(defvar text-scale-mode-step)
+(declare-function cj/disable-emojify-mode "font-config")
+
 ;; ---------------------- HarfBuzz Font Cache Crash Fix -----------------------
 ;; Prevents Emacs from compacting font caches during GC. Without this, GC can
 ;; free font cache entries that HarfBuzz still references, causing SIGSEGV

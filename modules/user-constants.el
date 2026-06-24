@@ -154,15 +154,18 @@ Syncthing-synced `org-dir' — see the 2026-06-10 transport migration.")
 
 (defvar gcal-file (expand-file-name "data/gcal.org" user-emacs-directory)
   "The location of the org file containing Google Calendar information.
-Stored in .emacs.d/data/ so each machine syncs independently from Google Calendar.")
+Stored in .emacs.d/data/ so each machine syncs independently from
+Google Calendar.")
 
 (defvar pcal-file (expand-file-name "data/pcal.org" user-emacs-directory)
   "The location of the org file containing Proton Calendar information.
-Stored in .emacs.d/data/ so each machine syncs independently from Proton Calendar.")
+Stored in .emacs.d/data/ so each machine syncs independently from
+Proton Calendar.")
 
 (defvar dcal-file (expand-file-name "data/dcal.org" user-emacs-directory)
   "The location of the org file containing DeepSat Calendar information.
-Stored in .emacs.d/data/ so each machine syncs independently from Google Calendar.")
+Stored in .emacs.d/data/ so each machine syncs independently from
+Google Calendar.")
 
 (defvar reference-file (expand-file-name "reference.org" org-dir)
   "The location of the org file containing reference information.")

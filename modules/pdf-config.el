@@ -14,6 +14,22 @@
 ;;
 ;;; Code:
 
+;; ------------------------------- Declarations --------------------------------
+
+(declare-function pdf-tools-install "pdf-tools")
+(declare-function pdf-view-midnight-minor-mode "pdf-view")
+(declare-function pdf-view-enlarge "pdf-view")
+(declare-function pdf-view-shrink "pdf-view")
+(declare-function pdf-view-next-page "pdf-view")
+(declare-function pdf-view-previous-page "pdf-view")
+(declare-function image-next-line "image-mode")
+(declare-function image-previous-line "image-mode")
+(declare-function image-bob "image-mode")
+(declare-function image-eob "image-mode")
+(declare-function org-store-link "ol")
+(declare-function cj/open-file-with-command "system-utils")
+(declare-function cj/org-noter-insert-note-dwim "org-noter-config")
+
 ;; --------------------------------- PDF Tools ---------------------------------
 
 (use-package pdf-tools
@@ -61,9 +77,9 @@
   (define-key pdf-view-mode-map "i" #'cj/org-noter-insert-note-dwim)
   ;; Page change: C-up/C-down go to top of prev/next page
   (define-key pdf-view-mode-map (kbd "C-<down>")
-              (lambda () (interactive) (pdf-view-next-page-command) (image-bob)))
+              (lambda () (interactive) (pdf-view-next-page) (image-bob)))
   (define-key pdf-view-mode-map (kbd "C-<up>")
-              (lambda () (interactive) (pdf-view-previous-page-command) (image-eob))))
+              (lambda () (interactive) (pdf-view-previous-page) (image-eob))))
 
 ;; ------------------------------ PDF View Restore -----------------------------
 
