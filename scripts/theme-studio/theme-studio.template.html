@@ -58,7 +58,7 @@ STYLES_CSS</style>
   <div class="pals" id="pals"></div>
  </section>
 <h1>assignment</h1>
-<div class="pkgbar"><label style="color:#b4b1a2">view</label><button id="viewprev" class="viewnav" title="previous in the list" onclick="stepView(-1)">&lsaquo;</button><select id="viewsel" class="chip" style="width:auto;font:bold 10pt monospace" onchange="onViewChange()"></select><button id="viewnext" class="viewnav" title="next in the list" onclick="stepView(1)">&rsaquo;</button></div>
+<div class="pkgbar"><label style="color:#b4b1a2">view</label><button id="viewprev" class="viewnav" title="previous in the list" onclick="stepView(-1)">&lsaquo;</button><select id="viewsel" class="chip navsel" style="width:auto;font:bold 10pt monospace" onchange="onViewChange()"></select><button id="viewnext" class="viewnav" title="next in the list" onclick="stepView(1)">&rsaquo;</button></div>
 <div id="view-code" class="viewblock">
 <div class="cols">
  <section class="pane">
@@ -66,7 +66,7 @@ STYLES_CSS</style>
   <table class="leg" id="legtable"><thead><tr><th title="lock a decided element↔color association"></th><th onclick="srtTable('legbody',1)">elements &#9651;</th><th onclick="srtTable('legbody',2)">fg &#9651;</th><th onclick="srtTable('legbody',3)">bg &#9651;</th><th>style</th><th title="face :box (border)">box</th><th title="WCAG contrast of this color on the background">contrast</th><th>example</th></tr></thead><tbody id="legbody"></tbody></table>
  </section>
  <section class="pane grow">
-  <div class="langbar"><label style="color:#b4b1a2">language</label><button id="langprev" class="viewnav" title="previous in the list" onclick="stepLang(-1)">&lsaquo;</button><select id="langsel" class="chip" style="width:auto;font:bold 10pt monospace" onchange="renderCode();buildPkgPreview()"></select><button id="langnext" class="viewnav" title="next in the list" onclick="stepLang(1)">&rsaquo;</button></div>
+  <div class="langbar"><label style="color:#b4b1a2">language</label><button id="langprev" class="viewnav" title="previous in the list" onclick="stepLang(-1)">&lsaquo;</button><select id="langsel" class="chip navsel" style="width:auto;font:bold 10pt monospace" onchange="renderCode();buildPkgPreview()"></select><button id="langnext" class="viewnav" title="next in the list" onclick="stepLang(1)">&rsaquo;</button></div>
   <pre id="codepre"></pre>
  </section>
 </div>
@@ -95,7 +95,7 @@ STYLES_CSS</style>
   <table class="leg" id="pkgtable"><thead><tr><th title="lock a decided face"></th><th onclick="srtTable('pkgbody',1)">face &#9651;</th><th onclick="srtTable('pkgbody',2)">fg &#9651;</th><th onclick="srtTable('pkgbody',3)">bg &#9651;</th><th>style</th><th title="face :box (border)">box</th><th onclick="srtTable('pkgbody',6)">contrast &#9651;</th></tr></thead><tbody id="pkgbody"></tbody></table>
  </section>
  <section class="pane grow" style="display:flex;flex-direction:column">
-  <div class="langbar"><label style="color:#b4b1a2">preview: </label><button id="pkgprevprev" class="viewnav" title="previous size" onclick="stepPreviewPane(-1)">&lsaquo;</button><select id="pkgprevsel" style="background:#3a3d44;color:#e8e8ea;border:1px solid #5a5d68;border-radius:3px;padding:1px 4px;font:inherit"></select><button id="pkgprevnext" class="viewnav" title="next size" onclick="stepPreviewPane(1)">&rsaquo;</button></div>
+  <div class="langbar"><label style="color:#b4b1a2">preview: </label><button id="pkgprevprev" class="viewnav" title="previous size" onclick="stepPreviewPane(-1)">&lsaquo;</button><select id="pkgprevsel" class="chip navsel" style="width:auto;font:bold 10pt monospace"></select><button id="pkgprevnext" class="viewnav" title="next size" onclick="stepPreviewPane(1)">&rsaquo;</button></div>
   <div id="pkgpreview" class="mock" style="overflow:auto;min-height:60vh"></div>
  </section>
 </div>

@@ -34,6 +34,9 @@
  input.detailcheck{width:15px;height:15px;cursor:pointer}
  table.leg th:hover{color:#e8bd30}
  select.chip{appearance:none;border:1px solid #00000060;border-radius:5px;padding:5px 10px;font:bold 14px monospace;width:160px;cursor:pointer}
+ /* nav-flanked dropdowns (view, language, preview): match the flanking arrow buttons
+    (same dark bg, gold text) so the select and its buttons read as one control. */
+ select.navsel,select.navsel option{background:#1f1c19;color:#e8bd30}
  /* Prev/next arrows flanking the view dropdown: step the selection without reopening it.
     Scoped under .pkgbar to outweigh the generic `.pkgbar button` rule above. */
  .pkgbar .viewnav{appearance:none;border:1px solid #00000060;border-radius:5px;background:#1f1c19;color:#e8bd30;font:bold 16px monospace;width:26px;height:30px;padding:0;margin:0;cursor:pointer;vertical-align:middle}
