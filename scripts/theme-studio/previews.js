@@ -498,14 +498,31 @@ function renderMarkdownPreview(){const a='markdown-mode',L=[];
   L.push(os(a,'markdown-html-tag-delimiter-face','&lt;')+os(a,'markdown-html-tag-name-face','kbd')+os(a,'markdown-html-tag-delimiter-face','&gt;')+'Ctrl-C'+os(a,'markdown-html-tag-delimiter-face','&lt;/')+os(a,'markdown-html-tag-name-face','kbd')+os(a,'markdown-html-tag-delimiter-face','&gt;'));
   L.push(os(a,'markdown-footnote-marker-face','[^1]:')+' '+os(a,'markdown-footnote-text-face','the footnote text.'));
   return previewLines(L);}
-// nerd-icons legend preview: each curated filetype's real nerd-font glyph drawn
-// in its mapped color face, then the sample name. The legend rides
-// APPS['nerd-icons'].legend (captured by build-nerd-icons-legend.el); recoloring
-// a face repaints every row mapped to it because os() reads the live registry.
-// Falls back to the generic preview if the legend is missing (the bespoke app
-// only registers with a valid one, so that path is defensive).
-function renderNerdIconsPreview(){
-  const a='nerd-icons',rows=(APPS[a]&&APPS[a].legend)||[],L=[];
-  if(!rows.length)return genericPreview(a);
-  for(const r of rows) L.push(os(a,r.face,r.glyph)+'  '+r.label);
-  return previewLines(L);}
+// nerd-icons gallery grid: the full colored catalog. Every distinct face-bearing
+// nerd-icons glyph (APPS['nerd-icons'].gallery, captured by build-nerd-icons-legend.el),
+// one row per color face, the rows ordered by hue so families cluster (blues
+// together, reds together). Each cell draws the glyph in its face color with the
+// icon's nerd-font name beneath. SIZEPT (points, default 14) sizes the glyphs so
+// the designer can view the grid at different buffer sizes via the preview-pane
+// dropdown; the cell width scales with it. Recoloring a face repaints its swatch
+// and every glyph in its row because os() reads the live registry. Falls back to
+// the generic preview if the gallery is missing (the bespoke app registers with a
+// valid legend, so that path is defensive).
+function renderNerdIconsPreview(sizePt){
+  const a='nerd-icons',groups=(APPS[a]&&APPS[a].gallery)||[];
+  if(!groups.length)return genericPreview(a);
+  const pt=sizePt||14,cellW=Math.round(pt*4.6+24);
+  let h=`<div class="ni-gallery" style="padding:10px 14px;font:10pt/1.4 ${PREVIEW_FONT}">`;
+  for(const g of groups){
+    h+='<div class="ni-row" style="margin:0 0 10px;border-top:1px solid #2a2a2a;padding-top:6px">'
+      +`<div class="ni-row-head" style="color:#8a8a8a;padding:0 0 5px">`
+      +os(a,g.face,'■')+' '+esc(g.face)+' ('+g.glyphs.length+')</div>'
+      +'<div class="ni-cells">';
+    for(const e of g.glyphs)
+      h+=`<span class="ni-cell" style="display:inline-block;width:${cellW}px;text-align:center;vertical-align:top;margin:3px 1px">`
+        +`<span style="font-size:${pt}pt;line-height:1.3">`+os(a,g.face,e.glyph)+'</span><br>'
+        +`<span style="font-size:7.5pt;color:#9a9a9a;word-break:break-all;line-height:1.2">`+esc(e.name)+'</span>'
+        +'</span>';
+    h+='</div></div>';
+  }
+  return h+'</div>';}

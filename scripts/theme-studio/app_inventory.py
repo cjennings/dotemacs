@@ -50,15 +50,19 @@ def add_inventory_apps(apps: dict[str, Any], inventory_path: str) -> dict[str, A
     return apps
 
 
-def add_nerd_icons_app(apps: dict[str, Any], inventory_path: str, legend: Any) -> dict[str, Any]:
+def add_nerd_icons_app(apps: dict[str, Any], inventory_path: str, legend: Any,
+                       gallery: Any = None) -> dict[str, Any]:
     """Register nerd-icons as a bespoke legend app from its inventory faces.
 
     The 34 nerd-icons color faces stay editable rows; LEGEND (the validated rows
     from generate.load_nerd_icons_legend) rides the app so the bespoke previews.js
-    renderer can draw each filetype glyph in its mapped face color. A no-op when
-    LEGEND is falsy or the inventory lacks nerd-icons -- the caller guards on a
-    valid legend, and add_inventory_apps then creates the generic fallback app.
-    Must run before add_inventory_apps so the generic path skips nerd-icons.
+    renderer can draw each filetype glyph in its mapped face color. GALLERY (the
+    full colored catalog grouped by face, from generate.load_nerd_icons_gallery)
+    rides alongside when present so the same renderer can draw the gallery section;
+    a falsy GALLERY simply omits it (legend-only). A no-op when LEGEND is falsy or
+    the inventory lacks nerd-icons -- the caller guards on a valid legend, and
+    add_inventory_apps then creates the generic fallback app. Must run before
+    add_inventory_apps so the generic path skips nerd-icons.
     """
     if not legend or not os.path.exists(inventory_path):
         return apps
@@ -66,12 +70,15 @@ def add_nerd_icons_app(apps: dict[str, Any], inventory_path: str, legend: Any) -
         faces = json.load(src).get("nerd-icons")
     if not faces:
         return apps
-    apps["nerd-icons"] = {
+    app = {
         "label": "nerd-icons",
         "preview": "nerdicons",
         "faces": [[face, face_label(face, "nerd-icons-"), {}] for face in faces],
         "legend": legend,
     }
+    if gallery:
+        app["gallery"] = gallery
+    apps["nerd-icons"] = app
     return apps
 
 

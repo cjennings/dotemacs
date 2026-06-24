@@ -821,19 +821,32 @@ if(location.hash==='#nerdiconstest')gate('nerdiconstest',A=>{
  A(Array.isArray(legend)&&legend.length>=10,'legend has the curated rows ('+legend.length+')');
  const dir=legend.find(r=>r.key==='dir');
  A(dir&&dir.face==='nerd-icons-yellow','dir row models nerd-icons-yellow');
+ // Gallery: the full colored catalog as a grid — one row per color face, rows
+ // ordered by hue so families cluster, each color's distinct icons deduped.
+ const gallery=(APPS['nerd-icons']&&APPS['nerd-icons'].gallery)||[];
+ A(Array.isArray(gallery)&&gallery.length>=30,'gallery has the color groups ('+gallery.length+')');
+ const hues=gallery.map(g=>g.hue);
+ A(hues.every((hu,i)=>i===0||hues[i-1]<=hu),'gallery rows ordered by hue (families cluster)');
+ A(gallery.every(g=>typeof g.face==='string'&&g.face.indexOf('nerd-icons-')===0&&typeof g.hue==='number'&&Array.isArray(g.glyphs)&&g.glyphs.length>0),'every gallery group is a real nerd-icons face with a hue and glyphs');
+ A(gallery.every(g=>g.glyphs.every(e=>e.glyph&&e.name)),'every gallery glyph carries glyph and icon name');
+ A(gallery.every(g=>new Set(g.glyphs.map(e=>e.name)).size===g.glyphs.length),'icons are deduplicated within each color row');
  if(PACKAGE_PREVIEWS['nerdicons']&&APPS['nerd-icons']){
+  // assertPreviewFaces over the grid — every data-face, across the ~314 deduped
+  // glyph cells and the per-row swatches, is a real nerd-icons face with a valid owner.
   assertPreviewFaces(A, renderNerdIconsPreview(), APPS['nerd-icons'].faces, 10, 'nerd-icons',
    ['nerd-icons-purple','nerd-icons-yellow','nerd-icons-blue','nerd-icons-dblue']);
-  // Recoloring a face repaints every legend row mapped to it (os reads the live registry).
+  // Recoloring a face repaints every element in its row (the swatch + each glyph
+  // cell), since os reads the live registry.
   withSavedState(['PKGMAP'],()=>{
-   const target='nerd-icons-purple',mapped=legend.filter(r=>r.face===target);
-   A(mapped.length>=1,'at least one row maps to '+target);
+   const target='nerd-icons-purple',gGroup=gallery.find(g=>g.face===target);
+   const expected=gGroup?1+gGroup.glyphs.length:0;
+   A(!!gGroup,'gallery has a '+target+' row');
    PKGMAP['nerd-icons']=PKGMAP['nerd-icons']||{};
    PKGMAP['nerd-icons'][target]={fg:'#abcdef',bg:null,weight:null,slant:null,inherit:null,height:1,source:'user'};
    const box=document.createElement('div');box.innerHTML=renderNerdIconsPreview();
    const els=[...box.querySelectorAll('[data-face="'+target+'"]')];
-   A(els.length===mapped.length,'every '+target+' row rendered ('+els.length+'/'+mapped.length+')');
-   A(els.length>0&&els.every(e=>/#abcdef/i.test(e.getAttribute('style')||'')),'recolor repaints the mapped rows');
+   A(els.length===expected,'every '+target+' element rendered, swatch+glyphs ('+els.length+'/'+expected+')');
+   A(els.length>0&&els.every(e=>/#abcdef/i.test(e.getAttribute('style')||'')),'recolor repaints every element in the row');
   });
   // Export/import round-trip over an assigned nerd-icons color; the separate
   // nerd-icons-completion app (dir-face) is untouched by the nerd-icons pane.
@@ -846,6 +859,44 @@ if(location.hash==='#nerdiconstest')gate('nerdiconstest',A=>{
   A(!(exp['nerd-icons']&&('nerd-icons-completion-dir-face' in exp['nerd-icons'])),'dir-face stays out of the nerd-icons app');
  }
  });
+// Preview-pane dropdown gate (open with #previewpanetest): the preview label is a
+// "preview:" dropdown. A single-pane app shows its name disabled; nerd-icons is
+// multi-pane (one pane per font size in pt), enabled, and selecting a size renders
+// the grid at it. Locate is unaffected — the flash targets whatever pane is rendered.
+if(location.hash==='#previewpanetest')gate('previewpanetest',A=>{
+ const np=previewPanes('nerd-icons');
+ A(np.length===NERD_ICON_SIZES_PT.length&&np.length>1,'nerd-icons is multi-pane, one per size ('+np.length+')');
+ A(np.every(p=>typeof p.size==='number'&&/ pt$/.test(p.label)),'each nerd-icons pane carries a pt size and a label');
+ A(NERD_ICON_SIZES_PT[defaultPaneIdx('nerd-icons')]===NERD_ICON_DEFAULT_PT,'nerd-icons defaults to '+NERD_ICON_DEFAULT_PT+' pt');
+ const single=Object.keys(APPS).find(k=>k!=='nerd-icons');
+ A(previewPanes(single).length===1,'a non-nerd-icons app has a single pane ('+single+')');
+ // size drives the rendered glyph font-size; no arg defaults to 14 pt
+ const small=renderNerdIconsPreview(10),big=renderNerdIconsPreview(24);
+ A(/font-size:10pt/.test(small)&&!/font-size:24pt/.test(small),'10 pt pane renders glyphs at 10pt');
+ A(/font-size:24pt/.test(big)&&!/font-size:10pt/.test(big),'24 pt pane renders glyphs at 24pt');
+ A(/font-size:14pt/.test(renderNerdIconsPreview()),'default (no-arg) pane renders glyphs at 14 pt');
+ // gallery-absent fallback: the dropdown must not promise sizes it can't render —
+ // with no gallery, one pane only and the grid falls back to the generic preview.
+ const savedG=APPS['nerd-icons'].gallery;delete APPS['nerd-icons'].gallery;
+ A(previewPanes('nerd-icons').length===1,'no gallery -> single pane (dropdown disabled)');
+ A(!/ni-gallery/.test(renderNerdIconsPreview()),'no gallery -> grid falls back to the generic preview');
+ APPS['nerd-icons'].gallery=savedG;
+ // DOM wiring: dropdown enabled+populated on nerd-icons, disabled on a single-pane app
+ const vs=document.getElementById('viewsel'),saved=vs&&vs.value;
+ if(vs){
+  vs.value='nerd-icons';
+  if(curApp()==='nerd-icons'){
+   PREV_PANE['nerd-icons']=99;       // a stale, out-of-range selection
+   buildPkgPreview();
+   const sel=document.getElementById('pkgprevsel');
+   A(+sel.value===defaultPaneIdx('nerd-icons'),'a stale pane index resets to the default');
+   A(!sel.disabled&&sel.options.length===NERD_ICON_SIZES_PT.length,'nerd-icons: dropdown enabled with one option per size');
+   vs.value=single;buildPkgPreview();
+   A(sel.disabled&&sel.options.length===1,'single-pane app: dropdown disabled with one option');
+  }
+  vs.value=saved;buildPkgPreview();
+ }
+});
 // picker-distinct gate (open with #pickertest): the color picker panel must stand
 // out from the page background. It carries a highlighted gold accent border, and its
 // background is meaningfully lighter than the body so the two are easy to tell apart.
@@ -1244,17 +1295,17 @@ if(location.hash==='#locatehovertest')gate('locatehovertest',A=>withSavedState([
  rebuildLocateRegistry();
  const cb=document.createElement('div');cb.innerHTML=os(app,face,'x');
  A(/cleared, rendering as default/.test(cb.querySelector('[data-face]').getAttribute('title')),'cleared face title carries the cleared-rendering note');
- // info line on hover
+ // info line on hover — now a dedicated span next to the pane dropdown, cleared on leave
  PKGMAP[app][face]={fg:'#abcdef',bg:null,inherit:null,source:'user'};
  buildPkgPreview();
- const p=document.getElementById('pkgpreview'),lbl=document.getElementById('pkgprevlabel'),base=lbl.textContent;
+ const p=document.getElementById('pkgpreview'),info=document.getElementById('pkgprevinfo');
  rebuildLocateRegistry();
  p.innerHTML=os(app,face,'hover me');
  p.querySelector('[data-owner-app]').dispatchEvent(new MouseEvent('mouseover',{bubbles:true}));
- A(lbl.textContent===locateInfoLine(locateFaceMeta(app,face,LOCATE_REG)),'hover updates the info line to section > face — value: '+lbl.textContent);
- A(/ > .* — /.test(lbl.textContent),'info line uses the section > face — value shape');
+ A(info.textContent===locateInfoLine(locateFaceMeta(app,face,LOCATE_REG)),'hover updates the info line to section > face — value: '+info.textContent);
+ A(/ > .* — /.test(info.textContent),'info line uses the section > face — value shape');
  p.dispatchEvent(new MouseEvent('mouseleave'));
- A(lbl.textContent===base,'leaving the preview restores the base label: '+lbl.textContent);
+ A(info.textContent==='','leaving the preview clears the info line');
 }));
 // Click + cursor gate (open with #locateclicktest): an on-pane element carries the
 // locate-onpane class (pointer cursor) and clicking flashes its assignment row via

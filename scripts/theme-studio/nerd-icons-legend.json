@@ -1,93 +1,1557 @@
-[
-  {
-    "key": "ext:el",
-    "label": "init.el",
-    "face": "nerd-icons-purple",
-    "category": "extension",
-    "glyph": ""
-  },
-  {
-    "key": "ext:py",
-    "label": "app.py",
-    "face": "nerd-icons-dblue",
-    "category": "extension",
-    "glyph": ""
-  },
-  {
-    "key": "ext:org",
-    "label": "notes.org",
-    "face": "nerd-icons-lgreen",
-    "category": "extension",
-    "glyph": ""
-  },
-  {
-    "key": "ext:md",
-    "label": "README.md",
-    "face": "nerd-icons-lblue",
-    "category": "extension",
-    "glyph": ""
-  },
-  {
-    "key": "ext:ts",
-    "label": "main.ts",
-    "face": "nerd-icons-blue-alt",
-    "category": "extension",
-    "glyph": "󰛦"
-  },
-  {
-    "key": "ext:html",
-    "label": "index.html",
-    "face": "nerd-icons-orange",
-    "category": "extension",
-    "glyph": ""
-  },
-  {
-    "key": "ext:rs",
-    "label": "lib.rs",
-    "face": "nerd-icons-maroon",
-    "category": "extension",
-    "glyph": ""
-  },
-  {
-    "key": "ext:js",
-    "label": "app.js",
-    "face": "nerd-icons-yellow",
-    "category": "extension",
-    "glyph": ""
-  },
-  {
-    "key": "ext:yml",
-    "label": "ci.yml",
-    "face": "nerd-icons-dyellow",
-    "category": "extension",
-    "glyph": ""
-  },
-  {
-    "key": "ext:c",
-    "label": "main.c",
-    "face": "nerd-icons-blue",
-    "category": "extension",
-    "glyph": ""
-  },
-  {
-    "key": "dir",
-    "label": "src/",
-    "face": "nerd-icons-yellow",
-    "category": "dir",
-    "glyph": ""
-  },
-  {
-    "key": "cmd",
-    "label": "M-x command",
-    "face": "nerd-icons-blue",
-    "category": "command",
-    "glyph": ""
-  },
-  {
-    "key": "buf",
-    "label": "*scratch*",
-    "face": "nerd-icons-purple",
-    "category": "buffer",
-    "glyph": ""
-  }
-]
+{
+  "legend": [
+    {
+      "key": "ext:el",
+      "label": "init.el",
+      "face": "nerd-icons-purple",
+      "category": "extension",
+      "glyph": ""
+    },
+    {
+      "key": "ext:py",
+      "label": "app.py",
+      "face": "nerd-icons-dblue",
+      "category": "extension",
+      "glyph": ""
+    },
+    {
+      "key": "ext:org",
+      "label": "notes.org",
+      "face": "nerd-icons-lgreen",
+      "category": "extension",
+      "glyph": ""
+    },
+    {
+      "key": "ext:md",
+      "label": "README.md",
+      "face": "nerd-icons-lblue",
+      "category": "extension",
+      "glyph": ""
+    },
+    {
+      "key": "ext:ts",
+      "label": "main.ts",
+      "face": "nerd-icons-blue-alt",
+      "category": "extension",
+      "glyph": "󰛦"
+    },
+    {
+      "key": "ext:html",
+      "label": "index.html",
+      "face": "nerd-icons-orange",
+      "category": "extension",
+      "glyph": ""
+    },
+    {
+      "key": "ext:rs",
+      "label": "lib.rs",
+      "face": "nerd-icons-maroon",
+      "category": "extension",
+      "glyph": ""
+    },
+    {
+      "key": "ext:js",
+      "label": "app.js",
+      "face": "nerd-icons-yellow",
+      "category": "extension",
+      "glyph": ""
+    },
+    {
+      "key": "ext:yml",
+      "label": "ci.yml",
+      "face": "nerd-icons-dyellow",
+      "category": "extension",
+      "glyph": ""
+    },
+    {
+      "key": "ext:c",
+      "label": "main.c",
+      "face": "nerd-icons-blue",
+      "category": "extension",
+      "glyph": ""
+    },
+    {
+      "key": "dir",
+      "label": "src/",
+      "face": "nerd-icons-yellow",
+      "category": "dir",
+      "glyph": ""
+    },
+    {
+      "key": "cmd",
+      "label": "M-x command",
+      "face": "nerd-icons-blue",
+      "category": "command",
+      "glyph": ""
+    },
+    {
+      "key": "buf",
+      "label": "*scratch*",
+      "face": "nerd-icons-purple",
+      "category": "buffer",
+      "glyph": ""
+    }
+  ],
+  "gallery": [
+    {
+      "face": "nerd-icons-dpink",
+      "hue": 5,
+      "glyphs": [
+        {
+          "glyph": "󱆃",
+          "name": "nf-md-bash"
+        },
+        {
+          "glyph": "󰡷",
+          "name": "nf-md-graphql"
+        },
+        {
+          "glyph": "󰟬",
+          "name": "nf-md-sass"
+        },
+        {
+          "glyph": "",
+          "name": "nf-seti-graphql"
+        },
+        {
+          "glyph": "",
+          "name": "nf-seti-ocaml"
+        }
+      ]
+    },
+    {
+      "face": "nerd-icons-pink",
+      "hue": 5,
+      "glyphs": [
+        {
+          "glyph": "",
+          "name": "nf-dev-apple"
+        },
+        {
+          "glyph": "󰟬",
+          "name": "nf-md-sass"
+        },
+        {
+          "glyph": "",
+          "name": "nf-oct-code_of_conduct"
+        }
+      ]
+    },
+    {
+      "face": "nerd-icons-dorange",
+      "hue": 13,
+      "glyphs": [
+        {
+          "glyph": "",
+          "name": "nf-cod-settings"
+        },
+        {
+          "glyph": "",
+          "name": "nf-dev-gnu"
+        },
+        {
+          "glyph": "",
+          "name": "nf-dev-rust"
+        },
+        {
+          "glyph": "",
+          "name": "nf-oct-key"
+        },
+        {
+          "glyph": "",
+          "name": "nf-seti-makefile"
+        }
+      ]
+    },
+    {
+      "face": "nerd-icons-lorange",
+      "hue": 13,
+      "glyphs": [
+        {
+          "glyph": "",
+          "name": "nf-custom-common_lisp"
+        },
+        {
+          "glyph": "",
+          "name": "nf-custom-elixir"
+        },
+        {
+          "glyph": "",
+          "name": "nf-dev-bower"
+        },
+        {
+          "glyph": "",
+          "name": "nf-fa-file_code_o"
+        },
+        {
+          "glyph": "",
+          "name": "nf-fa-rss_square"
+        },
+        {
+          "glyph": "",
+          "name": "nf-seti-elixir"
+        },
+        {
+          "glyph": "",
+          "name": "nf-seti-perl"
+        }
+      ]
+    },
+    {
+      "face": "nerd-icons-lred",
+      "hue": 13,
+      "glyphs": [
+        {
+          "glyph": "",
+          "name": "nf-cod-library"
+        },
+        {
+          "glyph": "",
+          "name": "nf-cod-ruby"
+        },
+        {
+          "glyph": "",
+          "name": "nf-dev-gulp"
+        },
+        {
+          "glyph": "",
+          "name": "nf-dev-html5"
+        },
+        {
+          "glyph": "",
+          "name": "nf-dev-jest"
+        },
+        {
+          "glyph": "",
+          "name": "nf-dev-swift"
+        },
+        {
+          "glyph": "",
+          "name": "nf-fa-list_alt"
+        },
+        {
+          "glyph": "",
+          "name": "nf-fa-pie_chart"
+        },
+        {
+          "glyph": "󰈙",
+          "name": "nf-md-file_document"
+        },
+        {
+          "glyph": "",
+          "name": "nf-oct-file_diff"
+        },
+        {
+          "glyph": "",
+          "name": "nf-seti-elixir"
+        },
+        {
+          "glyph": "",
+          "name": "nf-seti-git"
+        },
+        {
+          "glyph": "",
+          "name": "nf-seti-tex"
+        }
+      ]
+    },
+    {
+      "face": "nerd-icons-orange",
+      "hue": 13,
+      "glyphs": [
+        {
+          "glyph": "",
+          "name": "nf-cod-settings"
+        },
+        {
+          "glyph": "",
+          "name": "nf-custom-common_lisp"
+        },
+        {
+          "glyph": "",
+          "name": "nf-custom-emacs"
+        },
+        {
+          "glyph": "",
+          "name": "nf-custom-kotlin"
+        },
+        {
+          "glyph": "",
+          "name": "nf-custom-scheme"
+        },
+        {
+          "glyph": "",
+          "name": "nf-custom-toml"
+        },
+        {
+          "glyph": "",
+          "name": "nf-dev-aws"
+        },
+        {
+          "glyph": "",
+          "name": "nf-dev-d3js"
+        },
+        {
+          "glyph": "",
+          "name": "nf-dev-gitlab"
+        },
+        {
+          "glyph": "",
+          "name": "nf-dev-html5"
+        },
+        {
+          "glyph": "",
+          "name": "nf-dev-jupyter"
+        },
+        {
+          "glyph": "",
+          "name": "nf-dev-matlab"
+        },
+        {
+          "glyph": "",
+          "name": "nf-fa-rss_square"
+        },
+        {
+          "glyph": "󰗮",
+          "name": "nf-md-disc"
+        },
+        {
+          "glyph": "󰸭",
+          "name": "nf-md-file_png_box"
+        },
+        {
+          "glyph": "󰈧",
+          "name": "nf-md-file_powerpoint"
+        },
+        {
+          "glyph": "󰗄",
+          "name": "nf-md-zip_box"
+        },
+        {
+          "glyph": "",
+          "name": "nf-oct-key"
+        },
+        {
+          "glyph": "",
+          "name": "nf-seti-haxe"
+        },
+        {
+          "glyph": "",
+          "name": "nf-seti-kotlin"
+        },
+        {
+          "glyph": "",
+          "name": "nf-seti-zig"
+        },
+        {
+          "glyph": "",
+          "name": "nf-seti-zip"
+        }
+      ]
+    },
+    {
+      "face": "nerd-icons-red",
+      "hue": 14,
+      "glyphs": [
+        {
+          "glyph": "",
+          "name": "nf-cod-ruby"
+        },
+        {
+          "glyph": "",
+          "name": "nf-custom-scheme"
+        },
+        {
+          "glyph": "",
+          "name": "nf-dev-cmake"
+        },
+        {
+          "glyph": "",
+          "name": "nf-dev-erlang"
+        },
+        {
+          "glyph": "",
+          "name": "nf-dev-git_branch"
+        },
+        {
+          "glyph": "",
+          "name": "nf-dev-git_compare"
+        },
+        {
+          "glyph": "",
+          "name": "nf-dev-haskell"
+        },
+        {
+          "glyph": "",
+          "name": "nf-dev-npm"
+        },
+        {
+          "glyph": "",
+          "name": "nf-dev-scala"
+        },
+        {
+          "glyph": "",
+          "name": "nf-fa-firefox"
+        },
+        {
+          "glyph": "",
+          "name": "nf-fa-paint_brush"
+        },
+        {
+          "glyph": "",
+          "name": "nf-linux-archlinux"
+        },
+        {
+          "glyph": "󰘚",
+          "name": "nf-md-chip"
+        },
+        {
+          "glyph": "󱪝",
+          "name": "nf-md-file_document_plus"
+        },
+        {
+          "glyph": "",
+          "name": "nf-oct-git_commit"
+        },
+        {
+          "glyph": "",
+          "name": "nf-oct-git_merge"
+        },
+        {
+          "glyph": "",
+          "name": "nf-oct-lock"
+        },
+        {
+          "glyph": "",
+          "name": "nf-seti-git"
+        },
+        {
+          "glyph": "",
+          "name": "nf-seti-jade"
+        },
+        {
+          "glyph": "",
+          "name": "nf-seti-pug"
+        },
+        {
+          "glyph": "",
+          "name": "nf-seti-sbt"
+        },
+        {
+          "glyph": "",
+          "name": "nf-seti-svelte"
+        }
+      ]
+    },
+    {
+      "face": "nerd-icons-red-alt",
+      "hue": 14,
+      "glyphs": [
+        {
+          "glyph": "",
+          "name": "nf-seti-reasonml"
+        }
+      ]
+    },
+    {
+      "face": "nerd-icons-maroon",
+      "hue": 15,
+      "glyphs": [
+        {
+          "glyph": "",
+          "name": "nf-dev-coffeescript"
+        },
+        {
+          "glyph": "",
+          "name": "nf-dev-rust"
+        },
+        {
+          "glyph": "",
+          "name": "nf-oct-lock"
+        },
+        {
+          "glyph": "",
+          "name": "nf-oct-log"
+        }
+      ]
+    },
+    {
+      "face": "nerd-icons-lmaroon",
+      "hue": 15,
+      "glyphs": [
+        {
+          "glyph": "",
+          "name": "nf-dev-coffeescript"
+        },
+        {
+          "glyph": "",
+          "name": "nf-dev-prolog"
+        },
+        {
+          "glyph": "󰋪",
+          "name": "nf-md-image_album"
+        },
+        {
+          "glyph": "",
+          "name": "nf-oct-file_binary"
+        },
+        {
+          "glyph": "",
+          "name": "nf-oct-file_zip"
+        },
+        {
+          "glyph": "",
+          "name": "nf-seti-prolog"
+        }
+      ]
+    },
+    {
+      "face": "nerd-icons-dred",
+      "hue": 15,
+      "glyphs": [
+        {
+          "glyph": "",
+          "name": "nf-cod-file_pdf"
+        },
+        {
+          "glyph": "",
+          "name": "nf-cod-ruby"
+        },
+        {
+          "glyph": "",
+          "name": "nf-dev-erlang"
+        },
+        {
+          "glyph": "",
+          "name": "nf-dev-npm"
+        },
+        {
+          "glyph": "",
+          "name": "nf-fa-font"
+        },
+        {
+          "glyph": "",
+          "name": "nf-fa-music"
+        },
+        {
+          "glyph": "󰛓",
+          "name": "nf-md-feather"
+        },
+        {
+          "glyph": "󰟵",
+          "name": "nf-md-form_textbox_password"
+        },
+        {
+          "glyph": "󰋩",
+          "name": "nf-md-image"
+        },
+        {
+          "glyph": "󰲹",
+          "name": "nf-md-playlist_music_outline"
+        },
+        {
+          "glyph": "",
+          "name": "nf-seti-reasonml"
+        }
+      ]
+    },
+    {
+      "face": "nerd-icons-dmaroon",
+      "hue": 15,
+      "glyphs": [
+        {
+          "glyph": "",
+          "name": "nf-dev-rust"
+        }
+      ]
+    },
+    {
+      "face": "nerd-icons-lyellow",
+      "hue": 45,
+      "glyphs": [
+        {
+          "glyph": "",
+          "name": "nf-cod-settings"
+        },
+        {
+          "glyph": "",
+          "name": "nf-dev-clojure"
+        },
+        {
+          "glyph": "",
+          "name": "nf-dev-clojure_alt"
+        },
+        {
+          "glyph": "",
+          "name": "nf-dev-grunt"
+        },
+        {
+          "glyph": "",
+          "name": "nf-fa-sticky_note"
+        },
+        {
+          "glyph": "",
+          "name": "nf-oct-checklist"
+        },
+        {
+          "glyph": "",
+          "name": "nf-seti-elixir"
+        },
+        {
+          "glyph": "",
+          "name": "nf-seti-haml"
+        },
+        {
+          "glyph": "",
+          "name": "nf-seti-stylelint"
+        }
+      ]
+    },
+    {
+      "face": "nerd-icons-dyellow",
+      "hue": 45,
+      "glyphs": [
+        {
+          "glyph": "",
+          "name": "nf-cod-settings"
+        },
+        {
+          "glyph": "",
+          "name": "nf-dev-less"
+        },
+        {
+          "glyph": "",
+          "name": "nf-dev-rust"
+        }
+      ]
+    },
+    {
+      "face": "nerd-icons-yellow",
+      "hue": 45,
+      "glyphs": [
+        {
+          "glyph": "",
+          "name": "nf-cod-dashboard"
+        },
+        {
+          "glyph": "",
+          "name": "nf-cod-settings"
+        },
+        {
+          "glyph": "",
+          "name": "nf-custom-crystal"
+        },
+        {
+          "glyph": "",
+          "name": "nf-custom-emacs"
+        },
+        {
+          "glyph": "",
+          "name": "nf-dev-awk"
+        },
+        {
+          "glyph": "",
+          "name": "nf-dev-css3"
+        },
+        {
+          "glyph": "",
+          "name": "nf-dev-javascript"
+        },
+        {
+          "glyph": "",
+          "name": "nf-dev-qt"
+        },
+        {
+          "glyph": "",
+          "name": "nf-dev-rust"
+        },
+        {
+          "glyph": "",
+          "name": "nf-dev-vitest"
+        },
+        {
+          "glyph": "",
+          "name": "nf-fa-bolt"
+        },
+        {
+          "glyph": "",
+          "name": "nf-fa-rss_square"
+        },
+        {
+          "glyph": "",
+          "name": "nf-fa-sticky_note"
+        },
+        {
+          "glyph": "󰨥",
+          "name": "nf-md-babel"
+        },
+        {
+          "glyph": "󰘦",
+          "name": "nf-md-code_json"
+        },
+        {
+          "glyph": "",
+          "name": "nf-oct-log"
+        },
+        {
+          "glyph": "",
+          "name": "nf-seti-babel"
+        },
+        {
+          "glyph": "",
+          "name": "nf-seti-crystal"
+        },
+        {
+          "glyph": "",
+          "name": "nf-seti-nim"
+        },
+        {
+          "glyph": "",
+          "name": "nf-seti-puppet"
+        }
+      ]
+    },
+    {
+      "face": "nerd-icons-green",
+      "hue": 79,
+      "glyphs": [
+        {
+          "glyph": "",
+          "name": "nf-cod-dashboard"
+        },
+        {
+          "glyph": "",
+          "name": "nf-custom-ada"
+        },
+        {
+          "glyph": "",
+          "name": "nf-custom-c"
+        },
+        {
+          "glyph": "",
+          "name": "nf-dev-clojure"
+        },
+        {
+          "glyph": "",
+          "name": "nf-dev-clojure_alt"
+        },
+        {
+          "glyph": "",
+          "name": "nf-dev-nodejs_small"
+        },
+        {
+          "glyph": "",
+          "name": "nf-dev-terminal"
+        },
+        {
+          "glyph": "",
+          "name": "nf-fa-file_arrow_down"
+        },
+        {
+          "glyph": "",
+          "name": "nf-fa-h_square"
+        },
+        {
+          "glyph": "",
+          "name": "nf-fa-music"
+        },
+        {
+          "glyph": "",
+          "name": "nf-fa-newspaper"
+        },
+        {
+          "glyph": "",
+          "name": "nf-fa-paint_brush"
+        },
+        {
+          "glyph": "󰂽",
+          "name": "nf-md-book_open"
+        },
+        {
+          "glyph": "󰵸",
+          "name": "nf-md-file_gif_box"
+        },
+        {
+          "glyph": "󱃢",
+          "name": "nf-md-file_table_box_multiple"
+        },
+        {
+          "glyph": "󰌛",
+          "name": "nf-md-language_csharp"
+        },
+        {
+          "glyph": "",
+          "name": "nf-oct-database"
+        },
+        {
+          "glyph": "",
+          "name": "nf-oct-key"
+        },
+        {
+          "glyph": "",
+          "name": "nf-seti-git"
+        }
+      ]
+    },
+    {
+      "face": "nerd-icons-dgreen",
+      "hue": 79,
+      "glyphs": [
+        {
+          "glyph": "",
+          "name": "nf-custom-vim"
+        },
+        {
+          "glyph": "",
+          "name": "nf-dev-apache"
+        },
+        {
+          "glyph": "",
+          "name": "nf-dev-nginx"
+        },
+        {
+          "glyph": "󰈛",
+          "name": "nf-md-file_excel"
+        },
+        {
+          "glyph": "",
+          "name": "nf-oct-file_diff"
+        },
+        {
+          "glyph": "",
+          "name": "nf-oct-file_media"
+        },
+        {
+          "glyph": "",
+          "name": "nf-oct-log"
+        }
+      ]
+    },
+    {
+      "face": "nerd-icons-lgreen",
+      "hue": 83,
+      "glyphs": [
+        {
+          "glyph": "",
+          "name": "nf-custom-orgmode"
+        },
+        {
+          "glyph": "",
+          "name": "nf-dev-cmake"
+        },
+        {
+          "glyph": "",
+          "name": "nf-dev-perl"
+        },
+        {
+          "glyph": "",
+          "name": "nf-dev-stylus"
+        },
+        {
+          "glyph": "",
+          "name": "nf-fa-newspaper"
+        },
+        {
+          "glyph": "󰦄",
+          "name": "nf-md-map_search"
+        },
+        {
+          "glyph": "󰎙",
+          "name": "nf-md-nodejs"
+        },
+        {
+          "glyph": "",
+          "name": "nf-oct-checklist"
+        },
+        {
+          "glyph": "",
+          "name": "nf-oct-file_diff"
+        },
+        {
+          "glyph": "",
+          "name": "nf-seti-svg"
+        },
+        {
+          "glyph": "",
+          "name": "nf-seti-vue"
+        }
+      ]
+    },
+    {
+      "face": "nerd-icons-cyan",
+      "hue": 189,
+      "glyphs": [
+        {
+          "glyph": "",
+          "name": "nf-dev-groovy"
+        },
+        {
+          "glyph": "",
+          "name": "nf-fa-bar_chart"
+        },
+        {
+          "glyph": "",
+          "name": "nf-fa-file_text"
+        },
+        {
+          "glyph": "",
+          "name": "nf-fa-font"
+        },
+        {
+          "glyph": "",
+          "name": "nf-linux-archlinux"
+        },
+        {
+          "glyph": "󱔗",
+          "name": "nf-md-file_document_multiple"
+        },
+        {
+          "glyph": "󰈧",
+          "name": "nf-md-file_powerpoint"
+        },
+        {
+          "glyph": "󰣨",
+          "name": "nf-md-gentoo"
+        },
+        {
+          "glyph": "󰯂",
+          "name": "nf-md-script_text"
+        },
+        {
+          "glyph": "󰓎",
+          "name": "nf-md-star"
+        },
+        {
+          "glyph": "",
+          "name": "nf-seti-docker"
+        }
+      ]
+    },
+    {
+      "face": "nerd-icons-dcyan",
+      "hue": 190,
+      "glyphs": [
+        {
+          "glyph": "",
+          "name": "nf-fa-font"
+        }
+      ]
+    },
+    {
+      "face": "nerd-icons-cyan-alt",
+      "hue": 192,
+      "glyphs": [
+        {
+          "glyph": "",
+          "name": "nf-dev-groovy"
+        }
+      ]
+    },
+    {
+      "face": "nerd-icons-lcyan",
+      "hue": 197,
+      "glyphs": [
+        {
+          "glyph": "",
+          "name": "nf-cod-library"
+        },
+        {
+          "glyph": "",
+          "name": "nf-dev-terminal"
+        },
+        {
+          "glyph": "",
+          "name": "nf-oct-book"
+        }
+      ]
+    },
+    {
+      "face": "nerd-icons-lsilver",
+      "hue": 210,
+      "glyphs": [
+        {
+          "glyph": "",
+          "name": "nf-cod-terminal_cmd"
+        },
+        {
+          "glyph": "",
+          "name": "nf-dev-php"
+        },
+        {
+          "glyph": "",
+          "name": "nf-dev-terminal"
+        },
+        {
+          "glyph": "",
+          "name": "nf-fa-beer"
+        },
+        {
+          "glyph": "",
+          "name": "nf-fa-cog"
+        },
+        {
+          "glyph": "󱁻",
+          "name": "nf-md-file_cog"
+        },
+        {
+          "glyph": "󰴓",
+          "name": "nf-md-fountain_pen_tip"
+        },
+        {
+          "glyph": "",
+          "name": "nf-oct-tools"
+        },
+        {
+          "glyph": "",
+          "name": "nf-seti-makefile"
+        }
+      ]
+    },
+    {
+      "face": "nerd-icons-silver",
+      "hue": 210,
+      "glyphs": [
+        {
+          "glyph": "",
+          "name": "nf-custom-prettier"
+        },
+        {
+          "glyph": "",
+          "name": "nf-dev-bower"
+        },
+        {
+          "glyph": "",
+          "name": "nf-dev-database"
+        },
+        {
+          "glyph": "",
+          "name": "nf-fa-archive"
+        },
+        {
+          "glyph": "",
+          "name": "nf-fa-cogs"
+        },
+        {
+          "glyph": "",
+          "name": "nf-fa-music"
+        },
+        {
+          "glyph": "",
+          "name": "nf-oct-database"
+        },
+        {
+          "glyph": "",
+          "name": "nf-seti-editorconfig"
+        },
+        {
+          "glyph": "",
+          "name": "nf-seti-gradle"
+        },
+        {
+          "glyph": "",
+          "name": "nf-seti-jinja"
+        }
+      ]
+    },
+    {
+      "face": "nerd-icons-dsilver",
+      "hue": 210,
+      "glyphs": [
+        {
+          "glyph": "",
+          "name": "nf-cod-file_binary"
+        },
+        {
+          "glyph": "",
+          "name": "nf-custom-emacs"
+        },
+        {
+          "glyph": "",
+          "name": "nf-dev-python"
+        },
+        {
+          "glyph": "",
+          "name": "nf-fa-file_code"
+        },
+        {
+          "glyph": "",
+          "name": "nf-fa-files_o"
+        },
+        {
+          "glyph": "",
+          "name": "nf-linux-xorg"
+        },
+        {
+          "glyph": "",
+          "name": "nf-oct-file_binary"
+        },
+        {
+          "glyph": "",
+          "name": "nf-oct-mail"
+        },
+        {
+          "glyph": "",
+          "name": "nf-oct-package"
+        }
+      ]
+    },
+    {
+      "face": "nerd-icons-lblue",
+      "hue": 211,
+      "glyphs": [
+        {
+          "glyph": "",
+          "name": "nf-cod-library"
+        },
+        {
+          "glyph": "",
+          "name": "nf-custom-emacs"
+        },
+        {
+          "glyph": "",
+          "name": "nf-dev-eslint"
+        },
+        {
+          "glyph": "",
+          "name": "nf-dev-git_compare"
+        },
+        {
+          "glyph": "",
+          "name": "nf-dev-react"
+        },
+        {
+          "glyph": "",
+          "name": "nf-dev-webpack"
+        },
+        {
+          "glyph": "",
+          "name": "nf-fa-file_code_o"
+        },
+        {
+          "glyph": "",
+          "name": "nf-fa-terminal"
+        },
+        {
+          "glyph": "󰂺",
+          "name": "nf-md-book"
+        },
+        {
+          "glyph": "󰙰",
+          "name": "nf-md-file_restore"
+        },
+        {
+          "glyph": "",
+          "name": "nf-oct-key"
+        },
+        {
+          "glyph": "",
+          "name": "nf-oct-markdown"
+        },
+        {
+          "glyph": "",
+          "name": "nf-seti-docker"
+        },
+        {
+          "glyph": "",
+          "name": "nf-seti-elixir"
+        },
+        {
+          "glyph": "",
+          "name": "nf-seti-r"
+        }
+      ]
+    },
+    {
+      "face": "nerd-icons-blue",
+      "hue": 212,
+      "glyphs": [
+        {
+          "glyph": "",
+          "name": "nf-custom-ada"
+        },
+        {
+          "glyph": "",
+          "name": "nf-custom-c"
+        },
+        {
+          "glyph": "",
+          "name": "nf-custom-cpp"
+        },
+        {
+          "glyph": "",
+          "name": "nf-custom-elm"
+        },
+        {
+          "glyph": "",
+          "name": "nf-custom-emacs"
+        },
+        {
+          "glyph": "",
+          "name": "nf-custom-scheme"
+        },
+        {
+          "glyph": "",
+          "name": "nf-dev-clojure"
+        },
+        {
+          "glyph": "",
+          "name": "nf-dev-clojure_alt"
+        },
+        {
+          "glyph": "",
+          "name": "nf-dev-cmake"
+        },
+        {
+          "glyph": "",
+          "name": "nf-dev-dart"
+        },
+        {
+          "glyph": "",
+          "name": "nf-dev-fsharp"
+        },
+        {
+          "glyph": "",
+          "name": "nf-dev-jenkins"
+        },
+        {
+          "glyph": "",
+          "name": "nf-dev-terminal"
+        },
+        {
+          "glyph": "",
+          "name": "nf-fa-bluetooth"
+        },
+        {
+          "glyph": "",
+          "name": "nf-fa-book"
+        },
+        {
+          "glyph": "",
+          "name": "nf-fa-chrome"
+        },
+        {
+          "glyph": "",
+          "name": "nf-fa-film"
+        },
+        {
+          "glyph": "",
+          "name": "nf-fa-info"
+        },
+        {
+          "glyph": "",
+          "name": "nf-fa-magic"
+        },
+        {
+          "glyph": "",
+          "name": "nf-fa-paint_brush"
+        },
+        {
+          "glyph": "",
+          "name": "nf-fae-telegram"
+        },
+        {
+          "glyph": "󰂺",
+          "name": "nf-md-book"
+        },
+        {
+          "glyph": "󰗦",
+          "name": "nf-md-copyright"
+        },
+        {
+          "glyph": "󰈬",
+          "name": "nf-md-file_word"
+        },
+        {
+          "glyph": "󰣨",
+          "name": "nf-md-gentoo"
+        },
+        {
+          "glyph": "󰛦",
+          "name": "nf-md-language_typescript"
+        },
+        {
+          "glyph": "󰫑",
+          "name": "nf-md-mastodon"
+        },
+        {
+          "glyph": "󱄅",
+          "name": "nf-md-nix"
+        },
+        {
+          "glyph": "󰨊",
+          "name": "nf-md-powershell"
+        },
+        {
+          "glyph": "",
+          "name": "nf-oct-cpu"
+        },
+        {
+          "glyph": "",
+          "name": "nf-oct-file_badge"
+        },
+        {
+          "glyph": "",
+          "name": "nf-oct-file_media"
+        },
+        {
+          "glyph": "",
+          "name": "nf-oct-key"
+        },
+        {
+          "glyph": "",
+          "name": "nf-oct-tag"
+        },
+        {
+          "glyph": "",
+          "name": "nf-seti-asm"
+        },
+        {
+          "glyph": "",
+          "name": "nf-seti-clojure"
+        },
+        {
+          "glyph": "",
+          "name": "nf-seti-docker"
+        },
+        {
+          "glyph": "",
+          "name": "nf-seti-elm"
+        },
+        {
+          "glyph": "",
+          "name": "nf-seti-go2"
+        },
+        {
+          "glyph": "",
+          "name": "nf-seti-godot"
+        }
+      ]
+    },
+    {
+      "face": "nerd-icons-dblue",
+      "hue": 212,
+      "glyphs": [
+        {
+          "glyph": "",
+          "name": "nf-cod-library"
+        },
+        {
+          "glyph": "",
+          "name": "nf-dev-docker"
+        },
+        {
+          "glyph": "",
+          "name": "nf-dev-python"
+        },
+        {
+          "glyph": "",
+          "name": "nf-fa-film"
+        },
+        {
+          "glyph": "",
+          "name": "nf-fa-paint_brush"
+        },
+        {
+          "glyph": "󰈥",
+          "name": "nf-md-file_jpg_box"
+        },
+        {
+          "glyph": "󰌛",
+          "name": "nf-md-language_csharp"
+        },
+        {
+          "glyph": "",
+          "name": "nf-oct-database"
+        },
+        {
+          "glyph": "",
+          "name": "nf-oct-file_media"
+        },
+        {
+          "glyph": "",
+          "name": "nf-oct-graph"
+        },
+        {
+          "glyph": "",
+          "name": "nf-seti-lua"
+        }
+      ]
+    },
+    {
+      "face": "nerd-icons-blue-alt",
+      "hue": 213,
+      "glyphs": [
+        {
+          "glyph": "",
+          "name": "nf-dev-fsharp"
+        },
+        {
+          "glyph": "󰛦",
+          "name": "nf-md-language_typescript"
+        },
+        {
+          "glyph": "󰜈",
+          "name": "nf-md-react"
+        },
+        {
+          "glyph": "",
+          "name": "nf-seti-config"
+        },
+        {
+          "glyph": "",
+          "name": "nf-seti-yarn"
+        }
+      ]
+    },
+    {
+      "face": "nerd-icons-lpurple",
+      "hue": 265,
+      "glyphs": [
+        {
+          "glyph": "󰱺",
+          "name": "nf-md-eslint"
+        },
+        {
+          "glyph": "󰌞",
+          "name": "nf-md-language_javascript"
+        },
+        {
+          "glyph": "",
+          "name": "nf-seti-elixir"
+        }
+      ]
+    },
+    {
+      "face": "nerd-icons-purple",
+      "hue": 272,
+      "glyphs": [
+        {
+          "glyph": "",
+          "name": "nf-custom-cpp"
+        },
+        {
+          "glyph": "",
+          "name": "nf-custom-emacs"
+        },
+        {
+          "glyph": "",
+          "name": "nf-dev-java"
+        },
+        {
+          "glyph": "",
+          "name": "nf-dev-terminal"
+        },
+        {
+          "glyph": "",
+          "name": "nf-fa-h_square"
+        },
+        {
+          "glyph": "",
+          "name": "nf-fa-info"
+        },
+        {
+          "glyph": "",
+          "name": "nf-fa-paint_brush"
+        },
+        {
+          "glyph": "",
+          "name": "nf-fae-telegram"
+        },
+        {
+          "glyph": "󰱺",
+          "name": "nf-md-eslint"
+        },
+        {
+          "glyph": "󱈚",
+          "name": "nf-md-language_fortran"
+        },
+        {
+          "glyph": "󰘐",
+          "name": "nf-md-microsoft_visual_studio"
+        },
+        {
+          "glyph": "",
+          "name": "nf-seti-julia"
+        },
+        {
+          "glyph": "",
+          "name": "nf-seti-makefile"
+        }
+      ]
+    },
+    {
+      "face": "nerd-icons-purple-alt",
+      "hue": 272,
+      "glyphs": [
+        {
+          "glyph": "",
+          "name": "nf-dev-wasm"
+        },
+        {
+          "glyph": "󱁢",
+          "name": "nf-md-terraform"
+        },
+        {
+          "glyph": "",
+          "name": "nf-seti-wasm"
+        }
+      ]
+    },
+    {
+      "face": "nerd-icons-dpurple",
+      "hue": 272,
+      "glyphs": [
+        {
+          "glyph": "",
+          "name": "nf-dev-java"
+        },
+        {
+          "glyph": "",
+          "name": "nf-fa-comments_o"
+        },
+        {
+          "glyph": "",
+          "name": "nf-fa-inbox"
+        },
+        {
+          "glyph": "",
+          "name": "nf-fa-info"
+        },
+        {
+          "glyph": "",
+          "name": "nf-fa-list"
+        },
+        {
+          "glyph": "",
+          "name": "nf-fa-paint_brush"
+        },
+        {
+          "glyph": "",
+          "name": "nf-fa-search"
+        },
+        {
+          "glyph": "",
+          "name": "nf-fa-table"
+        }
+      ]
+    },
+    {
+      "face": "nerd-icons-lpink",
+      "hue": 356,
+      "glyphs": [
+        {
+          "glyph": "",
+          "name": "nf-dev-terminal"
+        },
+        {
+          "glyph": "",
+          "name": "nf-oct-bookmark"
+        },
+        {
+          "glyph": "",
+          "name": "nf-seti-ocaml"
+        }
+      ]
+    }
+  ]
+}

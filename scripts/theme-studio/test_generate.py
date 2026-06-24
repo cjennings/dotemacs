@@ -656,6 +656,115 @@ class NerdIconsLegend(unittest.TestCase):
         self.assertIn("nerd-icons-blue", rows)
         self.assertTrue(rows["nerd-icons-blue"], "nerd-icons-blue should carry a native seed")
 
+    def test_legend_loads_from_object_shaped_artifact(self):
+        # The committed artifact is now an object {legend, gallery}; the legend
+        # loader must read the "legend" key, not assume a bare array.
+        path = self._write(json.dumps({"legend": [
+            {"key": "ext:el", "label": "init.el", "face": "nerd-icons-purple",
+             "category": "extension", "glyph": "x"}], "gallery": []}))
+        rows = generate.load_nerd_icons_legend(path)
+        self.assertEqual(len(rows), 1)
+        self.assertEqual(rows[0]["face"], "nerd-icons-purple")
+
+
+class NerdIconsGallery(unittest.TestCase):
+    """The committed gallery (full colored catalog) and its loader fallback."""
+
+    def _write(self, content):
+        path = os.path.join(tempfile.mkdtemp(), "nerd-icons-legend.json")
+        with open(path, "w") as out:
+            out.write(content)
+        return path
+
+    def test_committed_artifact_has_valid_groups(self):
+        groups = generate.load_nerd_icons_gallery()
+        self.assertIsNotNone(groups, "committed gallery should load")
+        self.assertTrue(groups)
+        for g in groups:
+            self.assertTrue(g["face"].startswith("nerd-icons-"))
+            self.assertIsInstance(g["hue"], (int, float))
+            self.assertTrue(g["glyphs"])
+            for e in g["glyphs"]:
+                for field in generate.NERD_ICONS_GALLERY_GLYPH_FIELDS:
+                    self.assertIsInstance(e.get(field), str)
+                    self.assertTrue(e[field])
+
+    def test_groups_are_ordered_by_hue(self):
+        groups = generate.load_nerd_icons_gallery()
+        hues = [g["hue"] for g in groups]
+        self.assertEqual(hues, sorted(hues), "color rows cluster by hue (ascending)")
+
+    def test_icons_are_deduplicated_within_a_group(self):
+        for g in generate.load_nerd_icons_gallery():
+            names = [e["name"] for e in g["glyphs"]]
+            self.assertEqual(len(names), len(set(names)), f"{g['face']} repeats an icon name")
+
+    def test_absent_artifact_falls_back_to_none(self):
+        with redirect_stdout(io.StringIO()):
+            self.assertIsNone(generate.load_nerd_icons_gallery("/no/such/legend.json"))
+
+    def test_malformed_artifact_falls_back_to_none(self):
+        path = self._write("{not json")
+        with redirect_stdout(io.StringIO()):
+            self.assertIsNone(generate.load_nerd_icons_gallery(path))
+
+    def test_legacy_array_only_artifact_has_no_gallery(self):
+        # A v1-era bare-array file carries a legend but no gallery -> None, no crash.
+        path = self._write(json.dumps([{"key": "ext:el"}]))
+        with redirect_stdout(io.StringIO()):
+            self.assertIsNone(generate.load_nerd_icons_gallery(path))
+
+    def test_group_missing_a_field_falls_back_to_none(self):
+        # Missing hue and glyphs -> invalid.
+        path = self._write(json.dumps({"legend": [], "gallery": [{"face": "nerd-icons-blue"}]}))
+        with redirect_stdout(io.StringIO()) as out:
+            self.assertIsNone(generate.load_nerd_icons_gallery(path))
+        self.assertIn("invalid", out.getvalue())
+
+    def test_glyph_entry_missing_a_field_falls_back_to_none(self):
+        path = self._write(json.dumps({"gallery": [
+            {"face": "nerd-icons-blue", "hue": 212, "glyphs": [{"glyph": "x"}]}]}))
+        with redirect_stdout(io.StringIO()) as out:
+            self.assertIsNone(generate.load_nerd_icons_gallery(path))
+        self.assertIn("invalid", out.getvalue())
+
+    def test_group_with_empty_glyphs_falls_back_to_none(self):
+        path = self._write(json.dumps({"gallery": [
+            {"face": "nerd-icons-blue", "hue": 212, "glyphs": []}]}))
+        with redirect_stdout(io.StringIO()) as out:
+            self.assertIsNone(generate.load_nerd_icons_gallery(path))
+        self.assertIn("invalid", out.getvalue())
+
+    def test_group_with_a_foreign_face_falls_back_to_none(self):
+        path = self._write(json.dumps({"gallery": [
+            {"face": "rainbow-delimiters-depth-1", "hue": 212,
+             "glyphs": [{"glyph": "x", "name": "nf-x"}]}]}))
+        with redirect_stdout(io.StringIO()) as out:
+            self.assertIsNone(generate.load_nerd_icons_gallery(path))
+        self.assertIn("invalid", out.getvalue())
+
+    def test_group_with_a_non_numeric_hue_falls_back_to_none(self):
+        path = self._write(json.dumps({"gallery": [
+            {"face": "nerd-icons-blue", "hue": "212",
+             "glyphs": [{"glyph": "x", "name": "nf-x"}]}]}))
+        with redirect_stdout(io.StringIO()) as out:
+            self.assertIsNone(generate.load_nerd_icons_gallery(path))
+        self.assertIn("invalid", out.getvalue())
+
+    def test_non_dict_glyph_entry_falls_back_to_none(self):
+        path = self._write(json.dumps({"gallery": [
+            {"face": "nerd-icons-blue", "hue": 212, "glyphs": ["not-a-dict"]}]}))
+        with redirect_stdout(io.StringIO()) as out:
+            self.assertIsNone(generate.load_nerd_icons_gallery(path))
+        self.assertIn("invalid", out.getvalue())
+
+    def test_nerd_icons_app_carries_the_gallery(self):
+        app = generate.APPS.get("nerd-icons")
+        self.assertIsNotNone(app)
+        self.assertTrue(app.get("gallery"), "nerd-icons app should carry the gallery groups")
+        faces = {g["face"] for g in app["gallery"]}
+        self.assertIn("nerd-icons-blue", faces)
+
 
 if __name__ == "__main__":
     unittest.main()

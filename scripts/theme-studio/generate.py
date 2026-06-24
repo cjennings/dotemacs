@@ -13,15 +13,18 @@ def read_json(name):
     return json.loads(read_text(name))
 
 NERD_ICONS_LEGEND_FIELDS = ("key", "label", "face", "category", "glyph")
+NERD_ICONS_GALLERY_GLYPH_FIELDS = ("glyph", "name")
 
 def load_nerd_icons_legend(path=None):
     """Return the nerd-icons legend rows, or None when the artifact is unusable.
 
     The legend is captured by build-nerd-icons-legend.el into nerd-icons-legend.json.
-    Absent, malformed, empty, or carrying a row without all five string fields
-    (key/label/face/category/glyph) -> None, with a warning, so the caller falls
-    back to the generic nerd-icons app instead of erroring. nerd-icons not being
-    installed at capture time yields an empty/absent file, which lands here as None.
+    The artifact is a JSON object {legend, gallery}; a legacy bare array is read as
+    the legend directly (back-compat). Absent, malformed, empty, or carrying a row
+    without all five string fields (key/label/face/category/glyph) -> None, with a
+    warning, so the caller falls back to the generic nerd-icons app instead of
+    erroring. nerd-icons not being installed at capture time yields an empty/absent
+    file, which lands here as None.
     """
     path = path or os.path.join(HERE, "nerd-icons-legend.json")
     if not os.path.exists(path):
@@ -29,10 +32,11 @@ def load_nerd_icons_legend(path=None):
         return None
     try:
         with open(path) as src:
-            rows = json.load(src)
+            data = json.load(src)
     except (json.JSONDecodeError, OSError) as exc:
         print(f"WARNING: nerd-icons legend malformed ({path}: {exc}); generic nerd-icons app")
         return None
+    rows = data.get("legend") if isinstance(data, dict) else data
     if not isinstance(rows, list) or not rows:
         print(f"WARNING: nerd-icons legend empty ({path}); generic nerd-icons app")
         return None
@@ -43,6 +47,44 @@ def load_nerd_icons_legend(path=None):
             print(f"WARNING: nerd-icons legend row invalid ({row!r}); generic nerd-icons app")
             return None
     return rows
+
+def load_nerd_icons_gallery(path=None):
+    """Return the nerd-icons gallery groups, or None when absent/unusable.
+
+    The gallery (the full colored catalog) rides nerd-icons-legend.json under the
+    "gallery" key: a list of {face, hue, glyphs:[{glyph,name}]} groups captured by
+    build-nerd-icons-legend.el, one group per color face, ordered by hue. A legacy
+    array-only artifact (legend, no gallery), an absent/malformed file, or a
+    structurally invalid group -> None, so the caller simply omits the gallery while
+    the legend data still loads. Never raises.
+    """
+    path = path or os.path.join(HERE, "nerd-icons-legend.json")
+    if not os.path.exists(path):
+        print(f"WARNING: nerd-icons gallery absent ({path}); legend without gallery")
+        return None
+    try:
+        with open(path) as src:
+            data = json.load(src)
+    except (json.JSONDecodeError, OSError) as exc:
+        print(f"WARNING: nerd-icons gallery malformed ({path}: {exc}); legend without gallery")
+        return None
+    groups = data.get("gallery") if isinstance(data, dict) else None
+    if not isinstance(groups, list) or not groups:
+        return None  # legacy/array-only artifact: legend present, no gallery — not an error
+    for group in groups:
+        if not (isinstance(group, dict)
+                and isinstance(group.get("face"), str) and group["face"].startswith("nerd-icons-")
+                and isinstance(group.get("hue"), (int, float))
+                and isinstance(group.get("glyphs"), list) and group["glyphs"]):
+            print(f"WARNING: nerd-icons gallery group invalid ({group!r}); legend without gallery")
+            return None
+        for entry in group["glyphs"]:
+            if not (isinstance(entry, dict)
+                    and all(isinstance(entry.get(f), str) and entry.get(f)
+                            for f in NERD_ICONS_GALLERY_GLYPH_FIELDS)):
+                print(f"WARNING: nerd-icons gallery glyph invalid ({entry!r}); legend without gallery")
+                return None
+    return groups
 
 def strip_exports(src):
     """Drop ES-module `export`/`import` lines so the body loads as a classic <script>.
@@ -318,7 +360,7 @@ def _build():
     # nerd-icons becomes a bespoke filetype-legend app when its captured legend is
     # valid; otherwise add_inventory_apps below makes it a plain generic app (the
     # fallback). Must precede add_inventory_apps so the generic path skips it.
-    add_nerd_icons_app(APPS, _inv_path, load_nerd_icons_legend())
+    add_nerd_icons_app(APPS, _inv_path, load_nerd_icons_legend(), load_nerd_icons_gallery())
     add_inventory_apps(APPS, _inv_path)
     apply_default_face_seeds(APPS, DEFAULTS)
     # Apply seed theme package overrides when THEME_STUDIO_SEED is set: each full

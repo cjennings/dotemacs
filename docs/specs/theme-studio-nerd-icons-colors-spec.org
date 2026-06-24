@@ -37,7 +37,8 @@ theme-studio already inventories the 34 =nerd-icons-*= faces (via the generic pa
 ** Scope tiers
 - v1: capture a curated filetype legend (=nerd-icons-legend.json=); a bespoke nerd-icons preview rendering it; assign the theme colors and drop the tint atomically; export/round-trip; live verification in completion/dirvish/dashboard. Native colors already ride the existing default-face seed pipeline, so there is no new color capture.
 - Out of scope: per-filetype assignment; editing the filetype→face mapping itself (that lives in nerd-icons).
-- vNext: extend the legend beyond file extensions to buffer-mode and command/symbol categories if the file set proves insufficient; a "reset to nerd-icons native palette" button.
+- vNext (gallery, SHIPPED): the nerd-icons pane becomes an icon grid — one row per color face, rows ordered by hue so families cluster, distinct icons (deduped within a color) drawn in their color with the icon name beneath, plus a per-size preview dropdown. Replaces the v1 legend in the pane (legend data retained). See "vNext — nerd-icons gallery" below. Subsumes the two roam asks (one representative icon per color; group the colors together).
+- vNext (later): extend the legend beyond file extensions to buffer-mode and command/symbol categories if the file set proves insufficient; a "reset to nerd-icons native palette" button.
 
 * Design
 
@@ -233,7 +234,111 @@ The feature changes specific contracts; each gets a named target rather than lea
 - Export/import round-trip: a WIP with assigned =nerd-icons-*= colors exports and re-imports to the same state; =nerd-icons-completion-dir-face= (separate app) is untouched by the nerd-icons pane.
 - Config: =make validate-modules= + launch smoke after the tint removal (Phase 3).
 
+* vNext — nerd-icons gallery (icon grid by color) — SHIPPED
+
+This increment builds on shipped v1 and the shipped glyph-rendering infrastructure (the embedded =ThemeStudioNerd= woff2 + the unquoted-inline-font fix that lets nerd-font glyphs render in the browser). It is purely additive display — no config change, no theme change, no new editable surface. The 34 =nerd-icons-*= faces are already themed and editable from v1; the gallery is a read-only view of every distinct icon, organized by the color it renders in.
+
+The design evolved during the build. The first cut rendered the *full* catalog (every face-bearing mapping, ~700 glyphs, duplicates kept) as a sequence of flowing color sections below the v1 legend, ordered by glyph count, with the source key on hover. Craig redesigned it after a live look into the shipped shape below: a grid of *distinct* icons (deduped within a color), rows ordered by *hue* so families cluster, the icon *name* shown beneath each glyph, the v1 legend dropped from the pane, and a *per-size preview dropdown* so the designer can view the grid at different font sizes. The decisions below record the shipped choices; the superseded ones are noted inline.
+
+** Summary
+
+The nerd-icons pane is a grid: one row per =nerd-icons-*= color face, the rows ordered by hue (ascending) so color families sit together (pinks/reds/oranges, yellows, greens, cyans, the grays, blues, purples). Each row is a swatch + face-name header over a wrapping set of cells; each cell draws one icon in the face's color with the icon's nerd-font name (=nf-dev-terminal=) beneath it. Icons are deduplicated within a color, so the ~700 face-bearing mappings collapse to ~314 distinct glyphs. Recoloring a face repaints its swatch and every icon in its row live. Above the grid, a "preview:" dropdown selects the glyph size.
+
+** For the user
+
+The pane shows the grid (the v1 legend preview is gone from view; its data is still captured for round-trip and reference). Color-level locate is preserved: clicking a color in the faces table flashes every icon in that row, and clicking an icon flashes its color's row — icons aren't individually editable, only their color is. A "preview:" dropdown above the grid picks the font size; Left/Right arrows step through the sizes when it is focused.
+
+** For the implementer
+
+Three integration points; no config or theme path is touched.
+
+1. Catalog capture. =build-nerd-icons-legend.el= is now a library (capture functions + one entry point, =cj/nerd-icons-write-legend=), so the pure logic unit-tests without nerd-icons. It walks every =:face=-bearing alist (=nerd-icons-extension-icon-alist=, =nerd-icons-regexp-icon-alist=, =nerd-icons-mode-icon-alist=), dedupes icons by name within each owner face, sorts each face's icons by name, computes each face's native hue from its defface foreground, and orders the groups by hue (ascending, ties by descending lightness). It emits into the *same* =nerd-icons-legend.json= under a =gallery= key (v1 rows stay under =legend=). nerd-icons is required only inside the writer, so the file loads tint-free for tests; the daemon invocation is =(progn (load …) (cj/nerd-icons-write-legend))=. =generate.py='s fallback covers absent/malformed/empty → generic app, never an error.
+
+2. Grid renderer. =renderNerdIconsPreview(sizePt)= in =previews.js= draws the =gallery= groups: per group a swatch + face-name header, then a cell per icon (the glyph in the face's color at =sizePt=, the icon name beneath). It reads color through the same effective-color registry, so recolor repaints live; glyphs render in =ThemeStudioNerd=. With no gallery it falls back to =genericPreview=. Registered under the existing bespoke nerd-icons app.
+
+3. Preview-pane dropdown. =previewPanes(app)= / =buildPkgPreview= in =app.js= turn the old static preview label into "preview:" + a =<select>=. A single-pane app shows its name disabled; nerd-icons (when it has a gallery) is multi-pane, one pane per font size, and selecting a size re-renders the grid at it. The selected size persists per app. The hover-wayfinding info line moved to its own span beside the dropdown.
+
+** Gallery data contract
+
+=nerd-icons-legend.json= gains a =gallery= key alongside =legend=. =gallery= is an array of color groups, ordered by ascending =hue= (families cluster), ties by descending lightness:
+
+- =face= — the owner =nerd-icons-*= color face. The header and every cell read effective color through the registry, so recoloring repaints the whole row live.
+- =hue= — the face's native hue in degrees (0-360), computed from its defface foreground at capture time. Drives the group order and is the gate's ordering check.
+- =glyphs= — an array of entries, each: =glyph= (the nerd-font glyph string) and =name= (the icon's nerd-font name, e.g. =nf-dev-terminal=, shown beneath the cell). Deduplicated by name within the face and sorted by name.
+
+A face with zero resolvable icons, or with no native color, produces no group. Faces resolve from the live alists at capture time, so the catalog tracks the installed nerd-icons version; a malformed or missing alist is skipped.
+
+** Gallery decisions [6/6]
+
+*** DONE Gallery content: distinct icons in a grid, grouped by color
+- Context: the first cut rendered the full catalog with duplicates as flowing sections. After a live look, Craig wanted a clean grid of distinct icons.
+- Decision: render *distinct* icons (deduplicated by name within each color) as a grid, one row per color face. Supersedes the original "full ~713-mapping catalog, duplicates kept" choice. ~700 mappings collapse to ~314 glyphs.
+- Consequences: easier — a clean, scannable catalog with no repeated cells. Harder — the per-color count is "distinct icons," not "mappings," so it no longer doubles as a mapping-density signal.
+
+*** DONE Row order: by hue so color families cluster
+- Context: the original order was by descending glyph count, which interleaves hues and reads as random (Craig's words). He asked for "blues together, reds together."
+- Decision: order the rows by each face's native hue (ascending), ties by descending lightness. Hue is computed from the defface foreground at capture and frozen in the artifact, so the order doesn't reshuffle as the user recolors. Supersedes the count ordering.
+- Consequences: easier — families cluster (spectral order); the gate's ordering check is a simple non-decreasing-hue assertion. Harder — a lone outlier (a near-red light-pink) can land at the far end of the spectrum.
+
+*** DONE Per-cell label: the icon's nerd-font name, shown beneath
+- Context: the original cut used a hover tooltip for the source key and no visible label. Craig wanted the name visible under each icon.
+- Decision: show the icon's nerd-font name (=nf-…=) beneath each cell. The capture stores =name= per glyph; the source key is dropped (dedupe collapses multiple sources anyway). Supersedes the hover-only source-key tooltip.
+- Consequences: easier — the icon's identity is always on screen. Harder — wider cells; the source filetype/mode is no longer surfaced (the icon name is the identity that matters in a catalog).
+
+*** DONE Coexistence: the grid replaces the legend in the pane
+- Context: the first cut kept the v1 legend above the gallery. Craig wanted the pane to be just the grid.
+- Decision: the pane renders only the grid; the v1 legend is dropped from the render. The legend *data* stays in the artifact (still captured, still loaded, still round-trips) so v1's contract and tests are intact. Supersedes "second section below the legend."
+- Consequences: easier — a single, focused view. Harder — the legend data rides unused in the artifact (kept for round-trip and possible future use).
+
+*** DONE Preview-pane size dropdown
+- Context: the designer needs to see the glyphs at different sizes. A general preview-pane dropdown solves it.
+- Decision: replace the static preview label with "preview:" + a =<select>=. One pane → disabled, names the preview. Multiple panes → enabled. nerd-icons gets one pane per font size in *points* (10/12/14/16/20/24, default 14) — pt because Emacs sizes fonts in =:height= (1/10 pt), so a pane maps to a real buffer size. Left/Right arrows step the focused dropdown; the size persists per app. The dropdown is multi-pane only when the gallery actually exists, so a failed capture can't promise sizes the renderer can't draw.
+- Consequences: easier — size selection with no new UI surface; the mechanism generalizes to any future multi-pane app. Harder — a second piece of per-pane state (the selected index).
+
+*** DONE Font embed: full Symbols Nerd Font Mono stays embedded
+- Context: v1 deferred the full-font (2.1M HTML) vs glyph-subset call; the gallery forces it.
+- Decision: keep the full =ThemeStudioNerd= woff2 embedded as a data: URI — the grid draws the whole glyph set, so a v1-curated subset would not cover it.
+- Consequences: easier — every glyph renders, no subset bookkeeping. Harder — the ~2.1M self-contained HTML stays (fine for a personal tool).
+
+** Locate under the grid (color-level association)
+
+The gallery inverts the studio's usual ~1:1 element↔face association: the visible unit is the icon, but the only editable, locatable handle is the color, which owns ~10-40 icons. Decision (Craig): keep it color-level. Clicking a color in the faces table flashes all its icons; clicking an icon flashes its color row. Icons get no individual editable identity — their name is already on screen, so no flash is needed to identify one. The size dropdown rides cleanly on top: only the selected pane is ever rendered, so a flash always targets the visible size. The alternative (icons as first-class selectable entities) was rejected — there's nothing per-icon to edit, so it would invent a selection concept that fights the rest of the studio.
+
+** vNext implementation phases (as shipped)
+
+*** Phase G1 — Catalog capture (library + grid data)
+=build-nerd-icons-legend.el= refactored to a library with =cj/nerd-icons-write-legend= (runtime nerd-icons require). Emits the deduped, hue-ordered =gallery= groups (=face= / =hue= / =glyphs:[{glyph,name}]=) into =nerd-icons-legend.json=. =generate.py= parses it (=load_nerd_icons_gallery= with absent/malformed/legacy-array/invalid-group fallbacks) and attaches it via =add_nerd_icons_app=. Unit-tested by =test-nerd-icons-legend-dump.el= (synthetic alists/faces: dedupe, hue order, lightness tiebreak, name sort, the skip rules).
+
+*** Phase G2 — Grid renderer
+=renderNerdIconsPreview(sizePt)= draws the per-color grid (swatch + name header, a cell per icon with the name beneath), replacing the legend render. Live recolor; =genericPreview= fallback when no gallery. Browser-gated (=#nerdiconstest=: grid, hue order, dedupe, recolor).
+
+*** Phase G3 — Preview-pane dropdown
+=previewPanes= / =buildPkgPreview= + the template's "preview:" =<select>= + the moved hover-info span. Size panes for nerd-icons (gated on gallery presence), disabled single pane elsewhere, Left/Right arrow nav, lighter dropdown background. Browser-gated (=#previewpanetest=; =#locatehovertest= updated for the moved info line).
+
+** vNext acceptance criteria
+- [X] The nerd-icons pane is a grid: one row per owning =nerd-icons-*= face, swatch + name header, a cell per distinct icon with the icon name beneath, in the face's color.
+- [X] Rows are ordered by hue so color families cluster; icons are deduplicated within a color.
+- [X] Recoloring a =nerd-icons-*= face repaints its swatch and every icon in its row live.
+- [X] A "preview:" dropdown selects the font size (pt); single-pane apps show a disabled dropdown naming the preview; Left/Right arrows step the sizes.
+- [X] =nerd-icons-legend.json= carries a =gallery= key (=face= / =hue= / =glyphs:[{glyph,name}]=); nerd-icons absent/malformed → gallery omitted (generic-app fallback), never an error.
+- [X] run-tests.sh green (Python + Node + ERT + browser gates).
+
+** vNext testing / verification (as shipped)
+- Elisp (=test-nerd-icons-legend-dump.el=, 7 ERT): the capture logic with synthetic alists + faces — dedupe within a color, hue ordering, the lightness tiebreak, within-color name sort, and the three skip rules (no =:face=, unresolvable glyph, face with no native color). Runs under the theme-studio batch without nerd-icons.
+- Python (=test_generate.py=): the =gallery= schema (each group a known =nerd-icons-*= face + numeric =hue= + non-empty =glyphs= each carrying =glyph= / =name=), hue ordering, dedupe, and the fallback edges (absent / malformed / legacy-array / empty glyphs / foreign face / non-numeric hue / non-dict entry → gallery omitted).
+- Browser gates: =#nerdiconstest= (grid renders, hue order, dedupe, valid owner =data-face=, recolor repaints the row); =#previewpanetest= (multi-pane enabled with a pane per size, single-pane disabled, size drives the glyph pt, default 14, no-gallery → single pane + generic fallback, stale-index reset); =#locatehovertest= (hover info in its own span, cleared on leave).
+
 * Review and iteration history
+** 2026-06-24 Wed @ 16:12:27 -0400 — Claude — author (gallery redesign, shipped)
+- *What changed:* Rewrote the vNext section to the shipped shape after Craig's live review. The gallery is now a grid (one row per color face, rows ordered by hue so families cluster, distinct icons deduped within a color, the icon name beneath each cell) that replaces the v1 legend in the pane; a per-size "preview:" dropdown (pt, default 14, Left/Right arrows, gated on gallery presence) selects the glyph size. Updated the data contract (=glyphs:[{glyph,name}]= + a per-group =hue=), the decisions (now [6/6]: content → distinct-icon grid, order → hue, label → icon name, coexistence → grid replaces legend, the new size-dropdown decision; the superseded full-catalog/count-order/hover-label/second-section choices noted inline), the phases (G1 capture as a library + G2 grid renderer + G3 dropdown), the locate section (color-level association, Craig's call), and the testing (the new =test-nerd-icons-legend-dump.el= ERT, the Python edges, =#previewpanetest=). Marked acceptance done.
+- *Why:* The first cut (full catalog, flowing sections, count order, hover-only source key, legend kept above) shipped, then Craig redesigned it on sight. A latent =face-hsl= bug surfaced while writing the ERT (=cadr= grabbed the keyword, not the plist) and was fixed.
+- *Artifacts:* build-nerd-icons-legend.el (library refactor), nerd-icons-legend.json (regenerated: 34 groups, 314 distinct glyphs), previews.js / app.js / theme-studio.template.html (grid + dropdown), test-nerd-icons-legend-dump.el (7 ERT), test_generate.py (Python edges), browser-gates.js (=#previewpanetest= + updates). Decisions [6/6].
+
+** 2026-06-24 Wed @ 14:12:54 -0400 — Claude — author (vNext gallery)
+- *What changed:* Added the "vNext — nerd-icons gallery (full colored catalog)" section: every nerd-icons glyph in its real color, grouped under a per-face swatch + name header, as a second read-only section below the v1 legend in the same pane. Added the gallery data contract (=nerd-icons-legend.json= gains a =gallery= key), five gallery decisions [5/5], two vNext phases (G1 catalog capture extending =build-nerd-icons-legend.el=; G2 =previews.js= renderer), vNext acceptance criteria, and vNext testing. Updated Scope tiers to name the gallery as the primary vNext item.
+- *Why:* Craig asked to widen the curated v1 legend to the full colored catalog. He chose the full-catalog-grouped-by-color scope over the representative-icon and deduped cuts; that choice subsumes the two roam asks (representative-icon-per-color, group-colors-together). The increment is purely additive display — no config/theme change — and rides the shipped glyph-rendering infrastructure (embedded =ThemeStudioNerd= woff2 + the unquoted-inline-font fix). The deferred v1 full-font-vs-subset call is settled here toward full-font, since the gallery needs the whole glyph set.
+- *Artifacts:* docs/specs/theme-studio-nerd-icons-colors-spec.org (vNext section). Author-proposed calls (artifact layout, label-on-hover, coexistence) marked reopen-if-disagree.
+
 ** 2026-06-23 Tue @ 22:17:25 -0400 — Claude — author
 - What: initial draft.
 - Why: Craig chose to spec the drop-the-tint + theme-studio filetype-legend feature before building (spans config + three theme-studio layers + the theme, with real trade-offs on color model, legend scope, seeding, and sequencing).

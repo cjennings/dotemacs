@@ -768,20 +768,65 @@ const PACKAGE_PREVIEWS={
   pearl:renderPearlPreview,slack:renderSlackPreview,telega:renderTelegaPreview,shr:renderShrPreview,
   nerdicons:renderNerdIconsPreview
 };
+// Preview panes for an app. Most apps have a single pane (the dropdown shows its
+// name and is disabled). nerd-icons is the one multi-pane app: one pane per font
+// size, so the designer can view the icon grid at different sizes — pt because
+// Emacs sizes fonts in :height (1/10 pt), so a pane maps to a real buffer size.
+const NERD_ICON_SIZES_PT=[10,12,14,16,20,24];
+const NERD_ICON_DEFAULT_PT=14;
+function previewPanes(app){
+  // Multi-pane only when nerd-icons actually has a gallery to size. If the gallery
+  // capture failed (nerd-icons absent, alists changed, empty), the grid renderer
+  // falls back to the generic preview, so offering size panes would be a lie — the
+  // dropdown collapses to one pane and is disabled.
+  if(app==='nerd-icons'&&APPS[app]&&Array.isArray(APPS[app].gallery)&&APPS[app].gallery.length)
+    return NERD_ICON_SIZES_PT.map(pt=>({label:'nerd-icons — '+pt+' pt',size:pt}));
+  return [{label:PACKAGE_PREVIEWS[APPS[app].preview]?APPS[app].label:'generic (face names in their own colors)'}];
+}
+function defaultPaneIdx(app){
+  if(app==='nerd-icons')return Math.max(0,NERD_ICON_SIZES_PT.indexOf(NERD_ICON_DEFAULT_PT));
+  return 0;
+}
+// Per-app selected pane index, so a chosen size survives edits and revisits.
+const PREV_PANE={};
 function buildPkgPreview(){
   const app=curApp(),p=document.getElementById('pkgpreview');if(!p)return;
   rebuildLocateRegistry();
-  const renderer=PACKAGE_PREVIEWS[APPS[app].preview];
-  p.innerHTML=renderer?renderer():genericPreview(app);
+  const panes=previewPanes(app);
+  let idx=PREV_PANE[app];
+  if(idx==null||idx>=panes.length){idx=defaultPaneIdx(app);PREV_PANE[app]=idx;}
+  const pane=panes[idx],renderer=PACKAGE_PREVIEWS[APPS[app].preview];
+  // A pane carrying a size is a nerd-icons size variant; render the grid at it.
+  p.innerHTML=pane.size!=null?renderNerdIconsPreview(pane.size):(renderer?renderer():genericPreview(app));
   p.style.background=MAP['bg'];
   p.onclick=(e)=>locateClick(e,app);
-  const lbl=document.getElementById('pkgprevlabel'),baseLabel=renderer?(APPS[app].label+' preview'):'preview (generic — face names in their own colors)';
-  if(lbl)lbl.textContent=baseLabel;
+  // The pane dropdown: disabled when there's only one pane (it just names the
+  // preview), enabled when there are several (it selects which one shows).
+  const sel=document.getElementById('pkgprevsel');
+  if(sel){
+    sel.innerHTML=panes.map((pn,i)=>`<option value="${i}">${esc(pn.label)}</option>`).join('');
+    sel.value=String(idx);
+    sel.disabled=panes.length<2;
+    sel.onchange=()=>{PREV_PANE[app]=+sel.value;buildPkgPreview();};
+    // Left/Right arrows step through the panes when the dropdown is focused
+    // (Up/Down already do, natively); clamped at the ends. Re-render and refocus,
+    // since rebuilding the options would otherwise drop keyboard focus.
+    sel.onkeydown=(e)=>{
+      if(e.key!=='ArrowLeft'&&e.key!=='ArrowRight')return;
+      e.preventDefault();
+      const cur=+sel.value,nxt=e.key==='ArrowRight'?Math.min(cur+1,panes.length-1):Math.max(cur-1,0);
+      if(nxt===cur)return;
+      PREV_PANE[app]=nxt;buildPkgPreview();
+      const s=document.getElementById('pkgprevsel');if(s)s.focus();
+    };
+  }
   // Immediate-wayfinding info line: hovering an element shows "section > face —
-  // value" in the label area (the element's title is the deterministic fallback);
-  // leaving the preview restores the base label.
-  p.onmouseover=(e)=>{const u=e.target.closest('[data-owner-app]');if(!u||!lbl)return;lbl.textContent=locateInfoLine(locateFaceMeta(u.dataset.ownerApp,u.dataset.face,LOCATE_REG));};
-  p.onmouseleave=()=>{if(lbl)lbl.textContent=baseLabel;};
+  // value" next to the dropdown (the element's title is the deterministic
+  // fallback); leaving the preview clears it.
+  const info=document.getElementById('pkgprevinfo');
+  if(info)info.textContent='';
+  p.onmouseover=(e)=>{const u=e.target.closest('[data-owner-app]');if(!u||!info)return;info.textContent=locateInfoLine(locateFaceMeta(u.dataset.ownerApp,u.dataset.face,LOCATE_REG));};
+  p.onmouseleave=()=>{if(info)info.textContent='';};
 }
 function resetApp(){const app=curApp();for(const [face,,d] of APPS[app].faces)if(!LOCKED.has('pkg:'+app+':'+face))PKGMAP[app][face]=seedFace(d);pkgChanged();notify('reset editable '+app+' faces to package defaults',false);}
 function syncPkgHeight(){const t=document.getElementById('pkgtable'),m=document.getElementById('pkgpreview');if(!t||!m)return;const lb=m.previousElementSibling,lbh=lb?lb.getBoundingClientRect().height+10:30;m.style.height=Math.max(t.getBoundingClientRect().height-lbh,220)+'px';}
