@@ -1319,18 +1319,6 @@
   "pkg:company:company-tooltip-scrollbar-track",
   "pkg:company:company-tooltip-search",
   "pkg:company:company-tooltip-search-selection",
-  "pkg:dired:dired-header",
-  "pkg:dired:dired-directory",
-  "pkg:dired:dired-symlink",
-  "pkg:dired:dired-broken-symlink",
-  "pkg:dired:dired-special",
-  "pkg:dired:dired-set-id",
-  "pkg:dired:dired-perm-write",
-  "pkg:dired:dired-mark",
-  "pkg:dired:dired-marked",
-  "pkg:dired:dired-flagged",
-  "pkg:dired:dired-ignored",
-  "pkg:dired:dired-warning",
   "pkg:org-noter:org-noter-notes-exist-face",
   "pkg:org-noter:org-noter-no-notes-exist-face",
   "pkg:elfeed:elfeed-search-date-face",
@@ -1496,7 +1484,21 @@
   "pkg:shr:shr-link",
   "pkg:shr:shr-selected-link",
   "pkg:shr:shr-strike-through",
-  "pkg:vertico:vertico-current"
+  "pkg:vertico:vertico-current",
+  "pkg:dired:dired-header",
+  "pkg:dired:dired-directory",
+  "pkg:dired:dired-symlink",
+  "pkg:dired:dired-broken-symlink",
+  "pkg:dired:dired-special",
+  "pkg:dired:dired-set-id",
+  "pkg:dired:dired-perm-write",
+  "pkg:dired:dired-mark",
+  "pkg:dired:dired-marked",
+  "pkg:dired:dired-flagged",
+  "pkg:dired:dired-ignored",
+  "pkg:dired:dired-warning",
+  "ui:region",
+  "ui:mode-line-inactive"
  ],
  "packages": {
   "org-mode": {
@@ -3891,7 +3893,7 @@
     "source": "user"
    },
    "dired-directory": {
-    "fg": "#67809c",
+    "fg": "#aac9ea",
     "bg": null,
     "weight": "bold",
     "slant": "italic",
@@ -3912,7 +3914,7 @@
     "source": "user"
    },
    "dired-special": {
-    "fg": "#dab53d",
+    "fg": "#777980",
     "bg": null,
     "inherit": null,
     "source": "user"
@@ -3920,14 +3922,18 @@
    "dired-set-id": {
     "fg": "#cb7b64",
     "bg": null,
+    "weight": "bold",
+    "slant": "italic",
     "inherit": null,
     "source": "user"
    },
    "dired-perm-write": {
-    "fg": "#a9b2bb",
+    "fg": "#cb7b64",
     "bg": null,
+    "weight": "bold",
+    "slant": "italic",
     "inherit": null,
-    "source": "default"
+    "source": "user"
    },
    "dired-mark": {
     "fg": "#dab53d",
@@ -5753,6 +5759,212 @@
     "source": "user"
    }
   },
+  "nerd-icons": {
+   "nerd-icons-blue": {
+    "fg": "#6a9fb5",
+    "bg": null,
+    "inherit": null,
+    "source": "default"
+   },
+   "nerd-icons-blue-alt": {
+    "fg": "#2188b6",
+    "bg": null,
+    "inherit": null,
+    "source": "default"
+   },
+   "nerd-icons-cyan": {
+    "fg": "#75b5aa",
+    "bg": null,
+    "inherit": null,
+    "source": "default"
+   },
+   "nerd-icons-cyan-alt": {
+    "fg": "#0595bd",
+    "bg": null,
+    "inherit": null,
+    "source": "default"
+   },
+   "nerd-icons-dblue": {
+    "fg": "#446674",
+    "bg": null,
+    "inherit": null,
+    "source": "default"
+   },
+   "nerd-icons-dcyan": {
+    "fg": "#48746d",
+    "bg": null,
+    "inherit": null,
+    "source": "default"
+   },
+   "nerd-icons-dgreen": {
+    "fg": "#6d8143",
+    "bg": null,
+    "inherit": null,
+    "source": "default"
+   },
+   "nerd-icons-dmaroon": {
+    "fg": "#72584b",
+    "bg": null,
+    "inherit": null,
+    "source": "default"
+   },
+   "nerd-icons-dorange": {
+    "fg": "#915b2d",
+    "bg": null,
+    "inherit": null,
+    "source": "default"
+   },
+   "nerd-icons-dpink": {
+    "fg": "#7e5d5f",
+    "bg": null,
+    "inherit": null,
+    "source": "default"
+   },
+   "nerd-icons-dpurple": {
+    "fg": "#694863",
+    "bg": null,
+    "inherit": null,
+    "source": "default"
+   },
+   "nerd-icons-dred": {
+    "fg": "#843031",
+    "bg": null,
+    "inherit": null,
+    "source": "default"
+   },
+   "nerd-icons-dsilver": {
+    "fg": "#838484",
+    "bg": null,
+    "inherit": null,
+    "source": "default"
+   },
+   "nerd-icons-dyellow": {
+    "fg": "#b48d56",
+    "bg": null,
+    "inherit": null,
+    "source": "default"
+   },
+   "nerd-icons-green": {
+    "fg": "#90a959",
+    "bg": null,
+    "inherit": null,
+    "source": "default"
+   },
+   "nerd-icons-lblue": {
+    "fg": "#677174",
+    "bg": null,
+    "inherit": null,
+    "source": "default"
+   },
+   "nerd-icons-lcyan": {
+    "fg": "#2c7d6e",
+    "bg": null,
+    "inherit": null,
+    "source": "default"
+   },
+   "nerd-icons-lgreen": {
+    "fg": "#3d6837",
+    "bg": null,
+    "inherit": null,
+    "source": "default"
+   },
+   "nerd-icons-lmaroon": {
+    "fg": "#ce7a4e",
+    "bg": null,
+    "inherit": null,
+    "source": "default"
+   },
+   "nerd-icons-lorange": {
+    "fg": "#ffa500",
+    "bg": null,
+    "inherit": null,
+    "source": "default"
+   },
+   "nerd-icons-lpink": {
+    "fg": "#ff505b",
+    "bg": null,
+    "inherit": null,
+    "source": "default"
+   },
+   "nerd-icons-lpurple": {
+    "fg": "#e69dd6",
+    "bg": null,
+    "inherit": null,
+    "source": "default"
+   },
+   "nerd-icons-lred": {
+    "fg": "#eb595a",
+    "bg": null,
+    "inherit": null,
+    "source": "default"
+   },
+   "nerd-icons-lsilver": {
+    "fg": "#7f7869",
+    "bg": null,
+    "inherit": null,
+    "source": "default"
+   },
+   "nerd-icons-lyellow": {
+    "fg": "#ff9300",
+    "bg": null,
+    "inherit": null,
+    "source": "default"
+   },
+   "nerd-icons-maroon": {
+    "fg": "#8f5536",
+    "bg": null,
+    "inherit": null,
+    "source": "default"
+   },
+   "nerd-icons-orange": {
+    "fg": "#d4843e",
+    "bg": null,
+    "inherit": null,
+    "source": "default"
+   },
+   "nerd-icons-pink": {
+    "fg": "#fc505b",
+    "bg": null,
+    "inherit": null,
+    "source": "default"
+   },
+   "nerd-icons-purple": {
+    "fg": "#68295b",
+    "bg": null,
+    "inherit": null,
+    "source": "default"
+   },
+   "nerd-icons-purple-alt": {
+    "fg": "#5d54e1",
+    "bg": null,
+    "inherit": null,
+    "source": "default"
+   },
+   "nerd-icons-red": {
+    "fg": "#ac4142",
+    "bg": null,
+    "inherit": null,
+    "source": "default"
+   },
+   "nerd-icons-red-alt": {
+    "fg": "#843031",
+    "bg": null,
+    "inherit": null,
+    "source": "default"
+   },
+   "nerd-icons-silver": {
+    "fg": "#716e68",
+    "bg": null,
+    "inherit": null,
+    "source": "default"
+   },
+   "nerd-icons-yellow": {
+    "fg": "#ffcc0e",
+    "bg": null,
+    "inherit": null,
+    "source": "default"
+   }
+  },
   "2048-game": {
    "twentyfortyeight-face-1024": {
     "fg": "#a9be87",
@@ -7172,212 +7384,6 @@
     "fg": null,
     "bg": null,
     "inherit": "font-lock-string-face",
-    "source": "default"
-   }
-  },
-  "nerd-icons": {
-   "nerd-icons-blue": {
-    "fg": "#6a9fb5",
-    "bg": null,
-    "inherit": null,
-    "source": "default"
-   },
-   "nerd-icons-blue-alt": {
-    "fg": "#2188b6",
-    "bg": null,
-    "inherit": null,
-    "source": "default"
-   },
-   "nerd-icons-cyan": {
-    "fg": "#75b5aa",
-    "bg": null,
-    "inherit": null,
-    "source": "default"
-   },
-   "nerd-icons-cyan-alt": {
-    "fg": "#0595bd",
-    "bg": null,
-    "inherit": null,
-    "source": "default"
-   },
-   "nerd-icons-dblue": {
-    "fg": "#446674",
-    "bg": null,
-    "inherit": null,
-    "source": "default"
-   },
-   "nerd-icons-dcyan": {
-    "fg": "#48746d",
-    "bg": null,
-    "inherit": null,
-    "source": "default"
-   },
-   "nerd-icons-dgreen": {
-    "fg": "#6d8143",
-    "bg": null,
-    "inherit": null,
-    "source": "default"
-   },
-   "nerd-icons-dmaroon": {
-    "fg": "#72584b",
-    "bg": null,
-    "inherit": null,
-    "source": "default"
-   },
-   "nerd-icons-dorange": {
-    "fg": "#915b2d",
-    "bg": null,
-    "inherit": null,
-    "source": "default"
-   },
-   "nerd-icons-dpink": {
-    "fg": "#7e5d5f",
-    "bg": null,
-    "inherit": null,
-    "source": "default"
-   },
-   "nerd-icons-dpurple": {
-    "fg": "#694863",
-    "bg": null,
-    "inherit": null,
-    "source": "default"
-   },
-   "nerd-icons-dred": {
-    "fg": "#843031",
-    "bg": null,
-    "inherit": null,
-    "source": "default"
-   },
-   "nerd-icons-dsilver": {
-    "fg": "#838484",
-    "bg": null,
-    "inherit": null,
-    "source": "default"
-   },
-   "nerd-icons-dyellow": {
-    "fg": "#b48d56",
-    "bg": null,
-    "inherit": null,
-    "source": "default"
-   },
-   "nerd-icons-green": {
-    "fg": "#90a959",
-    "bg": null,
-    "inherit": null,
-    "source": "default"
-   },
-   "nerd-icons-lblue": {
-    "fg": "#677174",
-    "bg": null,
-    "inherit": null,
-    "source": "default"
-   },
-   "nerd-icons-lcyan": {
-    "fg": "#2c7d6e",
-    "bg": null,
-    "inherit": null,
-    "source": "default"
-   },
-   "nerd-icons-lgreen": {
-    "fg": "#3d6837",
-    "bg": null,
-    "inherit": null,
-    "source": "default"
-   },
-   "nerd-icons-lmaroon": {
-    "fg": "#ce7a4e",
-    "bg": null,
-    "inherit": null,
-    "source": "default"
-   },
-   "nerd-icons-lorange": {
-    "fg": "#ffa500",
-    "bg": null,
-    "inherit": null,
-    "source": "default"
-   },
-   "nerd-icons-lpink": {
-    "fg": "#ff505b",
-    "bg": null,
-    "inherit": null,
-    "source": "default"
-   },
-   "nerd-icons-lpurple": {
-    "fg": "#e69dd6",
-    "bg": null,
-    "inherit": null,
-    "source": "default"
-   },
-   "nerd-icons-lred": {
-    "fg": "#eb595a",
-    "bg": null,
-    "inherit": null,
-    "source": "default"
-   },
-   "nerd-icons-lsilver": {
-    "fg": "#7f7869",
-    "bg": null,
-    "inherit": null,
-    "source": "default"
-   },
-   "nerd-icons-lyellow": {
-    "fg": "#ff9300",
-    "bg": null,
-    "inherit": null,
-    "source": "default"
-   },
-   "nerd-icons-maroon": {
-    "fg": "#8f5536",
-    "bg": null,
-    "inherit": null,
-    "source": "default"
-   },
-   "nerd-icons-orange": {
-    "fg": "#d4843e",
-    "bg": null,
-    "inherit": null,
-    "source": "default"
-   },
-   "nerd-icons-pink": {
-    "fg": "#fc505b",
-    "bg": null,
-    "inherit": null,
-    "source": "default"
-   },
-   "nerd-icons-purple": {
-    "fg": "#68295b",
-    "bg": null,
-    "inherit": null,
-    "source": "default"
-   },
-   "nerd-icons-purple-alt": {
-    "fg": "#5d54e1",
-    "bg": null,
-    "inherit": null,
-    "source": "default"
-   },
-   "nerd-icons-red": {
-    "fg": "#ac4142",
-    "bg": null,
-    "inherit": null,
-    "source": "default"
-   },
-   "nerd-icons-red-alt": {
-    "fg": "#843031",
-    "bg": null,
-    "inherit": null,
-    "source": "default"
-   },
-   "nerd-icons-silver": {
-    "fg": "#716e68",
-    "bg": null,
-    "inherit": null,
-    "source": "default"
-   },
-   "nerd-icons-yellow": {
-    "fg": "#ffcc0e",
-    "bg": null,
-    "inherit": null,
     "source": "default"
    }
   },
