@@ -1,0 +1,157 @@
+#+TITLE: Theme-driven nerd-icons colors + theme-studio filetype legend — Spec
+#+AUTHOR: Craig Jennings & Claude
+#+DATE: 2026-06-23
+#+TODO: TODO | DONE SUPERSEDED CANCELLED
+
+* Metadata
+| Status   | draft                                                      |
+|----------+------------------------------------------------------------|
+| Owner    | Craig                                                      |
+|----------+------------------------------------------------------------|
+| Reviewer | Codex (spec-review)                                        |
+|----------+------------------------------------------------------------|
+| Related  | [[file:../../todo.org][todo.org: theme-driven nerd-icons colors]]            |
+|----------+------------------------------------------------------------|
+
+* Summary
+
+nerd-icons glyphs (completion icons, dirvish, dashboard, ibuffer) are forced to a single color by a runtime tint in =nerd-icons-config.el=, which flattens the per-filetype color information nerd-icons ships and prevents the theme from controlling icon color. This spec drops that tint so icon color becomes theme-driven, and adds a theme-studio representation — a filetype legend over the 34 =nerd-icons-*= color faces — so the assignments are visible and editable where the rest of the theme is built.
+
+* Problem / Context
+
+=nerd-icons-config.el= defines =cj/nerd-icons-tint-color= (default "darkgoldenrod") and =cj/nerd-icons-apply-tint=, which sets the foreground of all 34 =nerd-icons-*= color faces to that one color, applied in the =nerd-icons= =:config= and a =with-eval-after-load= safety net. Every nerd-icons glyph therefore renders darkgoldenrod regardless of type.
+
+Two costs. First, the per-filetype color nerd-icons provides is lost: =nerd-icons-extension-icon-alist= (330 entries) maps each filetype onto one of the 34 shared color faces (e.g. =.el/.sh= → =nerd-icons-purple=, an M-x command → =nerd-icons-blue=, =.zsh= → =nerd-icons-lcyan=), and the tint collapses all of that to one hue. Second, the color is not theme-driven: the tint runs at load and overrides whatever the theme set, so a theme can't own icon color.
+
+theme-studio already inventories the 34 =nerd-icons-*= faces (via the generic package-inventory path), so they are technically editable today — but only as a bare list of face names with no preview of what each color actually hits. There is no representation of the filetype→color mapping, which is the thing that makes coloring these faces meaningful.
+
+* Goals and Non-Goals
+** Goals
+- Icon color is theme-driven: the 34 =nerd-icons-*= color faces are set by the theme, not by a runtime tint.
+- theme-studio shows a filetype legend — a representative set of filetypes rendered with their real icon glyph in the assigned color — that updates live as a face is recolored.
+- The =nerd-icons-*= color-face assignments export into the theme and round-trip on import, like every other themed face.
+** Non-Goals
+- Per-filetype unique colors. nerd-icons shares 34 faces across 330 filetypes; the model is "color the 34 faces", not "assign 330 colors".
+- Changing nerd-icons' glyph selection (=icon-for-file= / =icon-for-buffer= logic) or its icon set.
+- An exhaustive 330-row legend. The legend is a curated representative sample, not the full alist.
+** Scope tiers
+- v1: drop the tint; capture native default colors + a curated filetype legend into the inventory; a bespoke nerd-icons preview in theme-studio rendering the legend; export/round-trip; live verification in completion/dirvish/dashboard.
+- Out of scope: per-filetype assignment; editing the filetype→face mapping itself (that lives in nerd-icons).
+- vNext: extend the legend beyond file extensions to buffer-mode and command/symbol categories if the file set proves insufficient; a "reset to nerd-icons native palette" button.
+
+* Design
+
+** For the user
+
+theme-studio gains a nerd-icons pane. On the left, the 34 =nerd-icons-*= color faces as editable foreground rows (icons are foreground-colored, so foreground is the only relevant attribute). On the right, a filetype legend: a representative list of filetypes — a handful of languages, a directory, a command, a buffer — each drawn as its real icon glyph plus a sample name, in the color of the face that filetype maps to. Recoloring =nerd-icons-purple= immediately repaints every legend row that resolves to purple (=.el=, =.sh=, …), so the assignment's reach is visible at edit time. Export writes the face colors into the theme; with the runtime tint gone, those colors are what render in completing-read, dirvish, dashboard, and ibuffer.
+
+** For the implementer
+
+Three integration points, plus the config removal.
+
+1. Data capture. The inventory dump (=build-inventory.el=, or a sibling dump) also emits, for nerd-icons: the *native* defface default foreground of each of the 34 color faces (read from the face's defface spec, not =face-attribute= at runtime, since the live value is already the tint), plus a curated filetype→face legend derived from =nerd-icons-extension-icon-alist= (the =:face= of each entry). =generate.py= embeds both alongside the existing face inventory.
+
+2. Bespoke preview. nerd-icons moves from a generic inventory app to a bespoke app (a =BESPOKE_APP_SPECS= / =PREVIEW_KEYS= entry) with a new renderer in =previews.js= that draws the legend rows: for each curated filetype, its glyph + name styled with the effective color of its mapped face, read through the same registry the other previews use. The 34 faces remain editable rows.
+
+3. Export/theme. The package-export path already serializes edited package faces into the theme; nerd-icons rides it. Confirm =build-theme.el= emits =nerd-icons-*= face specs and that WIP round-trips.
+
+4. Config. Remove =cj/nerd-icons-tint-color=, =cj/--nerd-icons-color-faces=, =cj/nerd-icons-apply-tint=, and its two call sites in =nerd-icons-config.el=. The dir-icon advice (=cj/--nerd-icons-color-dir=, which layers =nerd-icons-yellow= onto directory glyphs that otherwise carry no color face) stays — its problem is independent of the tint — but now points at a theme-owned face.
+
+* Alternatives Considered
+
+** A — Keep the tint, make it themeable (theme sets cj/nerd-icons-tint-color)
+- Good, because it is the smallest change and preserves the single-knob simplicity.
+- Bad, because it keeps one color for all icons, which is the exact thing this feature exists to undo — there is no per-filetype representation to build.
+- Neutral, because it would still move color into the theme, just at the wrong granularity.
+
+** B — Per-filetype color assignment (one row per extension)
+- Good, because it is maximally granular.
+- Bad, because 330 rows is unusable, and nerd-icons shares faces, so most rows would be redundant edits of the same underlying face.
+- Neutral, because it matches no real user intent — nobody colors 330 extensions by hand.
+
+** C (chosen) — Theme the 34 shared faces + a filetype legend
+- Good, because it matches nerd-icons' actual color model, keeps the editable surface small (34), and the legend gives the "what does this color hit" representation Craig asked for.
+- Neutral, because the legend is a curated subset of the 330 filetypes, so a rarely-used extension may not appear in the preview (though its color still themes via its shared face).
+
+** D — Enhance the generic preview instead of a bespoke one
+- Good, because it is less code.
+- Bad, because the generic preview renders face-name rows; it cannot draw icon glyphs grouped by filetype, which is the whole representation.
+
+* Decisions [/]
+
+** TODO Color model: theme the 34 shared faces, not per-filetype
+- Owner / by-when: Craig / before Phase 2
+- Context: 330 filetypes map onto 34 shared color faces; the data fixes the granularity.
+- Decision: We will expose the 34 =nerd-icons-*= color faces as the editable surface and use the filetype list only as a read-only legend.
+- Consequences: easier — small editable surface, matches nerd-icons. Harder — a user wanting one filetype a different color from its face-mates can't, without nerd-icons changes (out of scope).
+
+** TODO Legend scope: curated representative filetypes in v1
+- Owner / by-when: Craig / before Phase 1
+- Context: 330 entries is too noisy to preview; a representative set communicates the mapping.
+- Decision: We will hand-curate a representative legend (common languages, a dir, a command, a buffer) covering the faces that actually appear in Craig's completion/dirvish use, and mark the set as the v1 legend.
+- Consequences: easier — a clean, readable preview. Harder — the curated set needs occasional maintenance as nerd-icons' alist shifts; an uncovered face has no legend row (still themeable).
+
+** TODO Seed colors: capture nerd-icons native defface defaults
+- Owner / by-when: Claude / Phase 1
+- Context: the live runtime foreground is the tint (darkgoldenrod), not nerd-icons' native palette; theme-studio needs the real defaults to seed from.
+- Decision: We will read each color face's default from its defface spec (bypassing the runtime value) and seed theme-studio with the native nerd-icons palette.
+- Consequences: easier — theme-studio opens on the true nerd-icons colors, not the tint. Harder — the dump must read defface specs, a slightly more involved capture than =face-attribute=.
+
+** TODO Config sequencing: order of dropping the tint vs assigning theme colors
+- Owner / by-when: Craig / before Phase 3
+- Context: dropping the tint before the theme assigns the 34 faces makes completion icons jump from uniform darkgoldenrod to nerd-icons' native multicolor palette until the theme overrides them.
+- Decision: We will (proposed) seed the theme with explicit nerd-icons colors in the same change that drops the tint, so there is no uncolored interim — i.e. Phase 4 (theme assignment) lands with or before Phase 3 (config drop).
+- Consequences: easier — no ugly interim, one coherent switch. Harder — couples the config change to a theme edit rather than landing independently.
+
+** TODO Dir advice + nerd-icons-completion-dir-face
+- Owner / by-when: Craig / before Phase 3
+- Context: directory glyphs carry no intrinsic color face; =cj/--nerd-icons-color-dir= layers =nerd-icons-yellow= so a =default= face-remap doesn't catch them. =nerd-icons-completion-dir-face= is unset.
+- Decision: We will keep the dir advice (its problem is independent of the tint) and let it point at the now-theme-owned =nerd-icons-yellow=; we will optionally also theme =nerd-icons-completion-dir-face=.
+- Consequences: easier — dir icons stay correctly colored and become themeable. Harder — one more face to reason about in the legend.
+
+* Implementation phases
+
+** Phase 1 — Data capture
+Extend the inventory dump to emit nerd-icons' native defface default colors (34 faces) and a curated filetype→face legend from =nerd-icons-extension-icon-alist=; wire both through =generate.py= into the page. Tree stays working (data only; no UI change yet).
+
+** Phase 2 — Bespoke nerd-icons preview
+Register nerd-icons as a bespoke app with a legend renderer in =previews.js= drawing each curated filetype's glyph + name in its mapped face's effective color, live-updating on recolor. Browser-gated; existing previews unaffected.
+
+** Phase 3 — Drop the runtime tint
+Remove the tint defcustom/defconst/function and its two call sites from =nerd-icons-config.el=; keep the dir advice. Live-reload + smoke.
+
+** Phase 4 — Theme assignment + verification
+Seed/assign the 34 nerd-icons colors in WIP, confirm export → =WIP-theme.el= and import round-trip, verify live in completing-read / dirvish / dashboard / ibuffer.
+
+* Acceptance criteria
+- [ ] theme-studio shows a nerd-icons pane: 34 editable foreground rows + a filetype-legend preview.
+- [ ] Recoloring a =nerd-icons-*= face repaints every legend row mapped to it, live.
+- [ ] theme-studio opens seeded with nerd-icons' native palette (not darkgoldenrod).
+- [ ] Export includes the =nerd-icons-*= face specs; re-import round-trips to the same state.
+- [ ] =nerd-icons-config.el= no longer tints; the 34 faces are owned by the theme.
+- [ ] In a live frame, completion / dirvish / dashboard icons render the theme's per-filetype colors.
+- [ ] run-tests.sh green (Node + browser gates + ERT + Python); =make validate-modules= + launch smoke clean.
+
+* Readiness dimensions
+- Data model & ownership: the 34 color faces are user-authored via theme-studio and owned by the theme; the filetype→face legend and native defaults are generated (captured from nerd-icons), read-only. No remote/cache.
+- Errors, empty states & failure: a face with no curated legend row simply has no preview row (still editable); a missing nerd-icons (package absent) skips the bespoke app — capture must degrade to the generic path, not error.
+- Security & privacy: N/A because no credentials or sensitive data.
+- Observability: the legend preview *is* the observability — the user sees exactly which filetypes a color hits before committing.
+- Performance & scale: 34 faces + a curated legend (tens of rows); trivial. The capture dump runs once in Emacs, not per render.
+- Reuse & lost opportunities: reuses the existing inventory pipeline, the package-export path, and the preview registry from preview-locate; nerd-icons already supplies the extension→face mapping, so we read it rather than re-derive.
+- Architecture fit & weak points: integration points are =build-inventory.el= (capture), =app_inventory.py= / =face_data.py= (bespoke registration), =previews.js= (renderer), =generate.py= (embed), =nerd-icons-config.el= (tint removal). Weak point: the curated legend can drift from nerd-icons' alist over versions — mitigated by deriving the mapping from the live alist at capture time, curating only which filetypes to show.
+- Config surface: removes =cj/nerd-icons-tint-color= and its machinery; no new public knob (the theme is the surface). =cj/--nerd-icons-color-dir= advice retained.
+- Documentation plan: update =nerd-icons-config.el= commentary; a note in theme-studio's =theme-coloring-guide.org= on the nerd-icons pane. No user-facing migration doc needed (personal config).
+- Dev tooling: run-tests.sh (theme-studio), =make validate-modules= + launch smoke (config); the capture dump is an =emacsclient -e '(load build-inventory.el)'= step already used.
+- Rollout, compatibility & rollback: the change alters the persisted theme (adds nerd-icons face specs) and removes a config knob. Rollback = restore the tint block and drop the nerd-icons specs from the theme. The sequencing decision exists to avoid an uncolored interim.
+- External APIs & deps: depends on nerd-icons internals — =nerd-icons-extension-icon-alist= entry shape (=("ext" fn "glyph" :face SYM)=) and the 34 =nerd-icons-*= color faces. Verified live this session (330 entries, sample confirmed; 34 faces in the inventory). The defface-default capture for seeding is the one assumption to verify in Phase 1.
+
+* Risks, Rabbit Holes, and Drawbacks
+- Reading defface defaults past a runtime override is the fiddly part — if =face-default-spec= doesn't yield a clean color (some specs are display-conditional), fall back to nerd-icons' source palette values captured once. Timebox the defface-introspection approach before hand-rolling a palette table.
+- Org/elisp icon fontification inside theme-studio is HTML, not Emacs faces — the legend renders CSS colors from the captured map, so there is no live Emacs face dependency at preview time (same model as the other previews).
+
+* Review and iteration history
+** 2026-06-23 Tue @ 22:17:25 -0400 — Claude — author
+- What: initial draft.
+- Why: Craig chose to spec the drop-the-tint + theme-studio filetype-legend feature before building (spans config + three theme-studio layers + the theme, with real trade-offs on color model, legend scope, seeding, and sequencing).
+- Artifacts: docs/specs/theme-studio-nerd-icons-colors-spec.org; todo.org task (to be created at hand-off).
