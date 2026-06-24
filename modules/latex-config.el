@@ -63,7 +63,10 @@ single entry."
   :ensure auctex
   :defer t
   :hook
-  (TeX-mode-hook . (lambda () (setq TeX-command-default "latexmk"))) ; use latexmk by default
+  ;; Name the mode, not the hook: use-package appends "-hook" to any symbol not
+  ;; ending in "-mode", so `TeX-mode' becomes `TeX-mode-hook' while the literal
+  ;; `TeX-mode-hook' would expand to the unbound `TeX-mode-hook-hook'.
+  (TeX-mode . (lambda () (setq TeX-command-default "latexmk"))) ; use latexmk by default
   (LaTeX-mode    . (lambda () (TeX-fold-mode 1)))                    ; automatically activate TeX-fold-mode.
   (LaTeX-mode    . flyspell-mode)                               ; turn on flyspell-mode by default
   (LaTeX-mode    . TeX-PDF-mode)
@@ -78,7 +81,9 @@ single entry."
   (setq-default TeX-master t)) ; Assume the file is the master file itself
 
 (use-package auctex-latexmk
-  :defer t
+  ;; Load with AUCTeX, not deferred: `:defer t' has no autoload trigger here, so
+  ;; `auctex-latexmk-setup' never runs and "latexmk" never joins TeX-command-list.
+  :after tex
   :config
   (auctex-latexmk-setup)
   (setq auctex-latexmk-inherit-TeX-PDF-mode t))
