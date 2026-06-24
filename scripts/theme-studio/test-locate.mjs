@@ -8,7 +8,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  buildLocateRegistry, locateFaceMeta, formatLocateTitle, previewFaceAttrs, isLocateOnPane, locateInfoLine,
+  buildLocateRegistry, locateFaceMeta, formatLocateTitle, previewFaceAttrs, isLocateOnPane,
 } from './app-core.js';
 
 // A constructed model: two package apps that BOTH own a face literally named
@@ -140,22 +140,6 @@ test('formatLocateTitle: Normal — non-default structural attributes are listed
 test('formatLocateTitle: Error — an unassigned meta reads "unassigned"', () => {
   const reg = buildLocateRegistry(APPS, PKGMAP, UIMAP, MAP);
   assert.equal(formatLocateTitle(locateFaceMeta('org-faces', 'ghost', reg)), 'ghost, unassigned');
-});
-
-// --- locateInfoLine: "section > face — value" -------------------------------
-
-test('locateInfoLine: Normal — section > face — value (fg only, then fg / bg)', () => {
-  const reg = buildLocateRegistry(APPS, PKGMAP, UIMAP, MAP);
-  assert.equal(locateInfoLine(locateFaceMeta('org-faces', 'org-todo', reg)), 'org-faces > org-todo — #cc3333');
-  const pkgmap = { app: { face: { fg: '#aabbcc', bg: '#223344', inherit: null, source: 'user' } } };
-  const apps = { app: { label: 'App', faces: [['face', 'F', {}]] } };
-  const reg2 = buildLocateRegistry(apps, pkgmap, {}, MAP);
-  assert.equal(locateInfoLine(locateFaceMeta('app', 'face', reg2)), 'App > face — #aabbcc / #223344');
-});
-
-test('locateInfoLine: Error — an unassigned meta reads "<face> — unassigned"', () => {
-  const reg = buildLocateRegistry(APPS, PKGMAP, UIMAP, MAP);
-  assert.equal(locateInfoLine(locateFaceMeta('org-faces', 'ghost', reg)), 'ghost — unassigned');
 });
 
 // --- previewFaceAttrs: owner-aware validation -------------------------------

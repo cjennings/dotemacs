@@ -179,12 +179,12 @@ def classify(name, items, src, pkgfaces):
     if name == 'emacs-core':
         return 'core'
     c = collections.Counter(bucket_of_source(src.get(f, '')) for f in items)
-    loaded = c['elpa'] + c['builtin'] + c['user'] + c['other']
-    if loaded == 0:
+    elpa, builtin, user, other = c['elpa'], c['builtin'], c['user'], c['other']
+    if elpa + builtin + user + other == 0:
         return 'package' if any(f in pkgfaces for f in items) else 'general'
-    if c['elpa'] >= max(c['builtin'], c['user'], c['other']):
+    if elpa >= max(builtin, user, other):
         return 'package'
-    if c['other'] > c['builtin'] and c['other'] >= c['elpa']:
+    if other > builtin and other >= elpa:
         return 'package'
     return 'general'
 

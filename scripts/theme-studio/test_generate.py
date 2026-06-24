@@ -18,6 +18,39 @@ from collections import Counter, defaultdict
 from contextlib import redirect_stdout
 
 import generate  # importable without side effects: the file write is __main__-guarded
+import face_coverage
+from unittest import mock
+
+
+class ClassifyBucket(unittest.TestCase):
+    """Characterization of face_coverage.classify's core/general/package decision,
+    locking each branch before the named-locals rewrite. bucket_of_source is mocked
+    to identity, so the src dict maps each face straight to its bucket name."""
+
+    def _classify(self, src, pkgfaces=(), name="x"):
+        with mock.patch.object(face_coverage, "bucket_of_source", lambda s: s):
+            return face_coverage.classify(name, list(src), src, set(pkgfaces))
+
+    def test_emacs_core_short_circuits_to_core(self):
+        self.assertEqual(face_coverage.classify("emacs-core", [], {}, set()), "core")
+
+    def test_nothing_loaded_with_a_package_face_is_package(self):
+        self.assertEqual(self._classify({"a": "unloaded", "b": "unloaded"}, pkgfaces={"b"}), "package")
+
+    def test_nothing_loaded_without_a_package_face_is_general(self):
+        self.assertEqual(self._classify({"a": "unloaded"}), "general")
+
+    def test_elpa_plurality_is_package(self):
+        self.assertEqual(self._classify({"a": "elpa", "b": "elpa", "c": "builtin"}), "package")
+
+    def test_elpa_tied_with_builtin_is_package(self):
+        self.assertEqual(self._classify({"a": "elpa", "b": "builtin"}), "package")
+
+    def test_other_beats_builtin_and_ties_elpa_is_package(self):
+        self.assertEqual(self._classify({"a": "other", "b": "other", "c": "elpa", "d": "builtin"}), "package")
+
+    def test_builtin_plurality_is_general(self):
+        self.assertEqual(self._classify({"a": "builtin", "b": "builtin", "c": "elpa"}), "general")
 from app_inventory import face_rows
 from default_faces import DefaultFaces, changed_summary
 from face_specs import face_spec, package_face_spec, ui_face_spec

@@ -50,8 +50,7 @@ function generatorHues(baseHue,scheme,count,rng){
     const offsets=[0,120,240,30,150,270,60,180,300,90,210,330];
     return offsets.slice(0,n).map(o=>(b+o)%360);
   }
-  if(scheme==='manual')return Array.from({length:n},(_,i)=>(b+(i*360)/n)%360);
-  return Array.from({length:n},(_,i)=>(b+(i*360)/n)%360);
+  return Array.from({length:n},(_,i)=>(b+(i*360)/n)%360); // even spread (manual/default/unknown)
 }
 function generatorChroma(mode){
   return mode==='subdued'?0.055:mode==='vivid'?0.13:0.085;

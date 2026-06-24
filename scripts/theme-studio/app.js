@@ -81,15 +81,13 @@ function mkColorDropdown(options,cur,onPick,opts={}){
   left.textContent='‹';right.textContent='›';left.title='move to next darker color in this column';right.title='move to next lighter color in this column';
   const t=document.createElement('div');t.className='cdd'+(opts.compact?' compact':'');t.tabIndex=0;
   const nameOf=h=>{const o=options.find(p=>p[0]===h);return o?o[1]:(h||'none');};
-  const displayHex=h=>h||(opts.defaultHex||'');
-  const displayName=h=>h?nameOf(h):(opts.defaultName||nameOf(h));
   function step(dir){if(wrap.dataset.locked==='1')return;const next=spanNeighborHex(cur,PALETTE,groundPair(),dir);if(!next)return;cur=next;paint();onPick(next);}
   function paintStepButtons(){
     const locked=wrap.dataset.locked==='1';
     left.disabled=locked||!spanNeighborHex(cur,PALETTE,groundPair(),-1);
     right.disabled=locked||!spanNeighborHex(cur,PALETTE,groundPair(),1);
   }
-  function paint(){const shown=displayHex(cur),nm=displayName(cur),ttl=cur?(nm+' '+cur):(nm+(shown?' -> '+shown:''));t.style.background=shown||'#161412';t.style.color=shown?textOn(shown):'#b4b1a2';t.dataset.val=cur||'';t.title=ttl;t.classList.toggle('is-default',!cur);t.classList.toggle('gone',!!cur&&nameOf(cur)==='(gone)');
+  function paint(){const shown=cur||(opts.defaultHex||''),nm=cur?nameOf(cur):(opts.defaultName||nameOf(cur)),ttl=cur?(nm+' '+cur):(nm+(shown?' -> '+shown:''));t.style.background=shown||'#161412';t.style.color=shown?textOn(shown):'#b4b1a2';t.dataset.val=cur||'';t.title=ttl;t.classList.toggle('is-default',!cur);t.classList.toggle('gone',!!cur&&nameOf(cur)==='(gone)');
     t.innerHTML=opts.compact?`<span class="cddsw" style="background:${shown||'transparent'}"></span>`:`<span class="cddsw" style="background:${shown||'transparent'}"></span>${esc(nm)}`;paintStepButtons();}
   paint();
   left.onclick=e=>{e.stopPropagation();step(-1);};
@@ -304,7 +302,7 @@ function clearUnlockedRows(items,keyFn,resetFn){
   for(const it of items){const k=keyFn(it);if(k===null)continue;if(!LOCKED.has(k))resetFn(it);}
 }
 function rebuildColorTables(){
-  buildTable();buildUITable();if(document.getElementById('pkgbody'))buildPkgTable();
+  buildTable();buildUITable();buildPkgTable();// buildPkgTable self-guards when #pkgbody is absent
 }
 function refreshPaletteState(opts={}){
   renderPalette();rebuildColorTables();
@@ -595,7 +593,9 @@ function flashPkg(f){flashRow(document.querySelector(`#pkgbody tr[data-face="${f
 function flashPkgPreview(f){const sp=document.querySelectorAll(`#pkgpreview [data-face="${f}"]`);if(sp.length){flashEls(sp);return;}const row=document.querySelector(`#pkgbody tr[data-face="${f}"]`);if(row)flashEl(row.querySelector('.cat'));}
 function mockSpan(k,t){return `<span data-k="${k}" style="${syntaxStyle(k)}">${esc(t)}</span>`;}
 function uiCss(o,fgv,bgv,opts={}){const fg=fgv===undefined?effFg(o.fg):fgv,bg=bgv===undefined?o.bg:bgv;return faceCss(o,fg,bg,{noBg:opts.noBg,boxBg:bg||MAP['bg']});}
-function syncMockHeight(){const t=document.getElementById('uitable'),m=document.getElementById('mockframe');if(!t||!m)return;const lb=m.previousElementSibling,lbh=lb?lb.getBoundingClientRect().height+10:30;m.style.height=Math.max(t.getBoundingClientRect().height-lbh,220)+'px';}
+// Size a preview pane to its faces table, minus the label bar above it. Shared by
+// the UI mock and the package preview, which differ only in their element IDs.
+function syncPaneHeight(tableId,paneId){const t=document.getElementById(tableId),m=document.getElementById(paneId);if(!t||!m)return;const lb=m.previousElementSibling,lbh=lb?lb.getBoundingClientRect().height+10:30;m.style.height=Math.max(t.getBoundingClientRect().height-lbh,220)+'px';}
 function buildMockFrame(){
   const fr=document.getElementById('mockframe');if(!fr)return;
   rebuildLocateRegistry();
@@ -720,9 +720,9 @@ function onViewChange(){const s=document.getElementById('viewsel');const v=(s&&s
   const show=(id,on)=>{const e=document.getElementById(id);if(e)e.style.display=on?'':'none';};
   show('view-code',v==='@code');show('view-ui',v==='@ui');show('view-pkg',v[0]!=='@');
   if(v==='@code')renderCode();
-  else if(v==='@ui'){buildUITable();buildMockFrame();syncMockHeight();}
+  else if(v==='@ui'){buildUITable();buildMockFrame();syncPaneHeight('uitable','mockframe');}
   else pkgChanged();}
-function pkgChanged(){buildPkgTable();buildPkgPreview();syncPkgHeight();}
+function pkgChanged(){buildPkgTable();buildPkgPreview();syncPaneHeight('pkgtable','pkgpreview');}
 function buildPkgTable(){
   const app=curApp(),tb=document.getElementById('pkgbody');if(!tb)return;tb.innerHTML='';
   const flt=(document.getElementById('pkgfilter').value||'').trim().toLowerCase();
@@ -832,7 +832,6 @@ function buildPkgPreview(){
   // no separate info line.
 }
 function resetApp(){const app=curApp();for(const [face,,d] of APPS[app].faces)if(!LOCKED.has('pkg:'+app+':'+face))PKGMAP[app][face]=seedFace(d);pkgChanged();notify('reset editable '+app+' faces to package defaults',false);}
-function syncPkgHeight(){const t=document.getElementById('pkgtable'),m=document.getElementById('pkgpreview');if(!t||!m)return;const lb=m.previousElementSibling,lbh=lb?lb.getBoundingClientRect().height+10:30;m.style.height=Math.max(t.getBoundingClientRect().height-lbh,220)+'px';}
 // --- worst-case readout for the covered overlay faces (spec Phase 4) ---------
 // Default WCAG target for the worst-case verdict (AA). AAA is selectable.
 let WORST_TARGET=4.5;
@@ -875,7 +874,7 @@ function repaintCovered(){COVERED_FACES.forEach(f=>{if(UIMAP[f]&&document.getEle
 function paintUI(face){const pv=document.getElementById('uiprev-'+face);if(!pv)return;const o=UIMAP[face];pv.style.color=effFg(o.fg);pv.style.background=effBg(o.bg);pv.style.fontWeight=cssWeight(o.weight);pv.style.fontStyle=o.slant||'normal';pv.style.textDecoration=(o.underline?'underline ':'')+(o.strike?'line-through':'')||'none';pv.style.boxShadow=boxCss(o.box,effBg(o.bg));
   const report=coveredContrastReport(face);
   pv.title='';
-  const cr=document.getElementById('uicr-'+face);if(cr){cr.title='';if(report!==null){if(report.empty){cr.title='this overlay has no syntax foreground set yet';cr.innerHTML='<span title="this overlay has no syntax foreground set yet">no fg set</span>';}else{const title=failureTitle(report)||'all covered text clears '+WORST_TARGET.toFixed(1);cr.title=title;cr.innerHTML=`<span style="color:${ratingColor(report.worst.ratio)}" title="${esc(title)}">${report.worst.ratio.toFixed(1)}</span>`;}}else{const efg=effFg(o.fg),ebg=effBg(o.bg),r=contrast(efg,ebg);cr.innerHTML=crHtml(r);}}}
+  const cr=document.getElementById('uicr-'+face);if(cr){cr.title='';const wc=worstCellHtml(face);if(wc!==null){cr.title=report.empty?'this overlay has no syntax foreground set yet':(failureTitle(report)||'all covered text clears '+WORST_TARGET.toFixed(1));cr.innerHTML=wc;}else{const efg=effFg(o.fg),ebg=effBg(o.bg),r=contrast(efg,ebg);cr.innerHTML=crHtml(r);}}}
 function buildUITable(){
   const tb=document.getElementById('uibody');tb.innerHTML='';
   for(const [face,label,ex] of UI_FACES){
@@ -918,9 +917,9 @@ function initApp(){
   paletteShowFull=false;  // open collapsed to base colors; the arrow expands the spans
   buildLangSel();buildViewSel();renderPalette();rebuildColorTables();renderCode();applyGround();
   initGeneratorControls();
-  updateTitle();initPicker();buildPkgPreview();syncMockHeight();syncPkgHeight();
+  updateTitle();initPicker();buildPkgPreview();syncPaneHeight('uitable','mockframe');syncPaneHeight('pkgtable','pkgpreview');
   onViewChange();
 }
 initApp();
-addEventListener('resize',()=>{syncMockHeight();syncPkgHeight();});
+addEventListener('resize',()=>{syncPaneHeight('uitable','mockframe');syncPaneHeight('pkgtable','pkgpreview');});
 BROWSER_GATES_J

@@ -15,6 +15,22 @@ def read_json(name):
 NERD_ICONS_LEGEND_FIELDS = ("key", "label", "face", "category", "glyph")
 NERD_ICONS_GALLERY_GLYPH_FIELDS = ("glyph", "name")
 
+_NO_ARTIFACT = object()  # distinguishes absent/malformed from a file that parsed to null
+
+def _load_nerd_icons_artifact(path, kind, tail):
+    """Open and JSON-parse the nerd-icons artifact at PATH. Return the parsed value,
+    or _NO_ARTIFACT (with a KIND/TAIL-labeled warning) when absent or malformed.
+    Shared skeleton for the legend and gallery loaders."""
+    if not os.path.exists(path):
+        print(f"WARNING: nerd-icons {kind} absent ({path}); {tail}")
+        return _NO_ARTIFACT
+    try:
+        with open(path) as src:
+            return json.load(src)
+    except (json.JSONDecodeError, OSError) as exc:
+        print(f"WARNING: nerd-icons {kind} malformed ({path}: {exc}); {tail}")
+        return _NO_ARTIFACT
+
 def load_nerd_icons_legend(path=None):
     """Return the nerd-icons legend rows, or None when the artifact is unusable.
 
@@ -27,14 +43,8 @@ def load_nerd_icons_legend(path=None):
     file, which lands here as None.
     """
     path = path or os.path.join(HERE, "nerd-icons-legend.json")
-    if not os.path.exists(path):
-        print(f"WARNING: nerd-icons legend absent ({path}); generic nerd-icons app")
-        return None
-    try:
-        with open(path) as src:
-            data = json.load(src)
-    except (json.JSONDecodeError, OSError) as exc:
-        print(f"WARNING: nerd-icons legend malformed ({path}: {exc}); generic nerd-icons app")
+    data = _load_nerd_icons_artifact(path, "legend", "generic nerd-icons app")
+    if data is _NO_ARTIFACT:
         return None
     rows = data.get("legend") if isinstance(data, dict) else data
     if not isinstance(rows, list) or not rows:
@@ -59,14 +69,8 @@ def load_nerd_icons_gallery(path=None):
     the legend data still loads. Never raises.
     """
     path = path or os.path.join(HERE, "nerd-icons-legend.json")
-    if not os.path.exists(path):
-        print(f"WARNING: nerd-icons gallery absent ({path}); legend without gallery")
-        return None
-    try:
-        with open(path) as src:
-            data = json.load(src)
-    except (json.JSONDecodeError, OSError) as exc:
-        print(f"WARNING: nerd-icons gallery malformed ({path}: {exc}); legend without gallery")
+    data = _load_nerd_icons_artifact(path, "gallery", "legend without gallery")
+    if data is _NO_ARTIFACT:
         return None
     groups = data.get("gallery") if isinstance(data, dict) else None
     if not isinstance(groups, list) or not groups:
