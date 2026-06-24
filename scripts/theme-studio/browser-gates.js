@@ -891,8 +891,30 @@ if(location.hash==='#previewpanetest')gate('previewpanetest',A=>{
    const sel=document.getElementById('pkgprevsel');
    A(+sel.value===defaultPaneIdx('nerd-icons'),'a stale pane index resets to the default');
    A(!sel.disabled&&sel.options.length===NERD_ICON_SIZES_PT.length,'nerd-icons: dropdown enabled with one option per size');
+   // Left/Right arrows step the size, clamped at the ends.
+   PREV_PANE['nerd-icons']=0;buildPkgPreview();
+   document.getElementById('pkgprevsel').dispatchEvent(new KeyboardEvent('keydown',{key:'ArrowRight',bubbles:true}));
+   A(PREV_PANE['nerd-icons']===1,'ArrowRight steps to the next size');
+   document.getElementById('pkgprevsel').dispatchEvent(new KeyboardEvent('keydown',{key:'ArrowLeft',bubbles:true}));
+   document.getElementById('pkgprevsel').dispatchEvent(new KeyboardEvent('keydown',{key:'ArrowLeft',bubbles:true}));
+   A(PREV_PANE['nerd-icons']===0,'ArrowLeft steps back and clamps at the first size');
+   // The visible ‹ › buttons step the size too, and clamp.
+   PREV_PANE['nerd-icons']=0;buildPkgPreview();
+   document.getElementById('pkgprevnext').click();
+   A(PREV_PANE['nerd-icons']===1,'the > button steps to the next size');
+   document.getElementById('pkgprevprev').click();
+   document.getElementById('pkgprevprev').click();
+   A(PREV_PANE['nerd-icons']===0,'the < button steps back and clamps at the first size');
+   A(!document.getElementById('pkgprevprev').disabled&&!document.getElementById('pkgprevnext').disabled,'the nav buttons are enabled when multi-pane');
+   // The glyph actually computes to the selected point size (pt -> px): 24 pt = 32 px.
+   PREV_PANE['nerd-icons']=NERD_ICON_SIZES_PT.indexOf(24);buildPkgPreview();
+   const gw=document.querySelector('#pkgpreview .ni-cell > span');
+   const gpx=gw?parseFloat(getComputedStyle(gw).fontSize):0;
+   A(Math.abs(gpx-32)<2,'24 pt glyph computes to ~32 px, so the point size renders to size ('+gpx+' px)');
+   PREV_PANE['nerd-icons']=defaultPaneIdx('nerd-icons');
    vs.value=single;buildPkgPreview();
    A(sel.disabled&&sel.options.length===1,'single-pane app: dropdown disabled with one option');
+   A(document.getElementById('pkgprevprev').disabled&&document.getElementById('pkgprevnext').disabled,'single-pane app: the nav buttons are disabled too');
   }
   vs.value=saved;buildPkgPreview();
  }
@@ -1295,17 +1317,7 @@ if(location.hash==='#locatehovertest')gate('locatehovertest',A=>withSavedState([
  rebuildLocateRegistry();
  const cb=document.createElement('div');cb.innerHTML=os(app,face,'x');
  A(/cleared, rendering as default/.test(cb.querySelector('[data-face]').getAttribute('title')),'cleared face title carries the cleared-rendering note');
- // info line on hover — now a dedicated span next to the pane dropdown, cleared on leave
- PKGMAP[app][face]={fg:'#abcdef',bg:null,inherit:null,source:'user'};
- buildPkgPreview();
- const p=document.getElementById('pkgpreview'),info=document.getElementById('pkgprevinfo');
- rebuildLocateRegistry();
- p.innerHTML=os(app,face,'hover me');
- p.querySelector('[data-owner-app]').dispatchEvent(new MouseEvent('mouseover',{bubbles:true}));
- A(info.textContent===locateInfoLine(locateFaceMeta(app,face,LOCATE_REG)),'hover updates the info line to section > face — value: '+info.textContent);
- A(/ > .* — /.test(info.textContent),'info line uses the section > face — value shape');
- p.dispatchEvent(new MouseEvent('mouseleave'));
- A(info.textContent==='','leaving the preview clears the info line');
+ // Wayfinding is the per-span hover title (above); there is no separate info line.
 }));
 // Click + cursor gate (open with #locateclicktest): an on-pane element carries the
 // locate-onpane class (pointer cursor) and clicking flashes its assignment row via

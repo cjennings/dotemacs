@@ -292,7 +292,7 @@ A face with zero resolvable icons, or with no native color, produces no group. F
 
 *** DONE Preview-pane size dropdown
 - Context: the designer needs to see the glyphs at different sizes. A general preview-pane dropdown solves it.
-- Decision: replace the static preview label with "preview:" + a =<select>=. One pane → disabled, names the preview. Multiple panes → enabled. nerd-icons gets one pane per font size in *points* (10/12/14/16/20/24, default 14) — pt because Emacs sizes fonts in =:height= (1/10 pt), so a pane maps to a real buffer size. Left/Right arrows step the focused dropdown; the size persists per app. The dropdown is multi-pane only when the gallery actually exists, so a failed capture can't promise sizes the renderer can't draw.
+- Decision: replace the static preview label with "preview:" + a =<select>=. One pane → disabled, names the preview. Multiple panes → enabled. nerd-icons gets one pane per font size in *points* (10/12/14/16/20/24/32/48, default 14) — pt because Emacs sizes fonts in =:height= (1/10 pt), so a pane maps to a real buffer size. The top sizes (32/48) are for inspecting a glyph's detail; the cell width scales with the size, so beyond ~48 pt the 314-icon grid becomes mostly scrolling. Left/Right arrows step the focused dropdown; the size persists per app. The dropdown is multi-pane only when the gallery actually exists, so a failed capture can't promise sizes the renderer can't draw.
 - Consequences: easier — size selection with no new UI surface; the mechanism generalizes to any future multi-pane app. Harder — a second piece of per-pane state (the selected index).
 
 *** DONE Font embed: full Symbols Nerd Font Mono stays embedded

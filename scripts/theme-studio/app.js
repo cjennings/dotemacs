@@ -772,7 +772,7 @@ const PACKAGE_PREVIEWS={
 // name and is disabled). nerd-icons is the one multi-pane app: one pane per font
 // size, so the designer can view the icon grid at different sizes — pt because
 // Emacs sizes fonts in :height (1/10 pt), so a pane maps to a real buffer size.
-const NERD_ICON_SIZES_PT=[10,12,14,16,20,24];
+const NERD_ICON_SIZES_PT=[10,12,14,16,20,24,32,48];
 const NERD_ICON_DEFAULT_PT=14;
 function previewPanes(app){
   // Multi-pane only when nerd-icons actually has a gallery to size. If the gallery
@@ -789,6 +789,13 @@ function defaultPaneIdx(app){
 }
 // Per-app selected pane index, so a chosen size survives edits and revisits.
 const PREV_PANE={};
+// The ‹ › buttons flanking the preview dropdown (and the Left/Right arrows) step the
+// pane by DIR, clamped, and re-render. No-op on a disabled (single-pane) dropdown.
+function stepPreviewPane(dir){
+  const s=document.getElementById('pkgprevsel');if(!s||s.disabled)return;
+  const i=stepViewIndex(s.selectedIndex,s.options.length,dir);
+  if(i!==s.selectedIndex){PREV_PANE[curApp()]=i;buildPkgPreview();}
+}
 function buildPkgPreview(){
   const app=curApp(),p=document.getElementById('pkgpreview');if(!p)return;
   rebuildLocateRegistry();
@@ -808,25 +815,21 @@ function buildPkgPreview(){
     sel.value=String(idx);
     sel.disabled=panes.length<2;
     sel.onchange=()=>{PREV_PANE[app]=+sel.value;buildPkgPreview();};
-    // Left/Right arrows step through the panes when the dropdown is focused
-    // (Up/Down already do, natively); clamped at the ends. Re-render and refocus,
-    // since rebuilding the options would otherwise drop keyboard focus.
+    // Left/Right arrows step the panes when the dropdown is focused (Up/Down already
+    // do, natively); re-grab + refocus the select, since the rebuild drops focus.
     sel.onkeydown=(e)=>{
       if(e.key!=='ArrowLeft'&&e.key!=='ArrowRight')return;
       e.preventDefault();
-      const cur=+sel.value,nxt=e.key==='ArrowRight'?Math.min(cur+1,panes.length-1):Math.max(cur-1,0);
-      if(nxt===cur)return;
-      PREV_PANE[app]=nxt;buildPkgPreview();
+      stepPreviewPane(e.key==='ArrowRight'?1:-1);
       const s=document.getElementById('pkgprevsel');if(s)s.focus();
     };
+    // The flanking ‹ › buttons follow the dropdown's enabled state.
+    const pb=document.getElementById('pkgprevprev'),nb=document.getElementById('pkgprevnext');
+    if(pb)pb.disabled=panes.length<2;
+    if(nb)nb.disabled=panes.length<2;
   }
-  // Immediate-wayfinding info line: hovering an element shows "section > face —
-  // value" next to the dropdown (the element's title is the deterministic
-  // fallback); leaving the preview clears it.
-  const info=document.getElementById('pkgprevinfo');
-  if(info)info.textContent='';
-  p.onmouseover=(e)=>{const u=e.target.closest('[data-owner-app]');if(!u||!info)return;info.textContent=locateInfoLine(locateFaceMeta(u.dataset.ownerApp,u.dataset.face,LOCATE_REG));};
-  p.onmouseleave=()=>{if(info)info.textContent='';};
+  // Per-element wayfinding rides each preview span's own hover title (face + value);
+  // no separate info line.
 }
 function resetApp(){const app=curApp();for(const [face,,d] of APPS[app].faces)if(!LOCKED.has('pkg:'+app+':'+face))PKGMAP[app][face]=seedFace(d);pkgChanged();notify('reset editable '+app+' faces to package defaults',false);}
 function syncPkgHeight(){const t=document.getElementById('pkgtable'),m=document.getElementById('pkgpreview');if(!t||!m)return;const lb=m.previousElementSibling,lbh=lb?lb.getBoundingClientRect().height+10:30;m.style.height=Math.max(t.getBoundingClientRect().height-lbh,220)+'px';}

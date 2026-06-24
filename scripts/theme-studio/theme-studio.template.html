@@ -95,7 +95,7 @@ STYLES_CSS</style>
   <table class="leg" id="pkgtable"><thead><tr><th title="lock a decided face"></th><th onclick="srtTable('pkgbody',1)">face &#9651;</th><th onclick="srtTable('pkgbody',2)">fg &#9651;</th><th onclick="srtTable('pkgbody',3)">bg &#9651;</th><th>style</th><th title="face :box (border)">box</th><th onclick="srtTable('pkgbody',6)">contrast &#9651;</th></tr></thead><tbody id="pkgbody"></tbody></table>
  </section>
  <section class="pane grow" style="display:flex;flex-direction:column">
-  <div class="langbar"><label style="color:#b4b1a2">preview: </label><select id="pkgprevsel" style="background:#3a3d44;color:#e8e8ea;border:1px solid #5a5d68;border-radius:3px;padding:1px 4px;font:inherit"></select> <span id="pkgprevinfo" style="color:#b4b1a2"></span></div>
+  <div class="langbar"><label style="color:#b4b1a2">preview: </label><button id="pkgprevprev" class="viewnav" title="previous size" onclick="stepPreviewPane(-1)">&lsaquo;</button><select id="pkgprevsel" style="background:#3a3d44;color:#e8e8ea;border:1px solid #5a5d68;border-radius:3px;padding:1px 4px;font:inherit"></select><button id="pkgprevnext" class="viewnav" title="next size" onclick="stepPreviewPane(1)">&rsaquo;</button></div>
   <div id="pkgpreview" class="mock" style="overflow:auto;min-height:60vh"></div>
  </section>
 </div>
