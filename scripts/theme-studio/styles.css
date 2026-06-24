@@ -39,8 +39,11 @@
  select.navsel,select.navsel option{background:#1f1c19;color:#e8bd30}
  /* Prev/next arrows flanking the view dropdown: step the selection without reopening it.
     Scoped under .pkgbar to outweigh the generic `.pkgbar button` rule above. */
- .pkgbar .viewnav{appearance:none;border:1px solid #00000060;border-radius:5px;background:#1f1c19;color:#e8bd30;font:bold 16px monospace;width:26px;height:30px;padding:0;margin:0;cursor:pointer;vertical-align:middle}
- .pkgbar .viewnav:hover{border-color:#e8bd30}
+ .pkgbar .viewnav,.langbar .viewnav{appearance:none;border:1px solid #00000060;border-radius:5px;background:#1f1c19;color:#e8bd30;font:bold 16px monospace;width:26px;height:30px;padding:0;margin:0;cursor:pointer;vertical-align:middle}
+ .pkgbar .viewnav:hover,.langbar .viewnav:hover{border-color:#e8bd30}
+ /* Disabled nav (a single-pane preview): keep the gold, dim it, don't look clickable. */
+ .viewnav:disabled{opacity:0.5;cursor:default}
+ select.navsel:disabled{opacity:0.5}
  /* Non-default marker: a small gold corner flag on a per-face setting cell whose
     value differs from the face's default. The size box looks identical default
     or not, so the flag is the only at-a-glance cue that a value was changed. */
