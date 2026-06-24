@@ -63,11 +63,11 @@ The legend artifact is an array of rows, captured once in Emacs (it reads the ne
 
 - =key= — unique row id (=ext:el=, =dir=, =cmd=, =buf=).
 - =label= — the sample name the row shows (=init.el=, =src/=, =M-x command=, =*scratch*=).
-- =face= — the owner =nerd-icons-*= color face being themed. The swatch reads its effective color through the same registry the other previews use, so recoloring the face repaints the row live.
+- =face= — the owner =nerd-icons-*= color face being themed. The row reads its effective color through the same registry the other previews use, so recoloring the face repaints the glyph live.
 - =category= — =extension= | =dir= | =command= | =buffer=, naming the source.
-- =glyph= — the nerd-font glyph string, captured for vNext; the v1 swatch renderer does not use it (see the rendering decision).
+- =glyph= — the nerd-font glyph string. The v1 renderer draws it in the owner face's color (see the rendering decision).
 
-Source per category: =extension= rows from the =:face= of =nerd-icons-extension-icon-alist= entries; =dir= rows from =nerd-icons-yellow= (the dir-advice face) and =nerd-icons-completion-dir-face=; =command=/symbol rows from the face in =nerd-icons-completion-category-icons=; =buffer= rows from the face resolved through =nerd-icons-mode-icon-alist=. v1 includes the curated extension rows plus one representative row each for dir, command, and buffer — the categories that actually surface in completing-read. A row whose face is unset (e.g. =nerd-icons-completion-dir-face=) falls back to the dir-advice face for its swatch.
+Source per category: =extension= rows from the =:face= of =nerd-icons-extension-icon-alist= entries; =dir= rows from =nerd-icons-yellow= (the dir-advice face) and =nerd-icons-completion-dir-face=; =command=/symbol rows from the face in =nerd-icons-completion-category-icons=; =buffer= rows from the face resolved through =nerd-icons-mode-icon-alist=. v1 includes the curated extension rows plus one representative row each for dir, command, and buffer — the categories that actually surface in completing-read. A row whose face is unset (e.g. =nerd-icons-completion-dir-face=) falls back to the dir-advice face for its color.
 
 * Alternatives Considered
 
@@ -116,10 +116,10 @@ Source per category: =extension= rows from the =:face= of =nerd-icons-extension-
 - Decision: We keep the dir advice (its problem is independent of the tint), now pointing at the theme-owned =nerd-icons-yellow=. =nerd-icons-completion-dir-face= is in scope — it is already inventoried and seeded, so it is a themeable row and the legend's dir row's owner face (falling back to =nerd-icons-yellow= while unset).
 - Consequences: easier — dir icons stay colored and become themeable. Harder — one more face in the legend (the dir row).
 
-** DONE Legend rendering: color swatch + filetype label in v1, not the nerd-font glyph
-- Context: the icons are private-use nerd-font glyphs; rendering them in the browser needs the Symbols Nerd Font loaded into =theme-studio.html=, an added dependency the page does not carry today.
-- Decision: v1 legend rows render a color swatch + the sample filetype label + the owner face name, colored by the face's effective color. The captured =glyph= rides along unused; rendering the real glyph is vNext, gated on loading the nerd font into the page.
-- Consequences: easier — no browser-font dependency, and swatch + label already answers "which filetype gets which color". Harder — the preview is not a pixel mirror of completing-read (no glyph shape); acceptable, since color, not shape, is what is being themed.
+** DONE Legend rendering: render the real glyph in its color (v1)
+- Context: the glyphs are private-use nerd-font codepoints, so they only render where a Nerd Font is available. theme-studio's CSS declares none — but Nerd Fonts are installed system-wide on Craig's machine (verified via =fc-list=: JetBrainsMono, Hack, Meslo Nerd Font Mono), and Chrome uses system fonts, so a =font-family= rule renders the glyphs with no =@font-face= and no embedded font file.
+- Decision: v1 legend rows render the captured =glyph= in the owner face's effective color (inline color style), via =font-family: "Symbols Nerd Font Mono", "Hack Nerd Font Mono", monospace=. The headless gate asserts the glyph char and the inline color (both in the DOM, font-independent), not the rendered pixels. The monospace fallback shows a placeholder box only where no Nerd Font exists, which won't happen on Craig's setup.
+- Consequences: easier — the preview mirrors completing-read authentically (real glyph in real color). Harder — a machine-dependent font assumption (fine for a personal tool), and the gate asserts the glyph char + inline color rather than the glyph's pixels.
 
 * Review findings [3/3]
 
@@ -150,7 +150,7 @@ Remove the tint defcustom/defconst/function and its two call sites from =nerd-ic
 Seed/assign the 34 nerd-icons colors in WIP, confirm export → =WIP-theme.el= and import round-trip, verify live in completing-read / dirvish / dashboard / ibuffer.
 
 * Acceptance criteria
-- [ ] theme-studio shows a nerd-icons pane: 34 editable foreground rows + a filetype-legend preview.
+- [ ] theme-studio shows a nerd-icons pane: 34 editable foreground rows + a filetype-legend preview that renders each row's real nerd-font glyph in its assigned color (monospace fallback).
 - [ ] Recoloring a =nerd-icons-*= face repaints every legend row mapped to it, live.
 - [ ] theme-studio opens seeded with nerd-icons' native palette (not darkgoldenrod).
 - [ ] Export includes the =nerd-icons-*= face specs; re-import round-trips to the same state.
@@ -174,7 +174,7 @@ Seed/assign the 34 nerd-icons colors in WIP, confirm export → =WIP-theme.el= a
 
 * Risks, Rabbit Holes, and Drawbacks
 - Reading defface defaults past a runtime override is the fiddly part — if =face-default-spec= doesn't yield a clean color (some specs are display-conditional), fall back to nerd-icons' source palette values captured once. Timebox the defface-introspection approach before hand-rolling a palette table.
-- Org/elisp icon fontification inside theme-studio is HTML, not Emacs faces — the legend renders CSS colors from the captured map, so there is no live Emacs face dependency at preview time (same model as the other previews).
+- The legend is HTML, not Emacs faces: rows render the captured glyph char in a CSS color from the registry, so there's no live Emacs dependency at preview time. The one font dependency is a Nerd Font for the glyph shape — present system-wide on Craig's machine, with a monospace fallback to a placeholder box elsewhere. The gate asserts the glyph char and inline color, not the rendered pixels.
 
 * Review and iteration history
 ** 2026-06-23 Tue @ 22:17:25 -0400 — Claude — author
@@ -191,3 +191,8 @@ Seed/assign the 34 nerd-icons colors in WIP, confirm export → =WIP-theme.el= a
 - *What changed:* All three blocking findings accepted and folded in. Added a "Legend data contract" section (row schema + per-category sources + v1 scope). Corrected the data-capture story: native seed colors are owned by the existing default-face pipeline (verified untinted in =emacs-default-faces.json=), so the draft's =build-inventory.el= native-color capture is dropped; only the legend metadata is newly captured. Resolved all five open decisions and added a sixth (legend renders a swatch + label in v1, not the nerd-font glyph). Phase 1 retitled to "Legend capture".
 - *Why:* The findings were correct against the code read. The seed-pipeline conflict was the load-bearing one — capturing native colors in =build-inventory.el= would have double-seeded against =apply_default_face_seeds=. Two calls (sequencing, glyph rendering) are author-proposed and marked reopen-if-disagree.
 - *Artifacts:* findings [3/3]; decisions [6/6]; code verified this session: =capture-default-faces.py= (reads =face-default-spec= under =-Q=), =emacs-default-faces.json= (35 nerd-icons faces, native colors), =nerd-icons-extension-icon-alist= (330) / =nerd-icons-dir-icon-alist= (27) / =nerd-icons-completion-category-icons= sources.
+
+** 2026-06-23 Tue @ 22:56:49 -0400 — Claude — responder (decision flip)
+- *What changed:* Flipped the legend-rendering decision from "swatch + label, glyph deferred to vNext" to v1 rendering the real glyph in its color, with a monospace fallback. Updated the schema's glyph/face notes, the acceptance criterion, and the font-dependency risk.
+- *Why:* Craig asked why glyph rendering was deferred. The deferral rested on an unverified font dependency. Verified Nerd Fonts are installed system-wide (=fc-list=), so Chrome renders the glyphs from a =font-family= rule with no =@font-face= or embedded font file — v1-cheap. The authentic glyph beats the swatch, and the gate can still assert the glyph char + inline color.
+- *Artifacts:* =fc-list= (system Nerd Fonts present: JetBrainsMono / Hack / Meslo Nerd Font Mono); decisions unchanged [6/6].
