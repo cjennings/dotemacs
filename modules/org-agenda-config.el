@@ -47,9 +47,10 @@
 ;; M-f8 - TASK LIST containing all tasks from just the current org-mode buffer.
 ;;
 ;; NOTE:
-;; Files that contain information relevant to the agenda will be found in the
-;; following places: the schedule-file, org-roam notes tagged as 'Projects' and
-;; project todo.org files found in project-dir and code-dir.
+;; Files that contain information relevant to the agenda are: the inbox, the
+;; schedule-file, the synced calendars, and the per-project todo.org files found
+;; in immediate subdirectories of projects-dir.  (org-roam notes are refile
+;; targets, not agenda sources -- see org-refile-config.el.)
 
 ;;; Code:
 (require 'user-constants)
@@ -89,6 +90,12 @@
   (setq org-agenda-skip-scheduled-if-done nil)
   (setq org-agenda-remove-tags t)
   (setq org-agenda-compact-blocks t)
+  ;; Backstop against a non-existent agenda file (e.g. a calendar not yet synced
+  ;; on a fresh machine): skip it silently instead of prompting to create it --
+  ;; the interactive-prompt class that once hung the chime daemon.
+  ;; `cj/--org-agenda-base-files' already filters the list; this catches any path
+  ;; that reaches `org-agenda-files' another way.
+  (setq org-agenda-skip-unavailable-files t)
 
   ;; display the agenda from the bottom
   (add-to-list 'display-buffer-alist
@@ -177,14 +184,18 @@ Only checks DIRECTORY/*/todo.org — does not recurse deeper."
 
 ;; ---------------------------- Rebuild Org Agenda ---------------------------
 ;; builds the org agenda list from all agenda targets with caching.
-;; agenda targets is the schedule, contacts, project todos,
-;; inbox, and org roam projects.
+;; agenda targets are the inbox, the schedule, the synced calendars,
+;; and the per-project todo.org files under projects-dir.
 (defun cj/--org-agenda-base-files ()
-  "Return the fixed base files for the agenda: inbox, schedule, and calendars.
+  "Return the existing base files for the agenda: inbox, schedule, and calendars.
 The single source of the base list shared by the agenda builders and the chime
 initializer, so adding a calendar source is a one-place change.  Per-project
-todo.org files are layered on separately."
-  (list inbox-file schedule-file gcal-file pcal-file dcal-file))
+todo.org files are layered on separately.  Files that do not exist are dropped
+\(a fresh machine may lack the synced calendars or the inbox) so org-agenda
+never prompts to create them -- the interactive-prompt class that once hung the
+chime daemon; `org-agenda-skip-unavailable-files' is the backstop."
+  (seq-filter #'file-exists-p
+              (list inbox-file schedule-file gcal-file pcal-file dcal-file)))
 
 (defun cj/--org-agenda-scan-files ()
   "Scan disk for the agenda files list.  Pure-ish: no caching, no logging.
@@ -243,8 +254,8 @@ Bypasses cache and scans directories from scratch."
 
 (defun cj/todo-list-all-agenda-files ()
   "Displays an \\='org-agenda\\=' todo list.
-The contents of the agenda will be built from org-project-files and org-roam
-files that have project in their filetag."
+The contents of the agenda are built from the base files (inbox, schedule, and
+the synced calendars) plus the per-project todo.org files under projects-dir."
   (interactive)
   (cj/build-org-agenda-list)
   (org-agenda "a" "t"))
@@ -385,8 +396,7 @@ This uses all org-agenda targets and presents three sections:
 - Today's schedule, including habits with consistency graphs
 - All priority B and C unscheduled/undeadlined tasks
 The agenda is rebuilt from all sources before display, including:
-- inbox-file and schedule-file
-- Org-roam nodes tagged as \"Project\"
+- inbox-file, schedule-file, and the synced calendars
 - All todo.org files in immediate subdirectories of projects-dir"
   (interactive)
   (cj/build-org-agenda-list)
