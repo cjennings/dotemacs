@@ -25,6 +25,15 @@
 (require 'subr-x)
 (require 'system-lib)
 
+;; Make json.el's reader variables visible to the byte/native compiler so the
+;; `let' bindings of `json-object-type' / `json-array-type' / `json-key-type'
+;; in the parse helpers below bind dynamically.  Without this the compiler
+;; treats them as lexical (this file is lexical-binding), the bindings never
+;; reach `json-read-file', and it returns json.el's default alist instead of
+;; the hash tables the parsers maphash over.  The runtime `(require 'json)'
+;; inside each helper still keeps json off the load-time path.
+(eval-when-compile (require 'json))
+
 (defvar cj/coverage-backends nil
   "Registry of coverage backends in priority order.
 Each entry is a plist with at least :name, :detect, :run, and :report-path.
