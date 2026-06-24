@@ -1,4 +1,4 @@
-;;; nerd-icons-config.el --- Nerd-icons setup, integrations, and tinting -*- lexical-binding: t; -*-
+;;; nerd-icons-config.el --- Nerd-icons setup and integrations -*- lexical-binding: t; -*-
 ;; author: Craig Jennings <c@cjennings.net>
 
 ;;; Commentary:
@@ -16,10 +16,12 @@
 ;;   - the package itself
 ;;   - completion integration (`nerd-icons-completion')
 ;;   - ibuffer integration (`nerd-icons-ibuffer')
-;;   - bulk color tinting of every `nerd-icons-*' color face
 ;;   - dir-icon color advice (so directory glyphs carry a color face like
 ;;     file glyphs do, instead of falling through to the buffer default
 ;;     face)
+;;
+;; Icon colors are theme-driven: nerd-icons' 34 `nerd-icons-*' color faces are
+;; owned by the theme (themeable in theme-studio), not overwritten at load time.
 ;;
 ;; Per-feature USE of nerd-icons stays in the feature module that consumes
 ;; it: `dashboard-icon-type', `dirvish-attributes', and the keyboard-compat
@@ -27,39 +29,7 @@
 
 ;;; Code:
 
-;; ----------------------------- Customization ---------------------------------
-
-(defcustom cj/nerd-icons-tint-color "darkgoldenrod"
-  "Single foreground color applied to every `nerd-icons-*' color face.
-Set via Customize or by `setq' before this module loads, then call
-`cj/nerd-icons-apply-tint' to re-apply on demand."
-  :type 'string
-  :group 'cj)
-
-(defconst cj/--nerd-icons-color-faces
-  '(nerd-icons-red       nerd-icons-lred       nerd-icons-dred       nerd-icons-red-alt
-    nerd-icons-green     nerd-icons-lgreen     nerd-icons-dgreen
-    nerd-icons-yellow    nerd-icons-lyellow    nerd-icons-dyellow
-    nerd-icons-orange    nerd-icons-lorange    nerd-icons-dorange
-    nerd-icons-blue      nerd-icons-blue-alt   nerd-icons-lblue      nerd-icons-dblue
-    nerd-icons-cyan      nerd-icons-cyan-alt   nerd-icons-lcyan      nerd-icons-dcyan
-    nerd-icons-purple    nerd-icons-purple-alt nerd-icons-lpurple    nerd-icons-dpurple
-    nerd-icons-pink      nerd-icons-lpink      nerd-icons-dpink
-    nerd-icons-maroon    nerd-icons-lmaroon    nerd-icons-dmaroon
-    nerd-icons-silver    nerd-icons-lsilver    nerd-icons-dsilver)
-  "Every color face nerd-icons attaches to glyphs via `:inherit'.")
-
 ;; ------------------------------- Helpers -------------------------------------
-
-(defun cj/nerd-icons-apply-tint (&optional color)
-  "Set every face in `cj/--nerd-icons-color-faces' to foreground COLOR.
-COLOR defaults to `cj/nerd-icons-tint-color'. Faces that are not yet
-defined (nerd-icons not loaded) are silently skipped."
-  (interactive)
-  (let ((c (or color cj/nerd-icons-tint-color)))
-    (dolist (f cj/--nerd-icons-color-faces)
-      (when (facep f)
-        (set-face-foreground f c)))))
 
 (defun cj/--nerd-icons-color-dir (icon)
   "Layer `nerd-icons-yellow' onto ICON's face stack and return ICON.
@@ -87,17 +57,15 @@ every call. The `memq' check skips when the face is already present."
 (use-package nerd-icons
   :demand t
   :config
-  (advice-add 'nerd-icons-icon-for-dir :filter-return #'cj/--nerd-icons-color-dir)
-  (cj/nerd-icons-apply-tint))
+  (advice-add 'nerd-icons-icon-for-dir :filter-return #'cj/--nerd-icons-color-dir))
 
 ;; Safety net: if this module is re-evaluated in a running Emacs where
 ;; nerd-icons is already loaded, `:config' above won't fire again --
-;; ensure the advice and tint still apply.
+;; ensure the dir advice still applies.
 (with-eval-after-load 'nerd-icons
   (unless (advice-member-p #'cj/--nerd-icons-color-dir 'nerd-icons-icon-for-dir)
     (advice-add 'nerd-icons-icon-for-dir
-                :filter-return #'cj/--nerd-icons-color-dir))
-  (cj/nerd-icons-apply-tint))
+                :filter-return #'cj/--nerd-icons-color-dir)))
 
 (use-package nerd-icons-completion
   :demand t
