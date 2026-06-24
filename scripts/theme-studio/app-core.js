@@ -652,15 +652,6 @@ function locateFaceMeta(owner,face,registry){
   return e||{owner,face,unassigned:true};
 }
 
-// The owner-aware membership check the preview gate calls: the entry's attributes
-// when (owner, face) is a known face of that owner, null when it isn't (a bad
-// owner is rejected). A known face with no non-default attributes returns {} --
-// still truthy, so membership reads cleanly off the result.
-function previewFaceAttrs(owner,face,registry){
-  const e=registry&&registry[locateKey(owner,face)];
-  return e?e.attrs:null;
-}
-
 // Clickable predicate: an element is on-pane only when its owner is the pane being
 // viewed. Recomputed from the current view at render time (never stored in the
 // registry), since switching panes changes clickability but not ownership.
@@ -708,4 +699,4 @@ function formatLocateTitle(meta){
   return parts.concat(locateAttrsList(meta.attrs)).join(', ');
 }
 
-export { nameToHex, migrateLegacyFace, cssWeight, faceDecoration, boxCss, faceCss, composeHoverTitle, normalizePkgFace, buildPkgmap, packagesForExport, mergePackagesInto, effResolve, resolveSyntaxFg, resolveUiAttr, paletteOptionList, galleryModel, appViewKeysSorted, faceBoxNonDefaults, overflowNonDefault, clampHeight, HEIGHT_MIN, HEIGHT_MAX, stepViewIndex, spanNeighborHex, slugify, fgSetFor, floor, lMax, COVERED_FACES, columnsFromPalette, usedPaletteHexes, paletteUsages, regenColumn, rankByLightness, stepRepointPlan, sortColumns, sortColumnMembers, groundRoleOfEntry, groundColumnMembersFromPalette, clearPalettePlan, deletePaletteColumnPlan, areAllLocked, lockToggleLabel, toggleLockSet, buildLocateRegistry, locateFaceMeta, formatLocateTitle, previewFaceAttrs, isLocateOnPane };
+export { nameToHex, migrateLegacyFace, cssWeight, faceDecoration, boxCss, faceCss, composeHoverTitle, normalizePkgFace, buildPkgmap, packagesForExport, mergePackagesInto, effResolve, resolveSyntaxFg, resolveUiAttr, paletteOptionList, galleryModel, appViewKeysSorted, faceBoxNonDefaults, overflowNonDefault, clampHeight, HEIGHT_MIN, HEIGHT_MAX, stepViewIndex, spanNeighborHex, slugify, fgSetFor, floor, lMax, COVERED_FACES, columnsFromPalette, usedPaletteHexes, paletteUsages, regenColumn, rankByLightness, stepRepointPlan, sortColumns, sortColumnMembers, groundRoleOfEntry, groundColumnMembersFromPalette, clearPalettePlan, deletePaletteColumnPlan, areAllLocked, lockToggleLabel, toggleLockSet, buildLocateRegistry, locateFaceMeta, formatLocateTitle, isLocateOnPane };

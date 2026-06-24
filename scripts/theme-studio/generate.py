@@ -133,6 +133,9 @@ if os.path.exists(os.path.join(HERE,_FONT_WOFF2)):
     STYLES=STYLES.replace('url("%s")'%_FONT_WOFF2,
                           'url("data:font/woff2;base64,%s")'%_FONT_B64)
 APP_BODY=read_text('app.js')
+# Custom dropdown / detail-editor / expander factories, split from app.js for
+# navigability and spliced in at the CONTROLS_J token. Raw (no imports/exports).
+CONTROLS_BODY=read_text('controls.js')
 # Bespoke per-package preview renderers, spliced into the page <script> via the
 # PREVIEWS_J token in app.js. No imports/exports, so read raw.
 PREVIEWS_BODY=read_text('previews.js')
@@ -385,6 +388,7 @@ def _build():
     def fill_data(s):
         return (s.replace("COLORMATH_J",COLORMATH_BODY)
          .replace("APP_CORE_J",APP_CORE_BODY)
+         .replace("CONTROLS_J",CONTROLS_BODY)
          .replace("PREVIEWS_J",PREVIEWS_BODY)
          .replace("APP_UTIL_J",APP_UTIL_BODY)
          .replace("PALETTE_GENERATOR_CORE_J",PALETTE_GENERATOR_CORE_BODY)

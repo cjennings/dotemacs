@@ -1209,15 +1209,6 @@ function locateFaceMeta(owner,face,registry){
   return e||{owner,face,unassigned:true};
 }
 
-// The owner-aware membership check the preview gate calls: the entry's attributes
-// when (owner, face) is a known face of that owner, null when it isn't (a bad
-// owner is rejected). A known face with no non-default attributes returns {} --
-// still truthy, so membership reads cleanly off the result.
-function previewFaceAttrs(owner,face,registry){
-  const e=registry&&registry[locateKey(owner,face)];
-  return e?e.attrs:null;
-}
-
 // Clickable predicate: an element is on-pane only when its owner is the pane being
 // viewed. Recomputed from the current view at render time (never stored in the
 // registry), since switching panes changes clickability but not ownership.
@@ -1728,6 +1719,10 @@ function renderCode(){
   cp.onclick=(e)=>{const s=e.target.closest('[data-k]');if(s)flashAssign(s.dataset.k);};
   buildMockFrame();
 }
+// controls.js -- the custom dropdown / detail-editor / expander control
+// factories, extracted from app.js for navigability. Inlined raw at the
+// CONTROLS_J token: these are hoisting function declarations plus the
+// dropdown popup state, so the token's position preserves execution order.
 // Custom color dropdown: a real swatch + name + hex per row, since native
 // <option> background colors render unreliably on Linux Chrome. The popup is
 // fixed-positioned on <body> so a table's overflow can't clip it.
@@ -1933,6 +1928,7 @@ function mkExpander(face,colspan,onChange,opts={}){
     setGlyph();syncExpandAllBtns();};
   refreshNd();setGlyph();
   return {btn,detail,locks};}
+
 // Expand/collapse every row in a table at once, then sync the per-row triangles.
 function setAllExpanded(tableId,expand){
   const tb=document.getElementById(tableId);if(!tb)return;

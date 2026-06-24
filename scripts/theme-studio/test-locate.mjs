@@ -8,7 +8,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  buildLocateRegistry, locateFaceMeta, formatLocateTitle, previewFaceAttrs, isLocateOnPane,
+  buildLocateRegistry, locateFaceMeta, formatLocateTitle, isLocateOnPane,
 } from './app-core.js';
 
 // A constructed model: two package apps that BOTH own a face literally named
@@ -140,15 +140,6 @@ test('formatLocateTitle: Normal — non-default structural attributes are listed
 test('formatLocateTitle: Error — an unassigned meta reads "unassigned"', () => {
   const reg = buildLocateRegistry(APPS, PKGMAP, UIMAP, MAP);
   assert.equal(formatLocateTitle(locateFaceMeta('org-faces', 'ghost', reg)), 'ghost, unassigned');
-});
-
-// --- previewFaceAttrs: owner-aware validation -------------------------------
-
-test('previewFaceAttrs: Normal — a known owner/face validates; a bad owner is rejected', () => {
-  const reg = buildLocateRegistry(APPS, PKGMAP, UIMAP, MAP);
-  assert.ok(previewFaceAttrs('org-faces', 'org-todo', reg), 'known face validates');
-  assert.equal(previewFaceAttrs('org-mode', 'minibuffer-prompt', reg), null, 'a UI face under a package owner is rejected');
-  assert.equal(previewFaceAttrs('nope', 'org-todo', reg), null, 'an unknown owner is rejected');
 });
 
 // --- lifecycle + perf -------------------------------------------------------
