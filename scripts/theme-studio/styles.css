@@ -1,3 +1,4 @@
+ @font-face{font-family:"ThemeStudioNerd";src:url("SymbolsNerdFontMono-Regular.woff2") format("woff2");font-display:swap}
  body{background:#0d0b0a;color:#cdced1;font:15px/1.55 monospace;margin:20px}
  h1{font-size:22px;font-weight:normal;color:#e8bd30;margin:26px 0 10px;border-bottom:1px solid #252321;padding-bottom:6px}
  h2{font-size:10pt;color:#8a9496;font-weight:normal;margin:0 0 4px}

@@ -24,9 +24,26 @@ function previewSpan(owner,face,text){
   return `<span data-owner-app="${owner}" data-face="${face}"${cls} title="${title}" style="${style}">${text}</span>`;
 }
 function os(app,face,txt){return previewSpan(app,face,txt);}
-// Shared wrapper for the line-based package previews: a monospace pre block.
+// Preview font stack: the embedded @font-face (family "ThemeStudioNerd",
+// Symbols Nerd Font Mono inlined as a data: URI in styles.css) supplies the nerd
+// glyphs; monospace supplies everything else. The family name is deliberately
+// custom, NOT the real "Symbols Nerd Font Mono": when the @font-face name matches
+// a font the user has installed system-wide, Chrome resolves the family to the
+// local copy instead of our embedded one and the glyphs render as tofu (the
+// embedded font only wins in environments without that system font, e.g. headless
+// CI). A unique family name forces the embedded font. "ThemeStudioNerd" carries
+// only icon glyphs, so plain text falls through to monospace and the layout is
+// unchanged — only the nerd codepoints pull from the embedded font.
+// NOTE: the family name is UNQUOTED here on purpose. PREVIEW_FONT is interpolated
+// into inline style="..." attributes (previewLines, genericPreview, the mock
+// frame), and a double-quoted family name inside a double-quoted attribute
+// terminates the attribute early, silently dropping the font-family (the glyphs
+// then fall back to monospace = tofu). A no-space identifier needs no quotes, so
+// keep ThemeStudioNerd quote-free and never reintroduce a spaced/quoted name here.
+const PREVIEW_FONT='ThemeStudioNerd,monospace';
+// Shared wrapper for the line-based package previews: a nerd-font pre block.
 // Each renderer builds its own L array of os(...) lines and returns previewLines(L).
-function previewLines(L){return `<div style="padding:12px 16px;font:12pt/1.7 monospace;white-space:pre">${L.join('\n')}</div>`;}
+function previewLines(L){return `<div style="padding:12px 16px;font:12pt/1.7 ${PREVIEW_FONT};white-space:pre">${L.join('\n')}</div>`;}
 function renderOrgPreview(){const a='org-mode',L=[];
   L.push(os(a,'org-document-info-keyword','#+TITLE:')+' '+os(a,'org-document-title','Project Notes'));
   L.push(os(a,'org-document-info-keyword','#+AUTHOR:')+' '+os(a,'org-document-info','Craig Jennings'));
@@ -402,7 +419,7 @@ function renderTelegaPreview(){const a='telega',L=[];
   L.push(os(a,'telega-link-preview-sitename','example.com')+'  '+os(a,'telega-link-preview-title','Link preview title'));
   L.push('Webpage '+os(a,'telega-webpage-title','Title')+' '+os(a,'telega-webpage-subtitle','Subtitle')+' '+os(a,'telega-webpage-header','Header')+' '+os(a,'telega-webpage-subheader','Subheader')+' '+os(a,'telega-webpage-outline','outline')+' '+os(a,'telega-webpage-fixed','fixed')+' '+os(a,'telega-webpage-preformatted','pre')+' '+os(a,'telega-webpage-marked','marked')+' '+os(a,'telega-webpage-strike-through','strike')+' '+os(a,'telega-webpage-chat-link','chat-link'));
   return previewLines(L);}
-function genericPreview(app){let h='<div style="padding:10px 14px;font:12pt/1.8 monospace">';for(const [face,label] of APPS[app].faces)h+=`<div data-face="${face}" style="${ofs(app,face)}">${esc(label)}</div>`;return h+'</div>';}
+function genericPreview(app){let h='<div style="padding:10px 14px;font:12pt/1.8 '+PREVIEW_FONT+'">';for(const [face,label] of APPS[app].faces)h+=`<div data-face="${face}" style="${ofs(app,face)}">${esc(label)}</div>`;return h+'</div>';}
 // Bespoke split preview: a focused window beside its auto-dimmed twin, both
 // showing the language selected at the top of the page (kept in sync via the
 // langsel onchange, which re-runs buildPkgPreview).  The left pane carries the
@@ -432,8 +449,8 @@ function renderAutodimPreview(){
   const accent=uf('cursor').bg||'#67809c';
   const pane=(label,body,bg,focused)=>
     `<div style="flex:1;min-width:20ch;border:${focused?'2px solid '+accent:'1px solid #2a2a2a'};border-radius:4px;overflow:hidden">`
-    +`<div style="text-align:center;font:bold 10pt monospace;padding:4px;color:${focused?'#cdced1':'#8a8a8a'};background:${focused?'#1a1a1a':'#0a0a0a'};border-bottom:1px solid #2a2a2a">${label}</div>`
-    +`<div style="padding:10px 12px;font:12pt/1.6 monospace;white-space:pre;background:${bg}">${body}</div></div>`;
+    +`<div style="text-align:center;font:bold 10pt ${PREVIEW_FONT};padding:4px;color:${focused?'#cdced1':'#8a8a8a'};background:${focused?'#1a1a1a':'#0a0a0a'};border-bottom:1px solid #2a2a2a">${label}</div>`
+    +`<div style="padding:10px 12px;font:12pt/1.6 ${PREVIEW_FONT};white-space:pre;background:${bg}">${body}</div></div>`;
   const litBody=lit+'\n'+`<span style="color:#5e6770">${esc(foldText)}</span>`;
   const dimBody=`<span data-face="auto-dim-other-buffers" style="color:${dimFg}">${dim}</span>\n`
     +`<span data-face="auto-dim-other-buffers-hide" style="color:${hideFg};background:${hideBg}">${esc(foldText)}</span>`;

@@ -1,4 +1,4 @@
-import json, os, re
+import json, os, re, base64
 from app_inventory import add_inventory_apps, add_nerd_icons_app, apply_default_face_seeds, apply_package_overrides, face_rows
 from default_faces import DefaultFaces
 from face_data import *
@@ -68,6 +68,24 @@ COLORMATH_BODY=strip_exports(read_text('colormath.js'))
 # template, filled at generate time. app.js carries the data placeholders
 # (MAP_J, PALETTE_J, COLORMATH_J, ...); those are filled after it is spliced in.
 STYLES=read_text('styles.css')
+# Inline the embedded nerd font as a base64 data: URI. The @font-face in
+# styles.css references the woff2 by a relative path so the source stays editable;
+# here that url is rewritten to a self-contained data: URI at generate time. The
+# payoff is portability — the page renders the glyphs on any clone, with no
+# dependency on a separately-shipped font file or a system-installed copy — and it
+# removes any question about how a file:// font url loads across browsers.
+# (The tofu bug this feature chased was NOT a load failure: the confirmed causes
+# were a double-quoted font-family inside an inline style attribute, which
+# silently dropped the family — see previews.js PREVIEW_FONT — and a woff2 encoded
+# by woff2_compress that headed Chrome/Firefox reject; the woff2 is now encoded by
+# fontTools via `make font`. The data: URI is the durable self-contained form, not
+# the fix for those two bugs.)
+_FONT_WOFF2='SymbolsNerdFontMono-Regular.woff2'
+if os.path.exists(os.path.join(HERE,_FONT_WOFF2)):
+    with open(os.path.join(HERE,_FONT_WOFF2),'rb') as _ff:
+        _FONT_B64=base64.b64encode(_ff.read()).decode('ascii')
+    STYLES=STYLES.replace('url("%s")'%_FONT_WOFF2,
+                          'url("data:font/woff2;base64,%s")'%_FONT_B64)
 APP_BODY=read_text('app.js')
 # Bespoke per-package preview renderers, spliced into the page <script> via the
 # PREVIEWS_J token in app.js. No imports/exports, so read raw.

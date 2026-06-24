@@ -1291,3 +1291,38 @@ if(location.hash==='#locateclicktest')gate('locateclicktest',A=>withSavedState([
   mspan.dispatchEvent(new MouseEvent('click',{bubbles:true}));
   A(urow()&&urow().classList.contains('flash'),'a UI mock span still flashes its row through the unified dispatcher');}
 }));
+// Embedded-font gate (open with #fonttest): the nerd-icons legend, dashboard
+// navigator, and package previews render their glyphs in a real nerd font
+// instead of tofu. Verifies (1) the ThemeStudioNerd @font-face is registered,
+// (2) previewLines actually APPLIES that family — the div is parsed into the DOM
+// and getComputedStyle must resolve to ThemeStudioNerd (a double-quoted family in
+// the inline style attribute silently drops it, so a plain string match would
+// false-pass), and (3) the embedded woff2 loads AND covers the glyph codepoints
+// the previews use — both a BMP glyph (U+F121) and a supplementary-plane Material
+// Design glyph (U+F0474), the range most likely missing from a partial font.
+// Async: it awaits the font load, then appends the verdict (the runner's
+// virtual-time budget covers it).
+if(location.hash==='#fonttest'){
+  const fam='ThemeStudioNerd',notes=[];
+  const bmp='',supp='\u{f0474}';
+  const finish=()=>{const v='FONTTEST '+(notes.length?'FAIL':'PASS');document.title=v;
+    const d=document.createElement('div');d.id='fonttest';
+    d.textContent=v+(notes.length?' fails='+notes.join(','):'');document.body.appendChild(d);};
+  const registered=[...document.fonts].some(f=>f.family.replace(/["']/g,'')===fam);
+  if(!registered)notes.push('no-fontface');
+  // Parse the actual previewLines output into the DOM and read the resolved
+  // font-family off the rendered element — not a substring of the HTML string. A
+  // double-quoted family name inside the inline style="..." attribute terminates
+  // the attribute early and silently drops the font-family, so a string match
+  // passes while the rendered font is empty; computed style catches that.
+  const probe=document.createElement('div');probe.innerHTML=previewLines(['x']);
+  document.body.appendChild(probe);
+  const inner=probe.firstElementChild;
+  const ff=inner?getComputedStyle(inner).fontFamily:'';
+  if(ff.indexOf(fam)<0)notes.push('previews-font-not-applied('+(ff||'empty')+')');
+  Promise.all([document.fonts.load('16px "'+fam+'"',bmp),document.fonts.load('16px "'+fam+'"',supp)]).then(()=>{
+    if(!document.fonts.check('16px "'+fam+'"',bmp))notes.push('bmp-glyph-missing');
+    if(!document.fonts.check('16px "'+fam+'"',supp))notes.push('supp-glyph-missing');
+    probe.remove();finish();
+  }).catch(e=>{probe.remove();notes.push('load-error:'+(e&&e.message||e));finish();});
+}

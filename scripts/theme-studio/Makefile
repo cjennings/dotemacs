@@ -16,7 +16,13 @@ OUT ?= ../../themes
 EMACS ?= emacs
 EMACSCLIENT ?= emacsclient
 
-.PHONY: help test check check-generated coverage gen open theme theme-load theme-reload face-coverage-dump face-coverage face-coverage-diff
+# Source TTF for the embedded nerd-icon font. `make font` re-encodes it to the
+# committed woff2 with fontTools — NOT woff2_compress, whose output headed Chrome
+# and Firefox reject (they render tofu) even though old-headless Chrome accepts it.
+NERD_TTF ?= /usr/share/fonts/TTF/SymbolsNerdFontMono-Regular.ttf
+NERD_WOFF2 ?= SymbolsNerdFontMono-Regular.woff2
+
+.PHONY: help test check check-generated coverage gen open theme theme-load theme-reload face-coverage-dump face-coverage face-coverage-diff font
 
 # Scratch path for the face-coverage Emacs data dump.
 FACE_DUMP ?= /tmp/face-coverage-data.json
@@ -36,6 +42,15 @@ help:
 	@echo "  make theme-reload JSON=x - Convert JSON, then cleanly reload its theme in current Emacs"
 	@echo "  make face-coverage       - Regenerate face-coverage.org from the live Emacs daemon"
 	@echo "  make face-coverage-diff  - Show the coverage delta vs the committed face-coverage.org"
+	@echo "  make font                - Re-encode the embedded nerd woff2 from NERD_TTF (fontTools)"
+
+font:
+	@python3 -c "import os,sys; from fontTools.ttLib import TTFont; \
+src='$(NERD_TTF)'; \
+sys.exit('NERD_TTF not found: '+src) if not os.path.exists(src) else None; \
+f=TTFont(src); f.flavor='woff2'; f.save('$(NERD_WOFF2)'); \
+print('wrote $(NERD_WOFF2) (%d bytes) from %s' % (os.path.getsize('$(NERD_WOFF2)'), src))"
+	@echo "now run: make gen   (re-inlines the woff2 as a data: URI into theme-studio.html)"
 
 test:
 	@./run-tests.sh
