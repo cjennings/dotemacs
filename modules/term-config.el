@@ -206,6 +206,63 @@ start of the line for the same column-0 reason."
     (ghostel-copy-mode)
     (beginning-of-line)))
 
+;; --------------------------- directional copy mode ---------------------------
+;;
+;; A modified arrow both enters copy-mode and carries its own movement, so one
+;; stroke scrolls back in the intended direction.  C-<arrow> and M-<arrow> bind
+;; to these in ghostel buffers (and join `ghostel-keymap-exceptions' so they
+;; reach Emacs instead of the pty).
+
+(defconst cj/--term-copy-mode-tmux-arrows
+  '((up . "\e[A") (down . "\e[B") (left . "\e[D") (right . "\e[C"))
+  "Per-direction arrow escape sequence written into tmux copy-mode.
+After `cj/term-copy-mode-dwim' lands in tmux's copy-mode, writing the matching
+sequence into the pty moves the copy cursor one step; tmux binds the cursor
+keys in both its emacs and vi copy-mode tables.")
+
+(defun cj/--term-copy-mode-move-step (direction in-tmux)
+  "Take one copy-mode movement step in DIRECTION.
+DIRECTION is one of `up', `down', `left', `right'.  When IN-TMUX is non-nil,
+write the matching arrow escape sequence into the pty so tmux's copy-mode
+cursor follows it; otherwise move point in the `ghostel-copy-mode' buffer.
+An unknown DIRECTION is a no-op."
+  (if in-tmux
+      (let ((seq (cdr (assq direction cj/--term-copy-mode-tmux-arrows))))
+        (when seq (ghostel-send-string seq)))
+    (pcase direction
+      ('up (forward-line -1))
+      ('down (forward-line 1))
+      ('left (backward-char))
+      ('right (forward-char)))))
+
+(defun cj/term-copy-mode-move (direction)
+  "Enter copy-mode (see `cj/term-copy-mode-dwim') then step one DIRECTION.
+DIRECTION is one of `up', `down', `left', `right'.  The in-tmux engine is
+resolved once up front so the entry and the step pick the same surface."
+  (let ((in-tmux (cj/term--in-tmux-p)))
+    (cj/term-copy-mode-dwim)
+    (cj/--term-copy-mode-move-step direction in-tmux)))
+
+(defun cj/term-copy-mode-up ()
+  "Enter the terminal's copy-mode and move up one step."
+  (interactive)
+  (cj/term-copy-mode-move 'up))
+
+(defun cj/term-copy-mode-down ()
+  "Enter the terminal's copy-mode and move down one step."
+  (interactive)
+  (cj/term-copy-mode-move 'down))
+
+(defun cj/term-copy-mode-left ()
+  "Enter the terminal's copy-mode and move left one step."
+  (interactive)
+  (cj/term-copy-mode-move 'left))
+
+(defun cj/term-copy-mode-right ()
+  "Enter the terminal's copy-mode and move right one step."
+  (interactive)
+  (cj/term-copy-mode-move 'right))
+
 ;; ----------------------------- ghostel package -------------------------------
 
 (defun cj/turn-off-chrome-for-term ()
@@ -245,16 +302,20 @@ run its own project-named tmux session instead of a bare, auto-named one.
   ;; `add-to-list' alone updates the list but not the already-built map, so the
   ;; rebuild is what actually lets the key through to `ghostel-mode-map' / the
   ;; global map.  C-; and F12 are the prefix + toggle; the modified arrows are
-  ;; windmove (S-arrows, focus) and buffer-move (C-M-arrows, swap), which the
-  ;; ai-term workflow expects to work from inside an agent buffer.  F8 and F10
-  ;; are global bindings (org agenda, music-playlist toggle) that reach Emacs by
-  ;; falling through to the global map once the semi-char map stops forwarding
-  ;; them.  (Server shutdown moved off C-F10 to C-x C, which is deliberately
-  ;; left forwarding to the terminal program inside an agent buffer.)
+  ;; windmove (S-arrows, focus), buffer-move (C-M-arrows, swap), and copy-mode
+  ;; entry (C-arrows and M-arrows, each entering copy-mode and carrying its
+  ;; direction via `cj/term-copy-mode-up' & friends), which the ai-term workflow
+  ;; expects to work from inside an agent buffer.  F8 and F10 are global
+  ;; bindings (org agenda, music-playlist toggle) that reach Emacs by falling
+  ;; through to the global map once the semi-char map stops forwarding them.
+  ;; (Server shutdown moved off C-F10 to C-x C, which is deliberately left
+  ;; forwarding to the terminal program inside an agent buffer.)
   (with-eval-after-load 'ghostel
     (dolist (key '("C-;" "<f8>" "<f12>" "<f10>"
                    "S-<up>" "S-<down>" "S-<left>" "S-<right>"
-                   "C-M-<up>" "C-M-<down>" "C-M-<left>" "C-M-<right>"))
+                   "C-M-<up>" "C-M-<down>" "C-M-<left>" "C-M-<right>"
+                   "C-<up>" "C-<down>" "C-<left>" "C-<right>"
+                   "M-<up>" "M-<down>" "M-<left>" "M-<right>"))
       (add-to-list 'ghostel-keymap-exceptions key))
     (ghostel--rebuild-semi-char-keymap))
   :hook
@@ -452,12 +513,22 @@ Forwarding NUL makes C-Space behave like a terminal key."
 
 (defun cj/term-install-keys ()
   "Make `C-;' resolve as the personal keymap inside ghostel buffers, bind the
-F12 toggle, and forward C-SPC so it reaches the terminal (see
-`cj/term-send-C-SPC')."
+F12 toggle, forward C-SPC so it reaches the terminal (see
+`cj/term-send-C-SPC'), and bind C-/M-<arrow> to enter copy-mode and step in
+that direction."
   (when (boundp 'ghostel-mode-map)
     (keymap-set ghostel-mode-map "C-;" cj/custom-keymap)
     (keymap-set ghostel-mode-map "<f12>" #'cj/term-toggle)
-    (keymap-set ghostel-mode-map "C-SPC" #'cj/term-send-C-SPC)))
+    (keymap-set ghostel-mode-map "C-SPC" #'cj/term-send-C-SPC)
+    (dolist (binding '(("C-<up>"    . cj/term-copy-mode-up)
+                       ("M-<up>"    . cj/term-copy-mode-up)
+                       ("C-<down>"  . cj/term-copy-mode-down)
+                       ("M-<down>"  . cj/term-copy-mode-down)
+                       ("C-<left>"  . cj/term-copy-mode-left)
+                       ("M-<left>"  . cj/term-copy-mode-left)
+                       ("C-<right>" . cj/term-copy-mode-right)
+                       ("M-<right>" . cj/term-copy-mode-right)))
+      (keymap-set ghostel-mode-map (car binding) (cdr binding)))))
 
 (cj/term-install-keys)
 (with-eval-after-load 'ghostel

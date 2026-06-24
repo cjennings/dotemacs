@@ -355,5 +355,86 @@ Emacs region gets stuck in the ghostel buffer and tmux copy-mode's
 begin-selection never starts."
   (should (eq (keymap-lookup ghostel-mode-map "C-SPC") #'cj/term-send-C-SPC)))
 
+;; --------------------------- directional copy mode ---------------------------
+
+(ert-deftest test-term-copy-mode-step-tmux-sends-arrow ()
+  "Normal: in tmux, each direction writes its arrow escape sequence to the pty."
+  (dolist (case '((up . "\e[A") (down . "\e[B") (left . "\e[D") (right . "\e[C")))
+    (let ((sent nil))
+      (cl-letf (((symbol-function 'ghostel-send-string)
+                 (lambda (s) (push s sent))))
+        (cj/--term-copy-mode-move-step (car case) t)
+        (should (equal sent (list (cdr case))))))))
+
+(ert-deftest test-term-copy-mode-step-nontmux-moves-point ()
+  "Normal: without tmux, up/down move by line and left/right move by char."
+  (with-temp-buffer
+    (insert "abc\ndef\nghi\n")
+    ;; up/down: land on line 2, step around.
+    (goto-char (point-min))
+    (forward-line 1)
+    (should (= (line-number-at-pos) 2))
+    (cj/--term-copy-mode-move-step 'up nil)
+    (should (= (line-number-at-pos) 1))
+    (cj/--term-copy-mode-move-step 'down nil)
+    (should (= (line-number-at-pos) 2))
+    ;; left/right: move by a single character.
+    (goto-char 2)
+    (cj/--term-copy-mode-move-step 'right nil)
+    (should (= (point) 3))
+    (cj/--term-copy-mode-move-step 'left nil)
+    (should (= (point) 2))))
+
+(ert-deftest test-term-copy-mode-step-unknown-direction-no-op ()
+  "Boundary: an unknown direction sends nothing in the tmux branch."
+  (let ((sent nil))
+    (cl-letf (((symbol-function 'ghostel-send-string)
+               (lambda (s) (push s sent))))
+      (cj/--term-copy-mode-move-step 'sideways t)
+      (should-not sent))))
+
+(ert-deftest test-term-copy-mode-up-command-enters-then-steps ()
+  "Normal: the bound command enters tmux copy-mode, then sends the arrow,
+so a single modified arrow both enters copy-mode and carries its direction."
+  (let ((agent (cj/test--make-fake-ghostel-buffer "agent [emacs.d]"))
+        (sent nil))
+    (unwind-protect
+        (with-current-buffer agent
+          (cl-letf (((symbol-function 'get-buffer-process)
+                     (lambda (_buffer) 'fake-process))
+                    ((symbol-function 'process-tty-name)
+                     (lambda (_process &rest _) "/dev/pts/8"))
+                    ((symbol-function 'ghostel-send-string)
+                     (lambda (s) (push s sent))))
+            (test-term-tmux-history--with-tmux-mock
+                '((("list-clients" "-F" "#{client_tty}\t#{pane_id}") 0
+                   "/dev/pts/8\t%8\n"))
+              (cj/term-copy-mode-up)
+              (should (equal (reverse sent) '("\C-b[\C-a" "\e[A"))))))
+      (when (buffer-live-p agent)
+        (kill-buffer agent)))))
+
+(ert-deftest test-term-copy-mode-arrows-bound-in-ghostel-map ()
+  "Normal: C-<arrow> and M-<arrow> both reach the directional copy-mode commands."
+  (dolist (case '(("C-<up>"    . cj/term-copy-mode-up)
+                  ("M-<up>"    . cj/term-copy-mode-up)
+                  ("C-<down>"  . cj/term-copy-mode-down)
+                  ("M-<down>"  . cj/term-copy-mode-down)
+                  ("C-<left>"  . cj/term-copy-mode-left)
+                  ("M-<left>"  . cj/term-copy-mode-left)
+                  ("C-<right>" . cj/term-copy-mode-right)
+                  ("M-<right>" . cj/term-copy-mode-right)))
+    (should (eq (keymap-lookup ghostel-mode-map (car case)) (cdr case)))))
+
+(ert-deftest test-term-copy-mode-arrows-in-keymap-exceptions ()
+  "Regression: C-/M-<arrow> are in `ghostel-keymap-exceptions' and the rebuilt
+semi-char map no longer forwards them to the pty, so they reach Emacs and
+trigger copy-mode entry from inside a ghostel buffer."
+  (dolist (key '("C-<up>" "C-<down>" "C-<left>" "C-<right>"
+                 "M-<up>" "M-<down>" "M-<left>" "M-<right>"))
+    (should (member key ghostel-keymap-exceptions)))
+  (should-not (eq (keymap-lookup ghostel-semi-char-mode-map "C-<up>")
+                  'ghostel--send-event)))
+
 (provide 'test-term-tmux-history)
 ;;; test-term-tmux-history.el ends here
