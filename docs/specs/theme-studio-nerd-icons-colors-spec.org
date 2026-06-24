@@ -4,7 +4,7 @@
 #+TODO: TODO | DONE SUPERSEDED CANCELLED
 
 * Metadata
-| Status   | Ready pending Craig's go — Codex review rounds 1+2 incorporated |
+| Status   | Ready pending Craig's go — Codex review rounds 1-3 incorporated |
 |----------+------------------------------------------------------------|
 | Owner    | Craig                                                      |
 |----------+------------------------------------------------------------|
@@ -35,7 +35,7 @@ theme-studio already inventories the 34 =nerd-icons-*= faces (via the generic pa
 - Changing nerd-icons' glyph selection (=icon-for-file= / =icon-for-buffer= logic) or its icon set.
 - An exhaustive 330-row legend. The legend is a curated representative sample, not the full alist.
 ** Scope tiers
-- v1: drop the tint; capture native default colors + a curated filetype legend into the inventory; a bespoke nerd-icons preview in theme-studio rendering the legend; export/round-trip; live verification in completion/dirvish/dashboard.
+- v1: capture a curated filetype legend (=nerd-icons-legend.json=); a bespoke nerd-icons preview rendering it; assign the theme colors and drop the tint atomically; export/round-trip; live verification in completion/dirvish/dashboard. Native colors already ride the existing default-face seed pipeline, so there is no new color capture.
 - Out of scope: per-filetype assignment; editing the filetype→face mapping itself (that lives in nerd-icons).
 - vNext: extend the legend beyond file extensions to buffer-mode and command/symbol categories if the file set proves insufficient; a "reset to nerd-icons native palette" button.
 
@@ -49,7 +49,7 @@ theme-studio gains a nerd-icons pane. On the left, the 34 =nerd-icons-*= color f
 
 Three integration points, plus the config removal.
 
-1. Data capture — two artifacts, two owners. Native seed colors are *not* captured here. They already ride theme-studio's existing default-face pipeline (=capture-default-faces.py= → =emacs-default-faces.json= → =apply_default_face_seeds= in =app_inventory.py=), which runs in clean =emacs -Q --batch= and stores each face's untinted =face-default-spec=. All 34 color faces plus =nerd-icons-completion-dir-face= are already present there with native colors (e.g. =nerd-icons-blue= #6A9FB5), so the seed is correct and untinted with no new code. The only *new* capture is the legend metadata: a generated artifact (emitted by =build-inventory.el= or a sibling dump, embedded by =generate.py=) listing the curated legend rows. The schema is in "Legend data contract" below.
+1. Data capture — two artifacts, two owners. Native seed colors are *not* captured here. They already ride theme-studio's existing default-face pipeline (=capture-default-faces.py= → =emacs-default-faces.json= → =apply_default_face_seeds= in =app_inventory.py=), which runs in clean =emacs -Q --batch= and stores each face's untinted =face-default-spec=. All 34 color faces plus =nerd-icons-completion-dir-face= are already present there with native colors (e.g. =nerd-icons-blue= #6A9FB5), so the seed is correct and untinted with no new code. The only *new* capture is the legend metadata: =nerd-icons-legend.json=, emitted by =build-nerd-icons-legend.el= and embedded by =generate.py=, listing the curated legend rows. The schema is in "Legend data contract" below.
 
 2. Bespoke preview. nerd-icons moves from a generic inventory app to a bespoke app (a =BESPOKE_APP_SPECS= / =PREVIEW_KEYS= entry) with a new renderer in =previews.js= that draws the legend rows: for each curated filetype, its glyph + name styled with the effective color of its mapped face, read through the same registry the other previews use. The 34 faces remain editable rows.
 
@@ -67,7 +67,7 @@ The legend artifact is an array of rows, captured once in Emacs (it reads the ne
 - =category= — =extension= | =dir= | =command= | =buffer=, naming the source.
 - =glyph= — the nerd-font glyph string. The v1 renderer draws it in the owner face's color (see the rendering decision).
 
-Source per category: =extension= rows from the =:face= of =nerd-icons-extension-icon-alist= entries; =dir= rows from =nerd-icons-yellow= (the dir-advice face) and =nerd-icons-completion-dir-face=; =command=/symbol rows from the face in =nerd-icons-completion-category-icons=; =buffer= rows from the face resolved through =nerd-icons-mode-icon-alist=. v1 includes the curated extension rows plus one representative row each for dir, command, and buffer — the categories that actually surface in completing-read.
+Source per category: =extension= rows from the =:face= of =nerd-icons-extension-icon-alist= entries; the =dir= row from =nerd-icons-yellow= (the dir-advice face, which wins — see the dir decision); =command=/symbol rows from the face in =nerd-icons-completion-category-icons=; =buffer= rows from the face resolved through =nerd-icons-mode-icon-alist=. v1 includes the curated extension rows plus one representative row each for dir, command, and buffer — the categories that actually surface in completing-read.
 
 *** v1 legend rows
 The exact v1 table (=key= | =label= | =category= | source lookup → owner =face=), chosen to span a diverse set of the color faces rather than cover all 34:
@@ -139,7 +139,7 @@ The =face= column is *resolved at capture time* from the live nerd-icons alists,
 - Decision: v1 legend rows render the captured =glyph= in the owner face's effective color (inline color style), via =font-family: "Symbols Nerd Font Mono", "Hack Nerd Font Mono", monospace=. The headless gate asserts the glyph char and the inline color (both in the DOM, font-independent), not the rendered pixels. The monospace fallback shows a placeholder box only where no Nerd Font exists, which won't happen on Craig's setup.
 - Consequences: easier — the preview mirrors completing-read authentically (real glyph in real color). Harder — a machine-dependent font assumption (fine for a personal tool), and the gate asserts the glyph char + inline color rather than the glyph's pixels.
 
-* Review findings [9/9]
+* Review findings [10/10]
 
 ** DONE Open decisions block implementation readiness :blocking:
 Disposition (accepted): all six decisions are now resolved — the original five plus the legend-rendering decision the schema work surfaced — and the =[6/6]= cookie reads complete. Sequencing (Phase 4 lands with/before Phase 3) and the =nerd-icons-completion-dir-face= scope are both settled; two author-proposed calls (sequencing, glyph rendering) are marked reopen-if-disagree.
@@ -177,6 +177,10 @@ The resolved sequencing decision says explicit theme assignments must land in or
 Disposition (accepted): added a "Testing / Verification" section naming each contract's target — delete the apply-tint test, extend color-dir with the precedence probe, Python legend-schema + fallback tests, browser gates (live recolor, valid =data-face= owners), export/import round-trip, and the config smoke.
 The acceptance criteria say =run-tests.sh= and launch smoke should pass, but the feature changes specific contracts that need named tests. =tests/test-nerd-icons-config--apply-tint.el= will become obsolete when the tint functions are removed; =tests/test-nerd-icons-config--color-dir.el= should remain and probably gain a precedence case; Theme Studio needs Python tests for the generated legend schema/composite app behavior, browser gates for live recolor + valid =data-face= owners, and an export/import round-trip covering =nerd-icons= plus any cross-package completion face. Add these test targets to the spec so implementation does not invent the verification surface. (blocking)
 
+** DONE Stale summary sections contradict resolved decisions :blocking:
+Disposition (accepted): reconciled every flagged section with the resolved decisions — Scope tiers (no new color capture; legend → =nerd-icons-legend.json=; atomic assign+drop), For-the-implementer summary (named =build-nerd-icons-legend.el= / =nerd-icons-legend.json=), the legend source paragraph (dir row is =nerd-icons-yellow= only), Architecture-fit and Dev-tooling and External-APIs readiness dimensions (=build-nerd-icons-legend.el=, no defface capture), and the Risks section (replaced the moot defface-reading risk with the stale-artifact / fallback risk).
+The resolved decisions and Phase 1 now say native colors ride =capture-default-faces.py= / =emacs-default-faces.json=, legend metadata comes from =build-nerd-icons-legend.el= into =nerd-icons-legend.json=, and the dir row models only =nerd-icons-yellow=. Earlier text still says v1 captures native default colors "into the inventory," that legend metadata may be emitted by =build-inventory.el= or a sibling dump, that dir rows come from both =nerd-icons-yellow= and =nerd-icons-completion-dir-face=, that architecture integration uses =build-inventory.el= for capture, and that defface-default capture remains a Phase 1 assumption. Those contradictions would force an implementer to decide which contract wins. Update the Scope, For-the-implementer summary, Legend source paragraph, Readiness dimensions, and Risks so they all match the resolved decisions and phases. (blocking)
+
 * Implementation phases
 
 ** Phase 1 — Legend capture
@@ -207,15 +211,15 @@ Export → =WIP-theme.el= and re-import round-trip over the =nerd-icons= faces; 
 - Observability: the legend preview *is* the observability — the user sees exactly which filetypes a color hits before committing.
 - Performance & scale: 34 faces + a curated legend (tens of rows); trivial. The capture dump runs once in Emacs, not per render.
 - Reuse & lost opportunities: reuses the existing inventory pipeline, the package-export path, and the preview registry from preview-locate; nerd-icons already supplies the extension→face mapping, so we read it rather than re-derive.
-- Architecture fit & weak points: integration points are =build-inventory.el= (capture), =app_inventory.py= / =face_data.py= (bespoke registration), =previews.js= (renderer), =generate.py= (embed), =nerd-icons-config.el= (tint removal). Weak point: the curated legend can drift from nerd-icons' alist over versions — mitigated by deriving the mapping from the live alist at capture time, curating only which filetypes to show.
+- Architecture fit & weak points: integration points are =build-nerd-icons-legend.el= → =nerd-icons-legend.json= (legend capture), =app_inventory.py= / =face_data.py= (bespoke registration), =previews.js= (renderer), =generate.py= (embed), =nerd-icons-config.el= (tint removal). Weak point: the curated legend can drift from nerd-icons' alist over versions — mitigated by deriving the mapping from the live alist at capture time, curating only which filetypes to show, plus the missing-key skip.
 - Config surface: removes =cj/nerd-icons-tint-color= and its machinery; no new public knob (the theme is the surface). =cj/--nerd-icons-color-dir= advice retained.
 - Documentation plan: update =nerd-icons-config.el= commentary; a note in theme-studio's =theme-coloring-guide.org= on the nerd-icons pane. No user-facing migration doc needed (personal config).
-- Dev tooling: run-tests.sh (theme-studio), =make validate-modules= + launch smoke (config); the capture dump is an =emacsclient -e '(load build-inventory.el)'= step already used.
+- Dev tooling: run-tests.sh (theme-studio), =make validate-modules= + launch smoke (config); the legend dump is an =emacsclient -e '(load build-nerd-icons-legend.el)'= step, mirroring the existing inventory dumps.
 - Rollout, compatibility & rollback: the change alters the persisted theme (adds nerd-icons face specs) and removes a config knob. Rollback = restore the tint block and drop the nerd-icons specs from the theme. The sequencing decision exists to avoid an uncolored interim.
-- External APIs & deps: depends on nerd-icons internals — =nerd-icons-extension-icon-alist= entry shape (=("ext" fn "glyph" :face SYM)=) and the 34 =nerd-icons-*= color faces. Verified live this session (330 entries, sample confirmed; 34 faces in the inventory). The defface-default capture for seeding is the one assumption to verify in Phase 1.
+- External APIs & deps: depends on nerd-icons internals — =nerd-icons-extension-icon-alist= entry shape (=("ext" fn "glyph" :face SYM)=), the dir/mode/completion-category alists, and the 34 =nerd-icons-*= color faces. Verified live this session (330 entries, sample confirmed; 34 faces inventoried; native colors already in =emacs-default-faces.json=). No new defface capture — seeding rides the existing pipeline.
 
 * Risks, Rabbit Holes, and Drawbacks
-- Reading defface defaults past a runtime override is the fiddly part — if =face-default-spec= doesn't yield a clean color (some specs are display-conditional), fall back to nerd-icons' source palette values captured once. Timebox the defface-introspection approach before hand-rolling a palette table.
+- The legend artifact (=nerd-icons-legend.json=) is captured once and committed, so it can go stale if nerd-icons' alists shift — mitigated by the =generate.py= fallback (absent/malformed → generic app), the missing-key skip at capture, and the refresh step in dev tooling. No defface reading in this feature: native seed colors already live untinted in =emacs-default-faces.json= (verified), so the earlier defface-introspection risk is moot.
 - The legend is HTML, not Emacs faces: rows render the captured glyph char in a CSS color from the registry, so there's no live Emacs dependency at preview time. The one font dependency is a Nerd Font for the glyph shape — present system-wide on Craig's machine, with a monospace fallback to a placeholder box elsewhere. The gate asserts the glyph char and inline color, not the rendered pixels.
 
 * Testing / Verification
@@ -259,3 +263,13 @@ The feature changes specific contracts; each gets a named target rather than lea
 - *What changed:* All six round-2 findings accepted and folded in. Added the explicit "v1 legend rows" table (13 rows, ~10 distinct faces) + the missing-key rule. Rewrote the dir decision to settle precedence (=cj/--nerd-icons-color-dir= prepends =nerd-icons-yellow=, so it wins — verified in source) and cross-package ownership (the bespoke pane owns only =nerd-icons= faces; =nerd-icons-completion-dir-face= stays in its own generic app, since =apply_package_overrides= keys by app). Phase 1 names the concrete artifact (=nerd-icons-legend.json= + =build-nerd-icons-legend.el= generator + =generate.py= fallback). Reordered phases into an atomic Phase 3 (assign + drop-tint together) and a Phase 4 verification, matching the sequencing decision. Added a "Testing / Verification" section naming each changed contract's target.
 - *Why:* The round was a strong implementer-eyed pass; every finding would have forced an invented contract mid-build. The load-bearing ones were the cross-package ownership (a face can't move between app-keyed panes) and the dir precedence (resolved by reading the prepend semantics), which together let the dir row point at =nerd-icons-yellow= and sidestep the tangle.
 - *Artifacts:* findings [9/9]; decisions [6/6]; verified: extension/command/buffer face resolution from the live alists (the 13-row table), =app_inventory.py= =apply_package_overrides= (app-keyed merge), =cj/--nerd-icons-color-dir= prepend (=add-face-text-property … nil=).
+
+** 2026-06-23 Tue @ 23:17:51 -0400 — Codex (emacs-d) — reviewer
+- *What changed or was recommended:* Third review, =Not ready=. Added one blocking finding: stale summary/readiness/risk text still contradicts the resolved implementation contract for native-color capture, legend artifact ownership, directory row ownership, and Phase 1 verification.
+- *Why:* The main decisions now look implementation-ready, but an implementer should not have to reconcile earlier prose against the later decisions. The contradictions point at different code paths (=build-inventory.el= vs =build-nerd-icons-legend.el=, color capture vs default-face seeding, =nerd-icons-completion-dir-face= vs =nerd-icons-yellow=) and could produce the wrong implementation if followed literally.
+- *Artifacts:* findings [9/10]; code read: =modules/nerd-icons-config.el= (=cj/--nerd-icons-color-dir= and tint removal target), =scripts/theme-studio/app_inventory.py= (=BESPOKE_APPS=, app-keyed merge), =scripts/theme-studio/generate.py= (=APPS= construction), =scripts/theme-studio/face_data.py= (=BESPOKE_APP_SPECS=), =elpa/nerd-icons-20260325.346/nerd-icons.el= and =elpa/nerd-icons-completion-20251029.2106/nerd-icons-completion.el= (legend source facts), =todo.org=.
+
+** 2026-06-23 Tue @ 23:24:56 -0400 — Claude — responder
+- *What changed:* Accepted the one round-3 finding (pure consistency cleanup) and reconciled the stale summary text with the resolved decisions: Scope tiers, the For-the-implementer data-capture summary, the legend source paragraph (dir row = =nerd-icons-yellow= only), the Architecture-fit / Dev-tooling / External-APIs readiness dimensions (=build-nerd-icons-legend.el= → =nerd-icons-legend.json=, no defface capture), and the Risks section (dropped the moot defface-introspection risk for the stale-artifact / fallback risk). No decision or contract changed — only the prose that lagged behind them.
+- *Why:* Round 2 settled the contracts but left earlier prose describing the superseded ones (color capture, =build-inventory.el=, dual dir sources), which an implementer could follow literally into the wrong path.
+- *Artifacts:* findings [10/10]; decisions [6/6]; no code re-verification needed — the edits align prose to already-verified decisions.
