@@ -23,6 +23,56 @@
 (autoload 'cj/make-buffer-undead "undead-buffers" nil t)
 (declare-function ghostel "ghostel" (&optional arg))
 
+;; ------------------------------ Declarations -------------------------------
+;; These functions and variables belong to lazily-loaded packages or to other
+;; cj modules; declaring them keeps the byte-compiler quiet without forcing an
+;; eager require.  Behavior is unchanged -- the symbols still resolve at runtime
+;; once their owning package/module loads.
+
+;; dashboard package internals used by the bookmark-insertion override.
+(declare-function dashboard-insert-section "dashboard")
+(declare-function dashboard-subseq "dashboard")
+(declare-function dashboard-get-shortcut "dashboard")
+(declare-function dashboard-shorten-path "dashboard")
+(declare-function dashboard--align-length-by-type "dashboard")
+(declare-function dashboard--generate-align-format "dashboard")
+(declare-function dashboard-refresh-buffer "dashboard")
+(declare-function dashboard-open "dashboard")
+(defvar dashboard-bookmarks-show-path)
+(defvar dashboard--bookmarks-cache-item-format)
+
+;; bookmark.el (required at runtime inside `dashboard-insert-bookmarks').
+(declare-function bookmark-all-names "bookmark")
+(declare-function bookmark-get-filename "bookmark")
+
+;; recentf.el (required at runtime inside the exclude helper).
+(defvar recentf-exclude)
+
+;; nerd-icons glyph functions used in the launcher table.
+(declare-function nerd-icons-faicon "nerd-icons")
+(declare-function nerd-icons-devicon "nerd-icons")
+(declare-function nerd-icons-mdicon "nerd-icons")
+(declare-function nerd-icons-octicon "nerd-icons")
+
+;; user-constants.el provides the home-directory constant.
+(defvar user-home-dir)
+
+;; Launcher actions defined in other cj modules.
+(declare-function cj/main-agenda-display "org-agenda-config")
+(declare-function cj/elfeed-open "elfeed-config")
+(declare-function cj/drill-start "org-drill-config")
+(declare-function cj/music-playlist-toggle "music-config")
+(declare-function cj/music-playlist-load "music-config")
+(declare-function cj/erc-switch-to-buffer-with-completion "erc-config")
+(declare-function cj/telega "telega-config")
+(declare-function cj/slack-start "slack-config")
+(declare-function cj/signel-message "signal-config")
+(declare-function cj/kill-all-other-buffers-and-windows "undead-buffers")
+
+;; External package commands invoked by launchers.
+(declare-function mu4e "mu4e")
+(declare-function pearl-list-issues "pearl")
+
 ;; ------------------------ Dashboard Bookmarks Override -----------------------
 ;; overrides the bookmark insertion from the dashboard package to provide an
 ;; option that only shows the bookmark name, avoiding the path. Paths are often
@@ -35,8 +85,11 @@
 
 ;; `el' is bound dynamically by dashboard's section-insertion machinery, which the
 ;; override below plugs into.  Declare it so the byte-compiler reads the
-;; references as that special variable rather than a free variable.
-(defvar el)
+;; references as that special variable rather than a free variable.  The name is
+;; dashboard's, not ours, so the missing-prefix lint is suppressed rather than
+;; renamed (renaming would break the dynamic binding dashboard supplies).
+(with-suppressed-warnings ((lexical el))
+  (defvar el))
 
 (defun dashboard-insert-bookmarks (list-size)
   "Add the list of LIST-SIZE items of bookmarks."

@@ -33,6 +33,33 @@
 ;; is read at load time below (erc-user-full-name), so a standalone .elc needs it.
 (require 'user-constants)
 
+;; ERC loads lazily (use-package :commands), so these symbols aren't bound at
+;; this file's compile time.  Declare them to keep the byte-compiler quiet
+;; without forcing an eager require.
+
+;; Functions provided by the erc package.
+(declare-function erc-buffer-list "erc")
+(declare-function erc-server-process-alive "erc")
+(declare-function erc-server-or-unjoined-channel-buffer-p "erc")
+(declare-function erc-current-nick "erc")
+(declare-function erc-join-channel "erc")
+(declare-function erc-part-from-channel "erc")
+(declare-function erc-quit-server "erc")
+
+;; Variables read/set in the use-package :config block below.
+(defvar erc-log-channels-directory)
+(defvar erc-track-exclude-types)
+(defvar erc-track-exclude-server-buffer)
+(defvar erc-track-visibility)
+(defvar erc-track-switch-direction)
+(defvar erc-track-showcount)
+;; NOTE: erc-unique-buffers and erc-generate-buffer-name-function are not ERC
+;; variables in Emacs 30.x (no defcustom/defvar in the package); the setq below
+;; only creates inert globals.  Declared here to silence the warning without
+;; changing the existing (no-op) behavior -- see the SUSPICIOUS note.
+(defvar erc-unique-buffers)
+(defvar erc-generate-buffer-name-function)
+
 ;; ------------------------------------ ERC ------------------------------------
 ;; Server definitions and connection settings
 
@@ -99,7 +126,7 @@ Change this value to use a different nickname.")
   (let ((server-buffers '()))
 	(dolist (buf (erc-buffer-list))
 	  (with-current-buffer buf
-		(when (and (erc-server-buffer-p) (erc-server-process-alive))
+		(when (and (erc-server-or-unjoined-channel-buffer-p) (erc-server-process-alive))
 		  (unless (member (buffer-name) server-buffers)
 			(push (buffer-name) server-buffers)))))
 
@@ -132,7 +159,7 @@ Buffer names are shown with server context for clarity."
   "Return t if the current buffer is an active ERC server buffer."
   (and (derived-mode-p 'erc-mode)
 	   (erc-server-process-alive)
-	   (erc-server-buffer-p)))
+	   (erc-server-or-unjoined-channel-buffer-p)))
 
 
 (defun cj/erc-get-channels-for-current-server ()
@@ -158,7 +185,7 @@ Auto-adds # prefix if missing.  Offers completion from configured channels."
 		(let ((server-buffers (cl-remove-if-not
 							   (lambda (buf)
 								 (with-current-buffer buf
-								   (and (erc-server-buffer-p)
+								   (and (erc-server-or-unjoined-channel-buffer-p)
 										(erc-server-process-alive))))
 							   (erc-buffer-list))))
 		  (if server-buffers

@@ -50,6 +50,31 @@
 
 (declare-function mu4e-message-field "mu4e-message")
 
+;; ----------------------------- Declarations ----------------------------------
+;; mu4e/org-msg load lazily, so the byte-compiler can't see these package
+;; functions and variables when this module is compiled standalone.  Declare
+;; them to silence free-variable / undefined-function warnings without forcing
+;; an eager require (which would defeat lazy loading).  The cj/... entries are
+;; forward references: defined later in this file's `:config' block, or in
+;; mu4e-org-contacts-integration (required at load time inside that block).
+
+(declare-function mu4e-headers-mark-for-each-if "mu4e-mark")
+(declare-function mu4e-search "mu4e-search")
+(declare-function mu4e-view-refresh "mu4e-view")
+(declare-function message-add-header "message")
+(declare-function org-msg-edit-mode "org-msg")
+(declare-function no-auto-fill "mail-config")
+(declare-function cj/disable-company-in-mu4e-compose "mail-config")
+(declare-function cj/disable-ispell-in-email-headers "mail-config")
+(declare-function cj/activate-mu4e-org-contacts-integration
+                  "mu4e-org-contacts-integration")
+
+;; Package variables assigned in the lazy `:config' blocks below.
+(defvar mu4e-compose-keep-self-cc)
+(defvar mu4e-root-maildir)
+(defvar mu4e-show-images)
+(defvar org-msg-extra-css)
+
 ;; Refile (archive) target dispatch.  A per-context `mu4e-refile-folder' string
 ;; is unsafe: mu4e context :vars are sticky, so a value set when one context is
 ;; active leaks into a later context that doesn't set its own -- archiving one
@@ -197,12 +222,16 @@ Prompts user for the action when executing."
 
   ;; (setq mu4e-compose-format-flowed t)                                       ;; plain text mails must flow correctly for recipients
   (setq mu4e-compose-keep-self-cc t)                                      ;; keep me in the cc list
-  (setq mu4e-compose-signature-auto-include nil)                          ;; don't include signature by default
+  (with-suppressed-warnings ((obsolete mu4e-compose-signature-auto-include)
+                             (free-vars mu4e-compose-signature-auto-include))
+    (setq mu4e-compose-signature-auto-include nil))                       ;; don't include signature by default
   (setq mu4e-confirm-quit nil)                                            ;; don't ask when quitting
   (setq mu4e-context-policy 'pick-first)                                  ;; start with the first (default) context
   (setq mu4e-headers-auto-update nil)                                     ;; updating headers buffer on email is too jarring
   (setq mu4e-root-maildir mail-dir)                                       ;; root directory for all email accounts
-  (setq mu4e-maildir mail-dir)                                            ;; same as above (for newer mu4e)
+  (with-suppressed-warnings ((obsolete mu4e-maildir)
+                             (free-vars mu4e-maildir))
+    (setq mu4e-maildir mail-dir))                                         ;; same as above (for newer mu4e)
   (setq mu4e-sent-messages-behavior 'delete)                              ;; don't save to "Sent", IMAP does this already
   (setq mu4e-show-images t)                                               ;; show embedded images
   ;; (setq mu4e-update-interval 600)                                      ;; check for new mail every 10 minutes (600 seconds)
@@ -214,12 +243,16 @@ Prompts user for the action when executing."
   ;; This will be automatically disabled when org-msg is active
   (setq mu4e-compose-format-flowed t)
 
-  (setq mu4e-html2text-command 'mu4e-shr2text)  ;; email conversion to html via shr2text
+  (with-suppressed-warnings ((obsolete mu4e-html2text-command)
+                             (free-vars mu4e-html2text-command))
+    (setq mu4e-html2text-command 'mu4e-shr2text))  ;; email conversion to html via shr2text
   (setq mu4e-mu-binary (executable-find "mu"))
   (setq mu4e-get-mail-command (cj/mail--mbsync-command))                  ;; command to sync mail
-  (setq mu4e-user-mail-address-list '("c@cjennings.net"
-                                      "craigmartinjennings@gmail.com"
-                                      "craig.jennings@deepsat.com"))
+  (with-suppressed-warnings ((obsolete mu4e-user-mail-address-list)
+                             (free-vars mu4e-user-mail-address-list))
+    (setq mu4e-user-mail-address-list '("c@cjennings.net"
+                                        "craigmartinjennings@gmail.com"
+                                        "craig.jennings@deepsat.com")))
   (setq mu4e-index-update-error-warning nil) ;; don't warn me about spurious sync issues
 
   ;; ------------------------------ Mu4e Contexts ------------------------------
@@ -295,7 +328,7 @@ Prompts user for the action when executing."
                  :key ?d)))
 
   (defun no-auto-fill ()
-    "Turn off \'auto-fill-mode\'."
+    "Turn off `auto-fill-mode'."
     (auto-fill-mode -1))
   (add-hook 'mu4e-compose-mode-hook #'no-auto-fill)
 
@@ -317,19 +350,23 @@ Prompts user for the action when executing."
   ;; also see org-msg below
 
   ;; Prefer HTML over plain text when both are available
-  (setq mu4e-view-prefer-html t)
+  (with-suppressed-warnings ((obsolete mu4e-view-prefer-html)
+                             (free-vars mu4e-view-prefer-html))
+    (setq mu4e-view-prefer-html t))
 
   ;; Use a better HTML renderer with more control
-  (setq mu4e-html2text-command
-		(cond
-		 ;; Best option: pandoc (if available)
-		 ((executable-find "pandoc")
-		  "pandoc -f html -t plain --reference-links")
-		 ;; Good option: w3m (better tables/formatting)
-		 ((executable-find "w3m")
-		  "w3m -dump -T text/html -cols 72 -o display_link_number=true")
-		 ;; Fallback: built-in shr
-		 (t 'mu4e-shr2text)))
+  (with-suppressed-warnings ((obsolete mu4e-html2text-command)
+                             (free-vars mu4e-html2text-command))
+    (setq mu4e-html2text-command
+		  (cond
+		   ;; Best option: pandoc (if available)
+		   ((executable-find "pandoc")
+		    "pandoc -f html -t plain --reference-links")
+		   ;; Good option: w3m (better tables/formatting)
+		   ((executable-find "w3m")
+		    "w3m -dump -T text/html -cols 72 -o display_link_number=true")
+		   ;; Fallback: built-in shr
+		   (t 'mu4e-shr2text))))
 
   ;; Configure shr (built-in HTML renderer) for better display
   (setq shr-use-colors nil)          ; Don't use colors in terminal
@@ -339,8 +376,10 @@ Prompts user for the action when executing."
   (setq shr-bullet "• ")             ; Nice bullet points
 
   ;; Block remote images by default (privacy/security)
-  (setq mu4e-view-show-images t)
-  (setq mu4e-view-image-max-width 800)
+  (with-suppressed-warnings ((obsolete mu4e-view-show-images mu4e-view-image-max-width)
+                             (free-vars mu4e-view-show-images mu4e-view-image-max-width))
+    (setq mu4e-view-show-images t)
+    (setq mu4e-view-image-max-width 800))
 
   ;; ------------------------------- View Actions ------------------------------
   ;; define view and article menus

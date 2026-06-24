@@ -5,8 +5,9 @@
 ;; process.  The original test compared a buffer's own erc-server-process to the
 ;; same buffer-local value inside `with-current-buffer', which is always true, so
 ;; it returned every ERC buffer (channels, queries, dead connections).  These
-;; tests stub `erc-buffer-list' and the two ERC predicates so the classification
-;; is exercised without a real IRC connection.
+;; tests stub `erc-buffer-list' and the two ERC predicates
+;; (`erc-server-or-unjoined-channel-buffer-p' and `erc-server-process-alive')
+;; so the classification is exercised without a real IRC connection.
 
 ;;; Code:
 
@@ -25,7 +26,7 @@ returned; a channel buffer and a dead-connection server buffer are excluded."
     (unwind-protect
         (cl-letf (((symbol-function 'erc-buffer-list)
                    (lambda (&rest _) (list b-server b-channel b-dead)))
-                  ((symbol-function 'erc-server-buffer-p)
+                  ((symbol-function 'erc-server-or-unjoined-channel-buffer-p)
                    (lambda (&rest _) (memq (current-buffer) (list b-server b-dead))))
                   ((symbol-function 'erc-server-process-alive)
                    (lambda (&rest _) (eq (current-buffer) b-server))))
@@ -39,7 +40,7 @@ returned; a channel buffer and a dead-connection server buffer are excluded."
     (unwind-protect
         (cl-letf (((symbol-function 'erc-buffer-list)
                    (lambda (&rest _) (list b-channel)))
-                  ((symbol-function 'erc-server-buffer-p) (lambda (&rest _) nil))
+                  ((symbol-function 'erc-server-or-unjoined-channel-buffer-p) (lambda (&rest _) nil))
                   ((symbol-function 'erc-server-process-alive) (lambda (&rest _) nil)))
           (should (null (cj/erc-connected-servers))))
       (kill-buffer b-channel))))

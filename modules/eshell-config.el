@@ -26,6 +26,32 @@
 
 (require 'system-utils)
 
+;; Eshell is loaded lazily (:commands eshell), so its vars and functions are
+;; not defined when this file is byte-compiled standalone. Declare them to
+;; silence compile-time free-variable / undefined-function warnings.
+(defvar eshell-banner-message)
+(defvar eshell-scroll-to-bottom-on-input)
+(defvar eshell-error-if-no-glob)
+(defvar eshell-hist-ignoredups)
+(defvar eshell-save-history-on-exit)
+(defvar eshell-prefer-lisp-functions)
+(defvar eshell-destroy-buffer-when-process-dies)
+(defvar eshell-prompt-function)
+(defvar eshell-cmpl-cycle-completions)
+(defvar eshell-modules-list)
+(defvar eshell-hist-mode-map)
+(defvar eshell-visual-commands)
+(defvar eshell-visual-subcommands)
+(defvar eshell-visual-options)
+(defvar eshell-history-ring)
+(defvar eshell-preoutput-filter-functions)
+(defvar eshell-output-filter-functions)
+
+(declare-function ring-elements "ring")
+(declare-function eshell-send-input "esh-mode")
+(declare-function eshell/pwd "em-dirs")
+(declare-function eshell/alias "em-alias")
+
 (defgroup cj/eshell nil
   "Personal Eshell configuration."
   :group 'eshell)
