@@ -98,6 +98,12 @@
 (require 'cj-window-toggle-lib)  ;; side-window size memory (F10 toggle)
 (require 'system-lib)            ;; cj/confirm-strong (overwrite confirms)
 
+;; Declare these foreign package vars special so `let'-binding them below
+;; compiles as a dynamic bind, not a dead lexical local -- otherwise emms /
+;; orderless never see the binding (the lexical-binding foreign-special-var trap).
+(defvar orderless-smart-case)
+(defvar emms-source-playlist-ask-before-overwrite)
+
 ;;; Settings (no Customize)
 
 (defvar cj/music-root music-dir

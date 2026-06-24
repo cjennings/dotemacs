@@ -27,6 +27,11 @@
 
 (require 'user-constants)
 
+;; Declared special so the `let'-binding in `cj/org-roam-copy-todo-to-today'
+;; compiles as a dynamic bind, not a dead lexical local -- otherwise the custom
+;; capture template never reaches org-roam-dailies (the foreign-special-var trap).
+(defvar org-roam-dailies-capture-templates)
+
 ;; ---------------------------------- Org Roam ---------------------------------
 
 (defconst cj/--org-roam-dailies-head
