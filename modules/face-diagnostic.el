@@ -298,6 +298,18 @@ mutation."
 
 ;; ------------------------------- Rendering -----------------------------------
 
+(defun cj/--face-diag-face-button (face)
+  "Render FACE as a button that runs `describe-face' on it.
+A real, named face becomes a `buttonize'd string (RET or mouse opens its
+`describe-face' help); anything else -- an anonymous (:attr val ...) spec or a
+symbol that is not a face -- is returned as a plain string so the report still
+reads cleanly."
+  (let ((label (format "%s" face)))
+    (if (and (symbolp face) (facep face))
+        (buttonize label (lambda (f) (describe-face f)) face
+                   (format "describe-face: %s" face))
+      label)))
+
 (defun cj/--face-diag-render-banner (classification)
   "Return a one-line banner for an out-of-scope CLASSIFICATION, or \"\"."
   (pcase classification
@@ -320,8 +332,9 @@ mutation."
             (or (plist-get char :script) "none"))))
 
 (defun cj/--face-diag-render-faces (faces)
-  "Render a list of FACES (symbols or specs) comma-separated, or \"(none)\"."
-  (if faces (mapconcat (lambda (f) (format "%s" f)) faces ", ") "(none)"))
+  "Render a list of FACES (symbols or specs) comma-separated, or \"(none)\".
+Real faces render as `describe-face' buttons (see `cj/--face-diag-face-button')."
+  (if faces (mapconcat #'cj/--face-diag-face-button faces ", ") "(none)"))
 
 (defun cj/--face-diag-render-stack (stack)
   "Render the STACK plist (faces by source) as a block."
@@ -329,18 +342,21 @@ mutation."
    "Face stack (highest priority first):\n"
    (format "  text properties: %s\n"
            (cj/--face-diag-render-faces (plist-get stack :text-property)))
-   (format "  overlays: %s\n"
-           (let ((ov (plist-get stack :overlays)))
-             (if ov
-                 (mapconcat (lambda (e)
-                              (format "%s (priority %s)"
-                                      (plist-get e :face)
-                                      (or (plist-get e :priority) "nil")))
-                            ov ", ")
-               "(none)")))
-   (format "  active remaps: %s\n"
-           (let ((rm (plist-get stack :remaps)))
-             (if rm (mapconcat (lambda (e) (format "%s" (car e))) rm ", ") "(none)")))
+   "  overlays: "
+   (let ((ov (plist-get stack :overlays)))
+     (if ov
+         (mapconcat (lambda (e)
+                      (concat (cj/--face-diag-face-button (plist-get e :face))
+                              (format " (priority %s)"
+                                      (or (plist-get e :priority) "nil"))))
+                    ov ", ")
+       "(none)"))
+   "\n"
+   "  active remaps: "
+   (let ((rm (plist-get stack :remaps)))
+     (if rm (mapconcat (lambda (e) (cj/--face-diag-face-button (car e))) rm ", ")
+       "(none)"))
+   "\n"
    "  default: default\n\n"))
 
 (defun cj/--face-diag-render-attributes (attrs)
@@ -372,13 +388,15 @@ mutation."
    (if prov
        (mapconcat
         (lambda (p)
-          (format (concat "  %s\n    themes: %s\n    config: %s\n"
-                          "    inherits: %s\n    unspecified (-> default): %s")
-                  (plist-get p :face)
-                  (or (plist-get p :themes) "(none)")
-                  (or (plist-get p :config) "(none)")
-                  (or (plist-get p :inherit-chain) "(none)")
-                  (or (plist-get p :unspecified) "(none)")))
+          (concat
+           "  "
+           (cj/--face-diag-face-button (plist-get p :face))
+           (format (concat "\n    themes: %s\n    config: %s\n"
+                           "    inherits: %s\n    unspecified (-> default): %s")
+                   (or (plist-get p :themes) "(none)")
+                   (or (plist-get p :config) "(none)")
+                   (or (plist-get p :inherit-chain) "(none)")
+                   (or (plist-get p :unspecified) "(none)"))))
         prov "\n")
      "  (no named faces)")
    "\n"))

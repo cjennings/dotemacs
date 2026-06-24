@@ -286,6 +286,31 @@
       (should (string-match-p "Real font" report))
       (should (string-match-p "Provenance" report)))))
 
+(ert-deftest test-face-diag-face-button-real-face-is-button ()
+  "Normal: a real face renders as a `describe-face' button carrying the face.
+Visible label is unchanged; the button data is the face so RET/mouse opens it."
+  (let ((s (cj/--face-diag-face-button 'bold)))
+    (should (equal (substring-no-properties s) "bold"))
+    (should (get-text-property 0 'button s))
+    (should (eq (get-text-property 0 'button-data s) 'bold))))
+
+(ert-deftest test-face-diag-face-button-non-face-is-plain ()
+  "Boundary: a symbol that is not a face stays plain text, no button."
+  (let ((s (cj/--face-diag-face-button 'cj-not-a-real-face-xyz)))
+    (should (equal s "cj-not-a-real-face-xyz"))
+    (should-not (get-text-property 0 'button s))))
+
+(ert-deftest test-face-diag-face-button-anonymous-spec-is-plain ()
+  "Error: an anonymous (:attr val ...) spec is not a face, so no button."
+  (let ((s (cj/--face-diag-face-button '(:foreground "red"))))
+    (should-not (get-text-property 0 'button s))))
+
+(ert-deftest test-face-diag-render-faces-buttonizes-real-face ()
+  "Normal: a real face in the stack render carries a button property."
+  (let ((s (cj/--face-diag-render-faces '(bold))))
+    (should (string-match-p "bold" s))
+    (should (get-text-property 0 'button s))))
+
 (ert-deftest test-face-diag-render-banner-out-of-scope ()
   "Boundary: a terminal classification renders a banner naming the ANSI source."
   (should (string-match-p "terminal" (cj/--face-diag-render-banner 'terminal-ansi)))

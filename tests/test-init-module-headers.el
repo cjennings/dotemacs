@@ -105,6 +105,7 @@
     "erc-config"
     "eshell-config"
     "eww-config"
+    "face-diagnostic"
     "flyspell-and-abbrev"
     "games-config"
     "gloss-config"
