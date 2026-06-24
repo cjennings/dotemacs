@@ -21,6 +21,19 @@
 (require 'find-lisp)
 (require 'profiler)
 
+;; External variables referenced at runtime only (org and the native
+;; compiler are loaded lazily; declare to quiet the byte-compiler).
+(defvar comp-async-report-warnings-errors)
+(defvar org-ts-regexp)
+(defvar org-agenda-files)
+
+;; External functions referenced at runtime only.
+(declare-function org-element-parse-buffer "org-element")
+(declare-function org-element-map "org-element")
+(declare-function org-element-property "org-element-ast")
+(declare-function org-time-string-to-absolute "org")
+(declare-function org-alert-check "org-alert")
+
 ;;; -------------------------------- Debug Keymap -------------------------------
 
 (defvar-keymap cj/debug-config-keymap
@@ -65,13 +78,15 @@
 (with-eval-after-load 'emacsql-sqlite-builtin
   (cl-defmethod emacsql-close :around
     ((connection emacsql-sqlite-builtin-connection))
-    (when (oref connection handle)
+    ;; The class is loaded lazily, so the slot is unknown at compile time.
+    (when (with-no-warnings (oref connection handle))
       (cl-call-next-method))))
 
 (with-eval-after-load 'emacsql-sqlite-module
   (cl-defmethod emacsql-close :around
     ((connection emacsql-sqlite-module-connection))
-    (when (oref connection handle)
+    ;; The class is loaded lazily, so the slot is unknown at compile time.
+    (when (with-no-warnings (oref connection handle))
       (cl-call-next-method))))
 
 ;;; -------------------------------- Benchmarking -------------------------------

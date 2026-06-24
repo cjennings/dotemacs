@@ -23,6 +23,15 @@
 
 ;;; Code:
 
+;; Silence byte-compiler "assignment to free variable" warnings for vars
+;; defined by lazily-loaded packages (tramp, dirtrack, magit). These are
+;; only set inside the use-package :config block, after the package loads.
+(defvar tramp-copy-size-limit)
+(defvar tramp-use-ssh-controlmaster-options)
+(defvar tramp-cleanup-idle-time)
+(defvar dirtrack-list)
+(defvar magit-git-executable)
+
 (use-package tramp
   :defer .5
   :ensure nil ;; built-in

@@ -22,6 +22,11 @@
 
 (require 'user-constants)
 
+;; Declared by the lazily-loaded `tmr' package; quiet the byte-compiler
+;; without forcing the package to load.
+(defvar tmr-sound-file)
+(defvar tmr-descriptions-list)
+
 ;; -------------------------------- Time Zones ---------------------------------
 
 (use-package time-zones

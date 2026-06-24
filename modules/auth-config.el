@@ -35,6 +35,15 @@
 (require 'system-lib)
 (require 'user-constants) ;; defines authinfo-file, read at load time below
 
+;; Lazily-loaded oauth2-auto / plstore internals used by the cache-fix advice
+;; below.  oauth2-auto is required at runtime inside the advised function; these
+;; declarations satisfy the byte-compiler without forcing an eager load.
+(declare-function oauth2-auto--compute-id "oauth2-auto")
+(declare-function plstore-get "plstore")
+(declare-function plstore-close "plstore")
+(defvar oauth2-auto--plstore-cache)
+(defvar oauth2-auto-plstore)
+
 (defcustom cj/auth-source-debug-enabled nil
   "Non-nil means enable verbose auth-source debug logging.
 

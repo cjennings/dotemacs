@@ -77,6 +77,13 @@
 (defvar calibredb-show-entry-switch)    ; from calibredb-show.el
 (defvar calibredb-sort-by)              ; from calibredb-core.el
 (defvar calibredb-search-filter)        ; from calibredb-search.el
+;; calibredb filter-state vars (set by cj/calibredb-clear-filters and friends)
+(defvar calibredb-tag-filter-p)         ; from calibredb-search.el
+(defvar calibredb-favorite-filter-p)    ; from calibredb-search.el
+(defvar calibredb-author-filter-p)      ; from calibredb-search.el
+(defvar calibredb-date-filter-p)        ; from calibredb-search.el
+(defvar calibredb-format-filter-p)      ; from calibredb-search.el
+(defvar calibredb-search-current-page)  ; from calibredb-search.el
 
 ;; -------------------------- CalibreDB Ebook Manager --------------------------
 

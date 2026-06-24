@@ -28,6 +28,12 @@
 
 ;;; Code:
 
+(declare-function ediff-setup-keymap "ediff")
+(declare-function ediff-next-difference "ediff")
+(declare-function ediff-previous-difference "ediff")
+(declare-function cj/ediff-hook "diff-config")
+(declare-function winner-undo "winner")
+
 (use-package ediff
   :ensure nil ;; built-in
   :defer t
