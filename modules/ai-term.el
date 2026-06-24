@@ -1049,6 +1049,95 @@ picker and C-; a k closes an agent."
   (add-to-list 'ghostel-keymap-exceptions "M-SPC")
   (ghostel--rebuild-semi-char-keymap))
 
+;; ------------------- Wrap-it-up teardown + shutdown -------------------------
+;;
+;; Headless entry points the rulesets wrap-it-up workflow calls via
+;; `emacsclient -e' (its Stop hook ~/.claude/hooks/ai-wrap-teardown.sh).  All
+;; three must work with no interactive frame guaranteed.  rulesets owns the
+;; workflow + hook that call these; this module owns the aiv- session naming,
+;; the agent buffer, and the geometry restore, so the functions live here.
+;; See docs/design/2026-06-23-wrap-teardown-shutdown-proposal.org (rulesets).
+
+(defcustom cj/ai-term-shutdown-command "sudo shutdown now"
+  "Shell command run when the shutdown countdown completes uncancelled.
+A defcustom so development and tests can stub it instead of powering off
+\(sudo is NOPASSWD on Craig's machines, so the default really shuts down)."
+  :type 'string
+  :group 'cj)
+
+(defun cj/ai-term-quit (&optional project)
+  "Tear down PROJECT's AI-term: kill its tmux session, buffer, and restore layout.
+PROJECT is a project basename (as the rulesets Stop hook passes) or a directory;
+nil means the current project (`default-directory').  Kills the `aiv-<name>'
+tmux session (taking the agent process with it), then, when the agent buffer is
+live, swaps its window back to the working buffer and kills it.  Idempotent and
+safe headless: a session or buffer already gone is a no-op, not an error."
+  (let* ((key (or project default-directory))
+         (session (cj/--ai-term-tmux-session-name key))
+         (buffer (get-buffer (cj/--ai-term-buffer-name key))))
+    (cj/--ai-term-kill-tmux-session session)
+    (when (cj/--ai-term-buffer-p buffer)
+      (let ((win (get-buffer-window buffer)))
+        (when (window-live-p win)
+          (cj/--ai-term-swap-to-working-buffer win)))
+      (let ((kill-buffer-query-functions nil))
+        (kill-buffer buffer)))
+    session))
+
+(defun cj/ai-term-live-count ()
+  "Return the integer count of live AI-term (aiv-*) tmux sessions.
+0 when tmux has no server or no AI-term sessions.  The shutdown safety gate:
+`emacsclient -e (cj/ai-term-live-count)' prints the integer for the hook."
+  (length (cj/--ai-term-live-tmux-sessions)))
+
+(defvar cj/--ai-term-shutdown-timer nil
+  "The active shutdown-countdown repeating timer, or nil when none is running.")
+
+(defun cj/--ai-term-shutdown-clear-timer ()
+  "Cancel and forget the shutdown-countdown timer, if any."
+  (when (timerp cj/--ai-term-shutdown-timer)
+    (cancel-timer cj/--ai-term-shutdown-timer))
+  (setq cj/--ai-term-shutdown-timer nil))
+
+(defun cj/ai-term-shutdown-cancel ()
+  "Cancel an in-progress AI-term shutdown countdown."
+  (interactive)
+  (when cj/--ai-term-shutdown-timer
+    (cj/--ai-term-shutdown-clear-timer)
+    (message "Shutdown cancelled.")))
+
+(defun cj/ai-term-shutdown-countdown (&optional seconds)
+  "Count down SECONDS (default 10) in the echo area, then shut the machine down.
+Re-checks the safety gate first (a TOCTOU guard against the workflow's earlier
+check): aborts with a message when more than one `aiv-*' session is live.  The
+countdown is an abort-able `run-at-time' timer -- `C-g' (while the countdown
+owns the keymap) or \\[cj/ai-term-shutdown-cancel] stops it.  On reaching zero
+uncancelled it runs `cj/ai-term-shutdown-command'.  Returns immediately so the
+Stop hook does not block; the daemon ticks the timer asynchronously."
+  (if (> (cj/ai-term-live-count) 1)
+      (progn
+        (message "Shutdown aborted: %d AI-term sessions still live."
+                 (cj/ai-term-live-count))
+        nil)
+    (cj/--ai-term-shutdown-clear-timer)
+    (let ((remaining (or seconds 10)))
+      (set-transient-map
+       (let ((m (make-sparse-keymap)))
+         (define-key m (kbd "C-g") #'cj/ai-term-shutdown-cancel)
+         m)
+       (lambda () (and cj/--ai-term-shutdown-timer t)))
+      (setq cj/--ai-term-shutdown-timer
+            (run-at-time
+             0 1
+             (lambda ()
+               (if (<= remaining 0)
+                   (progn
+                     (cj/--ai-term-shutdown-clear-timer)
+                     (shell-command cj/ai-term-shutdown-command))
+                 (message "Shutting down in %d…  (C-g to cancel)" remaining)
+                 (setq remaining (1- remaining))))))
+      nil)))
+
 ;; ---------- emacsclient: keep opened files off the agent terminal ----------
 ;;
 ;; `server-start' (in system-defaults.el) leaves `server-window' nil, so
