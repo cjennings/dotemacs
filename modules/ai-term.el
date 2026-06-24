@@ -77,6 +77,7 @@
 (require 'cj-window-geometry-lib)
 (require 'cj-window-toggle-lib)
 (require 'host-environment)
+(require 'keybindings)  ;; provides cj/register-prefix-map (C-; a)
 
 (declare-function ghostel "ghostel" (&optional arg))
 (declare-function ghostel-send-string "ghostel" (string))
@@ -991,11 +992,12 @@ The queue is the live agent buffers ordered by buffer name -- a stable
 rotation, unaffected by which agent was most recently selected.  When an
 agent window is on screen, swap it to the next agent in the queue
 \(wrapping after the last) and select it.  When no agent is displayed but
-agents exist, show the first.  Signals `user-error' when none are open.
+agents exist, show the first.  When none are open, open the project picker
+to launch the first agent rather than erroring.
 
-Bound to s-<f9>.  Unlike <f9> (toggle the most-recent agent on/off), this
-is the \"switch among existing agents\" surface; C-<f9> opens the project
-picker and M-<f9> closes an agent."
+Bound to M-SPC.  Unlike C-; a a (toggle the most-recent agent on/off), this
+is the \"switch among existing agents\" surface; C-; a s opens the project
+picker and C-; a k closes an agent."
   (interactive)
   (let* ((buffers (sort (cj/--ai-term-agent-buffers)
                         (lambda (a b)
@@ -1003,41 +1005,48 @@ picker and M-<f9> closes an agent."
          (win (cj/--ai-term-displayed-agent-window))
          (current (and win (window-buffer win)))
          (next (cj/--ai-term-next-agent-buffer current buffers)))
-    (unless next
-      (user-error "No AI-term agent buffers open"))
-    (if win
-        (progn
-          (set-window-buffer win next)
-          (select-window win))
-      (display-buffer next)
-      (let ((w (get-buffer-window next)))
-        (when w (select-window w))))
-    (message "Agent: %s" (buffer-name next))))
+    (if (not next)
+        ;; No agents open: launch the first via the project picker instead of
+        ;; erroring, so the swap key doubles as a "start an agent" key.
+        (cj/ai-term-pick-project)
+      (if win
+          (progn
+            (set-window-buffer win next)
+            (select-window win))
+        (display-buffer next)
+        (let ((w (get-buffer-window next)))
+          (when w (select-window w))))
+      (message "Agent: %s" (buffer-name next)))))
 
-(keymap-global-set "<f9>"     #'cj/ai-term)
-(keymap-global-set "C-<f9>"   #'cj/ai-term-pick-project)
-(keymap-global-set "s-<f9>"   #'cj/ai-term-next)
-(keymap-global-set "M-<f9>"   #'cj/ai-term-close)
+;; ai-term lives under the C-; a prefix (vacated when gptel was archived).
+;; The frequent "swap to the next agent" also gets M-SPC for a fast chord.
+(defvar-keymap cj/ai-term-keymap
+  :doc "Keymap for ai-term agent commands (C-; a)."
+  "a" #'cj/ai-term               ;; toggle the most-recent agent on/off
+  "s" #'cj/ai-term-pick-project  ;; select / launch via the project picker
+  "n" #'cj/ai-term-next          ;; swap to the next open agent
+  "k" #'cj/ai-term-close)        ;; kill the current agent
+(cj/register-prefix-map "a" cj/ai-term-keymap "ai-term")
+(keymap-global-set "M-SPC" #'cj/ai-term-next)
 
-;; ghostel's semi-char mode forwards keys not in `ghostel-keymap-exceptions' to
-;; the terminal program, so a plain <f9> typed while point is inside an agent
-;; buffer would be sent to the program instead of toggling the agent -- which
-;; bites hard when the agent buffer is the only window in the frame.  Re-bind
-;; the F9 family in `ghostel-mode-map' so the toggle reaches Emacs from there
-;; too.  (C-<f9> / M-<f9> are bound here as well so the behaviour is uniform.)
+(with-eval-after-load 'which-key
+  (which-key-add-key-based-replacements
+    "C-; a"   "ai-term menu"
+    "C-; a a" "toggle agent"
+    "C-; a s" "select / launch"
+    "C-; a n" "next agent"
+    "C-; a k" "kill agent"
+    "M-SPC"   "ai-term: next agent"))
+
+;; In ghostel's semi-char mode, keys not in `ghostel-keymap-exceptions' are
+;; forwarded to the pty, and `ghostel-semi-char-mode-map' outranks the major
+;; mode map.  M-SPC (swap to the next agent) must reach Emacs from inside an
+;; agent buffer, so add it to the exceptions, rebuild the semi-char map, and
+;; bind it in `ghostel-mode-map'.  C-; is already an exception (term-config),
+;; so the C-; a family resolves through the global prefix without extra wiring.
 (with-eval-after-load 'ghostel
-  (keymap-set ghostel-mode-map "<f9>"     #'cj/ai-term)
-  (keymap-set ghostel-mode-map "C-<f9>"   #'cj/ai-term-pick-project)
-  (keymap-set ghostel-mode-map "s-<f9>"   #'cj/ai-term-next)
-  (keymap-set ghostel-mode-map "M-<f9>"   #'cj/ai-term-close)
-  ;; The bindings above live in `ghostel-mode-map', but in semi-char mode
-  ;; ghostel's own `ghostel-semi-char-mode-map' forwards every key not in
-  ;; `ghostel-keymap-exceptions' to the pty -- and that map outranks the
-  ;; major-mode map, so it would swallow the F9 family before the bindings
-  ;; above fire.  Add the family to the exceptions and rebuild the semi-char
-  ;; map so the keys fall through to `ghostel-mode-map' inside agent buffers.
-  (dolist (key '("<f9>" "C-<f9>" "s-<f9>" "M-<f9>"))
-    (add-to-list 'ghostel-keymap-exceptions key))
+  (keymap-set ghostel-mode-map "M-SPC" #'cj/ai-term-next)
+  (add-to-list 'ghostel-keymap-exceptions "M-SPC")
   (ghostel--rebuild-semi-char-keymap))
 
 ;; ---------- emacsclient: keep opened files off the agent terminal ----------

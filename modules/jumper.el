@@ -303,16 +303,12 @@ Returns: \\='no-locations if no locations stored,
   (interactive)
   (keymap-global-set jumper-prefix-key jumper-map))
 
-;; Call jumper-setup-keys when the package is loaded
-(jumper-setup-keys)
-
-;; which-key integration
-(with-eval-after-load 'which-key
-  (which-key-add-key-based-replacements
-    "M-SPC" "jumper menu"
-    "M-SPC SPC" "store location"
-    "M-SPC j" "jump to location"
-    "M-SPC d" "remove location"))
+;; Jumper's M-SPC prefix was removed 2026-06-23 so M-SPC could go to
+;; `cj/ai-term-next'.  A cleverer home for jumper (numbers or F-keys) is
+;; pending review; until then its commands are reachable via M-x
+;; (jumper-store-location / jumper-jump-to-location / jumper-remove-location).
+;; To re-home: set `jumper-prefix-key' to the new prefix and call
+;; `jumper-setup-keys' (and restore the which-key labels for that prefix).
 
 (provide 'jumper)
 ;;; jumper.el ends here.
