@@ -679,16 +679,23 @@ function buildUITable(){
     exp.detail.dataset.detailFor=face;
     const c0=document.createElement('td');c0.className='cat';c0.title=composeHoverTitle(FACE_DOCS[face],c0.title);c0.appendChild(exp.btn);
     const c0lbl=document.createElement('span');c0lbl.textContent=' '+label;c0lbl.style.cursor='pointer';c0lbl.title='flash this face in the live preview';c0lbl.onclick=()=>flashUiPreview(face);c0.appendChild(c0lbl);
+    // Emacs draws the cursor as a rectangle: its fg colors the glyph sitting on
+    // it and its bg is the cursor color, but weight/slant/underline/strike and
+    // box are no-ops on it. Show only fg+bg for the cursor row; mute the rest.
+    const cursorOnly=(face==='cursor');
+    const naCell=t=>{const s=document.createElement('span');s.textContent='—';s.style.opacity='0.4';s.title=t;return s;};
     const fgSel=uiSelect(face,'fg'),bgSel=uiSelect(face,'bg');
     const cF=document.createElement('td');cF.appendChild(fgSel);
     const cB=document.createElement('td');cB.appendChild(bgSel);
     const cS=document.createElement('td');
-    const stCtls=mkStyleControls(UIMAP[face],()=>{paintUI(face);buildMockFrame();},{defaultHex:effFg(UIMAP[face].fg)});
-    const uiCluster=document.createElement('div');uiCluster.className='stylecluster';stCtls.forEach(c=>uiCluster.appendChild(c));cS.appendChild(uiCluster);
+    const stCtls=cursorOnly?[]:mkStyleControls(UIMAP[face],()=>{paintUI(face);buildMockFrame();},{defaultHex:effFg(UIMAP[face].fg)});
+    if(cursorOnly){cS.appendChild(naCell('Emacs ignores weight/slant/underline/strike on the cursor face'));}
+    else{const uiCluster=document.createElement('div');uiCluster.className='stylecluster';stCtls.forEach(c=>uiCluster.appendChild(c));cS.appendChild(uiCluster);}
     const cC=document.createElement('td');cC.id='uicr-'+face;cC.style.whiteSpace='nowrap';cC.style.fontSize='10pt';
     const cP=document.createElement('td');cP.className='ex';cP.id='uiprev-'+face;cP.textContent=ex;cP.style.padding='4px 10px';cP.style.borderRadius='4px';
-    const cX=document.createElement('td');const boxCtl=mkBoxControl(()=>UIMAP[face].box,b=>{UIMAP[face].box=b;paintUI(face);buildMockFrame();},{compact:true});cX.appendChild(boxCtl);
-    const cL=mkLockCell('ui:'+face,[fgSel,bgSel,...stCtls,boxCtl,...exp.locks]);
+    const cX=document.createElement('td');const boxCtl=cursorOnly?null:mkBoxControl(()=>UIMAP[face].box,b=>{UIMAP[face].box=b;paintUI(face);buildMockFrame();},{compact:true});
+    if(cursorOnly){cX.appendChild(naCell('Emacs ignores the box attribute on the cursor face'));}else{cX.appendChild(boxCtl);}
+    const cL=mkLockCell('ui:'+face,cursorOnly?[fgSel,bgSel,...exp.locks]:[fgSel,bgSel,...stCtls,boxCtl,...exp.locks]);
     tr.appendChild(cL);tr.appendChild(c0);tr.appendChild(cF);tr.appendChild(cB);tr.appendChild(cS);tr.appendChild(cX);tr.appendChild(cC);tr.appendChild(cP);tb.appendChild(tr);tb.appendChild(exp.detail);paintUI(face);
   }
   applyTableSort('uibody');

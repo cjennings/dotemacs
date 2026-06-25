@@ -3318,16 +3318,23 @@ function buildUITable(){
     exp.detail.dataset.detailFor=face;
     const c0=document.createElement('td');c0.className='cat';c0.title=composeHoverTitle(FACE_DOCS[face],c0.title);c0.appendChild(exp.btn);
     const c0lbl=document.createElement('span');c0lbl.textContent=' '+label;c0lbl.style.cursor='pointer';c0lbl.title='flash this face in the live preview';c0lbl.onclick=()=>flashUiPreview(face);c0.appendChild(c0lbl);
+    // Emacs draws the cursor as a rectangle: its fg colors the glyph sitting on
+    // it and its bg is the cursor color, but weight/slant/underline/strike and
+    // box are no-ops on it. Show only fg+bg for the cursor row; mute the rest.
+    const cursorOnly=(face==='cursor');
+    const naCell=t=>{const s=document.createElement('span');s.textContent='—';s.style.opacity='0.4';s.title=t;return s;};
     const fgSel=uiSelect(face,'fg'),bgSel=uiSelect(face,'bg');
     const cF=document.createElement('td');cF.appendChild(fgSel);
     const cB=document.createElement('td');cB.appendChild(bgSel);
     const cS=document.createElement('td');
-    const stCtls=mkStyleControls(UIMAP[face],()=>{paintUI(face);buildMockFrame();},{defaultHex:effFg(UIMAP[face].fg)});
-    const uiCluster=document.createElement('div');uiCluster.className='stylecluster';stCtls.forEach(c=>uiCluster.appendChild(c));cS.appendChild(uiCluster);
+    const stCtls=cursorOnly?[]:mkStyleControls(UIMAP[face],()=>{paintUI(face);buildMockFrame();},{defaultHex:effFg(UIMAP[face].fg)});
+    if(cursorOnly){cS.appendChild(naCell('Emacs ignores weight/slant/underline/strike on the cursor face'));}
+    else{const uiCluster=document.createElement('div');uiCluster.className='stylecluster';stCtls.forEach(c=>uiCluster.appendChild(c));cS.appendChild(uiCluster);}
     const cC=document.createElement('td');cC.id='uicr-'+face;cC.style.whiteSpace='nowrap';cC.style.fontSize='10pt';
     const cP=document.createElement('td');cP.className='ex';cP.id='uiprev-'+face;cP.textContent=ex;cP.style.padding='4px 10px';cP.style.borderRadius='4px';
-    const cX=document.createElement('td');const boxCtl=mkBoxControl(()=>UIMAP[face].box,b=>{UIMAP[face].box=b;paintUI(face);buildMockFrame();},{compact:true});cX.appendChild(boxCtl);
-    const cL=mkLockCell('ui:'+face,[fgSel,bgSel,...stCtls,boxCtl,...exp.locks]);
+    const cX=document.createElement('td');const boxCtl=cursorOnly?null:mkBoxControl(()=>UIMAP[face].box,b=>{UIMAP[face].box=b;paintUI(face);buildMockFrame();},{compact:true});
+    if(cursorOnly){cX.appendChild(naCell('Emacs ignores the box attribute on the cursor face'));}else{cX.appendChild(boxCtl);}
+    const cL=mkLockCell('ui:'+face,cursorOnly?[fgSel,bgSel,...exp.locks]:[fgSel,bgSel,...stCtls,boxCtl,...exp.locks]);
     tr.appendChild(cL);tr.appendChild(c0);tr.appendChild(cF);tr.appendChild(cB);tr.appendChild(cS);tr.appendChild(cX);tr.appendChild(cC);tr.appendChild(cP);tb.appendChild(tr);tb.appendChild(exp.detail);paintUI(face);
   }
   applyTableSort('uibody');
@@ -3580,6 +3587,21 @@ if(location.hash==='#mocktest')gate('mocktest',A=>withSavedState(['UIMAP','PKGMA
  pickEnum(pkgWeight(),'heavy');
  A(PKGMAP[app][face].weight==='heavy'&&PKGMAP[app][face].source==='user','pkg weight dropdown writes the model and marks the face edited');
  }));
+// Cursor-row gate (open with #cursorrowtest): the cursor face honors only fg
+// (the glyph on it) and bg (the cursor color); weight/slant/underline/strike and
+// box are no-ops, so the row mutes them to a dash while non-cursor rows keep them.
+if(location.hash==='#cursorrowtest')gate('cursorrowtest',A=>{
+  buildUITable();
+  const rows=[...document.querySelectorAll('#uibody tr')];
+  const cur=rows.find(r=>r.dataset.face==='cursor');
+  A(!!cur,'cursor row present');
+  A(!!cur.cells[2].querySelector('.cdd'),'cursor keeps the fg swatch');
+  A(!!cur.cells[3].querySelector('.cdd'),'cursor keeps the bg swatch');
+  A(!cur.cells[4].querySelector('.enumdd')&&cur.cells[4].textContent.includes('—'),'cursor mutes the style controls');
+  A(cur.cells[5].textContent.includes('—'),'cursor mutes the box control');
+  const ml=rows.find(r=>r.dataset.face==='mode-line');
+  A(!!ml.cells[4].querySelector('.enumdd'),'non-cursor rows keep the style controls');
+});
 // Palette-generator gate (open with #generatortest): previewing is non-mutating,
 // clicking a generated tile loads the existing selector, adding creates a normal
 // singleton base column, and appending a preview column commits all span members
@@ -4296,7 +4318,7 @@ if(location.hash==='#pickertest')gate('pickertest',A=>{
 // four radio buttons (none / line / pressed / raised); the color swatch shows
 // only while a box style is active.
 if(location.hash==='#boxtest')gate('boxtest',A=>{
- LOCKED.clear();const f=UI_FACES[0][0];const saveBox=UIMAP[f].box;
+ LOCKED.clear();const f=UI_FACES.map(x=>x[0]).find(x=>x!=='cursor');const saveBox=UIMAP[f].box;  // cursor has no box control by design
  UIMAP[f].box=null;buildUITable();
  const cell=document.querySelector('#uibody tr[data-face="'+f+'"]').cells[5];
  A(!!cell.querySelector('.boxcluster'),'box-cluster-present');
@@ -4315,7 +4337,7 @@ if(location.hash==='#boxtest')gate('boxtest',A=>{
 // Style-cluster gate (open with #styletest): the style cell holds a weight
 // selector, a slant selector, and box-like underline and strike controls.
 if(location.hash==='#styletest')gate('styletest',A=>{
- buildUITable();const f=UI_FACES[0][0];
+ buildUITable();const f=UI_FACES.map(x=>x[0]).find(x=>x!=='cursor');  // cursor row has no style cluster by design
  const cell=document.querySelector('#uibody tr[data-face="'+f+'"]').cells[4];
  const cluster=cell.querySelector('.stylecluster');
  A(!!cluster,'style-cluster-present');

@@ -221,6 +221,21 @@ if(location.hash==='#mocktest')gate('mocktest',A=>withSavedState(['UIMAP','PKGMA
  pickEnum(pkgWeight(),'heavy');
  A(PKGMAP[app][face].weight==='heavy'&&PKGMAP[app][face].source==='user','pkg weight dropdown writes the model and marks the face edited');
  }));
+// Cursor-row gate (open with #cursorrowtest): the cursor face honors only fg
+// (the glyph on it) and bg (the cursor color); weight/slant/underline/strike and
+// box are no-ops, so the row mutes them to a dash while non-cursor rows keep them.
+if(location.hash==='#cursorrowtest')gate('cursorrowtest',A=>{
+  buildUITable();
+  const rows=[...document.querySelectorAll('#uibody tr')];
+  const cur=rows.find(r=>r.dataset.face==='cursor');
+  A(!!cur,'cursor row present');
+  A(!!cur.cells[2].querySelector('.cdd'),'cursor keeps the fg swatch');
+  A(!!cur.cells[3].querySelector('.cdd'),'cursor keeps the bg swatch');
+  A(!cur.cells[4].querySelector('.enumdd')&&cur.cells[4].textContent.includes('—'),'cursor mutes the style controls');
+  A(cur.cells[5].textContent.includes('—'),'cursor mutes the box control');
+  const ml=rows.find(r=>r.dataset.face==='mode-line');
+  A(!!ml.cells[4].querySelector('.enumdd'),'non-cursor rows keep the style controls');
+});
 // Palette-generator gate (open with #generatortest): previewing is non-mutating,
 // clicking a generated tile loads the existing selector, adding creates a normal
 // singleton base column, and appending a preview column commits all span members
@@ -937,7 +952,7 @@ if(location.hash==='#pickertest')gate('pickertest',A=>{
 // four radio buttons (none / line / pressed / raised); the color swatch shows
 // only while a box style is active.
 if(location.hash==='#boxtest')gate('boxtest',A=>{
- LOCKED.clear();const f=UI_FACES[0][0];const saveBox=UIMAP[f].box;
+ LOCKED.clear();const f=UI_FACES.map(x=>x[0]).find(x=>x!=='cursor');const saveBox=UIMAP[f].box;  // cursor has no box control by design
  UIMAP[f].box=null;buildUITable();
  const cell=document.querySelector('#uibody tr[data-face="'+f+'"]').cells[5];
  A(!!cell.querySelector('.boxcluster'),'box-cluster-present');
@@ -956,7 +971,7 @@ if(location.hash==='#boxtest')gate('boxtest',A=>{
 // Style-cluster gate (open with #styletest): the style cell holds a weight
 // selector, a slant selector, and box-like underline and strike controls.
 if(location.hash==='#styletest')gate('styletest',A=>{
- buildUITable();const f=UI_FACES[0][0];
+ buildUITable();const f=UI_FACES.map(x=>x[0]).find(x=>x!=='cursor');  // cursor row has no style cluster by design
  const cell=document.querySelector('#uibody tr[data-face="'+f+'"]').cells[4];
  const cluster=cell.querySelector('.stylecluster');
  A(!!cluster,'style-cluster-present');
