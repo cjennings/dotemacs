@@ -173,13 +173,17 @@ TITLE and MESSAGE are strings.  URGENCY is normal or critical."
      :body message
      :urgency (or urgency 'normal))))
 
-(defun cj/--start-transcription-process (audio-file &optional cleanup-file)
+(defun cj/--start-transcription-process (audio-file &optional cleanup-file output-base)
   "Start async transcription process for AUDIO-FILE.
 Returns the process object.
 
 When CLEANUP-FILE is non-nil, delete that path once the transcription
 sentinel fires (success or failure).  Used by the video flow to drop
-the temp audio file produced by ffmpeg after transcription completes."
+the temp audio file produced by ffmpeg after transcription completes.
+
+OUTPUT-BASE, when non-nil, is the path the .txt/.log outputs derive from
+instead of AUDIO-FILE.  The video flow passes the original video so the
+transcript lands alongside the source, not next to the temp /tmp audio."
   (unless (file-exists-p audio-file)
     (user-error "Audio file does not exist: %s" audio-file))
 
@@ -187,7 +191,7 @@ the temp audio file produced by ffmpeg after transcription completes."
     (user-error "Not an audio file: %s" audio-file))
 
   (let* ((script (cj/--transcription-script-path))
-         (outputs (cj/--transcription-output-files audio-file))
+         (outputs (cj/--transcription-output-files (or output-base audio-file)))
          (txt-file (car outputs))
          (log-file (cdr outputs))
          (buffer-name (format " *transcribe-%s*" (file-name-nondirectory audio-file)))
@@ -371,7 +375,9 @@ FILE.log with process logs.  Uses the backend in
         (cj/--extract-audio-from-video
          path extracted
          (lambda ()
-           (cj/--start-transcription-process extracted extracted))))))))
+           ;; Pass the source video as the output base so the .txt/.log land
+           ;; alongside it, not next to the temp /tmp audio.
+           (cj/--start-transcription-process extracted extracted path))))))))
 
 ;;;###autoload
 (defun cj/transcribe-media-at-point ()

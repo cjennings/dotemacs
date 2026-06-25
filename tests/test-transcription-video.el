@@ -128,6 +128,28 @@ goes through `cj/--start-transcription-process' with a cleanup hint."
     ;; deleted after transcription completes).
     (should (equal (nth 1 extract-args) (cadr worker-call)))))
 
+(ert-deftest test-tx-transcribe-media-video-output-base-is-the-source ()
+  "Regression: a video's transcript derives from the VIDEO path (alongside the
+source), not the temp /tmp audio.  The worker gets the video as its output base
+\(third arg), so cj/--transcription-output-files lands talk.mp4 -> talk.txt
+beside the video instead of in /tmp."
+  (let* ((tmp (make-temp-file "cj-tx-vid-" nil ".mp4"))
+         worker-call)
+    (unwind-protect
+        (cl-letf (((symbol-function 'cj/--extract-audio-from-video)
+                   (lambda (_vid _out cb) (funcall cb)))
+                  ((symbol-function 'cj/--start-transcription-process)
+                   (lambda (file &rest rest)
+                     (setq worker-call (cons file rest))
+                     'fake-proc)))
+          (cj/transcribe-media tmp))
+      (delete-file tmp))
+    ;; the output base (third arg) is the source video, not the temp audio
+    (should (equal (nth 2 worker-call) tmp))
+    ;; so the derived transcript sits beside the video, not in /tmp
+    (should (equal (car (cj/--transcription-output-files (nth 2 worker-call)))
+                   (concat (file-name-sans-extension tmp) ".txt")))))
+
 (ert-deftest test-tx-transcribe-media-rejects-non-media ()
   "Error: non-media paths get rejected up front."
   (should-error (cj/transcribe-media "/notes/readme.txt") :type 'user-error))
