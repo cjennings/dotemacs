@@ -4,7 +4,7 @@
 #+TODO: TODO | DONE SUPERSEDED CANCELLED
 
 * Metadata
-| Status   | Ready (2 review rounds; implementing v1)                    |
+| Status   | v1 implemented (Phases 1-3); live setup pending; v2 next    |
 |----------+------------------------------------------------------------|
 | Owner    | Craig                                                      |
 |----------+------------------------------------------------------------|
@@ -214,3 +214,7 @@ The immediate next increment after v1 lands. A write subcommand on the bridge (g
 - What: fresh readiness pass on the revised spec. Verified the round-1 resolutions are coherent (data/keep.org consistent throughout, the JSON schema is the single referenced contract, the async/sentinel + stderr-token story lines up across Design/Phase 2/acceptance). Confirmed cj/auth-source-secret-value (host &optional user) exists and is buildable as written, and that the data/keep.org constant matches user-constants.el's gcal-file form. No new findings.
 - Why: confirms the spec is implementation-ready after two rounds.
 - Artifacts: this spec. Verdict: Ready.
+** 2026-06-25 Thu @ 01:30:00 -0400 — Claude — implementer
+- What: built v1 (Phases 1-3) in a no-approvals speedrun. Phase 1: the gkeepapi bridge (scripts/google-keep/keep-bridge.py) emitting the pinned JSON schema, degrading with a stderr reason token; 12 Python tests. Phase 2: the elisp pure core (parse/tag/heading/render, extractable) + cj/keep-refresh (async make-process + sentinel, atomic temp-then-rename to keep-file, stderr-token to display-warning); 15 ERT tests. Phase 3: keep-file constant in user-constants.el, C-c k prefix (refresh/open), executable warning, required in init.el. validate-modules clean; no-token path degrades without error.
+- Why: spec was Ready and Craig green-lit a no-approvals build of v1.
+- Artifacts: scripts/google-keep/keep-bridge.py + test; modules/google-keep-config.el + tests/test-google-keep-config.el; user-constants.el; init.el. Remaining: the one-time gkeepapi + master-token setup (a VERIFY under todo.org Manual testing), then v2.
