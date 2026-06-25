@@ -120,6 +120,7 @@
 (require 'prog-webdev)
 (require 'prog-json)
 (require 'prog-yaml)
+(require 'ledger-config)         ;; plain-text accounting (ledger format)
 
 ;; ---------------------------------- Org Mode ---------------------------------
 
