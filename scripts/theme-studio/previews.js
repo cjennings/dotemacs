@@ -293,6 +293,18 @@ function renderGitGutterPreview(){const a='git-gutter',L=[];
   L.push(os(a,'git-gutter:deleted','_')+os(a,'git-gutter:separator','|')+' (deleted lines marker)');
   L.push(os(a,'git-gutter:unchanged',' ')+os(a,'git-gutter:separator','|')+' '+os(a,'git-gutter:unchanged','unchanged line of code'));
   return previewLines(L);}
+function renderEatPreview(){const a='eat',L=[];
+  L.push(os(a,'eat-shell-prompt-annotation-success','✔')+' ~/projects $ ls --color');
+  L.push(os(a,'eat-term-color-blue','build/')+'  '+os(a,'eat-term-color-blue','src/')+'  '+os(a,'eat-term-color-green','run.sh')+'  README.md');
+  L.push('');
+  L.push('palette  '+os(a,'eat-term-color-black','■')+os(a,'eat-term-color-red','■')+os(a,'eat-term-color-green','■')+os(a,'eat-term-color-yellow','■')+os(a,'eat-term-color-blue','■')+os(a,'eat-term-color-magenta','■')+os(a,'eat-term-color-cyan','■')+os(a,'eat-term-color-white','■')+'   normal');
+  L.push('         '+os(a,'eat-term-color-bright-black','■')+os(a,'eat-term-color-bright-red','■')+os(a,'eat-term-color-bright-green','■')+os(a,'eat-term-color-bright-yellow','■')+os(a,'eat-term-color-bright-blue','■')+os(a,'eat-term-color-bright-magenta','■')+os(a,'eat-term-color-bright-cyan','■')+os(a,'eat-term-color-bright-white','■')+'   bright');
+  L.push('');
+  L.push(os(a,'eat-term-bold','bold')+'  '+os(a,'eat-term-faint','faint')+'  '+os(a,'eat-term-italic','italic')+'  '+os(a,'eat-term-slow-blink','slow-blink')+'  '+os(a,'eat-term-fast-blink','fast-blink'));
+  L.push('');
+  L.push(os(a,'eat-shell-prompt-annotation-running','…')+' running tests');
+  L.push(os(a,'eat-shell-prompt-annotation-failure','✘')+' build failed');
+  return previewLines(L);}
 function renderFlycheckPreview(){const a='flycheck',L=[];
   L.push(os(a,'flycheck-fringe-error','E')+os(a,'flycheck-fringe-warning','W')+os(a,'flycheck-fringe-info','I')+'  x = '+os(a,'flycheck-error','undefined_name')+'('+os(a,'flycheck-warning','unused_arg')+')  '+os(a,'flycheck-info','# note'));
   L.push('       '+os(a,'flycheck-error-delimiter','[')+os(a,'flycheck-delimited-error','err')+os(a,'flycheck-error-delimiter',']'));

@@ -143,6 +143,18 @@ GHOSTEL_SEED={
  "ghostel-color-blue":{"fg":"blue"},"ghostel-color-magenta":{"fg":"regal"},"ghostel-color-cyan":{"fg":"sage"},"ghostel-color-white":{"fg":"silver"},
  "ghostel-color-bright-black":{"fg":"steel"},"ghostel-color-bright-red":{"fg":"#de4949"},"ghostel-color-bright-green":{"fg":"#84b068"},"ghostel-color-bright-yellow":{"fg":"#eed376"},
  "ghostel-color-bright-blue":{"fg":"#7a9abe"},"ghostel-color-bright-magenta":{"fg":"#b07fd0"},"ghostel-color-bright-cyan":{"fg":"#7fc0a8"},"ghostel-color-bright-white":{"fg":"white"}}
+# eat (F12 terminal, pure-elisp): the 16 named ANSI palette faces (which :inherit
+# ansi-color-*), the SGR attribute faces, and the shell-prompt annotation faces.
+# No seed -- the faces are exposed editable but left at their own defaults until
+# themed (the eat-term-color-* numeric 0..255 cube is skipped; the named 16 alias
+# 0..15, and there is no dedicated eat default fg/bg face -- EAT uses `default').
+EAT_FACES=("eat-term-color-black eat-term-color-red eat-term-color-green eat-term-color-yellow "
+ "eat-term-color-blue eat-term-color-magenta eat-term-color-cyan eat-term-color-white "
+ "eat-term-color-bright-black eat-term-color-bright-red eat-term-color-bright-green eat-term-color-bright-yellow "
+ "eat-term-color-bright-blue eat-term-color-bright-magenta eat-term-color-bright-cyan eat-term-color-bright-white "
+ "eat-term-bold eat-term-faint eat-term-italic eat-term-slow-blink eat-term-fast-blink "
+ "eat-shell-prompt-annotation-success eat-shell-prompt-annotation-running eat-shell-prompt-annotation-failure").split()
+EAT_SEED={}
 # ansi-color (built-in, not in the inventory): the 16 ANSI palette faces that every
 # ANSI consumer resolves -- vterm, eshell, compilation, and ghostel (whose
 # ghostel-color-* faces :inherit these).  Theming ansi-color-* drives the 16
@@ -357,6 +369,7 @@ BESPOKE_APP_SPECS=[
  ("org-faces","org-faces","orgfaces",ORGFACES_FACES,"org-faces-",ORGFACES_SEED),
  ("ghostel","ghostel","ghostel",GHOSTEL_FACES,"ghostel-",GHOSTEL_SEED),
  ("ansi-color","ansi-color (vterm/eshell/compilation/ghostel)","ansicolor",ANSI_COLOR_FACES,"ansi-color-",ANSI_COLOR_SEED),
+ ("eat","eat (F12 terminal)","eat",EAT_FACES,"eat-",EAT_SEED),
  ("auto-dim-other-buffers","auto-dim","autodim",AUTODIM_FACES,"auto-dim-other-buffers-",AUTODIM_SEED),
  ("dashboard","dashboard","dashboard",DASHBOARD_FACES,"dashboard-",DASHBOARD_SEED),
  ("lsp-mode","lsp-mode","lsp",LSP_FACES,"lsp-",LSP_SEED),
