@@ -23,6 +23,13 @@ PREVIEW_KEYS = {
     "markdown-mode": "markdown",
 }
 
+# Custom display labels for inventory apps whose package name is an acronym
+# worth spelling out (matches the bespoke EAT / LSP / SHR style: full name with
+# the acronym in parentheses).
+PACKAGE_LABEL_OVERRIDES = {
+    "emms": "emacs multimedia system (emms)",
+}
+
 
 def face_label(face: str, prefix: str) -> str:
     label = face[len(prefix) :] if face.startswith(prefix) else face
@@ -43,7 +50,7 @@ def add_inventory_apps(apps: dict[str, Any], inventory_path: str) -> dict[str, A
         if pkg in BESPOKE_APPS or pkg in apps:
             continue
         apps[pkg] = {
-            "label": pkg,
+            "label": PACKAGE_LABEL_OVERRIDES.get(pkg, pkg),
             "preview": PREVIEW_KEYS.get(pkg, "generic"),
             "faces": [[face, face_label(face, pkg + "-"), {}] for face in inventory[pkg]],
         }
