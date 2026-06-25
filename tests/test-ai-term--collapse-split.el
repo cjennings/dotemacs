@@ -59,7 +59,12 @@ different agent (stale quit-restore after slot reuse)."
         (agent-a (get-buffer-create "agent [collapse-a]"))
         (agent-b (get-buffer-create "agent [collapse-b]"))
         (agent-c (get-buffer-create "agent [collapse-c]"))
-        (cj/--ai-term-last-was-bury nil))
+        (cj/--ai-term-last-was-bury nil)
+        ;; Isolate the layout-capture globals cj/ai-term writes on toggle-off,
+        ;; so this test doesn't leak last-direction/last-size into others -- the
+        ;; display-rule test splits via display-saved, which reads them.
+        (cj/--ai-term-last-direction nil)
+        (cj/--ai-term-last-size nil))
     (unwind-protect
         (save-window-excursion
           (delete-other-windows)
@@ -89,7 +94,12 @@ to a NON-agent buffer (the working file), never another agent.  Before the fix,
   (let ((work (get-buffer-create "*test-collapse-sw-work*"))
         (agent-a (get-buffer-create "agent [collapse-sw-a]"))
         (agent-b (get-buffer-create "agent [collapse-sw-b]"))
-        (cj/--ai-term-last-was-bury nil))
+        (cj/--ai-term-last-was-bury nil)
+        ;; Isolate the layout-capture globals cj/ai-term writes on toggle-off,
+        ;; so this test doesn't leak last-direction/last-size into others -- the
+        ;; display-rule test splits via display-saved, which reads them.
+        (cj/--ai-term-last-direction nil)
+        (cj/--ai-term-last-size nil))
     (unwind-protect
         (save-window-excursion
           (delete-other-windows)
