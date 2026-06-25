@@ -52,6 +52,7 @@
 (declare-function nerd-icons-faicon "nerd-icons")
 (declare-function nerd-icons-devicon "nerd-icons")
 (declare-function nerd-icons-mdicon "nerd-icons")
+(declare-function nerd-icons-codicon "nerd-icons")
 (declare-function nerd-icons-octicon "nerd-icons")
 
 ;; user-constants.el provides the home-directory constant.
@@ -139,7 +140,7 @@ Adjust this if the title doesn't appear centered under the banner image.")
    (list "t" #'nerd-icons-devicon "nf-dev-terminal"    "Terminal"   "Launch Terminal"        (lambda () (ghostel)))
    (list "a" #'nerd-icons-mdicon  "nf-md-calendar"     "Agenda"     "Main Org Agenda"        (lambda () (cj/main-agenda-display)))
    (list "r" #'nerd-icons-faicon  "nf-fa-rss_square"   "Feeds"      "Elfeed Feed Reader"     (lambda () (cj/elfeed-open)))
-   (list "b" #'nerd-icons-faicon  "nf-fae-book_open_o" "Books"      "Calibre Ebook Reader"   (lambda () (calibredb)))
+   (list "b" #'nerd-icons-codicon "nf-cod-library"     "Books"      "Calibre Ebook Reader"   (lambda () (calibredb)))
    (list "f" #'nerd-icons-mdicon  "nf-md-school"       "Flashcards" "Org-Drill"              (lambda () (cj/drill-start)))
    (list "m" #'nerd-icons-mdicon  "nf-md-music"        "Music"      "EMMS Music Player"      (lambda () (cj/music-playlist-toggle) (cj/music-playlist-load)))
    (list "e" #'nerd-icons-faicon  "nf-fa-envelope"     "Email"      "Mu4e Email Client"      (lambda () (mu4e)))
