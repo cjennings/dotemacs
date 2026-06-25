@@ -372,7 +372,7 @@ BESPOKE_APP_SPECS=[
  ("eat","Emulate A Terminal (EAT)","eat",EAT_FACES,"eat-",EAT_SEED),
  ("auto-dim-other-buffers","auto-dim","autodim",AUTODIM_FACES,"auto-dim-other-buffers-",AUTODIM_SEED),
  ("dashboard","dashboard","dashboard",DASHBOARD_FACES,"dashboard-",DASHBOARD_SEED),
- ("lsp-mode","lsp-mode","lsp",LSP_FACES,"lsp-",LSP_SEED),
+ ("lsp-mode","Language Server Protocol (LSP)","lsp",LSP_FACES,"lsp-",LSP_SEED),
  ("git-gutter","git-gutter","gitgutter",GITGUTTER_FACES,"git-gutter:",GITGUTTER_SEED),
  ("flycheck","flycheck","flycheck",FLYCHECK_FACES,"flycheck-",FLYCHECK_SEED),
  ("dired","dired","dired",DIRED_FACES,"dired-",DIRED_SEED),
@@ -385,5 +385,5 @@ BESPOKE_APP_SPECS=[
  ("pearl","pearl","pearl",PEARL_FACES,"pearl-",PEARL_SEED),
  ("slack","slack","slack",SLACK_FACES,"slack-",SLACK_SEED),
  ("telega","telega","telega",TELEGA_FACES,"telega-",TELEGA_SEED),
- ("shr","shr (HTML: nov/eww/mail)","shr",SHR_FACES,"shr-",SHR_SEED),
+ ("shr","Simple HTML Renderer (SHR)","shr",SHR_FACES,"shr-",SHR_SEED),
 ]
