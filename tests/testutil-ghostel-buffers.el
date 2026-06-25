@@ -45,5 +45,16 @@ ghostel-mode predicate without the side-effects of `(ghostel)'."
       (setq-local major-mode 'ghostel-mode))
     buf))
 
+(defun cj/test--make-fake-eat-buffer (name)
+  "Return a buffer named NAME with `major-mode' set to `eat-mode'.
+
+Avoids actually launching an EAT process by setting the mode buffer-locally.
+Used by the F12 toggle tests that need a buffer satisfying the eat-mode
+predicate without the side-effects of `(eat)'."
+  (let ((buf (get-buffer-create name)))
+    (with-current-buffer buf
+      (setq-local major-mode 'eat-mode))
+    buf))
+
 (provide 'testutil-ghostel-buffers)
 ;;; testutil-ghostel-buffers.el ends here

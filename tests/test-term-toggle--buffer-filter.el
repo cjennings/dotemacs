@@ -1,11 +1,12 @@
 ;;; test-term-toggle--buffer-filter.el --- Tests for F12's buffer filter -*- lexical-binding: t; -*-
 
 ;;; Commentary:
-;; Three closely-related helpers determine which terminal buffers F12
-;; manages: the predicate `cj/--term-toggle-buffer-p', the MRU list
+;; Three closely-related helpers determine which terminal buffer F12
+;; manages: the predicate `cj/--term-toggle-buffer-p', the list
 ;; `cj/--term-toggle-buffers', and the per-frame window finder
-;; `cj/--term-toggle-displayed-window'.  All three exclude agent-
-;; prefixed buffers so agent has its own F9 surface.
+;; `cj/--term-toggle-displayed-window'.  F12 manages the EAT terminal;
+;; ghostel buffers (including ai-term's agent buffers) are NOT F12-managed --
+;; they live on M-SPC.
 
 ;;; Code:
 
@@ -21,16 +22,24 @@
   (cj/test--kill-agent-buffers)
   (cj/test--kill-test-term-buffers))
 
-(ert-deftest test-term-toggle--buffer-p-accepts-ghostel-mode ()
-  "Normal: a ghostel-mode buffer with non-agent name qualifies."
+(ert-deftest test-term-toggle--buffer-p-accepts-eat-mode ()
+  "Normal: an eat-mode buffer qualifies as the F12 terminal."
   (test-term-toggle--cleanup)
-  (let ((buf (cj/test--make-fake-ghostel-buffer "*test-term-1*")))
+  (let ((buf (cj/test--make-fake-eat-buffer "*test-term-1*")))
     (unwind-protect
         (should (cj/--term-toggle-buffer-p buf))
       (kill-buffer buf))))
 
+(ert-deftest test-term-toggle--buffer-p-rejects-ghostel ()
+  "Boundary: a ghostel buffer is NOT F12-managed (ghostel is ai-term's, M-SPC)."
+  (test-term-toggle--cleanup)
+  (let ((buf (cj/test--make-fake-ghostel-buffer "*test-term-ghostel*")))
+    (unwind-protect
+        (should-not (cj/--term-toggle-buffer-p buf))
+      (kill-buffer buf))))
+
 (ert-deftest test-term-toggle--buffer-p-rejects-agent ()
-  "Boundary: agent-prefixed terminal buffers are excluded from F12's set."
+  "Boundary: ai-term agent buffers are excluded from F12's set."
   (test-term-toggle--cleanup)
   (let ((buf (cj/test--make-fake-ghostel-buffer "agent [project-a]")))
     (unwind-protect
@@ -38,7 +47,7 @@
       (kill-buffer buf))))
 
 (ert-deftest test-term-toggle--buffer-p-rejects-non-terminal ()
-  "Boundary: a regular buffer (not ghostel-mode, no terminal name prefix) -> nil."
+  "Boundary: a regular buffer (not eat-mode, no terminal name prefix) -> nil."
   (test-term-toggle--cleanup)
   (let ((buf (get-buffer-create "*test-term-regular*")))
     (unwind-protect
@@ -48,35 +57,35 @@
 (ert-deftest test-term-toggle--buffer-p-rejects-dead-buffer ()
   "Boundary: nil and dead buffers -> nil."
   (should-not (cj/--term-toggle-buffer-p nil))
-  (let ((buf (cj/test--make-fake-ghostel-buffer "*test-term-dead*")))
+  (let ((buf (cj/test--make-fake-eat-buffer "*test-term-dead*")))
     (kill-buffer buf)
     (should-not (cj/--term-toggle-buffer-p buf))))
 
-(ert-deftest test-term-toggle--buffers-filters-agent ()
-  "Normal: returns terminal buffers but excludes agent-prefixed ones."
+(ert-deftest test-term-toggle--buffers-returns-eat-excludes-others ()
+  "Normal: returns the EAT terminal but not ghostel/agent buffers."
   (test-term-toggle--cleanup)
-  (let ((normal (cj/test--make-fake-ghostel-buffer "*test-term-normal*"))
+  (let ((eat (cj/test--make-fake-eat-buffer "*test-term-eat*"))
         (agent (cj/test--make-fake-ghostel-buffer "agent [for-test]")))
     (unwind-protect
         (let ((result (cj/--term-toggle-buffers)))
-          (should (memq normal result))
+          (should (memq eat result))
           (should-not (memq agent result)))
-      (kill-buffer normal)
+      (kill-buffer eat)
       (kill-buffer agent))))
 
 (ert-deftest test-term-toggle--displayed-window-finds-terminal ()
-  "Normal: terminal in a window -> returns that window."
+  "Normal: the EAT terminal in a window -> returns that window."
   (test-term-toggle--cleanup)
-  (let ((vt (cj/test--make-fake-ghostel-buffer "*test-term-shown*")))
+  (let ((eat (cj/test--make-fake-eat-buffer "*test-term-shown*")))
     (unwind-protect
         (save-window-excursion
           (delete-other-windows)
           (let ((win (split-window-right)))
-            (set-window-buffer win vt)
+            (set-window-buffer win eat)
             (let ((result (cj/--term-toggle-displayed-window)))
               (should (windowp result))
-              (should (eq (window-buffer result) vt)))))
-      (kill-buffer vt))))
+              (should (eq (window-buffer result) eat)))))
+      (kill-buffer eat))))
 
 (ert-deftest test-term-toggle--displayed-window-skips-agent ()
   "Boundary: only an agent terminal is displayed -> nil (agent not F12-managed)."

@@ -61,6 +61,13 @@
 (defvar ghostel-buffer-name)
 (defvar ghostel--input-mode)
 
+;; eat backs the F12 toggle (see the eat package + F12 toggle sections below).
+(declare-function eat "eat" (&optional program arg))
+(defvar eat-buffer-name)
+(defvar eat-mode-map)
+(defvar eat-semi-char-mode-map)
+(defvar cj/custom-keymap)
+
 (defvar-keymap cj/term-map
   :doc "Personal terminal command map.")
 ;; Lowercase x picked over T for fewer Shift presses; t is the toggle leaf.
@@ -314,13 +321,32 @@ run its own project-named tmux session instead of a bare, auto-named one.
   ;; Byte analog of the prior 100000-line vterm setting (~100 bytes/line) -- D7.
   (ghostel-max-scrollback (* 10 1024 1024)))
 
+;; ------------------------------- eat package ---------------------------------
+;; EAT (pure-elisp terminal) backs the F12 toggle: its whole palette is real
+;; Emacs faces, so it themes from the theme.  ghostel stays for ai-term (M-SPC).
+;; No tmux here -- F12's EAT runs a plain $SHELL (decision 2026-06-25).
+
+(use-package eat
+  :ensure t
+  :commands (eat)
+  :hook (eat-mode . cj/turn-off-chrome-for-term)
+  :config
+  ;; F12 and C-; must reach Emacs from inside EAT.  In semi-char mode (EAT's
+  ;; default) EAT forwards unbound keys to the terminal -- a letter runs
+  ;; `eat-self-input' -- so bind these explicitly or they never reach Emacs:
+  ;; F12 toggles the terminal window, C-; opens the global prefix map.
+  (keymap-set eat-semi-char-mode-map "<f12>" #'cj/term-toggle)
+  (keymap-set eat-semi-char-mode-map "C-;" cj/custom-keymap)
+  (keymap-set eat-mode-map "<f12>" #'cj/term-toggle)
+  (keymap-set eat-mode-map "C-;" cj/custom-keymap))
+
 ;; ----------------------- F12 toggle (custom) -----------------------
 ;;
 ;; Mirrors the geometry-preservation pattern shared with ai-term.el: capture
 ;; direction + body size at toggle-off, replay them via a custom display action
 ;; using frame-edge directions and body-relative sizes so the result is
-;; divider-independent and layout-stable.  Excludes agent-prefixed buffers,
-;; which ai-term.el owns via F9.
+;; divider-independent and layout-stable.  Manages the EAT terminal only;
+;; ai-term.el's ghostel agent buffers are separate (M-SPC).
 
 (defcustom cj/term-toggle-window-height 0.7
   "Default fraction of frame height for the F12 terminal window.
@@ -363,19 +389,18 @@ Positive integer: body-cols (right/left) or total-lines (below/above) -- see
 nil means fall back to `cj/term-toggle-window-height' as a fraction.")
 
 (defun cj/--term-toggle-buffer-p (buffer)
-  "Return non-nil when BUFFER is a terminal buffer F12 should manage.
+  "Return non-nil when BUFFER is the EAT terminal F12 should manage.
 
-Qualifies when BUFFER is alive and has `ghostel-mode' (or its name starts with
-the ghostel buffer-name prefix), AND its name does NOT start with the agent
-prefix used by ai-term.el."
+Qualifies when BUFFER is alive and has `eat-mode' (or its name starts with the
+EAT buffer-name prefix).  ai-term's ghostel agent buffers never match -- they
+are managed separately via M-SPC, not F12."
   (and (bufferp buffer)
        (buffer-live-p buffer)
        (with-current-buffer buffer
-         (and (or (eq major-mode 'ghostel-mode)
-                  (string-prefix-p (or (bound-and-true-p ghostel-buffer-name)
-                                       "*ghostel*")
-                                   (buffer-name buffer)))
-              (not (string-prefix-p "agent [" (buffer-name buffer)))))))
+         (or (eq major-mode 'eat-mode)
+             (string-prefix-p (or (bound-and-true-p eat-buffer-name)
+                                  "*eat*")
+                              (buffer-name buffer))))))
 
 (defun cj/--term-toggle-buffers ()
   "Return live F12-managed terminal buffers in `buffer-list' (MRU) order."
@@ -439,18 +464,17 @@ Returns one of:
          (t '(create-new))))))))
 
 (defun cj/term-toggle ()
-  "Toggle a normal (non-agent) ghostel terminal buffer.
+  "Toggle the EAT terminal buffer.
 
-- If an F12-managed terminal is displayed in this frame, capture its geometry
-  and delete its window (toggle off).  Falls back to burying when it is the
-  only window in the frame.
-- Otherwise, if any F12-managed terminal buffer is alive, display the most
-  recent one via the saved-geometry action.
-- Otherwise, create a new terminal via `(ghostel)' which routes through the
-  same display action.
+- If the EAT terminal is displayed in this frame, capture its geometry and
+  delete its window (toggle off).  Falls back to burying when it is the only
+  window in the frame.
+- Otherwise, if the EAT terminal buffer is alive, display it via the
+  saved-geometry action.
+- Otherwise, create a new EAT terminal, displaying it through the same
+  saved-geometry action.
 
-Excludes agent-prefixed buffers; those have their own F9 dispatch via
-`cj/ai-term'."
+ai-term's ghostel agent buffers are managed separately via M-SPC, not F12."
   (interactive)
   (pcase (cj/--term-toggle-dispatch)
     (`(toggle-off . ,win)
@@ -465,7 +489,15 @@ Excludes agent-prefixed buffers; those have their own F9 dispatch via
        (when w (select-window w)))
      buf)
     (`(create-new)
-     (ghostel))))
+     ;; Create the EAT buffer without stealing the layout, then display it
+     ;; through the saved-geometry dock rule (same path as show-recent).
+     (save-window-excursion (eat))
+     (let ((buf (get-buffer (or (bound-and-true-p eat-buffer-name) "*eat*"))))
+       (when buf
+         (display-buffer buf)
+         (let ((w (get-buffer-window buf)))
+           (when w (select-window w))))
+       buf))))
 
 (keymap-global-set "<f12>" #'cj/term-toggle)
 
