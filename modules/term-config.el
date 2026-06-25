@@ -330,6 +330,9 @@ run its own project-named tmux session instead of a bare, auto-named one.
   :ensure t
   :commands (eat)
   :hook (eat-mode . cj/turn-off-chrome-for-term)
+  :custom
+  ;; Close the EAT buffer when its shell exits (mirrors ghostel-kill-buffer-on-exit).
+  (eat-kill-buffer-on-exit t)
   :config
   ;; F12 and C-; must reach Emacs from inside EAT.  In semi-char mode (EAT's
   ;; default) EAT forwards unbound keys to the terminal -- a letter runs
