@@ -283,5 +283,15 @@ With numeric prefix ARG, re-open the ARGth most-recently-killed file
   :config
   (winner-mode 1))
 
+;; ------------------------------- Cursor Jump (avy) ---------------------------
+;; Jump anywhere visible by typing a few of the target's characters, then the
+;; decision-tree key avy overlays.  Fills the in-buffer motion gap that windmove
+;; (windows) and isearch (text) leave.
+
+(use-package avy
+  :bind (("C-:"   . avy-goto-char-timer)   ;; type chars, pause, jump to a match
+         ("M-g w" . avy-goto-word-1)
+         ("M-g l" . avy-goto-line)))
+
 (provide 'ui-navigation)
 ;;; ui-navigation.el ends here

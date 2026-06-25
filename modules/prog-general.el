@@ -290,6 +290,16 @@ seeded by `cj/deadgrep--initial-term'.  Shared tail of the deadgrep commands."
 (with-eval-after-load 'dired
   (keymap-set dired-mode-map "G" #'cj/deadgrep-here))
 
+;; ------------------------------------ wgrep ----------------------------------
+;; Make a grep buffer editable, then write the edits back across files -- turns
+;; a consult-grep / embark-export result into a project-wide find-and-replace.
+;; In a grep buffer: C-c C-p to start editing, C-c C-c to apply.
+
+(use-package wgrep
+  :custom
+  (wgrep-auto-save-buffer t)        ;; save the touched files when applying
+  (wgrep-change-readonly-file t))   ;; let edits flow into read-only buffers
+
 
 ;; ---------------------------------- Snippets ---------------------------------
 ;; reusable code and text
