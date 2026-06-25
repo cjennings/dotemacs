@@ -1,0 +1,83 @@
+#+TITLE: F12 -> EAT terminal (design)
+#+DATE: 2026-06-25
+
+* Goal
+
+Swap the F12 terminal toggle from ghostel to EAT (pure-elisp terminal), so the
+F12 scratch terminal renders entirely through Emacs faces and is themeable. Keep
+ghostel for ai-term (M-SPC). Expose EAT's faces to theme-studio (without setting
+any colors -- vanilla stays vanilla).
+
+* Decisions (confirmed with Craig 2026-06-25)
+
+1. Toggle UX: reuse the current dock-and-remember behavior (F12 docks the
+   terminal at bottom/right, captures geometry across hide/show), with EAT as
+   the backend.
+2. One EAT terminal, not many. F12 creates it if none, shows it if hidden,
+   hides it if showing. ai-term/M-SPC owns the multi-terminal case.
+3. EAT input mode: semi-char (EAT's default). F12 and C-; always reach Emacs.
+4. No custom C-; prefix menu for EAT now -- F12 toggles, C-; reaches Emacs, EAT's
+   own built-in keys do the rest. The existing ghostel prefix menu stays for
+   ai-term.
+5. No tmux for the F12 EAT terminal (plain $SHELL).
+6. Theme-studio: expose EAT faces (editable + a preview), do NOT set any face
+   values. Vanilla holds.
+
+* EAT facts (from the installed package, 2026-06-25)
+
+- Entry point: =(eat)= opens/returns the =*eat*= buffer (=eat-buffer-name=).
+- Modes: =eat-semi-char-mode= (default), =eat-emacs-mode=, =eat-char-mode=.
+- Keymap: =eat-semi-char-mode-map= exists; keys not bound there are forwarded to
+  the terminal. Binding F12 / C-; there (and in =eat-mode-map=) keeps them in
+  Emacs -- the EAT analogue of =ghostel-keymap-exceptions=.
+- Faces worth exposing: the 16 named ANSI colors (=eat-term-color-black= ..
+  =eat-term-color-bright-white=), the attribute faces (=eat-term-bold=,
+  =eat-term-faint=, =eat-term-italic=, =eat-term-slow-blink=,
+  =eat-term-fast-blink=), and the prompt annotations
+  (=eat-shell-prompt-annotation-{success,running,failure}=). The numeric
+  =eat-term-color-0..255= are the 256-color cube -- skip (the named 16 alias
+  0..15). No dedicated default-fg/bg face (EAT uses =default=).
+
+* Part A -- install EAT + F12 toggle
+
+Lives in =modules/term-config.el= (which already owns the F12 toggle). ghostel
+config stays for ai-term.
+
+- =use-package eat=: install, no tmux hook, semi-char default.
+- New single-terminal toggle =cj/eat-toggle= bound to F12, reusing the existing
+  geometry/dock helpers (=cj/--term-toggle-capture-state=,
+  =cj/--term-toggle-display-saved=, the last-direction/size vars). Dispatch:
+  - EAT shown in this frame -> capture geometry, hide (delete-window, or bury if
+    sole window).
+  - =*eat*= alive but hidden -> show via saved geometry.
+  - no =*eat*= -> =(eat)= (created, displayed through the same saved-geometry
+    rule).
+- Bind F12 and C-; in =eat-semi-char-mode-map= + =eat-mode-map= so the toggle
+  and the global prefix reach Emacs from inside EAT.
+- Remove the old ghostel F12 binding (=cj/term-toggle= stays defined but is no
+  longer on F12; ai-term doesn't use it).
+
+Tests: the dispatch logic is the testable unit (extract =cj/--eat-toggle-dispatch=
+returning a tagged action; assert toggle-off / show / create per buffer+window
+state with mocked window/buffer). Live-reload + F12 in the daemon for the real
+check.
+
+* Part B -- expose EAT faces to theme-studio
+
+Studio-only; no color values assigned. Mirrors the existing GHOSTEL_FACES app.
+
+- =face_data.py=: add =EAT_FACES= (the 16 named palette + 5 attribute + 3
+  prompt-annotation faces). No seed-color overrides.
+- App registration so "eat" shows as a pane.
+- =previews.js=: =renderEatPreview= -- a sample terminal (a row of the 16
+  palette colors + a few colored output lines: a prompt with the annotation
+  faces, ls-style output, an error line) drawn with the eat faces. Register in
+  app.js's preview map.
+- Regenerate =theme-studio.html=; add/confirm the browser test gate; run-tests.sh
+  green.
+
+* Out of scope / follow-ups
+
+- Setting eat-term-color values in the theme (deferred -- vanilla exploration).
+- A dedicated EAT C-; prefix menu (decision 4).
+- Cleaning ai-term.el's stale F9 commentary (separate task, todo.org [#C]).
