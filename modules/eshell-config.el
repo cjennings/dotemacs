@@ -101,15 +101,15 @@ pairs where COMMAND is the `cd' string `eshell/alias' should run."
   (setq eshell-prompt-function
 		(lambda ()
 		  (concat
-		   (propertize (format-time-string "[%d-%m-%y %T]") 'face '(:foreground "gray"))
+		   (propertize (format-time-string "[%d-%m-%y %T]") 'face 'default)
 		   " "
-		   (propertize (user-login-name) 'face '(:foreground "gray"))
+		   (propertize (user-login-name) 'face 'default)
 		   " "
-           (propertize (system-name) 'face '(:foreground "gray"))
+           (propertize (system-name) 'face 'default)
 		   ":"
-		   (propertize (abbreviate-file-name (eshell/pwd)) 'face '(:foreground "gray"))
+		   (propertize (abbreviate-file-name (eshell/pwd)) 'face 'default)
 		   "\n"
-		   (propertize "%"  'face '(:foreground "white"))
+		   (propertize "%"  'face 'default)
 		   " ")))
 
   (add-hook

@@ -313,11 +313,11 @@ A positive DELTA narrows the text column; a negative DELTA widens it."
   "Apply preferences after nov-mode has launched."
   (interactive)
   ;; Use Merriweather for comfortable reading with appropriate scaling.
-  ;; Darker sepia color (#E8DCC0) is easier on the eyes than pure white.
-  (let ((sepia "#E8DCC0"))
-    (face-remap-add-relative 'variable-pitch :family "Merriweather" :height 1.0 :foreground sepia)
-    (face-remap-add-relative 'default :family "Merriweather" :height 180 :foreground sepia)
-    (face-remap-add-relative 'fixed-pitch :height 180 :foreground sepia))
+  ;; (Reading fg color stripped; falls back to the theme default until a
+  ;; themeable reading face exists -- see todo.org.)
+  (face-remap-add-relative 'variable-pitch :family "Merriweather" :height 1.0)
+  (face-remap-add-relative 'default :family "Merriweather" :height 180)
+  (face-remap-add-relative 'fixed-pitch :height 180)
   ;; Enable visual-line-mode for proper text wrapping
   (visual-line-mode 1)
   ;; Set fill-column as a fallback

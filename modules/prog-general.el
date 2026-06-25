@@ -384,16 +384,7 @@ defer to `electric-pair-default-inhibit' for any other CHAR."
 (use-package hl-todo
   :defer 1
   :hook
-  (prog-mode . hl-todo-mode)
-  :config
-  (setq hl-todo-keyword-faces
-		'(("FIXME"  . "#FF0000")
-		  ("BUG"    . "#FF0000")
-		  ("HACK"   . "#FF0000")
-		  ("ISSUE"  . "#DAA520")
-		  ("TASK"   . "#DAA520")
-		  ("NOTE"   . "#2C780E")
-		  ("WIP"   .  "#1E90FF"))))
+  (prog-mode . hl-todo-mode))
 
 ;; --------------------------- Whitespace Management ---------------------------
 ;; trims trailing whitespace only from lines you've modified when saving buffer

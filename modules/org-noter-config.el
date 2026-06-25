@@ -307,7 +307,7 @@ From a PDF/EPUB: starts org-noter session if inactive, then inserts note."
           (cond
            ((and active (not cj/org-noter--bg-remap-cookie))
             (setq cj/org-noter--bg-remap-cookie
-                  (face-remap-add-relative 'default :background "#1d1b19")))
+                  (face-remap-add-relative 'default)))
            ((and (not active) cj/org-noter--bg-remap-cookie)
             (face-remap-remove-relative cj/org-noter--bg-remap-cookie)
             (setq cj/org-noter--bg-remap-cookie nil))))))))

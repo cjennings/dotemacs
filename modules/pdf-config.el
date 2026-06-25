@@ -40,7 +40,6 @@
   :custom
   (pdf-view-display-size 'fit-page)
   (pdf-view-resize-factor 1.1)
-  (pdf-view-midnight-colors '("#F1D5AC" . "#0F0E06")) ;; fg . bg
   ;; Avoid searching for unicodes to speed up pdf-tools.
   ;; ... and yes, 'ligther' is not a typo
   (pdf-view-use-unicode-ligther nil)

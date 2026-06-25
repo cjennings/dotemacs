@@ -824,7 +824,7 @@ For URL tracks: decoded URL."
         (cond
          ((and active (not cj/music--bg-remap-cookie))
           (setq cj/music--bg-remap-cookie
-                (face-remap-add-relative 'default :background "#1d1b19")))
+                (face-remap-add-relative 'default)))
          ((and (not active) cj/music--bg-remap-cookie)
           (face-remap-remove-relative cj/music--bg-remap-cookie)
           (setq cj/music--bg-remap-cookie nil)))))))
