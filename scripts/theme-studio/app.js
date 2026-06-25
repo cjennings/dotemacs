@@ -492,11 +492,11 @@ function updateViewLockIndicators(){const s=document.getElementById('viewsel');i
   for(const o of s.querySelectorAll('option')){const base=o.dataset.label||o.textContent;
     o.textContent=(areAllLocked(viewLockKeys(o.value),LOCKED)?'🔒 ':'')+base;}}
 function buildViewSel(){const s=document.getElementById('viewsel');if(!s)return;s.innerHTML='';
-  const mk=(v,t)=>{const o=document.createElement('option');o.value=v;o.dataset.label=t;o.textContent=t;return o;};
+  const mk=(v,t,ti)=>{const o=document.createElement('option');o.value=v;o.dataset.label=t;o.textContent=t;if(ti)o.title=ti;return o;};
   s.appendChild(mk('@code','color/code assignments'));
   s.appendChild(mk('@ui','ui faces'));
   const og=document.createElement('optgroup');og.label='package faces';
-  for(const app of appViewKeysSorted(APPS))og.appendChild(mk(app,APPS[app].label));
+  for(const app of appViewKeysSorted(APPS))og.appendChild(mk(app,APPS[app].label,APPS[app].hover));
   s.appendChild(og);updateViewLockIndicators();}
 // The ‹ › buttons flanking the dropdown step the selection by DIR and re-render
 // the view (faces table + preview), so you can walk the list without reopening it.
@@ -515,6 +515,7 @@ function stepLang(dir){
 function onViewChange(){const s=document.getElementById('viewsel');const v=(s&&s.value)||'@code';
   const show=(id,on)=>{const e=document.getElementById(id);if(e)e.style.display=on?'':'none';};
   show('view-code',v==='@code');show('view-ui',v==='@ui');show('view-pkg',v[0]!=='@');
+  if(s)s.title=(v[0]!=='@'&&APPS[v]&&APPS[v].hover)?APPS[v].hover:'';
   if(v==='@code')renderCode();
   else if(v==='@ui'){buildUITable();buildMockFrame();syncPaneHeight('uitable','mockframe');}
   else pkgChanged();}

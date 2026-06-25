@@ -359,7 +359,7 @@ def _build():
     apply_syntax_seed(_d if _seed else {},SYNTAX,MAP)
     # Bespoke apps are single-sourced as BESPOKE_APP_SPECS in face_data.py (one
     # row per app: key, label, preview, FACES, prefix, SEED).
-    APPS={key:{"label":label,"preview":preview,"faces":face_rows(faces,prefix,seed)}
+    APPS={key:{"label":label,"preview":preview,"hover":APP_HOVERS.get(key,""),"faces":face_rows(faces,prefix,seed)}
           for key,label,preview,faces,prefix,seed in BESPOKE_APP_SPECS}
     # Phase 6: merge the generated all-package inventory (refresh with build-inventory.el).
     # Bespoke apps stay; every other installed package becomes an editable generic app.

@@ -365,10 +365,10 @@ BESPOKE_APP_SPECS=[
  ("magit","magit","magit",MAGIT_FACES,"magit-",MAGIT_SEED),
  ("elfeed","elfeed","elfeed",ELFEED_FACES,"elfeed-",ELFEED_SEED),
  ("mu4e","mu4e","mu4e",MU4E_FACES,"mu4e-",MU4E_SEED),
- ("gnus","gnus (mu4e article view)","gnus",GNUS_FACES,"gnus-",GNUS_SEED),
+ ("gnus","gnus","gnus",GNUS_FACES,"gnus-",GNUS_SEED),
  ("org-faces","org-faces","orgfaces",ORGFACES_FACES,"org-faces-",ORGFACES_SEED),
  ("ghostel","ghostel","ghostel",GHOSTEL_FACES,"ghostel-",GHOSTEL_SEED),
- ("ansi-color","ansi-color (vterm/eshell/compilation/ghostel)","ansicolor",ANSI_COLOR_FACES,"ansi-color-",ANSI_COLOR_SEED),
+ ("ansi-color","ansi-color","ansicolor",ANSI_COLOR_FACES,"ansi-color-",ANSI_COLOR_SEED),
  ("eat","Emulate A Terminal (EAT)","eat",EAT_FACES,"eat-",EAT_SEED),
  ("auto-dim-other-buffers","auto-dim","autodim",AUTODIM_FACES,"auto-dim-other-buffers-",AUTODIM_SEED),
  ("dashboard","dashboard","dashboard",DASHBOARD_FACES,"dashboard-",DASHBOARD_SEED),
@@ -387,3 +387,13 @@ BESPOKE_APP_SPECS=[
  ("telega","telega","telega",TELEGA_FACES,"telega-",TELEGA_SEED),
  ("shr","Simple HTML Renderer (SHR)","shr",SHR_FACES,"shr-",SHR_SEED),
 ]
+
+# Hover text for foundational/reused apps: names what consumes these faces, so
+# the app label can stay clean and the "who reuses this" context rides the app
+# dropdown's tooltip instead.  Apps not listed here get no hover.
+APP_HOVERS={
+ "ansi-color":"The 16 ANSI palette faces. Reused by vterm, eshell, compilation, ghostel, and eat, whose own color faces inherit these.",
+ "shr":"Simple HTML Renderer. Reused by eww, nov (epub reading), and mu4e / message for HTML mail.",
+ "gnus":"Article-view faces, reused by mu4e's article view.",
+ "dired":"Directory-listing faces, reused by dirvish (a dired frontend).",
+}
