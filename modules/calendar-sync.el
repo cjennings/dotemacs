@@ -255,8 +255,10 @@ Example: -21600 → `UTC-6' or `UTC-6:00'."
          (dir (file-name-directory calendar-sync--state-file)))
     (unless (file-directory-p dir)
       (make-directory dir t))
-    (with-temp-file calendar-sync--state-file
-      (prin1 state (current-buffer)))))
+    (let ((tmp (make-temp-file (expand-file-name ".calendar-sync-state-" dir))))
+      (with-temp-file tmp
+        (prin1 state (current-buffer)))
+      (rename-file tmp calendar-sync--state-file t))))
 
 (defun calendar-sync--load-state ()
   "Load sync state from disk."
@@ -1248,11 +1250,19 @@ RECURRENCE-ID exceptions are applied to override specific occurrences."
                                       (time-less-p (calendar-sync--event-start-time a)
                                                    (calendar-sync--event-start-time b)))))
                (org-entries (mapcar #'calendar-sync--event-to-org sorted-events)))
-          (if org-entries
-              (concat "# Calendar Events\n\n"
-                      (string-join org-entries "\n\n")
-                      "\n")
-            nil)))
+          ;; Distinguish a healthy zero-event calendar from garbage: a real
+          ;; iCalendar (carries BEGIN:VCALENDAR) with no in-window events
+          ;; returns the header alone, so the caller writes an empty calendar
+          ;; and reports success.  Non-iCalendar content (an HTML error page, a
+          ;; truncated download) has no VCALENDAR and returns nil -- a failure.
+          (cond
+           (org-entries
+            (concat "# Calendar Events\n\n"
+                    (string-join org-entries "\n\n")
+                    "\n"))
+           ((string-match-p "BEGIN:VCALENDAR" ics-content)
+            "# Calendar Events\n\n")
+           (t nil))))
     (error
      (calendar-sync--log-silently "calendar-sync: Parse error: %s" (error-message-string err))
      nil)))
@@ -1271,7 +1281,7 @@ invoked when the fetch completes, either successfully or with an error."
         (make-process
          :name "calendar-sync-curl"
          :buffer buffer
-         :command (list "curl" "-s" "-L"
+         :command (list "curl" "-s" "-L" "--fail"
                         "--connect-timeout" "10"
                         "--max-time" (number-to-string calendar-sync-fetch-timeout)
                         url)
@@ -1303,7 +1313,7 @@ owns deleting the temp file after a successful callback."
         (make-process
          :name "calendar-sync-curl"
          :buffer buffer
-         :command (list "curl" "-s" "-L"
+         :command (list "curl" "-s" "-L" "--fail"
                         "--connect-timeout" "10"
                         "--max-time" (number-to-string calendar-sync-fetch-timeout)
                         "-o" temp-file
@@ -1329,13 +1339,17 @@ owns deleting the temp file after a successful callback."
      (funcall callback nil))))
 
 (defun calendar-sync--write-file (content file)
-  "Write CONTENT to FILE.
-Creates parent directories if needed."
+  "Write CONTENT to FILE atomically.
+Creates parent directories if needed, then writes a temp file in the same
+directory and renames it into place, so org-agenda or chime reading mid-write
+never sees a half-written calendar."
   (let ((dir (file-name-directory file)))
     (unless (file-directory-p dir)
-      (make-directory dir t)))
-  (with-temp-file file
-    (insert content)))
+      (make-directory dir t))
+    (let ((tmp (make-temp-file (expand-file-name ".calendar-sync-" dir))))
+      (with-temp-file tmp
+        (insert content))
+      (rename-file tmp file t))))
 
 (defun calendar-sync--emacs-binary ()
   "Return the Emacs executable to use for calendar conversion workers."

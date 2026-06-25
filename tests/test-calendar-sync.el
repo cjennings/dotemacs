@@ -471,11 +471,14 @@ Earlier events should appear first in the output."
     (should (string-match-p "\\* Event 1" org-content))
     (should (string-match-p "\\* Event 2" org-content))))
 
-(ert-deftest test-calendar-sync--parse-ics-boundary-empty-calendar-returns-nil ()
-  "Test parsing empty calendar (no events)."
+(ert-deftest test-calendar-sync--parse-ics-boundary-empty-calendar-returns-header ()
+  "A valid but empty iCalendar (no events) is a healthy zero-event calendar:
+it returns a non-nil header so the sync reports success, not a parse failure.
+Garbage with no BEGIN:VCALENDAR still returns nil (covered elsewhere)."
   (let* ((ics "BEGIN:VCALENDAR\nVERSION:2.0\nEND:VCALENDAR")
          (org-content (calendar-sync--parse-ics ics)))
-    (should (null org-content))))
+    (should org-content)
+    (should (string-match-p "Calendar Events" org-content))))
 
 (ert-deftest test-calendar-sync--parse-ics-error-malformed-ics-returns-nil ()
   "Test that malformed .ics returns nil and sets error."
