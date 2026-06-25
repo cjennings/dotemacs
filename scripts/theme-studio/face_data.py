@@ -369,7 +369,7 @@ BESPOKE_APP_SPECS=[
  ("org-faces","org-faces","orgfaces",ORGFACES_FACES,"org-faces-",ORGFACES_SEED),
  ("ghostel","ghostel","ghostel",GHOSTEL_FACES,"ghostel-",GHOSTEL_SEED),
  ("ansi-color","ansi-color (vterm/eshell/compilation/ghostel)","ansicolor",ANSI_COLOR_FACES,"ansi-color-",ANSI_COLOR_SEED),
- ("eat","eat (F12 terminal)","eat",EAT_FACES,"eat-",EAT_SEED),
+ ("eat","Emulate A Terminal (EAT)","eat",EAT_FACES,"eat-",EAT_SEED),
  ("auto-dim-other-buffers","auto-dim","autodim",AUTODIM_FACES,"auto-dim-other-buffers-",AUTODIM_SEED),
  ("dashboard","dashboard","dashboard",DASHBOARD_FACES,"dashboard-",DASHBOARD_SEED),
  ("lsp-mode","lsp-mode","lsp",LSP_FACES,"lsp-",LSP_SEED),
