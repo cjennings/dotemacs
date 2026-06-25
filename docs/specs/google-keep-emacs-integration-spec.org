@@ -4,7 +4,7 @@
 #+TODO: TODO | DONE SUPERSEDED CANCELLED
 
 * Metadata
-| Status   | Ready (round 1 review folded in)                           |
+| Status   | Ready (2 review rounds; implementing v1)                    |
 |----------+------------------------------------------------------------|
 | Owner    | Craig                                                      |
 |----------+------------------------------------------------------------|
@@ -210,3 +210,7 @@ The immediate next increment after v1 lands. A write subcommand on the bridge (g
 - What: independent review against the readiness gate and Phase 4 dimensions, reading calendar-sync.el as the analog. Eight findings (one blocking: the bridge JSON schema; seven non-blocking: data/ path + atomic write, async make-process, the two house helpers, v2 re-fetch, KEEP_ID server id, source-link + archived). Craig accepted all; folded in here. Added the Bridge JSON schema subsection, the calendar-sync-convention reuse, and the Review findings section.
 - Why: clears the blocker and the readiness gaps; rubric moves to Ready.
 - Artifacts: this spec (Review findings [8/8], Bridge JSON schema).
+** 2026-06-25 Thu @ 01:05:00 -0400 — spec-review (round 2) — reviewer
+- What: fresh readiness pass on the revised spec. Verified the round-1 resolutions are coherent (data/keep.org consistent throughout, the JSON schema is the single referenced contract, the async/sentinel + stderr-token story lines up across Design/Phase 2/acceptance). Confirmed cj/auth-source-secret-value (host &optional user) exists and is buildable as written, and that the data/keep.org constant matches user-constants.el's gcal-file form. No new findings.
+- Why: confirms the spec is implementation-ready after two rounds.
+- Artifacts: this spec. Verdict: Ready.
