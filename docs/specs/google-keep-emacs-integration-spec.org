@@ -1,0 +1,153 @@
+#+TITLE: Google Keep <-> Emacs integration — Spec
+#+AUTHOR: Craig Jennings & Claude
+#+DATE: 2026-06-24
+#+TODO: TODO | DONE SUPERSEDED CANCELLED
+
+* Metadata
+| Status   | draft                                                      |
+|----------+------------------------------------------------------------|
+| Owner    | Craig                                                      |
+|----------+------------------------------------------------------------|
+| Reviewer | Codex (spec-review)                                        |
+|----------+------------------------------------------------------------|
+| Related  | [[file:../../todo.org][todo.org: google-keep in-editor integration]]               |
+
+* Problem / Context
+
+Craig keeps quick notes in Google Keep but works almost entirely in Emacs. Today, reading or acting on a Keep note means leaving Emacs for the phone or the web app — a context switch for content that wants to live next to his org files. He wants Keep notes native to Emacs: browsable, searchable, greppable, and eventually editable, with a path to publish the result as a standalone package.
+
+Two hard constraints shape every choice:
+
+1. *No official API.* Google Keep has no public API. Every live client (gkeepapi and the tools built on it) reverse-engineers the private mobile endpoint. That layer is fragile: it breaks when Google changes auth, and it needs a Google master token, not a password.
+2. *The existing MCP is agent-only.* Craig already has a google-keep MCP with full read/write (create/update/find/labels/archive/list-items). But MCP tools are invoked by the *agent* (Claude), not from elisp — there is no elisp MCP client. So the in-editor integration cannot reuse the MCP as its data path; it needs its own.
+
+Researched 2026-06-24: there is no in-editor Emacs Google Keep package on MELPA or GitHub — only KeepToOrg, a one-shot Takeout-HTML-to-org importer (unmaintained). So this is a build, not an adopt.
+
+* Goals and Non-Goals
+** Goals
+- Keep notes visible and usable inside Emacs without leaving the editor.
+- An org-native representation, so notes are searchable/greppable and reuse org machinery.
+- A structure that starts as glue in =.emacs.d= and can be extracted to a publishable package (the VAMP / pearl module-to-package pattern).
+- A path to read-write (create/edit notes from Emacs) without making v1 wait on it.
+** Non-Goals
+- Full bidirectional offline sync, conflict resolution, or real-time updates.
+- Faithful round-tripping of every Keep feature (list checkboxes, collaborators, drawings, images).
+- Reusing the MCP from elisp (infeasible — agent-only).
+** Scope tiers
+- v1: read-only. Fetch Keep notes via the chosen data path and render them as an org page (each note an org header). A manual refresh command. Auth via auth-source. Graceful degradation when the bridge or credentials are missing.
+- Out of scope: write-back to Keep, list/checkbox fidelity, label/color/pin *editing*, the org-capture-style popup, package extraction.
+- vNext: read-write (create a note from a region or capture; edit a note back to Keep), the org-capture-style quick-note popup, list/checkbox rendering, and extracting the core to a standalone package.
+
+* Design
+
+** For the user
+
+A command (e.g. =cj/keep-refresh=) pulls the current Keep notes and writes them into one org file (e.g. =~/org/keep.org=). Each note becomes a top-level org heading: the title (or a derived title) as the heading text, the note body as the entry, and Keep metadata as properties — labels as org tags, plus =:KEEP_ID:=, =:PINNED:=, =:COLOR:=, =:ARCHIVED:=, =:UPDATED:= in a drawer. Pinned notes sort first. The file is plain org, so it is searchable with the agenda, greppable, and linkable. Opening it is just visiting the file; a keybinding and a dashboard entry make it one keystroke. v1 is read-only: editing the org file does not push back to Keep (a header note says so), so there is no accidental-mutation risk while the integration is young.
+
+** For the implementer
+
+Three layers, cleanly separable so the core can later be a package:
+
+1. *Data bridge (Python).* A small script using gkeepapi: authenticate with a stored master token, fetch notes, emit JSON (id, title, text, labels, pinned, color, archived, timestamps) on stdout. This is the one place the unofficial API lives, isolated so a break is contained and swappable. A Takeout-import path is the no-auth fallback (parse a Takeout dump into the same JSON shape).
+2. *Org renderer (elisp).* Runs the bridge as a subprocess, parses its JSON, and writes the org page (heading + body + properties per note), with =cj/keep-refresh= as the entry point. Reads the master token via =auth-source=.
+3. *Access UX (elisp).* Keybindings, a dashboard entry, and (vNext) a dedicated buffer/mode or the org-capture-style popup.
+
+* Alternatives Considered
+
+** A — Takeout import (one-shot HTML -> org)
+- Good, because no auth, fully offline, dead simple, and zero ongoing breakage risk.
+- Bad, because it is not live — Craig must manually export a Takeout archive, so notes are stale the moment they are imported.
+- Neutral, because it is the right tool for an archival snapshot, the wrong one for daily use. Kept as the v1 fallback / bootstrap, not the primary.
+
+** B (chosen for the data path) — gkeepapi via a Python subprocess bridge
+- Good, because it is the only path that gives live notes (and, in vNext, write-back) from inside Emacs, with the full note model.
+- Bad, because gkeepapi reverse-engineers a private API: it breaks on Google auth changes, needs Python plus a stored master token, and the bridge is glue Craig owns and maintains.
+- Neutral, because the fragility is isolated to one script; when it breaks, the renderer degrades to a warning and the Takeout fallback still works.
+
+** C — Reuse the google-keep MCP from elisp
+- Good, because the MCP already has full read/write and is maintained outside the config.
+- Bad, because MCP tools are invoked by the agent, not elisp — there is no elisp MCP client, so this is infeasible for an in-editor feature.
+- Neutral, because the MCP stays the right tool for agent-driven Keep access; it just can't power an in-editor integration.
+
+** D — A local HTTP server wrapping gkeepapi
+- Good, because elisp would talk clean HTTP instead of spawning a subprocess each refresh.
+- Bad, because a long-running personal server is more infrastructure than a single-user note view warrants.
+- Neutral, because it is a heavier variant of B; revisit only if subprocess latency ever bites.
+
+* Decisions [0/5]
+
+** TODO Presentation shape: org page of headers (v1), popup deferred
+- Owner / by-when: Craig / before implementation
+- Context: Craig named two shapes — an org-capture-style popup and a separate org page with each note as a header.
+- Decision: We will render notes as one *org page*, each note a top-level header (title + body + metadata properties, labels as tags), in v1; the org-capture-style quick-note *popup* is vNext.
+- Consequences: easier — reuses org search/agenda/grep/links, nothing bespoke to render, and read-only is safe. Harder — a popup-first quick-capture flow waits for vNext, and a large Keep collection makes a long file (mitigated by pinned-first sort and org folding).
+
+** TODO Direction: read-only in v1, read-write in vNext
+- Owner / by-when: Craig / before implementation
+- Context: the bridge can read and (later) write Keep; doing both in v1 raises the risk surface.
+- Decision: We will ship v1 read-only (fetch + render + refresh); create/edit-back-to-Keep is vNext.
+- Consequences: easier — no accidental Keep mutation while the integration is young, and value ships fast. Harder — editing a note still means the phone/web until vNext; the org file is a view, not a source of truth.
+
+** TODO Data path: gkeepapi subprocess bridge, Takeout import as fallback
+- Owner / by-when: Craig / before implementation
+- Context: the MCP is agent-only; the live options are gkeepapi or a Takeout import.
+- Decision: We will use a small Python gkeepapi bridge that emits JSON as the primary path, with a Takeout-import parser into the same JSON shape as the no-auth fallback. The MCP is not in the data path.
+- Consequences: easier — live notes now, write-back later, one isolated fragile component. Harder — a Python + gkeepapi dependency and a maintained bridge; the unofficial API can break and needs a master token.
+
+** TODO Auth: master token in authinfo.gpg via auth-source
+- Owner / by-when: Craig / before implementation
+- Context: gkeepapi authenticates with a Google *master token* (obtained once), not the account password.
+- Decision: We will store the master token in =authinfo.gpg= and read it via =auth-source= (the pattern the rest of the config uses), and document the one-time master-token retrieval.
+- Consequences: easier — consistent with existing credential handling, no plaintext secret, the daemon's auth-source cache applies. Harder — the one-time token retrieval is a manual setup step, and a revoked/expired token surfaces as an auth failure the renderer must report cleanly.
+
+** TODO Structure: google-keep-config.el glue + extractable core
+- Owner / by-when: Craig / before implementation
+- Context: Craig wants a module-to-package trajectory.
+- Decision: We will build the integration as =modules/google-keep-config.el= (the =.emacs.d= glue: paths, keys, dashboard, auth wiring) plus a self-contained core (the bridge runner + org renderer) written so the core can later move to a standalone =keep.el=-style package, mirroring the VAMP / pearl migration.
+- Consequences: easier — usable immediately in =.emacs.d=, with a clean seam for later extraction. Harder — the discipline of keeping the core free of =.emacs.d=-specific assumptions from the start.
+
+* Implementation phases
+
+** Phase 1 — Data bridge
+A Python script (gkeepapi) that authenticates with the stored master token and prints notes as JSON (id, title, text, labels, pinned, color, archived, updated) on stdout, plus a Takeout-import path producing the same JSON shape. Standalone and testable from the shell with a fixture; no Emacs yet. Tree stays working (new files only).
+
+** Phase 2 — Org renderer + refresh
+=modules/google-keep-config.el=: run the bridge as a subprocess, parse the JSON, and write the org page (heading + body + property drawer per note, labels as tags, pinned-first). =cj/keep-refresh= regenerates it; auth via =auth-source=. A header line marks the file read-only-view. Degrades to a =display-warning= when the bridge, Python, gkeepapi, or token is missing — never errors at load.
+
+** Phase 3 — Access UX + un-orphan
+Keybindings (a Keep prefix), a dashboard entry, and the =(require 'google-keep-config)= in =init.el=. Optional: a dedicated read-only major mode for the buffer.
+
+(vNext phases — not specced here, logged to todo.org: read-write create/edit; the org-capture-style popup; list/checkbox rendering; extract the core to a package.)
+
+* Acceptance criteria
+- [ ] =cj/keep-refresh= fetches the current Keep notes and writes them to the org page, one header per note with title/body/labels/metadata.
+- [ ] Pinned notes sort to the top; labels render as org tags; Keep id/color/pinned/archived/updated land in a property drawer.
+- [ ] The master token is read from =authinfo.gpg= via =auth-source=; no secret is hardcoded.
+- [ ] A missing bridge / Python / gkeepapi / token produces a clear =display-warning=, not a load error or a crash.
+- [ ] The Takeout-import fallback produces the same org page from a Takeout dump with no auth.
+- [ ] =make validate-modules= + launch smoke clean with =google-keep-config= required.
+
+* Readiness dimensions
+- Data model & ownership: Keep is the source of truth; the org page is a generated read-only view (v1). Each note maps to one org header; the bridge JSON is the contract between Python and elisp.
+- Errors, empty states & failure: auth failure, a broken gkeepapi, missing Python/token, or zero notes each degrade to a warning + an empty-or-stale page, never a crash. The unofficial API breaking is expected, not exceptional.
+- Security & privacy: the master token lives in =authinfo.gpg= (gpg-encrypted), read via auth-source; note content lands in a local org file the user already trusts for org data. No secret in the repo. The token grants broad Google access — documented as a risk.
+- Observability: the warning path names which piece is missing (Python / gkeepapi / token / bridge). The generated page's header shows the last refresh time.
+- Performance & scale: one subprocess per manual refresh over N notes (tens to low hundreds); trivial. No background polling in v1.
+- Reuse & lost opportunities: reuses org (rendering, search, agenda, links), auth-source (credentials), and the subprocess pattern. gkeepapi supplies the API client, so no endpoint code is written here.
+- Architecture fit & weak points: three layers (Python bridge / elisp renderer / UX glue) with the fragile API isolated in layer 1. Weak point: gkeepapi maintenance and Google auth churn — mitigated by isolation, graceful degradation, and the Takeout fallback.
+- Config surface: a Keep org-file path, the auth-source host entry, and a keybinding prefix. No tuning knobs in v1.
+- Documentation plan: a setup note (one-time master-token retrieval, =pip install gkeepapi=, the authinfo entry) and the module commentary. No user-migration doc (personal config).
+- Dev tooling: the bridge is shell-testable with a JSON fixture; the renderer gets ERT over the JSON-to-org transform; =make validate-modules= + launch smoke for the module.
+- Rollout, compatibility & rollback: additive — a new module + a require. Rollback = drop the require and delete the org page. No existing behavior changes.
+- External APIs & deps: gkeepapi (PyPI) and the unofficial Google Keep mobile endpoint it wraps — the single load-bearing external dependency and the central risk. Python 3 on PATH. A Google master token.
+
+* Risks, Rabbit Holes, and Drawbacks
+- The central risk is gkeepapi breaking when Google changes auth or the private endpoint. It has a history of auth churn. Mitigations: isolate it in the bridge, degrade to a warning, keep the Takeout-import fallback working, and never block Emacs load on it.
+- Credential risk: the master token grants broad account access. Keep it in =authinfo.gpg=, never the repo; document revocation.
+- Scope creep: the pull toward full bidirectional sync, list fidelity, and real-time. v1 is a read-only org view on purpose; write-back and richness are vNext, gated behind the org-page landing first.
+
+* Review and iteration history
+** 2026-06-24 Wed @ 22:40:00 -0400 — Claude — author
+- What: initial draft.
+- Why: Craig asked to spec the google-keep in-editor integration before building. It spans a fragile external API, an auth-source credential, a Python/elisp bridge, and a module-to-package trajectory, with real trade-offs on shape (org page vs popup), direction (read vs read-write), and data path (gkeepapi vs Takeout vs MCP) — worth pinning before code.
+- Artifacts: docs/specs/google-keep-emacs-integration-spec.org; the todo.org google-keep task (to be cross-linked at hand-off).
