@@ -102,8 +102,10 @@ FILETAGS and TITLE must sit on separate lines so Org parses the
   ;; org-log-done is set once in org-config.el (cj/org-todo-settings).
   (setq org-agenda-timegrid-use-ampm t)
 
-  (when (fboundp 'cj/build-org-refile-targets)
-	(cj/build-org-refile-targets))
+  ;; Don't build the org-refile targets cache here.  org-refile-config.el
+  ;; already schedules it on a 5s idle timer; doing it in org-roam's :config
+  ;; (which fires at the 1s :defer) ran the same multi-file scan synchronously
+  ;; at first idle and froze Emacs on a cold cache.  The 5s timer covers it.
 
   ;; remove/disable if performance slows
   ;; (setq org-element-use-cache nil) ;; disables caching org files
