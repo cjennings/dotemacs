@@ -147,6 +147,7 @@
 ;; ------------------------- Personal Workflow Related -------------------------
 
 (require 'calendar-sync)        ;; sync calendars, must come after org-agenda
+(require 'google-keep-config)   ;; google keep notes as a read-only org page
 (require 'reconcile-open-repos) ;; review dirty repositories and reconcile
 (require 'local-repository)     ;; local repository for easy config portability
 
