@@ -52,12 +52,14 @@
 ;;          picker, even when an agent buffer is currently displayed.
 ;;          Used when the user wants to start a new project session
 ;;          instead of toggling the current one.
-;; - s-F9   `cj/ai-term-next' -- step to the next open agent in the
-;;          queue.  The queue is the live agent buffers in buffer-name
-;;          order (a stable rotation).  When an agent window is on
-;;          screen, swap it to the next agent and focus it, wrapping
-;;          after the last; when none is shown but agents exist, show
-;;          the first.  This is the "switch among existing agents"
+;; - s-F9   `cj/ai-term-next' -- step to the next active agent in the
+;;          queue.  The queue is every active agent in buffer-name order
+;;          (a stable rotation): attached agents (a live buffer) and
+;;          detached ones (a live tmux session with no Emacs buffer).
+;;          Stepping onto a detached agent attaches it.  When an agent
+;;          window is on screen, swap it to the next agent and focus it,
+;;          wrapping after the last; when none is shown but agents exist,
+;;          show the first.  This is the "switch among existing agents"
 ;;          surface F9 deliberately doesn't provide.
 ;; - M-F9   `cj/ai-term-close' -- gracefully close an agent: kill its
 ;;          tmux session (stopping the agent process), then its terminal
@@ -186,20 +188,39 @@ recently-selected first.  Non-AI-term buffers are filtered out via
 `cj/--ai-term-buffer-p'."
   (seq-filter #'cj/--ai-term-buffer-p (buffer-list)))
 
-(defun cj/--ai-term-next-agent-buffer (current buffers)
-  "Return the agent buffer after CURRENT in BUFFERS, wrapping to the first.
+(defun cj/--ai-term-next-agent-dir (current dirs)
+  "Return the project dir after CURRENT in DIRS, wrapping to the first.
 
-BUFFERS is an ordered list of live agent buffers.  When CURRENT is the
-last element, wrap to the first.  When CURRENT is nil or not a member of
-BUFFERS, return the first buffer.  Returns nil when BUFFERS is empty.
+DIRS is an ordered list of active-agent project dirs.  When CURRENT is
+the last element, wrap to the first.  When CURRENT is nil or not a member
+of DIRS, return the first dir.  Returns nil when DIRS is empty.  Matches
+with `member' (string equality) since dirs are paths.
 
 Pure decision helper (no buffer or window side effects) so the cycle
-order driving `cj/ai-term-next' (s-F9) is exercisable in tests."
-  (when buffers
-    (if (memq current buffers)
-        (or (cadr (memq current buffers))
-            (car buffers))
-      (car buffers))))
+order driving `cj/ai-term-next' is exercisable in tests."
+  (when dirs
+    (if (member current dirs)
+        (or (cadr (member current dirs))
+            (car dirs))
+      (car dirs))))
+
+(defun cj/--ai-term-active-agent-dirs ()
+  "Return project dirs that have a live agent buffer or a live tmux session.
+
+Sorted by the agent buffer name, so the rotation is stable and matches
+what the picker shows.  This is the queue `cj/ai-term-next' steps through:
+it includes detached sessions (alive in tmux but with no Emacs buffer),
+which the step materializes by attaching."
+  (let* ((sessions (cj/--ai-term-live-tmux-sessions))
+         (live-names (mapcar #'buffer-name (cj/--ai-term-agent-buffers))))
+    (sort
+     (seq-filter
+      (lambda (dir)
+        (or (member (cj/--ai-term-buffer-name dir) live-names)
+            (cj/--ai-term-session-active-p dir sessions)))
+      (cj/--ai-term-candidates))
+     (lambda (a b)
+       (string< (cj/--ai-term-buffer-name a) (cj/--ai-term-buffer-name b))))))
 
 (defun cj/--ai-term-most-recent-non-agent-buffer ()
   "Return the most-recently-selected live non-agent buffer, or nil.
@@ -988,35 +1009,43 @@ interrupt work in progress.  Bound to M-<f9>."
 (defun cj/ai-term-next ()
   "Step to the next open AI-term agent in the queue.
 
-The queue is the live agent buffers ordered by buffer name -- a stable
-rotation, unaffected by which agent was most recently selected.  When an
-agent window is on screen, swap it to the next agent in the queue
-\(wrapping after the last) and select it.  When no agent is displayed but
-agents exist, show the first.  When none are open, open the project picker
-to launch the first agent rather than erroring.
+The queue is every active agent ordered by buffer name -- a stable
+rotation, unaffected by which agent was most recently selected.  Active
+means a live agent buffer (attached) OR a live tmux session with no Emacs
+buffer (detached); stepping onto a detached agent attaches it (recreates
+its terminal, which reattaches the session).  When an agent window is on
+screen, swap it to the next agent (wrapping after the last) and select it.
+When no agent is displayed but agents exist, show the first.  When none
+are open, open the project picker to launch the first agent rather than
+erroring.
 
 Bound to M-SPC.  Unlike C-; a a (toggle the most-recent agent on/off), this
 is the \"switch among existing agents\" surface; C-; a s opens the project
 picker and C-; a k closes an agent."
   (interactive)
-  (let* ((buffers (sort (cj/--ai-term-agent-buffers)
-                        (lambda (a b)
-                          (string< (buffer-name a) (buffer-name b)))))
+  (let* ((dirs (cj/--ai-term-active-agent-dirs))
          (win (cj/--ai-term-displayed-agent-window))
-         (current (and win (window-buffer win)))
-         (next (cj/--ai-term-next-agent-buffer current buffers)))
-    (if (not next)
+         (current-name (and win (buffer-name (window-buffer win))))
+         (current-dir (and current-name
+                           (seq-find (lambda (d)
+                                       (equal (cj/--ai-term-buffer-name d) current-name))
+                                     dirs)))
+         (next-dir (cj/--ai-term-next-agent-dir current-dir dirs)))
+    (if (not next-dir)
         ;; No agents open: launch the first via the project picker instead of
         ;; erroring, so the swap key doubles as a "start an agent" key.
         (cj/ai-term-pick-project)
-      (if win
-          (progn
-            (set-window-buffer win next)
-            (select-window win))
-        (display-buffer next)
-        (let ((w (get-buffer-window next)))
-          (when w (select-window w))))
-      (message "Agent: %s" (buffer-name next)))))
+      (let* ((name (cj/--ai-term-buffer-name next-dir))
+             (existing (get-buffer name)))
+        ;; Live agent and an agent window is up: swap it into that window in
+        ;; place (faithful to the prior buffer-only behavior).  Detached, or no
+        ;; window yet: show-or-create attaches the tmux session / displays it.
+        (if (and win existing (cj/--ai-term-process-live-p existing))
+            (progn (set-window-buffer win existing) (select-window win))
+          (cj/--ai-term-show-or-create next-dir name)
+          (let ((w (get-buffer-window name)))
+            (when w (select-window w))))
+        (message "Agent: %s" name)))))
 
 ;; ai-term lives under the C-; a prefix (vacated when gptel was archived).
 ;; The frequent "swap to the next agent" also gets M-SPC for a fast chord.

@@ -17,7 +17,7 @@
 (ert-deftest test-ai-term-next-no-agents-launches-picker ()
   "Error: no agents open -> launches the picker instead of erroring."
   (let ((picked 0))
-    (cl-letf (((symbol-function 'cj/--ai-term-agent-buffers) (lambda (&rest _) nil))
+    (cl-letf (((symbol-function 'cj/--ai-term-active-agent-dirs) (lambda (&rest _) nil))
               ((symbol-function 'cj/--ai-term-displayed-agent-window) (lambda (&rest _) nil))
               ((symbol-function 'cj/ai-term-pick-project) (lambda (&rest _) (setq picked (1+ picked)))))
       (cj/ai-term-next)
@@ -25,7 +25,7 @@
 
 (ert-deftest test-ai-term-next-no-agents-does-not-signal ()
   "Error: no agents open -> returns normally, no user-error raised."
-  (cl-letf (((symbol-function 'cj/--ai-term-agent-buffers) (lambda (&rest _) nil))
+  (cl-letf (((symbol-function 'cj/--ai-term-active-agent-dirs) (lambda (&rest _) nil))
             ((symbol-function 'cj/--ai-term-displayed-agent-window) (lambda (&rest _) nil))
             ((symbol-function 'cj/ai-term-pick-project) (lambda (&rest _) nil)))
     (should (progn (cj/ai-term-next) t))))
