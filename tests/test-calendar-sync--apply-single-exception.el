@@ -105,5 +105,42 @@
                    (plist-get (calendar-sync--apply-single-exception occ exc)
                               :url)))))
 
+;;; Status re-derivation from overridden attendees (chime handoff 2026-06-24)
+
+(ert-deftest test-calendar-sync--apply-single-exception-declined-occurrence-rederives-status ()
+  "Normal: a declined single occurrence re-derives :status from the override attendees."
+  (let ((calendar-sync-user-emails '("craig@example.com"))
+        (occ (list :start '(2026 6 24 16 0) :status "accepted" :uid "abc"))
+        (exc (list :start '(2026 6 24 16 0)
+                   :attendees (list (list :email "craig@example.com" :partstat "DECLINED")))))
+    (should (equal "declined"
+                   (plist-get (calendar-sync--apply-single-exception occ exc) :status)))))
+
+(ert-deftest test-calendar-sync--apply-single-exception-no-attendee-override-keeps-status ()
+  "Boundary: an exception with no attendee block leaves the inherited :status intact."
+  (let ((calendar-sync-user-emails '("craig@example.com"))
+        (occ (list :start '(2026 6 24 16 0) :status "accepted" :uid "abc"))
+        (exc (list :start '(2026 6 24 16 0) :summary "Moved")))
+    (should (equal "accepted"
+                   (plist-get (calendar-sync--apply-single-exception occ exc) :status)))))
+
+(ert-deftest test-calendar-sync--apply-single-exception-accepted-override-stays-accepted ()
+  "Normal: an accepted attendee override keeps :status accepted."
+  (let ((calendar-sync-user-emails '("craig@example.com"))
+        (occ (list :start '(2026 6 24 16 0) :status "accepted" :uid "abc"))
+        (exc (list :start '(2026 6 24 16 0)
+                   :attendees (list (list :email "craig@example.com" :partstat "ACCEPTED")))))
+    (should (equal "accepted"
+                   (plist-get (calendar-sync--apply-single-exception occ exc) :status)))))
+
+(ert-deftest test-calendar-sync--apply-single-exception-override-without-user-keeps-status ()
+  "Boundary: override attendees that don't include the user leave :status intact."
+  (let ((calendar-sync-user-emails '("craig@example.com"))
+        (occ (list :start '(2026 6 24 16 0) :status "accepted" :uid "abc"))
+        (exc (list :start '(2026 6 24 16 0)
+                   :attendees (list (list :email "someone@else.com" :partstat "DECLINED")))))
+    (should (equal "accepted"
+                   (plist-get (calendar-sync--apply-single-exception occ exc) :status)))))
+
 (provide 'test-calendar-sync--apply-single-exception)
 ;;; test-calendar-sync--apply-single-exception.el ends here

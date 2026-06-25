@@ -540,7 +540,15 @@ Compares year, month, day, hour, minute."
       (plist-put result :location (plist-get exception :location)))
     ;; Pass through new fields if exception overrides them
     (when (plist-get exception :attendees)
-      (plist-put result :attendees (plist-get exception :attendees)))
+      (plist-put result :attendees (plist-get exception :attendees))
+      ;; Re-derive the user's status from the overridden attendees so a
+      ;; singly-declined occurrence drops its inherited series "accepted"
+      ;; (otherwise `calendar-sync--filter-declined' can't drop it). Leave the
+      ;; inherited status when the override doesn't name the user.
+      (let ((status (calendar-sync--find-user-status
+                     (plist-get exception :attendees) calendar-sync-user-emails)))
+        (when status
+          (plist-put result :status status))))
     (when (plist-get exception :organizer)
       (plist-put result :organizer (plist-get exception :organizer)))
     (when (plist-get exception :url)
