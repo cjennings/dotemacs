@@ -400,18 +400,19 @@ regardless of what file or subdirectory the point is on."
   "Return the (PROGRAM PRE-FILE-ARG...) list for setting wallpaper under ENV.
 
 ENV is a display-server symbol: `x11' picks feh with --bg-fill, `wayland'
-picks swww with the img subcommand.  Any other value returns nil so the
-caller can surface an \"unknown display server\" error.
+picks the `set-wallpaper' script (on PATH from dotfiles; it wraps the awww
+backend and persists the choice to waypaper's config).  Any other value
+returns nil so the caller can surface an \"unknown display server\" error.
 
 Pure helper used by `cj/set-wallpaper'."
   (pcase env
     ('x11     '("feh" "--bg-fill"))
-    ('wayland '("swww" "img"))
+    ('wayland '("set-wallpaper"))
     (_ nil)))
 
 (defun cj/set-wallpaper ()
   "Set the image at point as the desktop wallpaper.
-Uses feh on X11, swww on Wayland."
+Uses feh on X11, the `set-wallpaper' script on Wayland."
   (interactive)
   (let* ((raw (dired-file-name-at-point))
          (file (and raw (expand-file-name raw)))

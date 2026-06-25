@@ -28,9 +28,9 @@
                  '("feh" "--bg-fill"))))
 
 (ert-deftest test-cj--wallpaper-program-for-wayland ()
-  "Normal: wayland dispatches to swww with the img subcommand."
+  "Normal: wayland dispatches to the set-wallpaper script (awww backend + waypaper persist)."
   (should (equal (cj/--wallpaper-program-for 'wayland)
-                 '("swww" "img"))))
+                 '("set-wallpaper"))))
 
 (ert-deftest test-cj--wallpaper-program-for-unknown-returns-nil ()
   "Boundary: an unknown environment returns nil so the wrapper can fall back."
