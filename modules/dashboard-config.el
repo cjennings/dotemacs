@@ -273,6 +273,7 @@ system-defaults) are preserved rather than overwritten."
   (setq dashboard-display-icons-p t)                                  ;; display icons on both GUI and terminal
   (setq dashboard-icon-type 'nerd-icons)                              ;; use `nerd-icons' package
   (setq dashboard-set-file-icons t)                                   ;; per-filetype icons on the list items (nerd-icons colors them by type)
+  (setq dashboard-set-heading-icons t)                                ;; nerd-icons on the section titles (Projects/Bookmarks/Recent)
   (setq dashboard-center-content t)                                   ;; horizontally center dashboard content
   (setq dashboard-bookmarks-show-path nil)                            ;; don't show paths in bookmarks
   (setq dashboard-recentf-show-base t)                                ;; show filename, not full path
