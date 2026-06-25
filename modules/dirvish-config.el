@@ -486,6 +486,22 @@ leaves an empty frame behind."
           (when (frame-live-p popup) (delete-frame popup)))
       (dirvish-quit))))
 
+(defun cj/--dirvish-popup-reap-on-delete (frame)
+  "Quit the Dirvish session when the Super+F popup FRAME is closed any way.
+`q' runs `cj/dirvish-popup-quit', but closing the Hyprland float directly (or
+letting it lose focus) bypasses that and orphans the session's dired buffers --
+the \"leaves a load of buffers around\" symptom.  As a `delete-frame-functions'
+hook this fires on every close path; `dirvish-quit' reaps the session's buffers
+(verified: a navigated session drops back to baseline on quit).  Scoped to the
+popup frame so ordinary `C-x d' sessions -- where multiple dired buffers are
+wanted for mark-and-move -- are untouched."
+  (when (and (frame-live-p frame)
+             (equal (frame-parameter frame 'name) "dirvish"))
+    (with-selected-frame frame
+      (ignore-errors (dirvish-quit)))))
+
+(add-hook 'delete-frame-functions #'cj/--dirvish-popup-reap-on-delete)
+
 (defun cj/--dirvish-popup-selected-p ()
   "Return non-nil when the selected frame is the dirvish popup frame."
   (let ((popup (cj/--dirvish-popup-frame)))
