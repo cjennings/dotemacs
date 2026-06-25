@@ -44,6 +44,13 @@
   :type 'string
   :group 'my-eww-user-agent)
 
+;; This file is lexical-binding, so `let'-binding url.el's special var below
+;; needs it declared special at compile time.  Without this the byte-compiled
+;; advice binds `url-request-extra-headers' lexically and the injected
+;; User-Agent never reaches `url-retrieve' (it reads the dynamic value) -- the
+;; UA injection silently no-ops in compiled production, and the test sees nil.
+(defvar url-request-extra-headers)
+
 (defun my-eww--inject-user-agent (orig-fun &rest args)
   "Set a User-Agent only when making requests from an EWW buffer."
   (if (derived-mode-p 'eww-mode)
