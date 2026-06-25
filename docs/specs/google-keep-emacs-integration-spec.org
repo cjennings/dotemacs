@@ -4,7 +4,7 @@
 #+TODO: TODO | DONE SUPERSEDED CANCELLED
 
 * Metadata
-| Status   | ready for review (decisions resolved)                      |
+| Status   | Ready (round 1 review folded in)                           |
 |----------+------------------------------------------------------------|
 | Owner    | Craig                                                      |
 |----------+------------------------------------------------------------|
@@ -22,6 +22,8 @@ Two hard constraints shape every choice:
 2. *The existing MCP is agent-only.* Craig already has a google-keep MCP with full read/write (create/update/find/labels/archive/list-items). But MCP tools are invoked by the *agent* (Claude), not from elisp — there is no elisp MCP client. So the in-editor integration cannot reuse the MCP as its data path; it needs its own.
 
 Researched 2026-06-24: there is no in-editor Emacs Google Keep package on MELPA or GitHub — only KeepToOrg, a one-shot Takeout-HTML-to-org importer (unmaintained). So this is a build, not an adopt.
+
+The closest prior art in this config is =calendar-sync.el=: an existing engine that fetches external data and writes generated org files under =data/=. This spec follows its conventions (generated file under =data/=, atomic temp-then-rename writes, async =make-process= + sentinel, =auth-source= via the house helper) rather than reinventing them.
 
 * Goals and Non-Goals
 ** Goals
@@ -43,15 +45,35 @@ Researched 2026-06-24: there is no in-editor Emacs Google Keep package on MELPA 
 
 ** For the user
 
-A command (e.g. =cj/keep-refresh=) pulls the current Keep notes and writes them into one org file (e.g. =~/org/keep.org=). Each note becomes a top-level org heading: the title (or a derived title) as the heading text, the note body as the entry, and Keep metadata as properties — labels as org tags, plus =:KEEP_ID:=, =:PINNED:=, =:COLOR:=, =:ARCHIVED:=, =:UPDATED:= in a drawer. Pinned notes sort first. The file is plain org, so it is searchable with the agenda, greppable, and linkable. Opening it is just visiting the file; a keybinding and a dashboard entry make it one keystroke. v1 is read-only: editing the org file does not push back to Keep (a header note says so), so there is no accidental-mutation risk while the integration is young. The =:KEEP_ID:= and =:UPDATED:= on each header are what v2 later uses to target an update and detect a stale local copy.
+A command (=cj/keep-refresh=) pulls the current Keep notes and writes them into one generated org file (=data/keep.org= under =user-emacs-directory=, a constant in =user-constants.el= alongside =gcal-file= — a generated file, not a hand-authored one in =~/org/=). Each note becomes a top-level org heading: the title (or a derived title) as the heading text, the note body as the entry, and Keep metadata as properties — labels as org tags, plus =:KEEP_ID:=, =:PINNED:=, =:COLOR:=, =:ARCHIVED:=, =:UPDATED:= in a drawer. Pinned notes sort first; each header carries an org link back to the source note (=https://keep.google.com/#NOTE/<id>=). The file is plain org, so it is searchable with the agenda, greppable, and linkable. Opening it is just visiting the file; a keybinding and a dashboard entry make it one keystroke. v1 is read-only: editing the org file does not push back to Keep (a header line says so), so there is no accidental-mutation risk while the integration is young. The =:KEEP_ID:= and =:UPDATED:= on each header are what v2 later uses to target an update and detect a stale local copy.
 
 ** For the implementer
 
 Three layers, cleanly separable so the core can later be a package:
 
-1. *Data bridge (Python).* A small script using gkeepapi: authenticate with a stored master token, fetch notes, emit JSON (id, title, text, labels, pinned, color, archived, timestamps) on stdout. The =id= and =updated= fields are the stable note-identity and freshness anchors v2 needs. This is the one place the unofficial API lives, isolated so a break is contained and swappable; the same bridge gains a write subcommand in v2.
-2. *Org renderer (elisp).* Runs the bridge as a subprocess, parses its JSON, and writes the org page (heading + body + property drawer per note, with =:KEEP_ID:=/=:UPDATED:= recorded), with =cj/keep-refresh= as the entry point. Reads the master token via =auth-source=. The JSON-to-org transform is the round-trip contract v2 inverts.
-3. *Access UX (elisp).* Keybindings, a dashboard entry, and (later) a dedicated buffer/mode.
+1. *Data bridge (Python).* A small script using gkeepapi: authenticate with a stored master token, fetch notes, emit JSON on stdout per the schema below. =id= is the gkeepapi server id (immutable across title/content edits — the safe v2 targeting key, never derived from content), and =updated= is the freshness anchor v2's staleness guard reads. This is the one place the unofficial API lives, isolated so a break is contained and swappable; the same bridge gains a write subcommand in v2. On failure it exits non-zero and prints a single reason token on stderr (=no-gkeepapi=, =no-token=, =auth-failed=, =network=) so the elisp sentinel can surface which piece broke.
+2. *Org renderer (elisp core).* Runs the bridge with =make-process= + a sentinel (async, so a slow or hung auth never blocks the interactive thread — the calendar-sync pattern), parses its JSON, and writes the org page via a temp file + atomic rename (never a partial =keep.org= under the user's eyes). Records =:KEEP_ID:=/=:UPDATED:= per note, labels as tags, pinned-first, archived notes tagged =:archived:=. =cj/keep-refresh= is the entry point. The master token is read with =cj/auth-source-secret-value= (system-lib.el, the house helper calendar-sync/slack/transcription use) against a documented =:host= entry. The JSON-to-org transform is the round-trip contract v2 inverts. This core takes its file path, auth host, and keymap injected from the glue layer — it never reaches into =user-constants= or binds keys itself, so it lifts out cleanly as a package.
+3. *Glue (=modules/google-keep-config.el=).* Supplies the core its =data/keep.org= path, the =:host=, a Keep keybinding prefix, the dashboard entry, and the =(require 'google-keep-config)= in =init.el=. A load-time =cj/executable-find-or-warn= for =python3= warns early when the interpreter is absent (the gkeepapi-missing and token-missing cases surface at refresh time via the bridge's stderr reason token).
+
+** Bridge JSON schema (the load-bearing seam)
+
+Both the v1 transform and the v2 inverse are written against this, so it is pinned here. On success the bridge prints a JSON array of note objects:
+
+#+begin_src js
+[ { "id":       "<gkeepapi server id, string>",
+    "title":    "<string, may be empty>",
+    "text":     "<string; newlines are real \n inside the JSON string>",
+    "labels":   ["<label>", ...],        // [] when none
+    "pinned":   true|false,
+    "archived": true|false,
+    "color":    "<keep color name, e.g. \"WHITE\">",
+    "updated":  "<ISO8601 UTC, e.g. 2026-06-25T04:12:00Z>" } ]
+#+end_src
+
+- =updated= is ISO8601 UTC — sortable, parseable by =parse-iso8601-time-string=, and readable in the drawer. v2's staleness compare depends on this exact, comparable form.
+- An empty Keep returns =[]= (a valid empty page, not an error).
+- =labels= is always an array (empty, never null). =text= newlines are real =\n= inside the JSON string (standard JSON string encoding).
+- Failure is not expressed in JSON: the bridge exits non-zero with one stderr reason token (above). The sentinel maps the token to a =display-warning=.
 
 * Alternatives Considered
 
@@ -90,55 +112,89 @@ Three layers, cleanly separable so the core can later be a package:
 - Consequences: easier — one live path that serves both read and write, fragility isolated to one swappable script. Harder — a Python + gkeepapi dependency and a maintained bridge; the unofficial API can break and needs a master token, with no second read path as a safety net (the warning is the degradation).
 
 ** DONE Auth: master token in authinfo.gpg via auth-source
-- Decision: We will store the master token in =authinfo.gpg= and read it via =auth-source= (the pattern the rest of the config uses), and document the one-time master-token retrieval. Confirmed by Craig 2026-06-25.
+- Decision: We will store the master token in =authinfo.gpg= and read it via =auth-source= (with =cj/auth-source-secret-value=, the house helper), and document the one-time master-token retrieval. Confirmed by Craig 2026-06-25.
 - Consequences: easier — consistent with existing credential handling, no plaintext secret, the daemon's auth-source cache applies. Harder — the one-time token retrieval is a manual setup step, and a revoked/expired token surfaces as an auth failure the renderer must report cleanly.
 
 ** DONE Structure: google-keep-config.el glue + extractable core
-- Decision: We will build the integration as =modules/google-keep-config.el= (the =.emacs.d= glue: paths, keys, dashboard, auth wiring) plus a self-contained core (the bridge runner + org renderer) written so the core can later move to a standalone =keep.el=-style package, mirroring the VAMP / pearl migration. Confirmed by Craig 2026-06-25.
+- Decision: We will build the integration as =modules/google-keep-config.el= (the =.emacs.d= glue: paths, keys, dashboard, auth wiring) plus a self-contained core (the bridge runner + org renderer) written so the core can later move to a standalone =keep.el=-style package, mirroring the VAMP / pearl migration. The core takes paths/keys/host injected from the glue — it never reaches into =user-constants= or binds keys itself. Confirmed by Craig 2026-06-25.
 - Consequences: easier — usable immediately in =.emacs.d=, with a clean seam for later extraction. Harder — the discipline of keeping the core free of =.emacs.d=-specific assumptions from the start.
+
+* Review findings [8/8]
+** DONE Generated-file path + atomic write (round 1, non-blocking)
+- Finding: the draft put the file at =~/org/keep.org= (hand-authored org area) with no atomic write, diverging from calendar-sync (generated org under =data/=, temp-then-rename). Risk: a partial write leaves a truncated file the user is viewing, and a generated file in =~/org/= invites edits that get overwritten.
+- Resolution: path is =data/keep.org= as a =user-constants.el= constant; the renderer writes via temp file + atomic rename.
+
+** DONE Async subprocess via make-process + sentinel (round 1, non-blocking)
+- Finding: the draft said "run as a subprocess" without committing to async; gkeepapi can hang on auth churn, and a synchronous =call-process= would freeze Emacs.
+- Resolution: specified =make-process= + sentinel (the calendar-sync pattern); the warning-on-failure degradation lives in the sentinel.
+
+** DONE Name the auth-source house helper (round 1, non-blocking)
+- Finding: the draft read the token via "auth-source" generically; the house helper is =cj/auth-source-secret-value= (system-lib.el).
+- Resolution: spec now calls it out with a documented =:host= entry.
+
+** DONE Name the missing-tool helper (round 1, non-blocking)
+- Finding: the draft promised a display-warning for a missing tool but didn't cite =cj/executable-find-or-warn=, and didn't separate the gkeepapi-missing vs token-missing failure modes.
+- Resolution: glue uses =cj/executable-find-or-warn= for =python3=; the bridge emits distinct stderr reason tokens the sentinel surfaces.
+
+** DONE Pin the bridge JSON schema (round 1, BLOCKING — cleared)
+- Finding: Phase 1 listed JSON fields but left the =updated= format, label/newline serialization, empty-result, and error envelope unstated — the round-trip contract both v1 and v2's staleness guard depend on.
+- Resolution: added the "Bridge JSON schema" subsection — ISO8601-UTC =updated=, always-array =labels=, standard JSON newline encoding, =[]= for empty, and exit-nonzero + stderr-token for failure.
+
+** DONE v2 staleness guard re-fetches before write (round 1, non-blocking)
+- Finding: v2 must not trust the possibly-stale =:UPDATED:= in the generated file; a phone edit between refresh and edit-back would be clobbered.
+- Resolution: Phase 4 states the write path re-fetches the target note's current =updated= from Keep and compares before overwriting, prompting on mismatch.
+
+** DONE Note KEEP_ID is the immutable server id (round 1, non-blocking)
+- Finding: "stable" id asserted but not anchored.
+- Resolution: spec states =:KEEP_ID:= is the gkeepapi server id, immutable across edits, never derived from content.
+
+** DONE Small enhancements: source link + archived handling (round 1, non-blocking, optional)
+- Finding: a back-link to the Keep web note and archived-note handling were free given the data already carried.
+- Resolution: each header links to =keep.google.com/#NOTE/<id>=; archived notes are tagged =:archived:= (the JSON carries =archived=).
 
 * Implementation phases
 
 ** Phase 1 — Data bridge
-A Python script (gkeepapi) that authenticates with the stored master token and prints notes as JSON (id, title, text, labels, pinned, color, archived, updated) on stdout. The =id= and =updated= fields are deliberate — they are the note-identity and freshness anchors v2 reads. Standalone and testable from the shell with a fixture; no Emacs yet. Tree stays working (new files only).
+A Python script (gkeepapi) that authenticates with the stored master token and prints the JSON array per the Bridge JSON schema on stdout (=id= = immutable server id, =updated= = ISO8601 UTC). On failure: exit non-zero with one stderr reason token. Standalone and testable from the shell with a fixture; no Emacs yet. Tree stays working (new files only).
 
 ** Phase 2 — Org renderer + refresh
-=modules/google-keep-config.el= (and its extractable core): run the bridge as a subprocess, parse the JSON, and write the org page (heading + body + property drawer per note, recording =:KEEP_ID:= and =:UPDATED:=, labels as tags, pinned-first). =cj/keep-refresh= regenerates it; auth via =auth-source=. A header line marks the file a read-only view. Degrades to a =display-warning= when the bridge, Python, gkeepapi, or token is missing — never errors at load.
+The elisp core + =modules/google-keep-config.el=: run the bridge with =make-process= + a sentinel, parse the JSON, and write =data/keep.org= via temp file + atomic rename (heading + body + property drawer per note, recording =:KEEP_ID:= and =:UPDATED:=, labels as tags, archived tagged =:archived:=, pinned-first, a source back-link per header). =cj/keep-refresh= regenerates it; auth via =cj/auth-source-secret-value=. A header line marks the file a read-only view. The sentinel maps a bridge failure (stderr token) to a =display-warning= naming the missing piece — never errors at load.
 
 ** Phase 3 — Access UX + un-orphan
-Keybindings (a Keep prefix), a dashboard entry, and the =(require 'google-keep-config)= in =init.el=. Optional: a dedicated read-only major mode for the buffer.
+Keybindings (a Keep prefix), a dashboard entry, a load-time =cj/executable-find-or-warn= for =python3=, and the =(require 'google-keep-config)= in =init.el=. Optional: a dedicated read-only major mode for the buffer.
 
 ** Phase 4 (v2) — read-write
-The immediate next increment after v1 lands. A write subcommand on the bridge (gkeepapi create/update), an elisp path that targets a note by =:KEEP_ID:= and checks =:UPDATED:= against Keep before overwriting (staleness guard), and entry points to create a note from a region/capture and edit one back. Specced in detail once v1's read model is proven on real notes; listed here so Phases 1-3 don't paint into a read-only corner.
+The immediate next increment after v1 lands. A write subcommand on the bridge (gkeepapi create/update), and an elisp path that targets a note by =:KEEP_ID:= and, before overwriting, re-fetches that note's current =updated= from Keep and compares it against the drawer's =:UPDATED:= (a staleness guard — abort/prompt on mismatch so a phone edit since the last refresh isn't clobbered). Entry points to create a note from a region/capture and edit one back. Specced in detail once v1's read model is proven on real notes; listed here so Phases 1-3 don't paint into a read-only corner.
 
 (Later, not specced here, logged to todo.org: list/checkbox rendering; extract the core to a package.)
 
 * Acceptance criteria
-- [ ] =cj/keep-refresh= fetches the current Keep notes and writes them to the org page, one header per note with title/body/labels/metadata.
-- [ ] Pinned notes sort to the top; labels render as org tags; Keep id/color/pinned/archived/updated land in a property drawer.
-- [ ] Each note header carries a stable =:KEEP_ID:= and an =:UPDATED:= timestamp (the v2 targeting + staleness anchors).
-- [ ] The master token is read from =authinfo.gpg= via =auth-source=; no secret is hardcoded.
-- [ ] A missing bridge / Python / gkeepapi / token produces a clear =display-warning=, not a load error or a crash.
+- [ ] =cj/keep-refresh= fetches the current Keep notes and writes =data/keep.org= via temp + atomic rename, one header per note with title/body/labels/metadata and a source back-link.
+- [ ] Pinned notes sort to the top; labels render as org tags; archived notes are tagged =:archived:=; Keep id/color/pinned/archived/updated land in a property drawer.
+- [ ] Each note header carries an immutable =:KEEP_ID:= (gkeepapi server id) and an ISO8601 =:UPDATED:= (the v2 targeting + staleness anchors).
+- [ ] The bridge runs async (=make-process= + sentinel); a slow/hung auth does not block Emacs.
+- [ ] The master token is read via =cj/auth-source-secret-value= from =authinfo.gpg=; no secret is hardcoded.
+- [ ] A missing python3 / gkeepapi / token (distinct bridge stderr tokens) produces a clear =display-warning=, not a load error or a crash; an empty Keep yields an empty page, not an error.
 - [ ] =make validate-modules= + launch smoke clean with =google-keep-config= required.
 
 * Readiness dimensions
-- Data model & ownership: Keep is the source of truth; the org page is a generated read-only view (v1). Each note maps to one org header keyed by a stable =:KEEP_ID:=; the bridge JSON is the contract between Python and elisp, and the JSON-to-org transform is the round-trip contract v2 inverts.
-- Errors, empty states & failure: auth failure, a broken gkeepapi, missing Python/token, or zero notes each degrade to a warning + an empty-or-stale page, never a crash. The unofficial API breaking is expected, not exceptional.
-- Security & privacy: the master token lives in =authinfo.gpg= (gpg-encrypted), read via auth-source; note content lands in a local org file the user already trusts for org data. No secret in the repo. The token grants broad Google access — documented as a risk.
-- Observability: the warning path names which piece is missing (Python / gkeepapi / token / bridge). The generated page's header shows the last refresh time.
-- Performance & scale: one subprocess per manual refresh over N notes (tens to low hundreds); trivial. No background polling in v1.
-- Reuse & lost opportunities: reuses org (rendering, search, agenda, links), auth-source (credentials), and the subprocess pattern. gkeepapi supplies the API client, so no endpoint code is written here.
-- Architecture fit & weak points: three layers (Python bridge / elisp renderer / UX glue) with the fragile API isolated in layer 1. Weak point: gkeepapi maintenance and Google auth churn — mitigated by isolation, graceful degradation, and a swappable bridge.
-- Config surface: a Keep org-file path, the auth-source host entry, and a keybinding prefix. No tuning knobs in v1.
+- Data model & ownership: Keep is the source of truth; =data/keep.org= is a generated read-only view (v1). Each note maps to one org header keyed by the immutable =:KEEP_ID:=; the bridge JSON (pinned schema) is the contract between Python and elisp, and the JSON-to-org transform is the round-trip contract v2 inverts.
+- Errors, empty states & failure: auth failure, a broken gkeepapi, missing Python/token, or zero notes each degrade to a warning (named by the bridge's stderr token) or an empty page, never a crash. The unofficial API breaking is expected, not exceptional.
+- Security & privacy: the master token lives in =authinfo.gpg= (gpg-encrypted), read via =cj/auth-source-secret-value=; note content lands in a local generated org file under =data/=. No secret in the repo. The token grants broad Google access — documented as a risk.
+- Observability: the warning path names which piece is missing (python3 / gkeepapi / token / auth) from the bridge's stderr token. The generated page's header shows the last refresh time.
+- Performance & scale: one async subprocess per manual refresh over N notes (tens to low hundreds); trivial. No background polling in v1.
+- Reuse & lost opportunities: follows calendar-sync conventions (generated org under =data/=, atomic temp+rename, =make-process= + sentinel) and reuses =cj/auth-source-secret-value=, =cj/executable-find-or-warn=, org rendering, and the dashboard. gkeepapi supplies the API client, so no endpoint code is written here.
+- Architecture fit & weak points: three layers (Python bridge / elisp core / glue) with the fragile API isolated in layer 1 and the core kept free of =.emacs.d= specifics for extraction. Weak point: gkeepapi maintenance and Google auth churn — mitigated by isolation, graceful degradation, and a swappable bridge.
+- Config surface: the =data/keep.org= path constant, the auth-source =:host= entry, and a keybinding prefix. No tuning knobs in v1.
 - Documentation plan: a setup note (one-time master-token retrieval, =pip install gkeepapi=, the authinfo entry) and the module commentary. No user-migration doc (personal config).
-- Dev tooling: the bridge is shell-testable with a JSON fixture; the renderer gets ERT over the JSON-to-org transform; =make validate-modules= + launch smoke for the module.
-- Rollout, compatibility & rollback: additive — a new module + a require. Rollback = drop the require and delete the org page. No existing behavior changes.
+- Dev tooling: the bridge is shell-testable with a JSON fixture; the core gets ERT over the JSON-to-org transform (against the pinned schema); =make validate-modules= + launch smoke for the module.
+- Rollout, compatibility & rollback: additive — a new module + a require. Rollback = drop the require and delete =data/keep.org=. No existing behavior changes.
 - External APIs & deps: gkeepapi (PyPI) and the unofficial Google Keep mobile endpoint it wraps — the single load-bearing external dependency and the central risk. Python 3 on PATH. A Google master token.
 
 * Risks, Rabbit Holes, and Drawbacks
-- The central risk is gkeepapi breaking when Google changes auth or the private endpoint. It has a history of auth churn. With Takeout deferred there is no second read path, so the mitigations are: isolate gkeepapi in the bridge, degrade to a clear warning, keep the bridge swappable, and never block Emacs load on it.
+- The central risk is gkeepapi breaking when Google changes auth or the private endpoint. It has a history of auth churn. With Takeout deferred there is no second read path, so the mitigations are: isolate gkeepapi in the bridge, degrade to a clear warning (named by stderr token), keep the bridge swappable, and never block Emacs load on it.
 - Credential risk: the master token grants broad account access. Keep it in =authinfo.gpg=, never the repo; document revocation.
-- v2 staleness: because write follows immediately, the edit-back path must not overwrite a note that changed on the phone since the last refresh. The =:UPDATED:= anchor from v1 is what makes that check possible — a v2 rabbit hole if the field isn't carried correctly in v1.
+- v2 staleness: because write follows immediately, the edit-back path must re-fetch the note's current =updated= from Keep before writing, not trust the generated file's =:UPDATED:= (which is only as fresh as the last refresh). Carrying =:UPDATED:= correctly in v1 is what makes that guard possible.
 - Scope creep: the pull toward full bidirectional sync, list fidelity, and real-time. v1 is a read-only org view and v2 is targeted read-write; richness and sync stay later, gated behind those landing.
 
 * Review and iteration history
@@ -147,6 +203,10 @@ The immediate next increment after v1 lands. A write subcommand on the bridge (g
 - Why: Craig asked to spec the google-keep in-editor integration before building. It spans a fragile external API, an auth-source credential, a Python/elisp bridge, and a module-to-package trajectory, with real trade-offs on shape, direction, and data path — worth pinning before code.
 - Artifacts: docs/specs/google-keep-emacs-integration-spec.org; the todo.org google-keep task.
 ** 2026-06-25 Thu @ 00:40:00 -0400 — Claude — author
-- What: resolved all five decisions with Craig (one by one) and folded them in. Shape = org page (popup dropped from the spec entirely, a separate later discussion). Direction = read-only v1 then read-write v2 immediately after, so the read path now carries a round-trip-ready model + stable note-identity. Data path = gkeepapi sole bridge, Takeout deferred (stripped from scope/phases/acceptance). Auth = authinfo.gpg via auth-source. Structure = extractable core + glue. Added Phase 4 (v2) and the v2-staleness risk; Status moved to ready for review.
-- Why: decisions resolved, so the spec can go to spec-review before implementation.
+- What: resolved all five decisions with Craig (one by one) and folded them in. Shape = org page (popup dropped, a separate later discussion). Direction = read-only v1 then read-write v2 immediately, so the read path now carries a round-trip-ready model + stable note-identity. Data path = gkeepapi sole bridge, Takeout deferred. Auth = authinfo.gpg via auth-source. Structure = extractable core + glue. Added Phase 4 (v2) and the v2-staleness risk.
+- Why: decisions resolved, so the spec could go to spec-review.
 - Artifacts: this spec.
+** 2026-06-25 Thu @ 00:55:00 -0400 — spec-review (round 1) + author response
+- What: independent review against the readiness gate and Phase 4 dimensions, reading calendar-sync.el as the analog. Eight findings (one blocking: the bridge JSON schema; seven non-blocking: data/ path + atomic write, async make-process, the two house helpers, v2 re-fetch, KEEP_ID server id, source-link + archived). Craig accepted all; folded in here. Added the Bridge JSON schema subsection, the calendar-sync-convention reuse, and the Review findings section.
+- Why: clears the blocker and the readiness gaps; rubric moves to Ready.
+- Artifacts: this spec (Review findings [8/8], Bridge JSON schema).
