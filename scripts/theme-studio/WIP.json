@@ -1532,7 +1532,20 @@
   "pkg:ansi-color:ansi-color-green",
   "pkg:ansi-color:ansi-color-bright-green",
   "pkg:ansi-color:ansi-color-white",
-  "pkg:ansi-color:ansi-color-bright-white"
+  "pkg:ansi-color:ansi-color-bright-white",
+  "pkg:elfeed:elfeed-search-date-face",
+  "pkg:elfeed:elfeed-search-title-face",
+  "pkg:elfeed:elfeed-search-unread-title-face",
+  "pkg:elfeed:elfeed-search-feed-face",
+  "pkg:elfeed:elfeed-search-tag-face",
+  "pkg:elfeed:elfeed-search-unread-count-face",
+  "pkg:elfeed:elfeed-search-filter-face",
+  "pkg:elfeed:elfeed-search-last-update-face",
+  "pkg:elfeed:elfeed-log-date-face",
+  "pkg:elfeed:elfeed-log-error-level-face",
+  "pkg:elfeed:elfeed-log-warn-level-face",
+  "pkg:elfeed:elfeed-log-info-level-face",
+  "pkg:elfeed:elfeed-log-debug-level-face"
  ],
  "packages": {
   "org-mode": {
