@@ -52,6 +52,9 @@
   (eat-enable-alternative-display t)        ; alt-screen so TUIs restore scrollback on exit (default)
   (eat-term-scrollback-size (* 10 1024 1024)) ; ~10MB of scrollback, matching the old ghostel
   ;; Truecolor is already on: eat-term-name auto-selects the compiled eat-truecolor terminfo.
+  ;; Niceties.
+  (eat-sixel-render-formats '(xpm svg half-block background none)) ; inline images (on by default)
+  (eat-query-before-killing-running-terminal 'auto) ; confirm before killing a terminal with a live process
   :config
   ;; F12 and C-; must reach Emacs from inside EAT.  In semi-char mode (EAT's
   ;; default) EAT forwards unbound keys to the terminal -- a letter runs
