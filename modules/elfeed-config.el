@@ -68,11 +68,23 @@
           ;; Platypus Economics with Justin Wolfers
           ("https://www.youtube.com/feeds/videos.xml?channel_id=UCB5eaPWEwR6wR2MxRx64s0g" yt platypus)
 
+          ;; Conversations with Tyler (Tyler Cowen)
+          ("https://www.youtube.com/feeds/videos.xml?channel_id=UC_AnpBvnhXTcipgGEHLWoOg" yt cwt)
+
+          ;; Plain English with Derek Thompson
+          ("https://www.youtube.com/feeds/videos.xml?channel_id=UCoOUW7SiXzLbc_O3nSDOBYA" yt plain-english)
+
+          ;; Odd Lots (Bloomberg) -- Joe Weisenthal & Tracy Alloway
+          ("https://www.youtube.com/feeds/videos.xml?playlist_id=PLe4PRejZgr0MuA6M0zkZyy-99-qc87wKV" yt oddlots)
+
+          ;; All-In Podcast
+          ("https://www.youtube.com/feeds/videos.xml?channel_id=UCESLZhusAkFfsNsApnjF_Cg" yt allin)
+
           ;; The Prof G Pod
 		  ("https://www.youtube.com/feeds/videos.xml?playlist_id=PLtQ-jBytlXCasRuBG86m22rOQfrEPcctq" yt profg)
 
 		  ;; On with Kara Swisher
-		  ("https://www.youtube.com/feeds/videos.xml?playlist_id=PLKof9YSAshgxI6odrEJFKsJbxamwoQBju" yt)
+		  ("https://www.youtube.com/feeds/videos.xml?playlist_id=PLKof9YSAshgxI6odrEJFKsJbxamwoQBju" yt on)
 
           ;; Raging Moderates
           ("https://www.youtube.com/feeds/videos.xml?channel_id=UCcvDWzvxz6Kn1iPQHMl2teA" yt raging-moderates)
@@ -84,7 +96,7 @@
 		  ("https://www.youtube.com/feeds/videos.xml?playlist_id=PL45Mc1cDgnsB-u1iLPBYNF1fk-y1cVzTJ" yt trae)
 
 		  ;; Tropical Tidbits
-		  ("https://www.youtube.com/feeds/videos.xml?channel_id=UCrFIk7g_riIm2G2Vi90pxDA" yt)
+		  ("https://www.youtube.com/feeds/videos.xml?channel_id=UCrFIk7g_riIm2G2Vi90pxDA" yt tropical)
 
 		  ;; If You're Listening | ABC News In-depth
 		  ("https://www.youtube.com/feeds/videos.xml?playlist_id=PLDTPrMoGHssAfgMMS3L5LpLNFMNp1U_Nq" yt listening)
