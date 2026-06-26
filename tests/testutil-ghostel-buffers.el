@@ -56,5 +56,15 @@ predicate without the side-effects of `(eat)'."
       (setq-local major-mode 'eat-mode))
     buf))
 
+(defun cj/test--make-fake-eshell-buffer (name)
+  "Return a buffer named NAME with `major-mode' set to `eshell-mode'.
+
+Avoids starting a real eshell by setting the mode buffer-locally.  Used by the
+F12 toggle tests that need a buffer satisfying the eshell-mode predicate."
+  (let ((buf (get-buffer-create name)))
+    (with-current-buffer buf
+      (setq-local major-mode 'eshell-mode))
+    buf))
+
 (provide 'testutil-ghostel-buffers)
 ;;; testutil-ghostel-buffers.el ends here

@@ -188,35 +188,11 @@ pairs where COMMAND is the `cd' string `eshell/alias' should run."
   (require 'eat)
   (eat-eshell-mode 1))
 
-(use-package eshell-toggle
-  :custom
-  (eshell-toggle-size-fraction 2)
-  (eshell-toggle-run-command nil)
-  (eshell-toggle-init-function #'eshell-toggle-init-eshell)
-  :bind
-  ("C-<f12>" . eshell-toggle))
-
-(use-package xterm-color
-  :after eshell
-  ;; Two hooks. eshell-before-prompt is the real hook name; use-package appends
-  ;; "-hook", so writing eshell-before-prompt-hook here registered on a
-  ;; nonexistent eshell-before-prompt-hook-hook and never ran. The eshell-mode
-  ;; hook scopes TERM=xterm-256color to eshell-spawned processes only (a global
-  ;; setenv would leak it to every start-process regardless of terminal).
-  :hook
-  ((eshell-before-prompt . (lambda ()
-                             (setq xterm-color-preserve-properties t)))
-   (eshell-mode . (lambda ()
-                    (setq-local process-environment
-                                (cons "TERM=xterm-256color"
-                                      process-environment)))))
-  :config
-  ;; Wire xterm-color into eshell's output pipeline (per its README): install
-  ;; the filter and drop eshell's own ANSI handler. Without this the escapes are
-  ;; never interpreted and TERM=xterm-256color only leaks raw codes.
-  (add-to-list 'eshell-preoutput-filter-functions 'xterm-color-filter)
-  (setq eshell-output-filter-functions
-        (remove 'eshell-handle-ansi-color eshell-output-filter-functions)))
+;; eshell-toggle and xterm-color are retired.  F12 opens eshell now (the
+;; dock-and-remember toggle in eat-config.el), and eat-eshell-mode renders
+;; eshell's output through EAT, which handles ANSI color natively -- so
+;; xterm-color's filter and its TERM=xterm-256color override are redundant and
+;; would fight EAT's own TERM=eat-truecolor.
 
 (use-package eshell-syntax-highlighting
   :after esh-mode

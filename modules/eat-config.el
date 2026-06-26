@@ -1,12 +1,17 @@
-;;; eat-config.el --- EAT terminal and the F12 toggle -*- lexical-binding: t; coding: utf-8; -*-
+;;; eat-config.el --- EAT terminal emulator and the F12 eshell toggle -*- lexical-binding: t; coding: utf-8; -*-
 
 ;;; Commentary:
 ;;
-;; EAT (Emulate A Terminal, pure elisp) is the F12 terminal.  Because EAT renders
-;; entirely in elisp, its whole palette is real Emacs faces, so it themes from
-;; the theme.  This module owns the eat package configuration, the keymap wiring
-;; that lets F12 and C-; reach Emacs from inside a terminal, and the F12
+;; EAT (Emulate A Terminal, pure elisp) is the terminal emulator.  Because EAT
+;; renders entirely in elisp, its whole palette is real Emacs faces, so it themes
+;; from the theme.  This module owns the eat package configuration, the keymap
+;; wiring that lets F12 and C-; reach Emacs from inside a terminal, and the F12
 ;; dock-and-remember toggle.
+;;
+;; F12 opens eshell, which runs through EAT (eat-eshell-mode, set up in
+;; eshell-config.el): the shell is eshell -- elisp functions as commands, TRAMP
+;; transparency -- and EAT renders its visual commands.  eshell-config.el holds
+;; the shell itself; this module holds the emulator and the toggle.
 ;;
 ;; The toggle reuses the geometry-preservation pattern from cj-window-toggle-lib:
 ;; capture direction + body size at toggle-off, replay them via a custom display
@@ -19,9 +24,10 @@
 (require 'cj-window-toggle-lib)
 
 (declare-function eat "eat" (&optional program arg))
-(defvar eat-buffer-name)
+(declare-function eshell "eshell" (&optional arg))
 (defvar eat-mode-map)
 (defvar eat-semi-char-mode-map)
+(defvar eshell-buffer-name)
 (defvar cj/custom-keymap)
 
 (defun cj/turn-off-chrome-for-term ()
@@ -114,18 +120,14 @@ Positive integer: body-cols (right/left) or total-lines (below/above) -- see
 nil means fall back to `cj/term-toggle-window-height' as a fraction.")
 
 (defun cj/--term-toggle-buffer-p (buffer)
-  "Return non-nil when BUFFER is the EAT terminal F12 should manage.
+  "Return non-nil when BUFFER is an eshell terminal F12 should manage.
 
-Qualifies when BUFFER is alive and has `eat-mode' (or its name starts with the
-EAT buffer-name prefix).  ai-term's ghostel agent buffers never match -- they
-are managed separately via M-SPC, not F12."
+F12 opens eshell, which runs through EAT via eat-eshell-mode.  ai-term's ghostel
+agent buffers are managed separately via M-SPC, not F12."
   (and (bufferp buffer)
        (buffer-live-p buffer)
        (with-current-buffer buffer
-         (or (eq major-mode 'eat-mode)
-             (string-prefix-p (or (bound-and-true-p eat-buffer-name)
-                                  "*eat*")
-                              (buffer-name buffer))))))
+         (derived-mode-p 'eshell-mode))))
 
 (defun cj/--term-toggle-buffers ()
   "Return live F12-managed terminal buffers in `buffer-list' (MRU) order."
@@ -189,17 +191,15 @@ Returns one of:
          (t '(create-new))))))))
 
 (defun cj/term-toggle ()
-  "Toggle the EAT terminal buffer.
+  "Toggle the F12 eshell terminal (the primary `*eshell*', run through EAT).
 
-- If the EAT terminal is displayed in this frame, capture its geometry and
-  delete its window (toggle off).  Falls back to burying when it is the only
-  window in the frame.
-- Otherwise, if the EAT terminal buffer is alive, display it via the
-  saved-geometry action.
-- Otherwise, create a new EAT terminal, displaying it through the same
-  saved-geometry action.
+- If it is displayed in this frame, capture its geometry and delete its window
+  (toggle off).  Falls back to burying when it is the only window in the frame.
+- Otherwise, if it is alive, display it via the saved-geometry action.
+- Otherwise, open eshell, displaying it through the same saved-geometry action.
 
-ai-term's ghostel agent buffers are managed separately via M-SPC, not F12."
+eshell runs through EAT via eat-eshell-mode, so visual commands render in a real
+terminal.  ai-term's ghostel agent buffers are managed separately via M-SPC."
   (interactive)
   (pcase (cj/--term-toggle-dispatch)
     (`(toggle-off . ,win)
@@ -214,10 +214,10 @@ ai-term's ghostel agent buffers are managed separately via M-SPC, not F12."
        (when w (select-window w)))
      buf)
     (`(create-new)
-     ;; Create the EAT buffer without stealing the layout, then display it
+     ;; Open the primary eshell without stealing the layout, then display it
      ;; through the saved-geometry dock rule (same path as show-recent).
-     (save-window-excursion (eat))
-     (let ((buf (get-buffer (or (bound-and-true-p eat-buffer-name) "*eat*"))))
+     (save-window-excursion (eshell))
+     (let ((buf (get-buffer (or (bound-and-true-p eshell-buffer-name) "*eshell*"))))
        (when buf
          (display-buffer buf)
          (let ((w (get-buffer-window buf)))
