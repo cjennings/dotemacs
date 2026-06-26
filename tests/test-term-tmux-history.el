@@ -296,5 +296,14 @@ input) instead of moving Emacs point; windmove's S-arrows still reach Emacs."
   (dolist (key '("S-<left>" "S-<right>"))
     (should-not (eq (keymap-lookup eat-semi-char-mode-map key) #'eat-self-input))))
 
+(ert-deftest test-term-eat-tame-scroll-sets-minimal-scroll ()
+  "Normal: `cj/--eat-tame-scroll' sets buffer-local minimal-scroll behavior so
+the EAT window line-scrolls instead of recentering on full-frame redraws."
+  (with-temp-buffer
+    (cj/--eat-tame-scroll)
+    (should (= scroll-conservatively 101))
+    (should (= scroll-margin 0))
+    (should (null auto-window-vscroll))))
+
 (provide 'test-term-tmux-history)
 ;;; test-term-tmux-history.el ends here

@@ -36,12 +36,25 @@
   (hl-line-mode -1)
   (display-line-numbers-mode -1))
 
+(defun cj/--eat-tame-scroll ()
+  "Reduce the viewport bounce from full-frame inline redraws (Claude Code).
+Such programs move the terminal cursor up to redraw their whole block and back
+to the bottom on every tick; EAT follows the cursor with point, so the window
+chases it.  Line-scroll minimally instead of recentering, drop the scroll
+margin, and disable auto vscroll, so the window follows with the smallest
+movement.  It cannot fully remove the bounce -- the inline redraw is the root --
+but it makes each jump gentler."
+  (setq-local scroll-conservatively 101)
+  (setq-local scroll-margin 0)
+  (setq-local auto-window-vscroll nil))
+
 ;; ------------------------------- eat package ---------------------------------
 
 (use-package eat
   :ensure t
   :commands (eat)
-  :hook (eat-mode . cj/turn-off-chrome-for-term)
+  :hook ((eat-mode . cj/turn-off-chrome-for-term)
+         (eat-mode . cj/--eat-tame-scroll))
   :custom
   ;; Close the EAT buffer when its shell exits.
   (eat-kill-buffer-on-exit t)
