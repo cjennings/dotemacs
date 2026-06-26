@@ -5,8 +5,8 @@
 ;; manages: the predicate `cj/--term-toggle-buffer-p', the list
 ;; `cj/--term-toggle-buffers', and the per-frame window finder
 ;; `cj/--term-toggle-displayed-window'.  F12 opens eshell (run through EAT via
-;; eat-eshell-mode), so it manages eshell-mode buffers.  Standalone eat buffers,
-;; ghostel buffers, and ai-term's agent buffers are NOT F12-managed.
+;; eat-eshell-mode), so it manages eshell-mode buffers.  Standalone eat buffers
+;; and ai-term's agent buffers (also eat) are NOT F12-managed.
 
 ;;; Code:
 
@@ -15,7 +15,7 @@
 (add-to-list 'load-path (expand-file-name "modules" user-emacs-directory))
 (add-to-list 'load-path (expand-file-name "tests" user-emacs-directory))
 (require 'eat-config)
-(require 'testutil-ghostel-buffers)
+(require 'testutil-terminal-buffers)
 
 (defun test-term-toggle--cleanup ()
   "Kill leftover agent- and *test-term- prefixed buffers."
@@ -41,7 +41,7 @@
 (ert-deftest test-term-toggle--buffer-p-rejects-agent ()
   "Boundary: ai-term agent buffers are excluded from F12's set."
   (test-term-toggle--cleanup)
-  (let ((buf (cj/test--make-fake-ghostel-buffer "agent [project-a]")))
+  (let ((buf (cj/test--make-fake-eat-buffer "agent [project-a]")))
     (unwind-protect
         (should-not (cj/--term-toggle-buffer-p buf))
       (kill-buffer buf))))
@@ -65,7 +65,7 @@
   "Normal: returns the eshell terminal but not eat/agent buffers."
   (test-term-toggle--cleanup)
   (let ((esh (cj/test--make-fake-eshell-buffer "*test-term-esh*"))
-        (agent (cj/test--make-fake-ghostel-buffer "agent [for-test]")))
+        (agent (cj/test--make-fake-eat-buffer "agent [for-test]")))
     (unwind-protect
         (let ((result (cj/--term-toggle-buffers)))
           (should (memq esh result))
@@ -90,7 +90,7 @@
 (ert-deftest test-term-toggle--displayed-window-skips-agent ()
   "Boundary: only an agent terminal is displayed -> nil (agent not F12-managed)."
   (test-term-toggle--cleanup)
-  (let ((agent (cj/test--make-fake-ghostel-buffer "agent [skip-test]")))
+  (let ((agent (cj/test--make-fake-eat-buffer "agent [skip-test]")))
     (unwind-protect
         (save-window-excursion
           (delete-other-windows)

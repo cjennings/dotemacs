@@ -2,7 +2,7 @@
 
 ;;; Commentary:
 ;; `cj/ai-term-close' tears an agent down gracefully: kill its tmux
-;; session (stopping the agent process), kill the ghostel buffer, and
+;; session (stopping the agent process), kill the agent buffer, and
 ;; remove its window.  These tests cover the pure pieces -- the
 ;; tmux-kill helper, the per-buffer teardown, and the target selection --
 ;; with `process-file' and the prompt mocked at the boundary.
@@ -15,7 +15,7 @@
 (add-to-list 'load-path (expand-file-name "modules" user-emacs-directory))
 (add-to-list 'load-path (expand-file-name "tests" user-emacs-directory))
 (require 'ai-term)
-(require 'testutil-ghostel-buffers)
+(require 'testutil-terminal-buffers)
 
 (ert-deftest test-ai-term--kill-tmux-session-runs-kill-session ()
   "Normal: invokes `tmux kill-session -t <session>'."

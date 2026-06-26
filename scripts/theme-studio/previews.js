@@ -151,14 +151,6 @@ function renderElfeedPreview(){const a='elfeed',L=[];
   L.push(os(a,'elfeed-log-date-face','02:24:03')+'  '+os(a,'elfeed-log-error-level-face','ERROR')+' failed: bad.example');
   L.push(os(a,'elfeed-log-date-face','02:24:04')+'  '+os(a,'elfeed-log-debug-level-face','DEBUG')+' parsed 340 entries');
   return previewLines(L);}
-function renderGhostelPreview(){const a='ghostel',L=[];
-  L.push(os(a,'ghostel-default','craig@host')+' '+os(a,'ghostel-color-green','~/code')+' $ ls'+os(a,'ghostel-fake-cursor',' ')+os(a,'ghostel-fake-cursor-box','[ ]'));
-  L.push('');
-  L.push(os(a,'ghostel-default','normal:')+'  '+os(a,'ghostel-color-black','black')+' '+os(a,'ghostel-color-red','red')+' '+os(a,'ghostel-color-green','green')+' '+os(a,'ghostel-color-yellow','yellow')+' '+os(a,'ghostel-color-blue','blue')+' '+os(a,'ghostel-color-magenta','magenta')+' '+os(a,'ghostel-color-cyan','cyan')+' '+os(a,'ghostel-color-white','white'));
-  L.push(os(a,'ghostel-default','bright:')+'  '+os(a,'ghostel-color-bright-black','black')+' '+os(a,'ghostel-color-bright-red','red')+' '+os(a,'ghostel-color-bright-green','green')+' '+os(a,'ghostel-color-bright-yellow','yellow')+' '+os(a,'ghostel-color-bright-blue','blue')+' '+os(a,'ghostel-color-bright-magenta','magenta')+' '+os(a,'ghostel-color-bright-cyan','cyan')+' '+os(a,'ghostel-color-bright-white','white'));
-  L.push('');
-  L.push(os(a,'ghostel-default','default terminal output, 256-color text and a blinking ')+os(a,'ghostel-fake-cursor','cursor')+'.');
-  return previewLines(L);}
 function renderDashboardPreview(){const a='dashboard',L=[];
   L.push(os(a,'dashboard-text-banner','        [ dashboard banner image ]'));
   L.push(os(a,'dashboard-banner-logo-title','Emacs: The Editor That Saves Your Soul'));
@@ -328,7 +320,7 @@ function renderEatPreview(){const a='eat',L=[],c=(f,t)=>os(a,'eat-term-color-'+f
   L.push(c('bright-black','| * ')+c('yellow','7a8b9c0')+' expose eat faces to studio');
   L.push(c('bright-black','| * ')+c('yellow','1d2e3f4')+' add eat-term-color docstrings');
   L.push(c('bright-black','|/  '));
-  L.push(c('bright-black','* ')+c('yellow','5f6a7b8')+' toggle eat instead of ghostel on f12');
+  L.push(c('bright-black','* ')+c('yellow','5f6a7b8')+' default video player to mpv');
   L.push(c('bright-black','* ')+c('yellow','2c3d4e5')+' calendar-sync robustness fixes');
   L.push('');
   // 4. test run -- pass green, skip yellow, fail red, bold summary, faint detail

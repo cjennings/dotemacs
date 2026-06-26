@@ -8,8 +8,9 @@
 ;; in ~/code and may be absent on a clean checkout.
 ;;
 ;; The vterm dim-integration tests were removed when the terminal engine moved
-;; to ghostel: ghostel bakes its palette per-terminal (no per-window color
-;; hook), so terminal buffers no longer participate in window dimming.
+;; off vterm.  EAT (the current engine) renders in real Emacs faces and uses the
+;; `default' face for its background, so terminal buffers dim like any other
+;; buffer with no dedicated integration.
 
 ;;; Code:
 

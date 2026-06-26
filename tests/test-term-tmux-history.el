@@ -22,7 +22,7 @@
 (setq load-prefer-newer t)
 (require 'eat)
 (require 'eat-config)
-(require 'testutil-ghostel-buffers)
+(require 'testutil-terminal-buffers)
 
 (defmacro test-term-tmux-history--with-tmux-mock (responses &rest body)
   "Run BODY with `process-file' mocked for tmux RESPONSES.

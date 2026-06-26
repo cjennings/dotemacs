@@ -26,7 +26,7 @@
 (add-to-list 'load-path (expand-file-name "modules" user-emacs-directory))
 (add-to-list 'load-path (expand-file-name "tests" user-emacs-directory))
 (require 'ai-term)
-(require 'testutil-ghostel-buffers)
+(require 'testutil-terminal-buffers)
 
 (ert-deftest test-ai-term--display-saved-uses-desktop-defaults-when-state-nil ()
   "Normal: nil state on a desktop -> rightmost, size=cj/ai-term-desktop-width.

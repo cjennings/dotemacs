@@ -131,18 +131,6 @@ ELFEED_SEED={
  "elfeed-log-date-face":{"fg":"steel"},"elfeed-log-error-level-face":{"fg":"terracotta","bold":True},
  "elfeed-log-warn-level-face":{"fg":"gold"},"elfeed-log-info-level-face":{"fg":"sage"},
  "elfeed-log-debug-level-face":{"fg":"pewter"}}
-# ghostel (terminal): the 16 ANSI colors plus default and the fake cursor.
-GHOSTEL_FACES=("ghostel-default ghostel-fake-cursor ghostel-fake-cursor-box "
- "ghostel-color-black ghostel-color-red ghostel-color-green ghostel-color-yellow "
- "ghostel-color-blue ghostel-color-magenta ghostel-color-cyan ghostel-color-white "
- "ghostel-color-bright-black ghostel-color-bright-red ghostel-color-bright-green ghostel-color-bright-yellow "
- "ghostel-color-bright-blue ghostel-color-bright-magenta ghostel-color-bright-cyan ghostel-color-bright-white").split()
-GHOSTEL_SEED={
- "ghostel-default":{"fg":"#cdced1"},"ghostel-fake-cursor":{"fg":"#000000","bg":"silver"},"ghostel-fake-cursor-box":{"fg":"silver"},
- "ghostel-color-black":{"fg":"pewter"},"ghostel-color-red":{"fg":"terracotta"},"ghostel-color-green":{"fg":"emerald"},"ghostel-color-yellow":{"fg":"gold"},
- "ghostel-color-blue":{"fg":"blue"},"ghostel-color-magenta":{"fg":"regal"},"ghostel-color-cyan":{"fg":"sage"},"ghostel-color-white":{"fg":"silver"},
- "ghostel-color-bright-black":{"fg":"steel"},"ghostel-color-bright-red":{"fg":"#de4949"},"ghostel-color-bright-green":{"fg":"#84b068"},"ghostel-color-bright-yellow":{"fg":"#eed376"},
- "ghostel-color-bright-blue":{"fg":"#7a9abe"},"ghostel-color-bright-magenta":{"fg":"#b07fd0"},"ghostel-color-bright-cyan":{"fg":"#7fc0a8"},"ghostel-color-bright-white":{"fg":"white"}}
 # eat (F12 terminal, pure-elisp): the 16 named ANSI palette faces (which :inherit
 # ansi-color-*), the SGR attribute faces, and the shell-prompt annotation faces.
 # No seed -- the faces are exposed editable but left at their own defaults until
@@ -156,11 +144,11 @@ EAT_FACES=("eat-term-color-black eat-term-color-red eat-term-color-green eat-ter
  "eat-shell-prompt-annotation-success eat-shell-prompt-annotation-running eat-shell-prompt-annotation-failure").split()
 EAT_SEED={}
 # ansi-color (built-in, not in the inventory): the 16 ANSI palette faces that every
-# ANSI consumer resolves -- vterm, eshell, compilation, and ghostel (whose
-# ghostel-color-* faces :inherit these).  Theming ansi-color-* drives the 16
-# colors everywhere at once.  Seed mirrors the ghostel palette so the two agree.
+# ANSI consumer resolves -- vterm, eshell, compilation, and eat (whose
+# eat-term-color-* faces :inherit these).  Theming ansi-color-* drives the 16
+# colors everywhere at once.
 # Note: a face left unset here inherits nothing extra; a consumer that sets its
-# own color directly (e.g. a seeded ghostel-color-red) overrides this inheritance.
+# own color directly (e.g. a seeded ansi-color-red) overrides this inheritance.
 ANSI_COLOR_FACES=("ansi-color-black ansi-color-red ansi-color-green ansi-color-yellow "
  "ansi-color-blue ansi-color-magenta ansi-color-cyan ansi-color-white "
  "ansi-color-bright-black ansi-color-bright-red ansi-color-bright-green ansi-color-bright-yellow "
@@ -367,7 +355,6 @@ BESPOKE_APP_SPECS=[
  ("mu4e","mu4e","mu4e",MU4E_FACES,"mu4e-",MU4E_SEED),
  ("gnus","gnus","gnus",GNUS_FACES,"gnus-",GNUS_SEED),
  ("org-faces","org-faces","orgfaces",ORGFACES_FACES,"org-faces-",ORGFACES_SEED),
- ("ghostel","ghostel","ghostel",GHOSTEL_FACES,"ghostel-",GHOSTEL_SEED),
  ("ansi-color","ansi-color","ansicolor",ANSI_COLOR_FACES,"ansi-color-",ANSI_COLOR_SEED),
  ("eat","emulate a terminal (eat)","eat",EAT_FACES,"eat-",EAT_SEED),
  ("auto-dim-other-buffers","auto-dim","autodim",AUTODIM_FACES,"auto-dim-other-buffers-",AUTODIM_SEED),
@@ -392,7 +379,7 @@ BESPOKE_APP_SPECS=[
 # the app label can stay clean and the "who reuses this" context rides the app
 # dropdown's tooltip instead.  Apps not listed here get no hover.
 APP_HOVERS={
- "ansi-color":"The 16 ANSI palette faces. Reused by vterm, eshell, compilation, ghostel, and eat, whose own color faces inherit these.",
+ "ansi-color":"The 16 ANSI palette faces. Reused by vterm, eshell, compilation, and eat, whose own color faces inherit these.",
  "shr":"Simple HTML Renderer. Reused by eww, nov (epub reading), and mu4e / message for HTML mail.",
  "gnus":"Article-view faces, reused by mu4e's article view.",
  "dired":"Directory-listing faces, reused by dirvish (a dired frontend).",

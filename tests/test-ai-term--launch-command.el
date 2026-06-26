@@ -1,7 +1,7 @@
 ;;; test-ai-term--launch-command.el --- Tests for cj/--ai-term-launch-command -*- lexical-binding: t; -*-
 
 ;;; Commentary:
-;; The launch command is what gets typed into a fresh ghostel shell to bring
+;; The launch command is what gets typed into a fresh shell to bring
 ;; up the agent inside a per-project tmux session.  The session is named
 ;; `cj/ai-term-tmux-session-prefix' + the project basename, so a second
 ;; F9 on the same project reattaches to the running agent rather than

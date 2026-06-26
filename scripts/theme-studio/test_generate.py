@@ -619,7 +619,6 @@ class GeneratedDefaults(unittest.TestCase):
 
     def test_representative_package_inherits_are_selected(self):
         self.assertEqual(self.package_seed("elfeed", "elfeed-search-filter-face")["inherit"], "mode-line-buffer-id")
-        self.assertEqual(self.package_seed("ghostel", "ghostel-default")["inherit"], "default")
 
     def test_syntax_defaults_capture_font_lock_styles(self):
         self.assertEqual(generate.MAP["kw"], "#d3d3d3")

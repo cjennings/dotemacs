@@ -14,7 +14,7 @@
 (add-to-list 'load-path (expand-file-name "modules" user-emacs-directory))
 (add-to-list 'load-path (expand-file-name "tests" user-emacs-directory))
 (require 'ai-term)
-(require 'testutil-ghostel-buffers)
+(require 'testutil-terminal-buffers)
 
 (ert-deftest test-ai-term--agent-buffers-empty-when-none-exist ()
   "Boundary: no agent-prefixed buffers anywhere -> empty list."

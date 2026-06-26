@@ -16,7 +16,7 @@
 (add-to-list 'load-path (expand-file-name "modules" user-emacs-directory))
 (add-to-list 'load-path (expand-file-name "tests" user-emacs-directory))
 (require 'ai-term)
-(require 'testutil-ghostel-buffers)
+(require 'testutil-terminal-buffers)
 
 (ert-deftest test-ai-term--dispatch-window-displayed-returns-toggle-off ()
   "Normal: displayed agent window -> (toggle-off . WIN)."

@@ -25,7 +25,7 @@
 (add-to-list 'load-path (expand-file-name "modules" user-emacs-directory))
 (add-to-list 'load-path (expand-file-name "tests" user-emacs-directory))
 (require 'ai-term)
-(require 'testutil-ghostel-buffers)
+(require 'testutil-terminal-buffers)
 
 (defun cj/test--displayed-buffer-names ()
   "Return the buffer names shown in the selected frame, left/top to right/bottom."

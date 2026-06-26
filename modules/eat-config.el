@@ -78,7 +78,7 @@
 ;; direction + body size at toggle-off, replay them via a custom display action
 ;; using frame-edge directions and body-relative sizes so the result is
 ;; divider-independent and layout-stable.  Manages the EAT terminal only;
-;; ai-term.el's ghostel agent buffers are separate (M-SPC).
+;; ai-term.el's agent buffers are separate (M-SPC).
 
 (defcustom cj/term-toggle-window-height 0.7
   "Default fraction of frame height for the F12 terminal window.
@@ -123,7 +123,7 @@ nil means fall back to `cj/term-toggle-window-height' as a fraction.")
 (defun cj/--term-toggle-buffer-p (buffer)
   "Return non-nil when BUFFER is an eshell terminal F12 should manage.
 
-F12 opens eshell, which runs through EAT via eat-eshell-mode.  ai-term's ghostel
+F12 opens eshell, which runs through EAT via eat-eshell-mode.  ai-term's
 agent buffers are managed separately via M-SPC, not F12."
   (and (bufferp buffer)
        (buffer-live-p buffer)
@@ -200,7 +200,7 @@ Returns one of:
 - Otherwise, open eshell, displaying it through the same saved-geometry action.
 
 eshell runs through EAT via eat-eshell-mode, so visual commands render in a real
-terminal.  ai-term's ghostel agent buffers are managed separately via M-SPC."
+terminal.  ai-term's agent buffers are managed separately via M-SPC."
   (interactive)
   (pcase (cj/--term-toggle-dispatch)
     (`(toggle-off . ,win)

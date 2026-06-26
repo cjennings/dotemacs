@@ -16,7 +16,7 @@
 (add-to-list 'load-path (expand-file-name "tests" user-emacs-directory))
 (require 'ai-term)
 (require 'server)
-(require 'testutil-ghostel-buffers)
+(require 'testutil-terminal-buffers)
 
 (ert-deftest test-ai-term--non-agent-window-finds-code-window ()
   "Normal: agent on the right, code on the left -> returns the code window."

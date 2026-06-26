@@ -558,7 +558,7 @@ function buildPkgTable(){
 PREVIEWS_J
 const PACKAGE_PREVIEWS={
   autodim:renderAutodimPreview,markdown:renderMarkdownPreview,
-  org:renderOrgPreview,magit:renderMagitPreview,elfeed:renderElfeedPreview,ghostel:renderGhostelPreview,eat:renderEatPreview,
+  org:renderOrgPreview,magit:renderMagitPreview,elfeed:renderElfeedPreview,eat:renderEatPreview,
   dashboard:renderDashboardPreview,mu4e:renderMu4ePreview,gnus:renderGnusPreview,orgfaces:renderOrgFacesPreview,lsp:renderLspPreview,gitgutter:renderGitGutterPreview,
   flycheck:renderFlycheckPreview,dired:renderDiredPreview,dirvish:renderDirvishPreview,calibredb:renderCalibredbPreview,
   erc:renderErcPreview,orgdrill:renderOrgdrillPreview,orgnoter:renderOrgnoterPreview,signel:renderSignelPreview,

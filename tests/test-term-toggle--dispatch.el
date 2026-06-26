@@ -15,7 +15,7 @@
 (add-to-list 'load-path (expand-file-name "modules" user-emacs-directory))
 (add-to-list 'load-path (expand-file-name "tests" user-emacs-directory))
 (require 'eat-config)
-(require 'testutil-ghostel-buffers)
+(require 'testutil-terminal-buffers)
 
 (ert-deftest test-term-toggle--dispatch-window-displayed-returns-toggle-off ()
   "Normal: displayed terminal window -> (toggle-off . WIN)."
