@@ -21,6 +21,7 @@
 ;;; Code:
 
 (require 'keybindings)
+(require 'system-lib)
 (require 'cj-window-geometry-lib)
 (require 'cj-window-toggle-lib)
 
@@ -30,6 +31,14 @@
 (defvar eat-semi-char-mode-map)
 (defvar eshell-buffer-name)
 (defvar cj/custom-keymap)
+
+;; EAT paints its palette with manual `face' text properties (the ANSI colors).
+;; Left in `global-font-lock-mode', the terminal buffer also gets syntactic
+;; fontification -- a "..." in program output becomes `font-lock-string-face',
+;; overriding the foreground EAT painted (e.g. green-on-green inside a diff) --
+;; so exclude eat-mode, the same reason dashboard and mu4e are excluded.  A
+;; mode-hook can't do this: `global-font-lock-mode' runs after the mode hook.
+(cj/exclude-from-global-font-lock 'eat-mode)
 
 (defun cj/turn-off-chrome-for-term ()
   "Turn off line numbers and hl-line in a terminal buffer."
