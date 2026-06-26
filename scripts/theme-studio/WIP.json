@@ -788,8 +788,8 @@
    "height": null
   },
   "region": {
-   "fg": "#100f0f",
-   "bg": "#ab8d2e",
+   "fg": null,
+   "bg": "#4a4b4f",
    "distant-fg": null,
    "family": null,
    "weight": null,
@@ -1154,8 +1154,6 @@
   "num",
   "ui:lazy-highlight",
   "ui:isearch",
-  "ui:hl-line",
-  "ui:highlight",
   "str",
   "esc",
   "re",
@@ -1497,7 +1495,6 @@
   "pkg:dired:dired-flagged",
   "pkg:dired:dired-ignored",
   "pkg:dired:dired-warning",
-  "ui:region",
   "ui:mode-line-inactive",
   "pkg:nerd-icons:nerd-icons-blue",
   "pkg:nerd-icons:nerd-icons-blue-alt",
@@ -1532,7 +1529,31 @@
   "pkg:nerd-icons:nerd-icons-red-alt",
   "pkg:nerd-icons:nerd-icons-silver",
   "pkg:nerd-icons:nerd-icons-yellow",
-  "pkg:nerd-icons:nerd-icons-lpink"
+  "pkg:nerd-icons:nerd-icons-lpink",
+  "pkg:eat:eat-term-color-white",
+  "pkg:eat:eat-term-color-green",
+  "pkg:eat:eat-shell-prompt-annotation-failure",
+  "pkg:eat:eat-shell-prompt-annotation-success",
+  "pkg:eat:eat-shell-prompt-annotation-running",
+  "pkg:eat:eat-term-bold",
+  "pkg:eat:eat-term-italic",
+  "pkg:eat:eat-term-color-yellow",
+  "pkg:eat:eat-term-color-blue",
+  "pkg:eat:eat-term-color-red",
+  "pkg:eat:eat-term-faint",
+  "pkg:eat:eat-term-color-magenta",
+  "pkg:eat:eat-term-color-cyan",
+  "pkg:eat:eat-term-color-bright-black",
+  "pkg:eat:eat-term-color-black",
+  "pkg:eat:eat-term-color-bright-white",
+  "pkg:eat:eat-term-color-bright-cyan",
+  "pkg:eat:eat-term-color-bright-magenta",
+  "pkg:eat:eat-term-color-bright-blue",
+  "pkg:eat:eat-term-color-bright-yellow",
+  "pkg:eat:eat-term-color-bright-green",
+  "pkg:eat:eat-term-color-bright-red",
+  "pkg:eat:eat-term-slow-blink",
+  "pkg:eat:eat-term-fast-blink"
  ],
  "packages": {
   "org-mode": {
@@ -3597,6 +3618,162 @@
     "bg": null,
     "weight": "bold",
     "inherit": "ansi-color-bright-white",
+    "source": "user"
+   }
+  },
+  "eat": {
+   "eat-term-color-black": {
+    "fg": "#100f0f",
+    "bg": null,
+    "inherit": null,
+    "source": "user"
+   },
+   "eat-term-color-red": {
+    "fg": "#cb6b4d",
+    "bg": null,
+    "inherit": null,
+    "source": "user"
+   },
+   "eat-term-color-green": {
+    "fg": "#74932f",
+    "bg": null,
+    "inherit": null,
+    "source": "user"
+   },
+   "eat-term-color-yellow": {
+    "fg": "#e6ce88",
+    "bg": null,
+    "inherit": null,
+    "source": "user"
+   },
+   "eat-term-color-blue": {
+    "fg": "#67809c",
+    "bg": null,
+    "inherit": null,
+    "source": "user"
+   },
+   "eat-term-color-magenta": {
+    "fg": "#8255b5",
+    "bg": null,
+    "inherit": null,
+    "source": "user"
+   },
+   "eat-term-color-cyan": {
+    "fg": "#88b2c3",
+    "bg": null,
+    "inherit": null,
+    "source": "user"
+   },
+   "eat-term-color-white": {
+    "fg": "#bfc4d0",
+    "bg": null,
+    "inherit": null,
+    "source": "user"
+   },
+   "eat-term-color-bright-black": {
+    "fg": "#8e919a",
+    "bg": null,
+    "weight": "bold",
+    "inherit": null,
+    "source": "user"
+   },
+   "eat-term-color-bright-red": {
+    "fg": "#cb6b4d",
+    "bg": null,
+    "weight": "bold",
+    "inherit": null,
+    "source": "user"
+   },
+   "eat-term-color-bright-green": {
+    "fg": "#74932f",
+    "bg": null,
+    "weight": "bold",
+    "inherit": null,
+    "source": "user"
+   },
+   "eat-term-color-bright-yellow": {
+    "fg": "#e6ce88",
+    "bg": null,
+    "weight": "bold",
+    "inherit": null,
+    "source": "user"
+   },
+   "eat-term-color-bright-blue": {
+    "fg": "#899bb1",
+    "bg": null,
+    "weight": "bold",
+    "inherit": null,
+    "source": "user"
+   },
+   "eat-term-color-bright-magenta": {
+    "fg": "#8255b5",
+    "bg": null,
+    "weight": "bold",
+    "inherit": null,
+    "source": "user"
+   },
+   "eat-term-color-bright-cyan": {
+    "fg": "#6ba9bd",
+    "bg": null,
+    "weight": "bold",
+    "inherit": null,
+    "source": "user"
+   },
+   "eat-term-color-bright-white": {
+    "fg": "#a9b2bb",
+    "bg": null,
+    "weight": "bold",
+    "inherit": null,
+    "source": "user"
+   },
+   "eat-term-bold": {
+    "fg": null,
+    "bg": null,
+    "weight": "bold",
+    "inherit": null,
+    "source": "user"
+   },
+   "eat-term-faint": {
+    "fg": "#777980",
+    "bg": null,
+    "inherit": null,
+    "source": "user"
+   },
+   "eat-term-italic": {
+    "fg": null,
+    "bg": null,
+    "slant": "italic",
+    "inherit": null,
+    "source": "user"
+   },
+   "eat-term-slow-blink": {
+    "fg": null,
+    "bg": null,
+    "inherit": null,
+    "source": "user"
+   },
+   "eat-term-fast-blink": {
+    "fg": null,
+    "bg": null,
+    "inherit": null,
+    "source": "default"
+   },
+   "eat-shell-prompt-annotation-success": {
+    "fg": "#74932f",
+    "bg": null,
+    "inherit": null,
+    "source": "user"
+   },
+   "eat-shell-prompt-annotation-running": {
+    "fg": "#dab53d",
+    "bg": null,
+    "inherit": null,
+    "source": "user"
+   },
+   "eat-shell-prompt-annotation-failure": {
+    "fg": "#a85b42",
+    "bg": null,
+    "inherit": null,
     "source": "user"
    }
   },
