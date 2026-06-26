@@ -86,9 +86,11 @@ strings."
 								   :value-type sexp))
   :group 'media)
 
-(defcustom cj/default-media-player 'vlc
+(defcustom cj/default-media-player 'mpv
   "The default media player to use for videos.
-Should be a key from `cj/media-players'."
+Should be a key from `cj/media-players'.  mpv is the default because it
+resolves streaming-site URLs itself via yt-dlp, so it needs no pre-extracted
+stream URL (see the :needs-stream-url flag in `cj/media-players')."
   :type 'symbol
   :group 'media)
 
