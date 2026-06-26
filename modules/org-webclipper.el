@@ -52,6 +52,15 @@
 
 ;;; Code:
 
+(declare-function org-web-tools--url-as-readable-org "org-web-tools")
+(declare-function org-w3m-copy-for-org-mode "org-w3m")
+(declare-function org-eww-copy-for-org-mode "org-eww")
+(declare-function org-capture-get "org-capture")
+;; Special vars from org-capture / org-protocol / user-constants, loaded at
+;; runtime; declared here so standalone byte-compilation does not warn.
+(defvar org-capture-templates)
+(defvar org-protocol-protocol-alist)
+(defvar webclipped-file)
 
 ;; Variables for storing org-protocol data
 (defvar cj/--webclip-url nil

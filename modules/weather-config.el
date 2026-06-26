@@ -17,6 +17,8 @@
 ;;
 ;;; Code:
 
+(defvar wttrin-geolocation-command)
+
 ;; ----------------------------------- Wttrin ----------------------------------
 
 (use-package wttrin

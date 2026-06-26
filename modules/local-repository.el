@@ -16,6 +16,8 @@
 
 (require 'elpa-mirror nil t)  ;; optional; cj/update-localrepo-repository fails at call-time if absent
 
+(declare-function elpamr-create-mirror-for-installed "elpa-mirror")
+
 ;; ------------------------------ Utility Function -----------------------------
 
 

@@ -124,12 +124,10 @@ marker."
 
 (defun jumper--location-exists-p ()
   "Check if current location is already stored."
-  (let ((key (jumper--location-key))
-        (found nil))
-    (dotimes (i jumper--next-index found)
-      (when (jumper--with-marker-at
-             i (lambda () (string= key (jumper--location-key))))
-        (setq found t)))))
+  (let ((key (jumper--location-key)))
+    (cl-loop for i from 0 below jumper--next-index
+             thereis (jumper--with-marker-at
+                      i (lambda () (string= key (jumper--location-key)))))))
 
 (defun jumper--register-available-p ()
   "Check if there are registers available."
