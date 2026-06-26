@@ -287,22 +287,27 @@
    "ground"
   ],
   [
-   "#050801",
+   "#1f2217",
+   "olive-drab-5",
+   "olive-drab"
+  ],
+  [
+   "#2e361d",
    "olive-drab-4",
    "olive-drab"
   ],
   [
-   "#1b2506",
+   "#3f4c23",
    "olive-drab-3",
    "olive-drab"
   ],
   [
-   "#374712",
+   "#506328",
    "olive-drab-2",
    "olive-drab"
   ],
   [
-   "#546c20",
+   "#627b2c",
    "olive-drab-1",
    "olive-drab"
   ],
@@ -312,23 +317,28 @@
    "olive-drab"
   ],
   [
-   "#8ea85e",
+   "#809c50",
    "olive-drab+1",
    "olive-drab"
   ],
   [
-   "#a9be87",
+   "#8ca46c",
    "olive-drab+2",
    "olive-drab"
   ],
   [
-   "#c5d4ae",
+   "#98ac86",
    "olive-drab+3",
    "olive-drab"
   ],
   [
-   "#e2e9d6",
+   "#a5b49f",
    "olive-drab+4",
+   "olive-drab"
+  ],
+  [
+   "#b2bcb7",
+   "olive-drab+5",
    "olive-drab"
   ],
   [
@@ -1332,7 +1342,6 @@
   "pkg:shr:shr-h4",
   "pkg:shr:shr-h5",
   "pkg:shr:shr-h6",
-  "pkg:shr:shr-text",
   "pkg:shr:shr-code",
   "pkg:shr:shr-mark",
   "pkg:shr:shr-sup",
@@ -1386,22 +1395,6 @@
   "pkg:alert:alert-urgent-face",
   "pkg:alert:alert-moderate-face",
   "pkg:alert:alert-low-face",
-  "pkg:ansi-color:ansi-color-black",
-  "pkg:ansi-color:ansi-color-red",
-  "pkg:ansi-color:ansi-color-green",
-  "pkg:ansi-color:ansi-color-yellow",
-  "pkg:ansi-color:ansi-color-blue",
-  "pkg:ansi-color:ansi-color-magenta",
-  "pkg:ansi-color:ansi-color-cyan",
-  "pkg:ansi-color:ansi-color-white",
-  "pkg:ansi-color:ansi-color-bright-black",
-  "pkg:ansi-color:ansi-color-bright-red",
-  "pkg:ansi-color:ansi-color-bright-green",
-  "pkg:ansi-color:ansi-color-bright-yellow",
-  "pkg:ansi-color:ansi-color-bright-blue",
-  "pkg:ansi-color:ansi-color-bright-magenta",
-  "pkg:ansi-color:ansi-color-bright-cyan",
-  "pkg:ansi-color:ansi-color-bright-white",
   "pkg:dashboard:dashboard-banner-logo-title",
   "pkg:json-mode:json-mode-object-name-face",
   "pkg:malyon:malyon-face-bold",
@@ -1522,7 +1515,24 @@
   "pkg:eat:eat-term-color-bright-green",
   "pkg:eat:eat-term-color-bright-red",
   "pkg:eat:eat-term-slow-blink",
-  "pkg:eat:eat-term-fast-blink"
+  "pkg:eat:eat-term-fast-blink",
+  "pkg:shr:shr-text",
+  "pkg:ansi-color:ansi-color-black",
+  "pkg:ansi-color:ansi-color-red",
+  "pkg:ansi-color:ansi-color-yellow",
+  "pkg:ansi-color:ansi-color-blue",
+  "pkg:ansi-color:ansi-color-magenta",
+  "pkg:ansi-color:ansi-color-cyan",
+  "pkg:ansi-color:ansi-color-bright-black",
+  "pkg:ansi-color:ansi-color-bright-red",
+  "pkg:ansi-color:ansi-color-bright-yellow",
+  "pkg:ansi-color:ansi-color-bright-blue",
+  "pkg:ansi-color:ansi-color-bright-magenta",
+  "pkg:ansi-color:ansi-color-bright-cyan",
+  "pkg:ansi-color:ansi-color-green",
+  "pkg:ansi-color:ansi-color-bright-green",
+  "pkg:ansi-color:ansi-color-white",
+  "pkg:ansi-color:ansi-color-bright-white"
  ],
  "packages": {
   "org-mode": {
@@ -1756,13 +1766,13 @@
     "source": "cleared"
    },
    "org-block-begin-line": {
-    "fg": "#8ea85e",
+    "fg": "#809c50",
     "bg": "#100f0f",
     "inherit": null,
     "source": "user"
    },
    "org-block-end-line": {
-    "fg": "#8ea85e",
+    "fg": "#809c50",
     "bg": "#100f0f",
     "inherit": null,
     "source": "user"
@@ -2832,7 +2842,7 @@
     "source": "user"
    },
    "elfeed-log-info-level-face": {
-    "fg": "#546c20",
+    "fg": "#627b2c",
     "bg": null,
     "inherit": null,
     "source": "user"
@@ -2865,7 +2875,7 @@
     "source": "user"
    },
    "mu4e-ok-face": {
-    "fg": "#8ea85e",
+    "fg": "#809c50",
     "bg": null,
     "inherit": null,
     "source": "user"
@@ -3020,7 +3030,7 @@
    },
    "mu4e-compose-separator-face": {
     "fg": "#100f0f",
-    "bg": "#546c20",
+    "bg": "#627b2c",
     "weight": "bold",
     "inherit": null,
     "source": "user"
@@ -3040,7 +3050,7 @@
     "source": "user"
    },
    "gnus-header-subject": {
-    "fg": "#8ea85e",
+    "fg": "#809c50",
     "bg": null,
     "inherit": null,
     "source": "user"
@@ -3174,19 +3184,19 @@
   },
   "org-faces": {
    "org-faces-todo": {
-    "fg": "#8ea85e",
+    "fg": "#809c50",
     "bg": null,
     "inherit": null,
     "source": "user"
    },
    "org-faces-project": {
-    "fg": "#8ea85e",
+    "fg": "#809c50",
     "bg": null,
     "inherit": null,
     "source": "user"
    },
    "org-faces-doing": {
-    "fg": "#8ea85e",
+    "fg": "#809c50",
     "bg": null,
     "inherit": null,
     "source": "user"
@@ -3210,7 +3220,7 @@
     "source": "user"
    },
    "org-faces-delegated": {
-    "fg": "#8ea85e",
+    "fg": "#809c50",
     "bg": null,
     "inherit": null,
     "source": "user"
@@ -3271,19 +3281,19 @@
     "source": "user"
    },
    "org-faces-todo-dim": {
-    "fg": "#546c20",
+    "fg": "#627b2c",
     "bg": "#100f0f",
     "inherit": null,
     "source": "user"
    },
    "org-faces-project-dim": {
-    "fg": "#546c20",
+    "fg": "#627b2c",
     "bg": "#100f0f",
     "inherit": null,
     "source": "user"
    },
    "org-faces-doing-dim": {
-    "fg": "#546c20",
+    "fg": "#627b2c",
     "bg": "#100f0f",
     "inherit": null,
     "source": "user"
@@ -3307,7 +3317,7 @@
     "source": "user"
    },
    "org-faces-delegated-dim": {
-    "fg": "#546c20",
+    "fg": "#627b2c",
     "bg": "#100f0f",
     "inherit": null,
     "source": "user"
@@ -3368,126 +3378,10 @@
     "source": "user"
    }
   },
-  "ghostel": {
-   "ghostel-default": {
-    "fg": "#edeff1",
-    "bg": null,
-    "inherit": null,
-    "source": "default"
-   },
-   "ghostel-fake-cursor": {
-    "fg": "#100f0f",
-    "bg": "#a9b2bb",
-    "inherit": null,
-    "source": "user"
-   },
-   "ghostel-fake-cursor-box": {
-    "fg": "#bac1c8",
-    "bg": null,
-    "inherit": null,
-    "source": "default"
-   },
-   "ghostel-color-black": {
-    "fg": "#8e919a",
-    "bg": null,
-    "inherit": null,
-    "source": "default"
-   },
-   "ghostel-color-red": {
-    "fg": "#cb6b4d",
-    "bg": null,
-    "inherit": null,
-    "source": "user"
-   },
-   "ghostel-color-green": {
-    "fg": "#8ea85e",
-    "bg": null,
-    "inherit": null,
-    "source": "user"
-   },
-   "ghostel-color-yellow": {
-    "fg": "#ab8d2e",
-    "bg": null,
-    "inherit": null,
-    "source": "default"
-   },
-   "ghostel-color-blue": {
-    "fg": "#899bb1",
-    "bg": null,
-    "inherit": null,
-    "source": "user"
-   },
-   "ghostel-color-magenta": {
-    "fg": "#9f80c9",
-    "bg": null,
-    "inherit": null,
-    "source": "default"
-   },
-   "ghostel-color-cyan": {
-    "fg": "#0096b0",
-    "bg": null,
-    "inherit": null,
-    "source": "user"
-   },
-   "ghostel-color-white": {
-    "fg": "#bac1c8",
-    "bg": null,
-    "inherit": null,
-    "source": "default"
-   },
-   "ghostel-color-bright-black": {
-    "fg": "#bfc4d0",
-    "bg": null,
-    "inherit": null,
-    "source": "default"
-   },
-   "ghostel-color-bright-red": {
-    "fg": "#cb8b7a",
-    "bg": null,
-    "inherit": null,
-    "source": "user"
-   },
-   "ghostel-color-bright-green": {
-    "fg": "#8ea85e",
-    "bg": null,
-    "inherit": null,
-    "source": "user"
-   },
-   "ghostel-color-bright-yellow": {
-    "fg": "#e6ce88",
-    "bg": null,
-    "inherit": null,
-    "source": "default"
-   },
-   "ghostel-color-bright-blue": {
-    "fg": "#adb6c6",
-    "bg": null,
-    "inherit": null,
-    "source": "user"
-   },
-   "ghostel-color-bright-magenta": {
-    "fg": "#bea9dc",
-    "bg": null,
-    "inherit": null,
-    "source": "default"
-   },
-   "ghostel-color-bright-cyan": {
-    "fg": "#6ba9bd",
-    "bg": null,
-    "inherit": null,
-    "source": "user"
-   },
-   "ghostel-color-bright-white": {
-    "fg": "#edeff1",
-    "bg": null,
-    "inherit": null,
-    "source": "default"
-   }
-  },
   "ansi-color": {
    "ansi-color-black": {
-    "fg": "#100f0f",
-    "bg": "#bfc4d0",
+    "fg": "#222223",
+    "bg": "#a9b2bb",
     "inherit": null,
     "source": "user"
    },
@@ -3498,95 +3392,87 @@
     "source": "user"
    },
    "ansi-color-green": {
-    "fg": "#8ea85e",
+    "fg": "#627b2c",
     "bg": null,
     "inherit": null,
     "source": "user"
    },
    "ansi-color-yellow": {
-    "fg": "#e0c266",
+    "fg": "#ab8d2e",
     "bg": null,
     "inherit": null,
     "source": "user"
    },
    "ansi-color-blue": {
-    "fg": "#899bb1",
+    "fg": "#67809c",
     "bg": null,
     "inherit": null,
     "source": "user"
    },
    "ansi-color-magenta": {
-    "fg": "#9f80c9",
+    "fg": "#8255b5",
     "bg": null,
     "inherit": null,
     "source": "user"
    },
    "ansi-color-cyan": {
-    "fg": "#47a0b7",
+    "fg": "#18788c",
     "bg": null,
     "inherit": null,
     "source": "user"
    },
    "ansi-color-white": {
-    "fg": null,
+    "fg": "#bac1c8",
     "bg": null,
     "inherit": null,
-    "source": "default"
+    "source": "user"
    },
    "ansi-color-bright-black": {
-    "fg": "#363638",
+    "fg": "#100f0f",
     "bg": null,
-    "weight": "bold",
     "inherit": "ansi-color-black",
     "source": "user"
    },
    "ansi-color-bright-red": {
-    "fg": null,
+    "fg": "#cb8b7a",
     "bg": null,
-    "weight": "bold",
     "inherit": "ansi-color-red",
     "source": "user"
    },
    "ansi-color-bright-green": {
-    "fg": null,
+    "fg": "#809c50",
     "bg": null,
-    "weight": "bold",
     "inherit": "ansi-color-green",
     "source": "user"
    },
    "ansi-color-bright-yellow": {
-    "fg": null,
+    "fg": "#e0c266",
     "bg": null,
-    "weight": "bold",
     "inherit": "ansi-color-yellow",
     "source": "user"
    },
    "ansi-color-bright-blue": {
-    "fg": null,
+    "fg": "#899bb1",
     "bg": null,
-    "weight": "bold",
     "inherit": "ansi-color-blue",
     "source": "user"
    },
    "ansi-color-bright-magenta": {
-    "fg": null,
+    "fg": "#bea9dc",
     "bg": null,
-    "weight": "bold",
-    "inherit": "ansi-color-bright-magenta",
+    "inherit": "ansi-color-magenta",
     "source": "user"
    },
    "ansi-color-bright-cyan": {
-    "fg": null,
+    "fg": "#47a0b7",
     "bg": null,
-    "weight": "bold",
     "inherit": "ansi-color-cyan",
     "source": "user"
    },
    "ansi-color-bright-white": {
-    "fg": null,
+    "fg": "#dce0e3",
     "bg": null,
-    "weight": "bold",
-    "inherit": "ansi-color-bright-white",
+    "inherit": "ansi-color-white",
     "source": "user"
    }
   },
@@ -4081,7 +3967,7 @@
     "source": "user"
    },
    "dired-symlink": {
-    "fg": "#8ea85e",
+    "fg": "#809c50",
     "bg": null,
     "inherit": null,
     "source": "user"
@@ -4440,7 +4326,7 @@
     "source": "user"
    },
    "calibredb-author-face": {
-    "fg": "#8ea85e",
+    "fg": "#809c50",
     "bg": null,
     "inherit": null,
     "source": "user"
@@ -4795,7 +4681,7 @@
   },
   "org-noter": {
    "org-noter-notes-exist-face": {
-    "fg": "#8ea85e",
+    "fg": "#809c50",
     "bg": null,
     "inherit": null,
     "source": "user"
@@ -4815,7 +4701,7 @@
     "source": "user"
    },
    "signel-my-msg-face": {
-    "fg": "#8ea85e",
+    "fg": "#809c50",
     "bg": null,
     "inherit": null,
     "source": "user"
@@ -4844,7 +4730,7 @@
    },
    "pearl-editable-comment": {
     "fg": "#dce0e3",
-    "bg": "#374712",
+    "bg": "#506328",
     "inherit": null,
     "source": "user"
    },
@@ -5872,7 +5758,7 @@
     "source": "user"
    },
    "shr-text": {
-    "fg": "#bfc4d0",
+    "fg": "#a9b2bb",
     "bg": null,
     "inherit": null,
     "source": "user"
@@ -5977,7 +5863,7 @@
     "source": "user"
    },
    "nerd-icons-dgreen": {
-    "fg": "#546c20",
+    "fg": "#627b2c",
     "bg": null,
     "inherit": null,
     "source": "user"
@@ -6043,7 +5929,7 @@
     "source": "user"
    },
    "nerd-icons-lgreen": {
-    "fg": "#a9be87",
+    "fg": "#8ca46c",
     "bg": null,
     "inherit": null,
     "source": "user"
@@ -6147,7 +6033,7 @@
   },
   "2048-game": {
    "twentyfortyeight-face-1024": {
-    "fg": "#a9be87",
+    "fg": "#8ca46c",
     "bg": null,
     "inherit": null,
     "source": "user"
@@ -6231,7 +6117,7 @@
     "source": "user"
    },
    "alert-moderate-face": {
-    "fg": "#a9be87",
+    "fg": "#8ca46c",
     "bg": null,
     "inherit": null,
     "source": "user"
@@ -6829,7 +6715,7 @@
   },
   "emms": {
    "emms-browser-album-face": {
-    "fg": "#8ea85e",
+    "fg": "#809c50",
     "bg": null,
     "inherit": null,
     "source": "user"
@@ -6902,6 +6788,122 @@
     "bg": "#363638",
     "inherit": "isearch",
     "source": "user"
+   }
+  },
+  "ghostel": {
+   "ghostel-color-black": {
+    "fg": "#8e919a",
+    "bg": null,
+    "inherit": null,
+    "source": "default"
+   },
+   "ghostel-color-blue": {
+    "fg": "#899bb1",
+    "bg": null,
+    "inherit": null,
+    "source": "user"
+   },
+   "ghostel-color-bright-black": {
+    "fg": "#bfc4d0",
+    "bg": null,
+    "inherit": null,
+    "source": "default"
+   },
+   "ghostel-color-bright-blue": {
+    "fg": "#adb6c6",
+    "bg": null,
+    "inherit": null,
+    "source": "user"
+   },
+   "ghostel-color-bright-cyan": {
+    "fg": "#6ba9bd",
+    "bg": null,
+    "inherit": null,
+    "source": "user"
+   },
+   "ghostel-color-bright-green": {
+    "fg": "#809c50",
+    "bg": null,
+    "inherit": null,
+    "source": "user"
+   },
+   "ghostel-color-bright-magenta": {
+    "fg": "#bea9dc",
+    "bg": null,
+    "inherit": null,
+    "source": "default"
+   },
+   "ghostel-color-bright-red": {
+    "fg": "#cb8b7a",
+    "bg": null,
+    "inherit": null,
+    "source": "user"
+   },
+   "ghostel-color-bright-white": {
+    "fg": "#edeff1",
+    "bg": null,
+    "inherit": null,
+    "source": "default"
+   },
+   "ghostel-color-bright-yellow": {
+    "fg": "#e6ce88",
+    "bg": null,
+    "inherit": null,
+    "source": "default"
+   },
+   "ghostel-color-cyan": {
+    "fg": "#0096b0",
+    "bg": null,
+    "inherit": null,
+    "source": "user"
+   },
+   "ghostel-color-green": {
+    "fg": "#809c50",
+    "bg": null,
+    "inherit": null,
+    "source": "user"
+   },
+   "ghostel-color-magenta": {
+    "fg": "#9f80c9",
+    "bg": null,
+    "inherit": null,
+    "source": "default"
+   },
+   "ghostel-color-red": {
+    "fg": "#cb6b4d",
+    "bg": null,
+    "inherit": null,
+    "source": "user"
+   },
+   "ghostel-color-white": {
+    "fg": "#bac1c8",
+    "bg": null,
+    "inherit": null,
+    "source": "default"
+   },
+   "ghostel-color-yellow": {
+    "fg": "#ab8d2e",
+    "bg": null,
+    "inherit": null,
+    "source": "default"
+   },
+   "ghostel-default": {
+    "fg": "#edeff1",
+    "bg": null,
+    "inherit": null,
+    "source": "default"
+   },
+   "ghostel-fake-cursor": {
+    "fg": "#100f0f",
+    "bg": "#a9b2bb",
+    "inherit": null,
+    "source": "user"
+   },
+   "ghostel-fake-cursor-box": {
+    "fg": "#bac1c8",
+    "bg": null,
+    "inherit": null,
+    "source": "default"
    }
   },
   "highlight-indent-guides": {
@@ -7585,7 +7587,7 @@
     "source": "user"
    },
    "orderless-match-face-1": {
-    "fg": "#8ea85e",
+    "fg": "#809c50",
     "bg": null,
     "weight": "bold",
     "slant": "italic",
@@ -7731,7 +7733,7 @@
     "source": "user"
    },
    "rainbow-delimiters-depth-3-face": {
-    "fg": "#a9be87",
+    "fg": "#8ca46c",
     "bg": null,
     "inherit": "rainbow-delimiters-base-face",
     "source": "user"
