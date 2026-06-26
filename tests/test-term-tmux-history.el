@@ -305,5 +305,16 @@ the EAT window line-scrolls instead of recentering on full-frame redraws."
     (should (= scroll-margin 0))
     (should (null auto-window-vscroll))))
 
+(ert-deftest test-term-eat-reset-sgr-at-newline ()
+  "Normal: the SGR-reset advice injects a reset before each newline when enabled
+\(containing an unterminated color), and passes output through unchanged when
+disabled."
+  (let ((cj/eat-reset-sgr-at-newline t))
+    (should (equal (cj/--eat-reset-sgr-at-newline (list (quote term) "a\nb\n"))
+                   (list (quote term) "a\e[0m\nb\e[0m\n"))))
+  (let ((cj/eat-reset-sgr-at-newline nil))
+    (should (equal (cj/--eat-reset-sgr-at-newline (list (quote term) "a\nb\n"))
+                   (list (quote term) "a\nb\n")))))
+
 (provide 'test-term-tmux-history)
 ;;; test-term-tmux-history.el ends here

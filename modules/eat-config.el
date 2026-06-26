@@ -48,6 +48,31 @@ but it makes each jump gentler."
   (setq-local scroll-margin 0)
   (setq-local auto-window-vscroll nil))
 
+(defcustom cj/eat-reset-sgr-at-newline t
+  "When non-nil, EAT resets SGR (color) at each newline.
+Claude Code and similar inline TUIs sometimes truncate a colored span without
+emitting a reset; the unterminated color then bleeds onto every following line
+in the buffer.  Injecting a reset before each newline contains it to its own
+line.  Safe for the common case where programs re-open their color per line; a
+program that carries a single color across newlines without re-opening it would
+lose that color past the first line, so set this to nil if you hit that."
+  :type 'boolean
+  :group 'eat)
+
+(declare-function eat-term-process-output "eat")
+
+(defun cj/--eat-reset-sgr-at-newline (args)
+  "`:filter-args' advice for `eat-term-process-output'.
+When `cj/eat-reset-sgr-at-newline' is non-nil, inject an SGR reset before each
+newline in the pty OUTPUT so an unterminated color cannot bleed past its line.
+ARGS is (TERMINAL OUTPUT)."
+  (if cj/eat-reset-sgr-at-newline
+      (list (car args)
+            (replace-regexp-in-string "\n" "\e[0m\n" (cadr args) t t))
+    args))
+
+(advice-add 'eat-term-process-output :filter-args #'cj/--eat-reset-sgr-at-newline)
+
 ;; ------------------------------- eat package ---------------------------------
 
 (use-package eat
