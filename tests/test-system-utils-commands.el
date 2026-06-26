@@ -90,5 +90,14 @@ and lands in a dedicated output buffer."
     (should saved)
     (should killed)))
 
+;;; ibuffer delete/diff keybinding swap
+
+(ert-deftest test-system-utils-ibuffer-d-diffs-D-deletes ()
+  "Normal: in the ibuffer list, d diffs the buffer at point against its file and
+D marks it for deletion (the swap of ibuffer's default d/= bindings)."
+  (require 'ibuffer)
+  (should (eq (keymap-lookup ibuffer-mode-map "d") #'ibuffer-diff-with-file))
+  (should (eq (keymap-lookup ibuffer-mode-map "D") #'ibuffer-mark-for-delete)))
+
 (provide 'test-system-utils-commands)
 ;;; test-system-utils-commands.el ends here

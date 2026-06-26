@@ -147,6 +147,16 @@ detached from Emacs."
 ;; in `nerd-icons-config'.
 (keymap-global-set "<remap> <list-buffers>" #'ibuffer)
 
+;; Swap delete and diff in the ibuffer list: d diffs the buffer at point against
+;; its saved file (was on =), and D marks it for deletion (was on d; `x' still
+;; executes the marks).
+(defvar ibuffer-mode-map)
+(declare-function ibuffer-diff-with-file "ibuffer")
+(declare-function ibuffer-mark-for-delete "ibuffer")
+(with-eval-after-load 'ibuffer
+  (keymap-set ibuffer-mode-map "d" #'ibuffer-diff-with-file)
+  (keymap-set ibuffer-mode-map "D" #'ibuffer-mark-for-delete))
+
 ;;; -------------------------- Scratch Buffer Happiness -------------------------
 
 (defvar scratch-emacs-version-and-system
