@@ -51,6 +51,9 @@
 (declare-function eshell-send-input "esh-mode")
 (declare-function eshell/pwd "em-dirs")
 (declare-function eshell/alias "em-alias")
+(declare-function eshell/cd "em-dirs")
+(declare-function eshell-stringify "esh-util")
+(declare-function eat-eshell-mode "eat")
 
 (defgroup cj/eshell nil
   "Personal Eshell configuration."
@@ -83,6 +86,59 @@ pairs where COMMAND is the `cd' string `eshell/alias' should run."
   (dolist (pair (cj/--eshell-ssh-alias-commands hosts))
     (eshell/alias (car pair) (cdr pair))))
 
+;; ---------------------------- prompt segments --------------------------------
+
+(defun cj/--eshell-git-branch ()
+  "Return the current git branch for `default-directory', or nil.
+Reads .git/HEAD directly so it adds no subprocess per prompt, and skips remote
+directories so a TRAMP prompt stays fast."
+  (unless (file-remote-p default-directory)
+    (when-let* ((root (locate-dominating-file default-directory ".git"))
+                (head (expand-file-name ".git/HEAD" root)))
+      (when (file-readable-p head)
+        (with-temp-buffer
+          (insert-file-contents head)
+          (when (looking-at "ref: refs/heads/\\(.*\\)")
+            (string-trim (match-string 1))))))))
+
+(defun cj/--eshell-prompt-status-segment ()
+  "Return the eshell prompt's exit-status segment, or an empty string.
+Shows the last command's exit code in brackets when it was non-zero, mirroring
+the zsh prompt's failure indicator."
+  (let ((status (bound-and-true-p eshell-last-command-status)))
+    (if (or (null status) (zerop status))
+        ""
+      (format " [%d]" status))))
+
+;; ------------------------------- zoxide --------------------------------------
+;; Share the same frecency database as the zsh shell by calling the zoxide
+;; binary: `z' jumps to a remembered directory, and every eshell directory
+;; change feeds `zoxide add' so eshell visits accrue in the same database.
+
+(defun eshell/z (&rest args)
+  "Jump to a directory via zoxide, sharing the zsh zoxide database.
+With no ARGS, cd home.  Otherwise query zoxide for the best match and cd there."
+  (if (null args)
+      (eshell/cd)
+    (let ((dir (string-trim
+                (shell-command-to-string
+                 (concat "zoxide query -- "
+                         (mapconcat #'shell-quote-argument
+                                    (mapcar #'eshell-stringify args) " "))))))
+      (if (and (not (string-empty-p dir)) (file-directory-p dir))
+          (eshell/cd dir)
+        (error "zoxide: no match for %s"
+               (string-join (mapcar #'eshell-stringify args) " "))))))
+
+(defun cj/--eshell-zoxide-add ()
+  "Record `default-directory' in the zoxide database (skips remote dirs)."
+  (when (and (not (file-remote-p default-directory))
+             (executable-find "zoxide"))
+    (call-process "zoxide" nil 0 nil "add" "--"
+                  (expand-file-name default-directory))))
+
+(add-hook 'eshell-directory-change-hook #'cj/--eshell-zoxide-add)
+
 (use-package eshell
   :ensure nil ;; built-in
   :commands (eshell)
@@ -108,6 +164,9 @@ pairs where COMMAND is the `cd' string `eshell/alias' should run."
            (propertize (system-name) 'face 'default)
 		   ":"
 		   (propertize (abbreviate-file-name (eshell/pwd)) 'face 'default)
+		   (let ((branch (cj/--eshell-git-branch)))
+		     (if branch (propertize (concat " (" branch ")") 'face 'default) ""))
+		   (propertize (cj/--eshell-prompt-status-segment) 'face 'default)
 		   "\n"
 		   (propertize "%"  'face 'default)
 		   " ")))
