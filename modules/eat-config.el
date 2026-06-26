@@ -245,6 +245,16 @@ terminal.  ai-term's agent buffers are managed separately via M-SPC."
     (when (process-live-p proc)
       (process-send-string proc string))))
 
+(defun cj/term-send-escape ()
+  "Send ESC to the terminal.
+In tmux copy-mode this cancels it (tmux binds Escape to cancel); in a TUI like
+vim it forwards ESC normally.  EAT's semi-char mode leaves the bare escape key
+unbound and treats `ESC' only as the Meta prefix, so without this the key never
+reaches the pty -- which is why C-<up>'s tmux copy-mode could not be exited with
+Escape."
+  (interactive)
+  (cj/--term-send-string "\e"))
+
 (defun cj/term--tmux-output (&rest args)
   "Run tmux with ARGS and return its stdout.
 Signal `user-error' when tmux exits with a non-zero status."
@@ -419,8 +429,15 @@ pty; without tmux, moves point up in EAT's emacs-mode buffer."
 (keymap-set cj/term-map "h" #'cj/term-tmux-history)
 (keymap-set cj/term-map "t" #'cj/term-toggle)
 
+(defvar eat-mode-map)
+(declare-function eat-semi-char-mode "eat")
 (with-eval-after-load 'eat
-  (keymap-set eat-semi-char-mode-map "C-<up>" #'cj/term-copy-mode-up))
+  (keymap-set eat-semi-char-mode-map "C-<up>" #'cj/term-copy-mode-up)
+  ;; Escape forwards ESC to the pty, so it cancels tmux copy-mode (tmux binds
+  ;; Escape to cancel) and works in TUIs; in EAT's own emacs/char mode it returns
+  ;; to semi-char.  One key gets out of either copy view.
+  (keymap-set eat-semi-char-mode-map "<escape>" #'cj/term-send-escape)
+  (keymap-set eat-mode-map "<escape>" #'eat-semi-char-mode))
 
 (provide 'eat-config)
 ;;; eat-config.el ends here

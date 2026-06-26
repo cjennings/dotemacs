@@ -273,5 +273,20 @@ up-arrow -- it does not re-enter and reset the cursor."
   (should (eq (keymap-lookup eat-semi-char-mode-map "C-<up>")
               #'cj/term-copy-mode-up)))
 
+(ert-deftest test-term-escape-bound-as-unified-exit ()
+  "Normal: Escape sends ESC in semi-char mode (cancels tmux copy-mode) and
+returns to semi-char from EAT's emacs/char mode -- one exit key for both."
+  (should (eq (keymap-lookup eat-semi-char-mode-map "<escape>")
+              #'cj/term-send-escape))
+  (should (eq (keymap-lookup eat-mode-map "<escape>") #'eat-semi-char-mode)))
+
+(ert-deftest test-term-send-escape-writes-esc-to-pty ()
+  "Normal: `cj/term-send-escape' sends a bare ESC to the terminal process."
+  (let ((sent nil))
+    (cl-letf (((symbol-function 'cj/--term-send-string)
+               (lambda (s) (push s sent))))
+      (cj/term-send-escape)
+      (should (equal sent '("\e"))))))
+
 (provide 'test-term-tmux-history)
 ;;; test-term-tmux-history.el ends here
