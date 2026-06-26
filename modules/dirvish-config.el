@@ -17,8 +17,8 @@
 ;; ediff, playlist creation, path copying, and external file manager integration.
 ;;
 ;; Key Bindings:
-;; - d: Delete marked files (dired-do-delete)
-;; - D: Duplicate file at point (adds "-copy" before extension)
+;; - d: Diff/ediff selected files (cj/dired-ediff-files)
+;; - D: Delete (dired-do-delete; mark with m for batches)
 ;; - g: Quick access menu (jump to predefined directories)
 ;; - G: Search with deadgrep in current directory
 ;; - f: Open system file manager in current directory
@@ -194,7 +194,9 @@ Filters for audio files, prompts for the playlist name, and saves the resulting
   (:map dired-mode-map
         ([remap dired-summary] . which-key-show-major-mode)
         ("E" . wdired-change-to-wdired-mode) ;; edit names and properties in buffer
-        ("e" . cj/dired-ediff-files))        ;; ediff files
+        ("e" . cj/dired-ediff-files)         ;; ediff files
+        ("d" . cj/dired-ediff-files)         ;; d = diff, matching C-; b / ibuffer (was dired-flag-file-deletion)
+        ("D" . dired-do-delete))             ;; D = delete (d no longer flags; mark with m, then D)
   :custom
   (dired-use-ls-dired nil)                             ;; non GNU FreeBSD doesn't support a "--dired" switch
   :config
@@ -204,6 +206,13 @@ Filters for audio files, prompts for the playlist name, and saves the resulting
   (setq dired-clean-confirm-killing-deleted-buffers nil) ;; don't ask; just kill buffers associated with deleted files
   (setq dired-recursive-copies (quote always))         ;; "always" means no asking
   (setq dired-recursive-deletes (quote top)))          ;; "top" means ask once
+
+;; which-key labels for the d=diff / D=delete pair (shown in the major-mode
+;; popup via `which-key-show-major-mode').
+(with-eval-after-load 'which-key
+  (which-key-add-major-mode-key-based-replacements 'dired-mode
+    "d" "diff (ediff files)"
+    "D" "delete file"))
 
 ;; note: disabled as it prevents marking and moving files to another directory
 ;; (setq dired-kill-when-opening-new-dired-buffer t)   ;; don't litter by leaving buffers when navigating directories
