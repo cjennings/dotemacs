@@ -78,7 +78,8 @@
 (require 'telega-config)         ;; telegram client via telega.el (TDLib in docker)
 (require 'signal-config)         ;; signal client via forked signel + signal-cli
 (require 'eshell-config)         ;; emacs shell configuration
-(require 'term-config)           ;; ghostel + F12 toggle + tmux history copy
+(require 'eat-config)            ;; EAT terminal + the F12 dock-and-remember toggle
+(require 'term-config)           ;; ghostel (ai-term backend) + tmux history copy
 (require 'ai-term)               ;; in-Emacs Claude launcher (vertical-split ghostel)
 (require 'help-utils)            ;; search: arch-wiki, devdoc, tldr, wikipedia
 (require 'help-config)           ;; info, man, help config

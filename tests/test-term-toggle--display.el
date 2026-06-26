@@ -14,7 +14,7 @@
 (require 'cl-lib)
 
 (add-to-list 'load-path (expand-file-name "modules" user-emacs-directory))
-(require 'term-config)
+(require 'eat-config)
 
 (ert-deftest test-term-toggle--capture-state-records-direction-and-size ()
   "Normal: capture-state writes direction and integer size.

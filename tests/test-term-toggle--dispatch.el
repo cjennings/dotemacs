@@ -14,7 +14,7 @@
 
 (add-to-list 'load-path (expand-file-name "modules" user-emacs-directory))
 (add-to-list 'load-path (expand-file-name "tests" user-emacs-directory))
-(require 'term-config)
+(require 'eat-config)
 (require 'testutil-ghostel-buffers)
 
 (ert-deftest test-term-toggle--dispatch-window-displayed-returns-toggle-off ()
