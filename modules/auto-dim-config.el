@@ -19,11 +19,10 @@
 ;; auto-dim-other-buffers-hide) live in the active theme (the generated
 ;; theme-studio theme) so they track theme switches.
 ;;
-;; Terminal buffers (ghostel) do not participate in window dimming: ghostel
-;; bakes its color palette into the native module per-terminal, not per-window,
-;; so there is no per-window color hook to dim through (the vterm engine had
-;; one via `vterm--get-color', which this module used to advise).  See the
-;; terminal-migration follow-up task in todo.org for revisiting this.
+;; EAT terminals render in real Emacs faces and use the `default' face for the
+;; terminal background, so -- unlike the old ghostel/vterm engines, which baked
+;; color per-terminal with no per-window hook -- they follow the per-window
+;; dimmed background like any other buffer.
 
 ;;; Code:
 

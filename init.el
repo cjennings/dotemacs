@@ -79,7 +79,6 @@
 (require 'signal-config)         ;; signal client via forked signel + signal-cli
 (require 'eshell-config)         ;; emacs shell configuration
 (require 'eat-config)            ;; EAT terminal + the F12 dock-and-remember toggle
-(require 'term-config)           ;; ghostel (ai-term backend) + tmux history copy
 (require 'ai-term)               ;; in-Emacs Claude launcher (vertical-split EAT terminal)
 (require 'help-utils)            ;; search: arch-wiki, devdoc, tldr, wikipedia
 (require 'help-config)           ;; info, man, help config

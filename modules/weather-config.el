@@ -32,7 +32,18 @@
   ("M-S-w" . wttrin)  ;; was M-W, overrides kill-ring-save
   :config
   (setopt wttrin-unit-system "u")
+  ;; Drop the "Follow @igor_chubin for wttr.in updates" footer. "F" is the
+  ;; wttr.in flag for "no Follow line"; everything else (forecast, header,
+  ;; colors) is unchanged.
+  (setopt wttrin-display-options "F")
   (setopt wttrin-favorite-location "New Orleans, LA")
+  ;; Higher-accuracy geolocation via the whereami WiFi-scan script (Google-backed),
+  ;; far better than IP behind a VPN or cellular hotspot.  Used by the picker's
+  ;; "Current location (detect)" entry; wttrin falls back to its IP provider if the
+  ;; command is missing or fails.  setq (not setopt): wttrin-geolocation-command is
+  ;; defined in the lazily-loaded wttrin-geolocation sub-module, so it may be unbound
+  ;; at :config time; the later defcustom won't clobber an already-set value.
+  (setq wttrin-geolocation-command "/home/cjennings/.local/bin/whereami --json")
   (setopt wttrin-mode-line-refresh-interval (* 30 60)) ;; thirty minutes
   (setq wttrin-default-locations '(
                                    "New Orleans, LA"

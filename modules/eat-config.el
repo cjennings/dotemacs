@@ -20,6 +20,7 @@
 
 ;;; Code:
 
+(require 'keybindings)
 (require 'cj-window-geometry-lib)
 (require 'cj-window-toggle-lib)
 
@@ -225,6 +226,201 @@ terminal.  ai-term's ghostel agent buffers are managed separately via M-SPC."
        buf))))
 
 (keymap-global-set "<f12>" #'cj/term-toggle)
+
+;; ------------------- terminal copy mode + tmux history -----------------------
+;; Carried over from the ghostel era for the EAT agent terminals (ai-term).
+;; Agents run EAT over tmux, so copy-mode is tmux's own copy-mode -- the same UX
+;; ghostel-over-tmux had.  C-<up> enters it and scrolls up in one stroke; C-; x c
+;; enters it via the menu, and C-; x h grabs the whole pane history into a buffer.
+
+(declare-function cj/register-prefix-map "keybindings")
+(declare-function eat-emacs-mode "eat")
+(defvar eat--semi-char-mode)
+(defvar eat--char-mode)
+(defvar eat--line-mode)
+
+(defun cj/--term-send-string (string)
+  "Send STRING to the current terminal buffer's process (the pty)."
+  (let ((proc (get-buffer-process (current-buffer))))
+    (when (process-live-p proc)
+      (process-send-string proc string))))
+
+(defun cj/term--tmux-output (&rest args)
+  "Run tmux with ARGS and return its stdout.
+Signal `user-error' when tmux exits with a non-zero status."
+  (with-temp-buffer
+    (let ((exit-code (apply #'process-file "tmux" nil t nil args)))
+      (unless (zerop exit-code)
+        (user-error "tmux failed: %s" (string-trim (buffer-string))))
+      (buffer-string))))
+
+(defun cj/term--tmux-pane-id-for-tty (tty)
+  "Return the tmux pane id for client TTY."
+  (let* ((output (cj/term--tmux-output
+                  "list-clients" "-F" "#{client_tty}\t#{pane_id}"))
+         (lines (split-string output "\n" t))
+         (match (seq-find
+                 (lambda (line)
+                   (let ((fields (split-string line "\t")))
+                     (equal (car fields) tty)))
+                 lines)))
+    (unless match
+      (user-error "No tmux client found for terminal tty %s" tty))
+    (cadr (split-string match "\t"))))
+
+(defun cj/term--tmux-capture-pane (pane-id)
+  "Return full joined tmux history for PANE-ID."
+  (cj/term--tmux-output
+   "capture-pane" "-p" "-J" "-S" "-" "-E" "-" "-t" pane-id))
+
+(defun cj/term--current-tmux-pane-id ()
+  "Return the tmux pane id for the current EAT terminal buffer."
+  (unless (derived-mode-p 'eat-mode)
+    (user-error "Current buffer is not an EAT terminal"))
+  (let* ((proc (get-buffer-process (current-buffer)))
+         (tty (and proc (process-tty-name proc))))
+    (unless (and tty (not (string-empty-p tty)))
+      (user-error "Could not determine terminal tty"))
+    (cj/term--tmux-pane-id-for-tty tty)))
+
+(defvar-local cj/term-tmux-history--origin-buffer nil
+  "Buffer active before opening the tmux history buffer.")
+(defvar-local cj/term-tmux-history--origin-window nil
+  "Window active before opening the tmux history buffer.")
+(defvar-local cj/term-tmux-history--origin-point nil
+  "Point in the origin buffer before opening the tmux history buffer.")
+
+(defun cj/term-tmux-history-quit ()
+  "Quit tmux history and return to its origin buffer."
+  (interactive)
+  (let ((history-buffer (current-buffer))
+        (origin-buffer cj/term-tmux-history--origin-buffer)
+        (origin-window cj/term-tmux-history--origin-window)
+        (origin-point cj/term-tmux-history--origin-point))
+    (when (buffer-live-p origin-buffer)
+      (if (window-live-p origin-window)
+          (progn
+            (set-window-buffer origin-window origin-buffer)
+            (select-window origin-window))
+        (pop-to-buffer origin-buffer))
+      (with-current-buffer origin-buffer
+        (when (integer-or-marker-p origin-point)
+          (goto-char origin-point))))
+    (when (buffer-live-p history-buffer)
+      (kill-buffer history-buffer))))
+
+(defvar-keymap cj/term-tmux-history-mode-map
+  :doc "Keymap for `cj/term-tmux-history-mode'.
+M-w copies the active region without leaving the buffer; C-g, <escape>, or q
+returns to the terminal without copying.  RET is left unbound."
+  "M-w" #'kill-ring-save
+  "C-g" #'cj/term-tmux-history-quit
+  "<escape>" #'cj/term-tmux-history-quit
+  "q" #'cj/term-tmux-history-quit)
+
+(define-derived-mode cj/term-tmux-history-mode special-mode "Tmux History"
+  "Mode for copying captured tmux pane history with normal Emacs keys."
+  (setq-local truncate-lines t)
+  (goto-address-mode 1))
+
+(defun cj/term-tmux-history ()
+  "Open full tmux pane history in a temporary Emacs buffer.
+
+The history buffer uses normal Emacs navigation and selection.  `M-w' copies
+the active region and stays open, so several pieces can be copied in a row;
+`q', `<escape>', or `C-g' returns point to the terminal buffer that launched
+it.  The history view replaces the origin terminal buffer in the same window."
+  (interactive)
+  (let* ((origin-buffer (current-buffer))
+         (origin-window (selected-window))
+         (origin-point (point))
+         (pane-id (cj/term--current-tmux-pane-id))
+         (history (cj/term--tmux-capture-pane pane-id))
+         (buffer (get-buffer-create
+                  (format "*terminal tmux history: %s*" (buffer-name origin-buffer)))))
+    (with-current-buffer buffer
+      (let ((inhibit-read-only t))
+        (erase-buffer)
+        (insert history))
+      (cj/term-tmux-history-mode)
+      (setq-local cj/term-tmux-history--origin-buffer origin-buffer)
+      (setq-local cj/term-tmux-history--origin-window origin-window)
+      (setq-local cj/term-tmux-history--origin-point origin-point)
+      (goto-char (point-max)))
+    (switch-to-buffer buffer)))
+
+(defun cj/term--in-tmux-p ()
+  "Return non-nil when the current EAT buffer has a tmux client attached.
+Lookup errors (not eat-mode, no tty, no client, tmux absent) are treated as
+nil so callers can use this as a cheap boolean predicate."
+  (and (derived-mode-p 'eat-mode)
+       (condition-case _
+           (and (cj/term--current-tmux-pane-id) t)
+         (error nil))))
+
+(defun cj/--term-in-emacs-mode-p ()
+  "Return non-nil when the current EAT buffer is in emacs (navigation) mode.
+EAT has no dedicated emacs-mode flag; emacs mode is the absence of the
+semi-char, char, and line input modes."
+  (and (derived-mode-p 'eat-mode)
+       (not (or (bound-and-true-p eat--semi-char-mode)
+                (bound-and-true-p eat--char-mode)
+                (bound-and-true-p eat--line-mode)))))
+
+(defun cj/term-copy-mode-dwim ()
+  "Enter copy-mode using the engine appropriate to this terminal.
+
+When tmux is attached (an agent terminal), write tmux's prefix sequence (C-b [)
+into the pty so the user lands in tmux's copy-mode with the full pane history,
+then C-a to land the cursor at column 0 so scrolling up runs up the left edge.
+Without tmux, falls through to EAT's emacs mode (a navigable view of the
+scrollback) and moves point to the start of the line."
+  (interactive)
+  (if (cj/term--in-tmux-p)
+      (cj/--term-send-string "\C-b[\C-a")
+    (eat-emacs-mode)
+    (beginning-of-line)))
+
+(defun cj/term--tmux-pane-in-copy-mode-p (pane-id)
+  "Return non-nil when tmux PANE-ID is currently displaying a mode.
+tmux's `pane_in_mode' is 1 while a pane is in any mode; copy-mode is the only
+mode this config enters.  tmux failures are treated as nil."
+  (condition-case nil
+      (equal "1" (string-trim
+                  (cj/term--tmux-output
+                   "display-message" "-p" "-t" pane-id "#{pane_in_mode}")))
+    (error nil)))
+
+(defun cj/term-copy-mode-up ()
+  "Enter copy-mode if needed, then scroll up one line.
+A single C-<up> lands in the terminal's copy-mode already moving up.  Pressed
+again while already in copy-mode it just moves up another line, so it never
+re-enters and resets the cursor.  In tmux, writes the up-arrow escape into the
+pty; without tmux, moves point up in EAT's emacs-mode buffer."
+  (interactive)
+  (let ((pane (ignore-errors (cj/term--current-tmux-pane-id))))
+    (cond
+     (pane
+      (unless (cj/term--tmux-pane-in-copy-mode-p pane)
+        (cj/term-copy-mode-dwim))
+      (cj/--term-send-string "\e[A"))
+     (t
+      (unless (cj/--term-in-emacs-mode-p)
+        (cj/term-copy-mode-dwim))
+      (forward-line -1)))))
+
+;; The C-; x terminal prefix (copy-mode, tmux history, the F12 toggle).  C-<up>
+;; enters copy-mode + scrolls in one stroke; bound in EAT's semi-char map so it
+;; reaches Emacs from inside an agent terminal.
+(defvar-keymap cj/term-map
+  :doc "Personal terminal command map.")
+(cj/register-prefix-map "x" cj/term-map)
+(keymap-set cj/term-map "c" #'cj/term-copy-mode-dwim)
+(keymap-set cj/term-map "h" #'cj/term-tmux-history)
+(keymap-set cj/term-map "t" #'cj/term-toggle)
+
+(with-eval-after-load 'eat
+  (keymap-set eat-semi-char-mode-map "C-<up>" #'cj/term-copy-mode-up))
 
 (provide 'eat-config)
 ;;; eat-config.el ends here

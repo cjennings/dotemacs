@@ -36,7 +36,7 @@ Return one of `theme-faced', `terminal-ansi', `document-shr', or
 best-effort dump rather than a full provenance trace."
   (with-current-buffer (or buffer (current-buffer))
     (cond
-     ((derived-mode-p 'term-mode 'comint-mode 'eshell-mode 'ghostel-mode)
+     ((derived-mode-p 'term-mode 'comint-mode 'eshell-mode 'eat-mode)
       'terminal-ansi)
      ((derived-mode-p 'eww-mode 'nov-mode 'elfeed-show-mode 'mu4e-view-mode)
       'document-shr)
