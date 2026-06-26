@@ -81,8 +81,9 @@
 ;;; cj/find-file-auto
 
 (ert-deftest test-external-open-find-file-auto-routes-media-externally ()
-  "Normal: a `.mp4' filename (in `default-open-extensions') triggers
-`cj/xdg-open' instead of the original `find-file'."
+  "Normal: a non-video external extension (`.docx', in
+`default-open-extensions') triggers `cj/xdg-open' instead of the original
+`find-file'."
   (let ((opened nil)
         (orig-called nil))
     (cl-letf (((symbol-function 'cj/xdg-open)
@@ -90,8 +91,23 @@
               ;; orig-fun replacement -- shouldn't run for a routed extension.
               ((symbol-function 'cj/find-file-auto--orig-stub)
                (lambda (&rest _) (setq orig-called t))))
-      (cj/find-file-auto #'cj/find-file-auto--orig-stub "/tmp/video.mp4"))
-    (should (equal opened "/tmp/video.mp4"))
+      (cj/find-file-auto #'cj/find-file-auto--orig-stub "/tmp/report.docx"))
+    (should (equal opened "/tmp/report.docx"))
+    (should-not orig-called)))
+
+(ert-deftest test-external-open-find-file-auto-routes-video-to-looping-player ()
+  "Normal: a video filename triggers `cj/open-video-looping', not `cj/xdg-open'
+or the original `find-file'."
+  (let ((looped nil) (xdg nil) (orig-called nil))
+    (cl-letf (((symbol-function 'cj/open-video-looping)
+               (lambda (file) (setq looped file)))
+              ((symbol-function 'cj/xdg-open)
+               (lambda (_) (setq xdg t)))
+              ((symbol-function 'cj/find-file-auto--orig-stub)
+               (lambda (&rest _) (setq orig-called t))))
+      (cj/find-file-auto #'cj/find-file-auto--orig-stub "/tmp/clip.mp4"))
+    (should (equal looped "/tmp/clip.mp4"))
+    (should-not xdg)
     (should-not orig-called)))
 
 (ert-deftest test-external-open-find-file-auto-passes-through-text-files ()
@@ -115,6 +131,67 @@
                (lambda (&rest _) (setq orig-called t))))
       (cj/find-file-auto #'cj/find-file-auto--orig-stub nil))
     (should orig-called)))
+
+;;; cj/--video-file-p
+
+(ert-deftest test-external-open-video-file-p-matches-video ()
+  "Normal: common video extensions match, case-insensitively."
+  (should (cj/--video-file-p "/tmp/a.mp4"))
+  (should (cj/--video-file-p "/tmp/a.mkv"))
+  (should (cj/--video-file-p "/tmp/a.webm"))
+  (should (cj/--video-file-p "/tmp/A.MP4")))
+
+(ert-deftest test-external-open-video-file-p-rejects-non-video ()
+  "Boundary: audio, docs, and nil do not match."
+  (should-not (cj/--video-file-p "/tmp/a.mp3"))
+  (should-not (cj/--video-file-p "/tmp/a.txt"))
+  (should-not (cj/--video-file-p "/tmp/a.docx"))
+  (should-not (cj/--video-file-p nil)))
+
+;;; cj/--video-open-arglist
+
+(ert-deftest test-external-open-video-arglist-appends-file-after-args ()
+  "Normal: the player args precede the file in the argument list."
+  (let ((cj/video-open-args '("--loop-file=inf")))
+    (should (equal (cj/--video-open-arglist "/tmp/a.mp4")
+                   '("--loop-file=inf" "/tmp/a.mp4")))))
+
+(ert-deftest test-external-open-video-arglist-respects-custom-args ()
+  "Boundary: custom args are honored; empty args yields just the file."
+  (let ((cj/video-open-args '("--loop=inf" "--mute=yes")))
+    (should (equal (cj/--video-open-arglist "/tmp/a.mkv")
+                   '("--loop=inf" "--mute=yes" "/tmp/a.mkv"))))
+  (let ((cj/video-open-args nil))
+    (should (equal (cj/--video-open-arglist "/tmp/a.mkv") '("/tmp/a.mkv")))))
+
+;;; cj/open-video-looping
+
+(ert-deftest test-external-open-video-looping-calls-player-with-loop-args ()
+  "Normal: posix path calls the player with loop args + file, async (no wait)."
+  (let ((tmp (make-temp-file "test-ext-video-" nil ".mp4"))
+        (call nil))
+    (unwind-protect
+        (cl-letf (((symbol-function 'env-windows-p) (lambda () nil))
+                  ((symbol-function 'call-process)
+                   (lambda (prog _infile dest _disp &rest args)
+                     (setq call (list prog dest args))
+                     0)))
+          (let ((cj/video-open-command "mpv")
+                (cj/video-open-args '("--loop-file=inf")))
+            (cj/open-video-looping tmp)))
+      (delete-file tmp))
+    (should (equal (nth 0 call) "mpv"))
+    (should (equal (nth 1 call) 0))               ; async destination: don't wait
+    (should (member "--loop-file=inf" (nth 2 call)))
+    (should (cl-find-if (lambda (a) (and (stringp a)
+                                         (string-match-p "\\.mp4\\'" a)))
+                        (nth 2 call)))))
+
+(ert-deftest test-external-open-video-looping-errors-when-no-file ()
+  "Error: a buffer with no associated file signals user-error."
+  (with-temp-buffer
+    (cl-letf (((symbol-function 'cj/file-from-context) (lambda (_) nil)))
+      (should-error (cj/open-video-looping) :type 'user-error))))
 
 (provide 'test-external-open-commands)
 ;;; test-external-open-commands.el ends here

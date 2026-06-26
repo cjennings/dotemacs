@@ -42,15 +42,33 @@
   "Open certain files with the OS default handler."
   :group 'files)
 
-(defcustom default-open-extensions
-  '(
-	;; Video
-	"\\.3g2\\'" "\\.3gp\\'" "\\.asf\\'" "\\.avi\\'" "\\.divx\\'" "\\.dv\\'"
+(defcustom cj/video-extensions
+  '("\\.3g2\\'" "\\.3gp\\'" "\\.asf\\'" "\\.avi\\'" "\\.divx\\'" "\\.dv\\'"
 	"\\.f4v\\'" "\\.flv\\'" "\\.m1v\\'" "\\.m2ts\\'" "\\.m2v\\'" "\\.m4v\\'"
 	"\\.mkv\\'" "\\.mov\\'" "\\.mpe\\'" "\\.mpeg\\'" "\\.mpg\\'" "\\.mp4\\'"
 	"\\.mts\\'" "\\.ogv\\'" "\\.rm\\'" "\\.rmvb\\'" "\\.vob\\'"
-	"\\.webm\\'" "\\.wmv\\'"
+	"\\.webm\\'" "\\.wmv\\'")
+  "Regexps matching video files opened in a looping player.
+These route through `cj/open-video-looping' (mpv --loop-file=inf by default)
+instead of the OS default handler, so a video opened from dirvish plays on
+repeat."
+  :type '(repeat (regexp :tag "Video extension regexp"))
+  :group 'external-open)
 
+(defcustom cj/video-open-command "mpv"
+  "Player command used to open local video files on repeat.
+Launched detached from Emacs with `cj/video-open-args' before the file name."
+  :type 'string
+  :group 'external-open)
+
+(defcustom cj/video-open-args '("--loop-file=inf")
+  "Arguments passed to `cj/video-open-command' before the file name.
+Defaults to mpv's infinite single-file loop so the video plays on repeat."
+  :type '(repeat string)
+  :group 'external-open)
+
+(defcustom default-open-extensions
+  '(
 	;; Audio
 	"\\.aac\\'" "\\.ac3\\'" "\\.aif\\'" "\\.aifc\\'" "\\.aiff\\'"
 	"\\.alac\\'" "\\.amr\\'" "\\.ape\\'" "\\.caf\\'"
@@ -142,18 +160,49 @@ Logs output and exit code to buffer *external-open.log*."
 	   nil 0)))))
 
 
+;; -------------------------- Open Videos On Repeat ----------------------------
+
+(defun cj/--video-file-p (file)
+  "Return non-nil when FILE matches a regexp in `cj/video-extensions'."
+  (and (stringp file)
+	   (let ((case-fold-search t))
+		 (cl-some (lambda (re) (string-match-p re file)) cj/video-extensions))))
+
+(defun cj/--video-open-arglist (file)
+  "Return the argument list to play FILE on repeat: `cj/video-open-args' + FILE."
+  (append cj/video-open-args (list file)))
+
+(defun cj/open-video-looping (&optional filename)
+  "Open FILENAME (or the file at point) in a looping video player, detached.
+Uses `cj/video-open-command' and `cj/video-open-args' (mpv --loop-file=inf by
+default) so the video plays on repeat.  Launched asynchronously so it never
+blocks Emacs."
+  (interactive)
+  (let* ((file (expand-file-name
+				(or (cj/file-from-context filename)
+					(user-error "No file associated with this buffer"))))
+		 (args (cj/--video-open-arglist file)))
+	(if (env-windows-p)
+		(w32-shell-execute "open" cj/video-open-command
+						   (mapconcat (lambda (a) (format "\"%s\"" a)) args " "))
+	  (apply #'call-process cj/video-open-command nil 0 nil args))))
+
 ;; -------------------- Open Files With Default File Handler -------------------
 
 (defun cj/find-file-auto (orig-fun &rest args)
-  "If file has an extension in `default-open-extensions', open externally.
-Else call ORIG-FUN with ARGS."
+  "Open FILE externally based on its extension, else call ORIG-FUN with ARGS.
+A video (`cj/video-extensions') opens in a looping player; any other extension
+in `default-open-extensions' opens with the OS default handler."
   (let* ((file (car args))
 		 (case-fold-search t))
-	(if (and (stringp file)
-			 (cl-some (lambda (re) (string-match-p re file))
-					  default-open-extensions))
-		(cj/xdg-open file)
-	  (apply orig-fun args))))
+	(cond
+	 ((cj/--video-file-p file)
+	  (cj/open-video-looping file))
+	 ((and (stringp file)
+		   (cl-some (lambda (re) (string-match-p re file))
+					default-open-extensions))
+	  (cj/xdg-open file))
+	 (t (apply orig-fun args)))))
 
 (defun cj/external-open-install-advice ()
   "Install the `cj/find-file-auto' advice on `find-file'.
