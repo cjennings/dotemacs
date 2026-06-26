@@ -4,12 +4,11 @@
 ;; ai-term lives under the C-; a prefix (vacated when gptel was archived), with
 ;; the frequent "swap to the next agent" also on M-SPC for a fast chord.  M-SPC
 ;; must reach Emacs from inside an agent buffer, so it is bound in
-;; `ghostel-mode-map' and added to `ghostel-keymap-exceptions' (the semi-char
-;; map otherwise forwards it to the pty).  C-; is already an exception via
-;; term-config, so the C-; a family resolves through the global prefix.  These
-;; tests require ghostel (so ai-term's `with-eval-after-load' fires) before
-;; ai-term, then confirm the bindings landed and the old F9 family is gone.
-;; `(require 'ghostel)' does not load the native module, so this stays light.
+;; `eat-semi-char-mode-map' (EAT forwards unbound keys to the pty otherwise).
+;; C-; is already bound there via eat-config, so the C-; a family resolves
+;; through the global prefix.  These tests require eat (so ai-term's
+;; `with-eval-after-load' fires) before ai-term, then confirm the bindings
+;; landed and the old F9 family is gone.
 
 ;;; Code:
 
@@ -19,7 +18,7 @@
 (setq package-user-dir (expand-file-name "elpa" user-emacs-directory))
 (package-initialize)
 (add-to-list 'load-path (expand-file-name "modules" user-emacs-directory))
-(require 'ghostel)
+(require 'eat)
 (require 'ai-term)
 
 (ert-deftest test-ai-term-keymap-leaf-bindings ()
@@ -37,16 +36,11 @@
   "Normal: M-SPC runs `cj/ai-term-next' (the fast swap chord)."
   (should (eq (lookup-key (current-global-map) (kbd "M-SPC")) #'cj/ai-term-next)))
 
-(ert-deftest test-ai-term-meta-space-bound-in-ghostel-mode-map ()
-  "Normal: M-SPC is bound in `ghostel-mode-map' so swap works inside an agent."
-  (should (eq (keymap-lookup ghostel-mode-map "M-SPC") #'cj/ai-term-next)))
-
-(ert-deftest test-ai-term-meta-space-in-keymap-exceptions ()
-  "Regression: M-SPC is in `ghostel-keymap-exceptions' so semi-char mode lets it
-reach Emacs instead of forwarding it to the pty."
-  (should (member "M-SPC" ghostel-keymap-exceptions))
-  (should-not (eq (keymap-lookup ghostel-semi-char-mode-map "M-SPC")
-                  'ghostel--send-event)))
+(ert-deftest test-ai-term-meta-space-bound-in-eat-semi-char-mode-map ()
+  "Normal: M-SPC is bound in `eat-semi-char-mode-map' so swap works inside an
+agent.  EAT forwards unbound keys to the pty, so the bind is what lets it reach
+Emacs -- no ghostel-style exception list or rebuild is needed."
+  (should (eq (keymap-lookup eat-semi-char-mode-map "M-SPC") #'cj/ai-term-next)))
 
 (ert-deftest test-ai-term-f9-family-removed-globally ()
   "Regression: the old F9 family no longer binds the ai-term commands globally."

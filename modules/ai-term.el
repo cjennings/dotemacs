@@ -81,16 +81,12 @@
 (require 'host-environment)
 (require 'keybindings)  ;; provides cj/register-prefix-map (C-; a)
 
-(declare-function ghostel "ghostel" (&optional arg))
-(declare-function ghostel-send-string "ghostel" (string))
-(declare-function ghostel--rebuild-semi-char-keymap "ghostel" ())
-(defvar ghostel-keymap-exceptions)
-(defvar ghostel-mode-map)
-(defvar ghostel-buffer-name)
-(defvar ghostel-buffer-name-function)
+(declare-function eat "eat" (&optional program arg))
+(defvar eat-buffer-name)
+(defvar eat-semi-char-mode-map)
 
 (defgroup ai-term nil
-  "In-Emacs AI-agent launcher with a vertical-split ghostel terminal."
+  "In-Emacs AI-agent launcher with a vertical-split EAT terminal."
   :group 'tools)
 
 (defcustom cj/ai-term-agent-command
@@ -101,15 +97,6 @@ The default invokes the Claude Code CLI; set it to whatever terminal
 agent you run (aider, an open-source LLM TUI, etc.)."
   :type 'string
   :group 'ai-term)
-
-(defvar cj/--ai-term-suppress-tmux nil
-  "When non-nil, the generic ghostel tmux-launch hook skips its auto-tmux step.
-
-ai-term dynamically binds this around `(ghostel)' so the hook in
-term-config.el doesn't send a bare \"tmux\\n\" before the named
-session launch command runs.  The hook reads the variable via
-`bound-and-true-p' so loading order between the two modules doesn't
-matter.")
 
 (defcustom cj/ai-term-project-roots
   (list (expand-file-name "~/.emacs.d"))
@@ -669,19 +656,26 @@ split) when the user is focused in agent and switches projects."
 (dolist (entry (cj/--ai-term-display-rule-list))
   (add-to-list 'display-buffer-alist entry))
 
+(defun cj/--ai-term-send-string (buffer string)
+  "Send STRING to BUFFER's terminal process (the agent's shell).
+Sends to the pty directly so the launch command reaches the shell EAT runs."
+  (let ((proc (get-buffer-process buffer)))
+    (when (process-live-p proc)
+      (process-send-string proc string))))
+
 (defun cj/--ai-term-show-or-create (dir name)
   "Show or create the AI-term buffer for project DIR with buffer NAME.
 
 If a buffer named NAME exists with a live process, display it.  If
 the buffer exists but its process is dead, kill it and recreate.  If
-no such buffer exists, create a new ghostel terminal in DIR and send
+no such buffer exists, create a new EAT terminal in DIR and send
 the project's tmux launch command (see `cj/--ai-term-launch-command') so
 the same project basename reattaches across Emacs restarts.
 
-The dynamic binding of `cj/--ai-term-suppress-tmux' around `(ghostel)'
-suppresses the generic tmux-launch hook in term-config.el so
-it doesn't fire a bare \"tmux\\n\" before the project-named launch
-command runs.
+EAT runs a plain shell with no auto-tmux hook, so the named
+`tmux new-session -A' launch command is the only thing that starts the
+session -- the spike confirmed EAT + tmux detach and reattach exactly
+like ghostel + tmux did.
 
 Records DIR in `cj/--ai-term-mru' (whichever branch runs) so the
 project picker can list recently-opened projects first.  Returns the
@@ -695,28 +689,22 @@ buffer."
      (t
       (when existing
         (kill-buffer existing))
-      ;; `ghostel' switches to its buffer in the selected window before our
+      ;; `eat' switches to its buffer in the selected window before our
       ;; display-buffer-alist rule can route it; `save-window-excursion'
       ;; reverts that, and the explicit display-buffer below routes the buffer
-      ;; through the alist into the agent slot.  `ghostel-buffer-name' is bound
-      ;; to NAME so the terminal is created under the agent name, and
-      ;; `ghostel-buffer-name-function' is pinned nil (dynamically during
-      ;; creation, then buffer-locally) so OSC title escapes from the agent
-      ;; don't rename it out from under the "agent [" prefix that buffer
-      ;; detection and the display rule key on.
+      ;; through the alist into the agent slot.  `eat-buffer-name' is bound to
+      ;; NAME so the terminal is created under the agent name; EAT (unlike
+      ;; ghostel) does not rename the buffer from the terminal's OSC title, so
+      ;; the "agent [" prefix that buffer detection and the display rule key on
+      ;; stays put.
       (save-window-excursion
         (let ((default-directory dir)
-              (ghostel-buffer-name name)
-              (ghostel-buffer-name-function nil)
-              (cj/--ai-term-suppress-tmux t))
-          (let ((buf (ghostel)))
-            (when (buffer-live-p buf)
-              (with-current-buffer buf
-                (setq-local ghostel-buffer-name-function nil))))))
+              (eat-buffer-name name))
+          (eat)))
       (let ((buf (get-buffer name)))
         (with-current-buffer buf
-          (ghostel-send-string (cj/--ai-term-launch-command dir))
-          (ghostel-send-string "\n"))
+          (cj/--ai-term-send-string
+           buf (concat (cj/--ai-term-launch-command dir) "\n")))
         (display-buffer buf)
         buf)))))
 
@@ -818,7 +806,7 @@ without firing real `display-buffer' or `quit-window' calls."
          (t '(pick-project))))))))
 
 (defun cj/ai-term-pick-project (&optional arg)
-  "Pick an AI-agent project and open or reuse its ghostel terminal.
+  "Pick an AI-agent project and open or reuse its EAT terminal.
 
 The project is picked from a filtered completing-read list of dirs
 that contain .ai/protocols.org.  The terminal buffer is named
@@ -831,8 +819,8 @@ With prefix ARG, display the buffer without selecting its window.
 Bound to C-F9 -- always shows the project picker, even when an agent
 buffer is currently displayed.
 
-ghostel renders in terminal frames as well as GUI frames, so this
-launches from either (only kitty inline-graphics degrade in a TTY)."
+EAT renders in terminal frames as well as GUI frames, so this
+launches from either."
   (interactive "P")
   (let* ((dir (cj/--ai-term-pick-project))
          (name (cj/--ai-term-buffer-name dir))
@@ -1067,16 +1055,13 @@ picker and C-; a k closes an agent."
     "C-; a k" "kill agent"
     "M-SPC"   "ai-term: next agent"))
 
-;; In ghostel's semi-char mode, keys not in `ghostel-keymap-exceptions' are
-;; forwarded to the pty, and `ghostel-semi-char-mode-map' outranks the major
-;; mode map.  M-SPC (swap to the next agent) must reach Emacs from inside an
-;; agent buffer, so add it to the exceptions, rebuild the semi-char map, and
-;; bind it in `ghostel-mode-map'.  C-; is already an exception (term-config),
-;; so the C-; a family resolves through the global prefix without extra wiring.
-(with-eval-after-load 'ghostel
-  (keymap-set ghostel-mode-map "M-SPC" #'cj/ai-term-next)
-  (add-to-list 'ghostel-keymap-exceptions "M-SPC")
-  (ghostel--rebuild-semi-char-keymap))
+;; In EAT's semi-char mode, keys not bound in `eat-semi-char-mode-map' are
+;; forwarded to the pty.  M-SPC (swap to the next agent) must reach Emacs from
+;; inside an agent buffer, so bind it in that map -- no exception-list or rebuild
+;; dance like ghostel needed.  C-; is already bound there (eat-config), so the
+;; C-; a family resolves through the global prefix without extra wiring.
+(with-eval-after-load 'eat
+  (keymap-set eat-semi-char-mode-map "M-SPC" #'cj/ai-term-next))
 
 ;; ------------------- Wrap-it-up teardown + shutdown -------------------------
 ;;
