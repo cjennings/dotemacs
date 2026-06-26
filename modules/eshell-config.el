@@ -179,6 +179,15 @@ pairs where COMMAND is the `cd' string `eshell/alias' should run."
     (delete-window)))
 (advice-add 'eshell-life-is-too-much :after 'cj/eshell-delete-window-on-exit)
 
+;; Run eshell's external commands through EAT (a real terminal): visual commands
+;; (vim, htop, less) render properly and ANSI output is faithful, while eshell
+;; stays the shell -- elisp functions as commands + TRAMP transparency.  EAT
+;; handles color itself, so it supersedes xterm-color for eshell; the
+;; xterm-color block below stays for now and steps aside if colors double up.
+(with-eval-after-load 'esh-mode
+  (require 'eat)
+  (eat-eshell-mode 1))
+
 (use-package eshell-toggle
   :custom
   (eshell-toggle-size-fraction 2)
