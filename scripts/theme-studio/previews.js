@@ -296,28 +296,52 @@ function renderGitGutterPreview(){const a='git-gutter',L=[];
 function renderEatPreview(){const a='eat',L=[],c=(f,t)=>os(a,'eat-term-color-'+f,t),x=(f,t)=>os(a,'eat-term-'+f,t),an=(g,t)=>os(a,'eat-shell-prompt-annotation-'+g,t);
   const p=g=>an(g,g==='success'?'✔':g==='failure'?'✘':'…')+' ~/projects/app $ ';
   // 1. directory listing -- the widest palette block (dircolors)
-  L.push(p('success')+'eza --color');
-  L.push(c('blue','src/')+'  '+c('blue','build/')+'  '+c('bright-green','run.sh')+'  '+c('cyan','latest -> v2.1/')+'  '+c('red','backup.tar.gz')+'  '+c('magenta','logo.png')+'  README.md');
+  L.push(p('success')+'eza -la --color');
+  L.push('drwxr-xr-x     - 14:02  '+c('blue','.git/'));
+  L.push('.rw-r--r--   120 09:11  .gitignore');
+  L.push('drwxr-xr-x     - 14:02  '+c('blue','src/'));
+  L.push('drwxr-xr-x     - 13:48  '+c('blue','tests/'));
+  L.push('.rwxr-xr-x  2.1k 14:00  '+c('bright-green','run.sh'));
+  L.push('lrwxr-xr-x     - 14:01  '+c('cyan','latest')+' -> '+c('blue','v2.1/'));
+  L.push('.rw-r--r--  4.5M 22:30  '+c('red','backup.tar.gz'));
+  L.push('.rw-r--r--   88k 18:05  '+c('magenta','logo.png'));
+  L.push('.rw-r--r--  3.2k 14:02  README.md');
   L.push('');
   // 2. git status -- staged green, unstaged/untracked red
   L.push(p('success')+'git status -sb');
-  L.push(c('bright-cyan','## main...origin/main'));
-  L.push(c('green','A  src/cache.el')+'   '+c('green','M  README.md'));
-  L.push(c('red',' M init.el')+'   '+c('red',' D old.el')+'   '+c('red','?? scratch.txt'));
+  L.push(c('bright-cyan','## main...origin/main [ahead 2]'));
+  L.push(c('green','A  src/eat-preview.js'));
+  L.push(c('green','A  src/cache.el'));
+  L.push(c('green','M  README.md'));
+  L.push(c('red',' M init.el'));
+  L.push(c('red',' M modules/term-config.el'));
+  L.push(c('red',' D modules/old-vterm.el'));
+  L.push(c('red','?? docs/design/eat.org'));
+  L.push(c('red','?? scratch.txt'));
   L.push('');
-  // 3. git log --decorate -- yellow hashes, colored refs
+  // 3. git log --decorate -- yellow hashes, colored refs, a merge
   L.push(p('success')+'git log --oneline --graph --decorate');
-  L.push(c('bright-black','* ')+c('yellow','a1b2c3d')+' '+c('bright-cyan','(HEAD -> ')+c('bright-green','main')+c('bright-cyan',')')+' add eat preview blocks');
-  L.push(c('bright-black','* ')+c('yellow','9f8e7d6')+' '+c('bright-yellow','(tag: v2.1)')+' '+c('bright-red','(origin/main)')+' lowercase labels');
-  L.push(c('bright-black','* ')+c('yellow','3c4d5e6')+' expose eat faces');
+  L.push(c('bright-black','* ')+c('yellow','a1b2c3d')+' '+c('bright-cyan','(HEAD -> ')+c('bright-green','main')+c('bright-cyan',')')+' richer eat preview blocks');
+  L.push(c('bright-black','* ')+c('yellow','9f8e7d6')+' '+c('bright-yellow','(tag: v2.1, ')+c('bright-red','origin/main')+c('bright-yellow',')')+' lowercase the labels');
+  L.push(c('bright-black','*   ')+c('yellow','3c4d5e6')+' Merge branch '+c('green',"'eat-faces'"));
+  L.push(c('bright-black','|\\  '));
+  L.push(c('bright-black','| * ')+c('yellow','7a8b9c0')+' expose eat faces to studio');
+  L.push(c('bright-black','| * ')+c('yellow','1d2e3f4')+' add eat-term-color docstrings');
+  L.push(c('bright-black','|/  '));
+  L.push(c('bright-black','* ')+c('yellow','5f6a7b8')+' toggle eat instead of ghostel on f12');
+  L.push(c('bright-black','* ')+c('yellow','2c3d4e5')+' calendar-sync robustness fixes');
   L.push('');
-  // 4. test run -- pass green, skip yellow, fail red, bold summary, faint timing
+  // 4. test run -- pass green, skip yellow, fail red, bold summary, faint detail
   L.push(p('failure')+'make test');
-  L.push(c('green','✔ PASS')+'  init-config    (12)');
-  L.push(c('green','✔ PASS')+'  eat-toggle     (19)');
-  L.push(c('yellow','⚠ SKIP')+'  network-sync   (2, offline)');
-  L.push(c('red','✘ FAIL')+'  calendar-parse (1)');
-  L.push(x('bold','Ran 34 tests, 33 passed, ')+c('red','1 failed')+'  '+x('faint','0.84s'));
+  L.push(c('green','✔ PASS')+'  term-toggle      '+x('faint','(19 tests)'));
+  L.push(c('green','✔ PASS')+'  ai-term          '+x('faint','(158 tests)'));
+  L.push(c('green','✔ PASS')+'  calendar-sync    '+x('faint','(575 tests)'));
+  L.push(c('green','✔ PASS')+'  dashboard        '+x('faint','(18 tests)'));
+  L.push(c('yellow','⚠ SKIP')+'  network-sync     '+x('faint','(2 tests, offline)'));
+  L.push(c('green','✔ PASS')+'  transcription    '+x('faint','(44 tests)'));
+  L.push(c('red','✘ FAIL')+'  org-roam-refile  '+x('faint','(1 test)'));
+  L.push('        '+x('italic','expected 3 refile targets, got 0'));
+  L.push(x('bold','Ran 817 tests, 815 passed, ')+c('yellow','1 skipped, ')+c('red','1 failed')+'   '+x('faint','0.84s'));
   L.push('');
   // swatch reference key, below the realistic blocks
   L.push(x('faint','palette')+'  '+c('black','■')+c('red','■')+c('green','■')+c('yellow','■')+c('blue','■')+c('magenta','■')+c('cyan','■')+c('white','■')+'  '+c('bright-black','■')+c('bright-red','■')+c('bright-green','■')+c('bright-yellow','■')+c('bright-blue','■')+c('bright-magenta','■')+c('bright-cyan','■')+c('bright-white','■'));
