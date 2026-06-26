@@ -38,6 +38,20 @@
   :custom
   ;; Close the EAT buffer when its shell exits.
   (eat-kill-buffer-on-exit t)
+  ;; Shell-integration UX.  These are EAT defaults, set explicitly to document
+  ;; intent and survive default changes.  They only light up once the shell
+  ;; sources EAT's integration script -- see the EAT block in the zsh rc.
+  (eat-enable-directory-tracking t)        ; Emacs follows the terminal's cwd
+  (eat-enable-shell-prompt-annotation t)   ; the success/running/failure prompt glyphs
+  (eat-enable-shell-command-history t)     ; terminal history into EAT line-mode isearch
+  ;; Interaction.
+  (eat-enable-mouse t)                      ; mouse clicks + selection in TUIs (default)
+  (eat-enable-kill-from-terminal t)         ; terminal selection -> Emacs kill-ring (default)
+  (eat-enable-yank-to-terminal t)           ; Emacs kill-ring -> the terminal (off by default)
+  ;; Fidelity.
+  (eat-enable-alternative-display t)        ; alt-screen so TUIs restore scrollback on exit (default)
+  (eat-term-scrollback-size (* 10 1024 1024)) ; ~10MB of scrollback, matching the old ghostel
+  ;; Truecolor is already on: eat-term-name auto-selects the compiled eat-truecolor terminfo.
   :config
   ;; F12 and C-; must reach Emacs from inside EAT.  In semi-char mode (EAT's
   ;; default) EAT forwards unbound keys to the terminal -- a letter runs
