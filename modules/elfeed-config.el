@@ -65,6 +65,9 @@
           ;; Pivot with Kara Swisher and Scott Galloway
           ("https://www.youtube.com/feeds/videos.xml?channel_id=UCBHGZpDF2fsqPIPi0pNyuTg" yt pivot)
 
+          ;; Platypus Economics with Justin Wolfers
+          ("https://www.youtube.com/feeds/videos.xml?channel_id=UCB5eaPWEwR6wR2MxRx64s0g" yt platypus)
+
           ;; The Prof G Pod
 		  ("https://www.youtube.com/feeds/videos.xml?playlist_id=PLtQ-jBytlXCasRuBG86m22rOQfrEPcctq" yt profg)
 
