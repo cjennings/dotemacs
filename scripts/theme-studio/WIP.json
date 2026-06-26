@@ -820,11 +820,11 @@
    "height": null
   },
   "highlight": {
-   "fg": "#eddba7",
-   "bg": null,
+   "fg": "#dab53d",
+   "bg": "#424f5e",
    "distant-fg": null,
    "family": null,
-   "weight": "bold",
+   "weight": null,
    "slant": null,
    "underline": null,
    "strike": null,
@@ -873,7 +873,7 @@
   },
   "mode-line-inactive": {
    "fg": "#100f0f",
-   "bg": "#100f0f",
+   "bg": null,
    "distant-fg": null,
    "family": null,
    "weight": null,
@@ -893,7 +893,7 @@
   },
   "fringe": {
    "fg": "#f3e7c5",
-   "bg": "#100f0f",
+   "bg": null,
    "distant-fg": null,
    "family": null,
    "weight": "bold",
@@ -909,7 +909,7 @@
   },
   "line-number": {
    "fg": "#54677d",
-   "bg": "#100f0f",
+   "bg": null,
    "distant-fg": null,
    "family": null,
    "weight": null,
@@ -925,7 +925,7 @@
   },
   "line-number-current-line": {
    "fg": "#e6ce88",
-   "bg": "#100f0f",
+   "bg": null,
    "distant-fg": null,
    "family": null,
    "weight": null,
@@ -941,7 +941,7 @@
   },
   "minibuffer-prompt": {
    "fg": "#899bb1",
-   "bg": "#100f0f",
+   "bg": null,
    "distant-fg": null,
    "family": null,
    "weight": "bold",
@@ -989,7 +989,7 @@
   },
   "isearch-fail": {
    "fg": "#cb6b4d",
-   "bg": "#100f0f",
+   "bg": null,
    "distant-fg": null,
    "family": null,
    "weight": "bold",
@@ -1036,8 +1036,8 @@
    "height": null
   },
   "link": {
-   "fg": "#0000ee",
-   "bg": "#100f0f",
+   "fg": "#5f8bf9",
+   "bg": null,
    "distant-fg": null,
    "family": null,
    "weight": null,
@@ -1056,7 +1056,7 @@
   },
   "error": {
    "fg": "#cb6b4d",
-   "bg": "#100f0f",
+   "bg": null,
    "distant-fg": null,
    "family": null,
    "weight": "bold",
@@ -1072,7 +1072,7 @@
   },
   "warning": {
    "fg": "#ab8d2e",
-   "bg": "#100f0f",
+   "bg": null,
    "distant-fg": null,
    "family": null,
    "weight": "bold",
@@ -1088,7 +1088,7 @@
   },
   "success": {
    "fg": "#74932f",
-   "bg": "#100f0f",
+   "bg": null,
    "distant-fg": null,
    "family": null,
    "weight": "bold",
@@ -1104,7 +1104,7 @@
   },
   "vertical-border": {
    "fg": "#4a4b4f",
-   "bg": "#100f0f",
+   "bg": null,
    "distant-fg": null,
    "family": null,
    "weight": null,
@@ -1130,30 +1130,17 @@
   "ty",
   "cmd",
   "cm",
-  "ui:cursor",
-  "ui:fringe",
-  "ui:line-number",
-  "ui:line-number-current-line",
-  "ui:minibuffer-prompt",
-  "ui:isearch-fail",
-  "ui:show-paren-match",
-  "ui:error",
-  "ui:warning",
-  "ui:success",
   "con",
   "pkg:git-gutter:git-gutter:deleted",
   "pkg:git-gutter:git-gutter:modified",
   "pkg:git-gutter:git-gutter:added",
   "pkg:git-gutter:git-gutter:unchanged",
   "pkg:git-gutter:git-gutter:separator",
-  "ui:link",
   "p",
   "pp",
   "op",
   "punc",
   "num",
-  "ui:lazy-highlight",
-  "ui:isearch",
   "str",
   "esc",
   "re",
@@ -1319,19 +1306,6 @@
   "pkg:company:company-tooltip-search-selection",
   "pkg:org-noter:org-noter-notes-exist-face",
   "pkg:org-noter:org-noter-no-notes-exist-face",
-  "pkg:elfeed:elfeed-search-date-face",
-  "pkg:elfeed:elfeed-search-title-face",
-  "pkg:elfeed:elfeed-search-tag-face",
-  "pkg:elfeed:elfeed-search-unread-count-face",
-  "pkg:elfeed:elfeed-search-filter-face",
-  "pkg:elfeed:elfeed-search-last-update-face",
-  "pkg:elfeed:elfeed-log-date-face",
-  "pkg:elfeed:elfeed-log-error-level-face",
-  "pkg:elfeed:elfeed-log-warn-level-face",
-  "pkg:elfeed:elfeed-log-info-level-face",
-  "pkg:elfeed:elfeed-log-debug-level-face",
-  "pkg:elfeed:elfeed-search-unread-title-face",
-  "pkg:elfeed:elfeed-search-feed-face",
   "pkg:org-mode:org-scheduled-today",
   "pkg:ghostel:ghostel-default",
   "pkg:ghostel:ghostel-fake-cursor",
@@ -1406,16 +1380,12 @@
   "pkg:pearl:pearl-modified-unknown",
   "pkg:pearl:pearl-readonly-comment",
   "pkg:pearl:pearl-editable-comment",
-  "ui:mode-line",
-  "ui:mode-line-highlight",
   "pkg:alert:alert-high-face",
   "pkg:alert:alert-normal-face",
   "pkg:alert:alert-trivial-face",
   "pkg:alert:alert-urgent-face",
   "pkg:alert:alert-moderate-face",
   "pkg:alert:alert-low-face",
-  "ui:show-paren-mismatch",
-  "ui:vertical-border",
   "pkg:ansi-color:ansi-color-black",
   "pkg:ansi-color:ansi-color-red",
   "pkg:ansi-color:ansi-color-green",
@@ -1495,7 +1465,6 @@
   "pkg:dired:dired-flagged",
   "pkg:dired:dired-ignored",
   "pkg:dired:dired-warning",
-  "ui:mode-line-inactive",
   "pkg:nerd-icons:nerd-icons-blue",
   "pkg:nerd-icons:nerd-icons-blue-alt",
   "pkg:nerd-icons:nerd-icons-cyan",
@@ -2789,47 +2758,47 @@
   },
   "elfeed": {
    "elfeed-search-date-face": {
-    "fg": "#74932f",
+    "fg": "#606267",
     "bg": null,
     "slant": "italic",
     "inherit": null,
     "source": "user"
    },
    "elfeed-search-title-face": {
-    "fg": "#7c838a",
+    "fg": "#606267",
     "bg": null,
     "slant": "italic",
     "inherit": null,
     "source": "user"
    },
    "elfeed-search-unread-title-face": {
-    "fg": "#e6ce88",
+    "fg": "#cbd0d6",
     "bg": null,
     "inherit": null,
     "source": "user"
    },
    "elfeed-search-feed-face": {
-    "fg": "#9f80c9",
+    "fg": "#7ba1c5",
     "bg": null,
     "inherit": null,
     "source": "user"
    },
    "elfeed-search-tag-face": {
-    "fg": "#899bb1",
+    "fg": "#67809c",
     "bg": null,
     "slant": "italic",
     "inherit": null,
     "source": "user"
    },
    "elfeed-search-unread-count-face": {
-    "fg": "#ab8d2e",
+    "fg": "#777980",
     "bg": null,
     "slant": "italic",
     "inherit": null,
     "source": "user"
    },
    "elfeed-search-filter-face": {
-    "fg": "#ab8d2e",
+    "fg": "#777980",
     "bg": null,
     "weight": "bold",
     "slant": "italic",
@@ -2837,39 +2806,39 @@
     "source": "user"
    },
    "elfeed-search-last-update-face": {
-    "fg": "#ab8d2e",
+    "fg": "#777980",
     "bg": null,
     "slant": "italic",
     "inherit": null,
     "source": "user"
    },
    "elfeed-log-date-face": {
-    "fg": "#74932f",
+    "fg": "#777980",
     "bg": null,
     "inherit": null,
     "source": "user"
    },
    "elfeed-log-error-level-face": {
-    "fg": "#cb6b4d",
+    "fg": "#a85b42",
     "bg": null,
     "weight": "bold",
     "inherit": null,
-    "source": "default"
+    "source": "user"
    },
    "elfeed-log-warn-level-face": {
-    "fg": "#dab53d",
+    "fg": "#ab8d2e",
     "bg": null,
     "inherit": null,
-    "source": "default"
+    "source": "user"
    },
    "elfeed-log-info-level-face": {
-    "fg": "#74932f",
+    "fg": "#546c20",
     "bg": null,
     "inherit": null,
     "source": "user"
    },
    "elfeed-log-debug-level-face": {
-    "fg": "#a9b2bb",
+    "fg": "#7c838a",
     "bg": null,
     "inherit": null,
     "source": "user"
