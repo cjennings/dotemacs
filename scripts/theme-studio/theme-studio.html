@@ -2961,17 +2961,36 @@ function renderGitGutterPreview(){const a='git-gutter',L=[];
   L.push(os(a,'git-gutter:deleted','_')+os(a,'git-gutter:separator','|')+' (deleted lines marker)');
   L.push(os(a,'git-gutter:unchanged',' ')+os(a,'git-gutter:separator','|')+' '+os(a,'git-gutter:unchanged','unchanged line of code'));
   return previewLines(L);}
-function renderEatPreview(){const a='eat',L=[];
-  L.push(os(a,'eat-shell-prompt-annotation-success','✔')+' ~/projects $ ls --color');
-  L.push(os(a,'eat-term-color-blue','build/')+'  '+os(a,'eat-term-color-blue','src/')+'  '+os(a,'eat-term-color-green','run.sh')+'  README.md');
+function renderEatPreview(){const a='eat',L=[],c=(f,t)=>os(a,'eat-term-color-'+f,t),x=(f,t)=>os(a,'eat-term-'+f,t),an=(g,t)=>os(a,'eat-shell-prompt-annotation-'+g,t);
+  const p=g=>an(g,g==='success'?'✔':g==='failure'?'✘':'…')+' ~/projects/app $ ';
+  // 1. directory listing -- the widest palette block (dircolors)
+  L.push(p('success')+'eza --color');
+  L.push(c('blue','src/')+'  '+c('blue','build/')+'  '+c('bright-green','run.sh')+'  '+c('cyan','latest -> v2.1/')+'  '+c('red','backup.tar.gz')+'  '+c('magenta','logo.png')+'  README.md');
   L.push('');
-  L.push('palette  '+os(a,'eat-term-color-black','■')+os(a,'eat-term-color-red','■')+os(a,'eat-term-color-green','■')+os(a,'eat-term-color-yellow','■')+os(a,'eat-term-color-blue','■')+os(a,'eat-term-color-magenta','■')+os(a,'eat-term-color-cyan','■')+os(a,'eat-term-color-white','■')+'   normal');
-  L.push('         '+os(a,'eat-term-color-bright-black','■')+os(a,'eat-term-color-bright-red','■')+os(a,'eat-term-color-bright-green','■')+os(a,'eat-term-color-bright-yellow','■')+os(a,'eat-term-color-bright-blue','■')+os(a,'eat-term-color-bright-magenta','■')+os(a,'eat-term-color-bright-cyan','■')+os(a,'eat-term-color-bright-white','■')+'   bright');
+  // 2. git status -- staged green, unstaged/untracked red
+  L.push(p('success')+'git status -sb');
+  L.push(c('bright-cyan','## main...origin/main'));
+  L.push(c('green','A  src/cache.el')+'   '+c('green','M  README.md'));
+  L.push(c('red',' M init.el')+'   '+c('red',' D old.el')+'   '+c('red','?? scratch.txt'));
   L.push('');
-  L.push(os(a,'eat-term-bold','bold')+'  '+os(a,'eat-term-faint','faint')+'  '+os(a,'eat-term-italic','italic')+'  '+os(a,'eat-term-slow-blink','slow-blink')+'  '+os(a,'eat-term-fast-blink','fast-blink'));
+  // 3. git log --decorate -- yellow hashes, colored refs
+  L.push(p('success')+'git log --oneline --graph --decorate');
+  L.push(c('bright-black','* ')+c('yellow','a1b2c3d')+' '+c('bright-cyan','(HEAD -> ')+c('bright-green','main')+c('bright-cyan',')')+' add eat preview blocks');
+  L.push(c('bright-black','* ')+c('yellow','9f8e7d6')+' '+c('bright-yellow','(tag: v2.1)')+' '+c('bright-red','(origin/main)')+' lowercase labels');
+  L.push(c('bright-black','* ')+c('yellow','3c4d5e6')+' expose eat faces');
   L.push('');
-  L.push(os(a,'eat-shell-prompt-annotation-running','…')+' running tests');
-  L.push(os(a,'eat-shell-prompt-annotation-failure','✘')+' build failed');
+  // 4. test run -- pass green, skip yellow, fail red, bold summary, faint timing
+  L.push(p('failure')+'make test');
+  L.push(c('green','✔ PASS')+'  init-config    (12)');
+  L.push(c('green','✔ PASS')+'  eat-toggle     (19)');
+  L.push(c('yellow','⚠ SKIP')+'  network-sync   (2, offline)');
+  L.push(c('red','✘ FAIL')+'  calendar-parse (1)');
+  L.push(x('bold','Ran 34 tests, 33 passed, ')+c('red','1 failed')+'  '+x('faint','0.84s'));
+  L.push('');
+  // swatch reference key, below the realistic blocks
+  L.push(x('faint','palette')+'  '+c('black','■')+c('red','■')+c('green','■')+c('yellow','■')+c('blue','■')+c('magenta','■')+c('cyan','■')+c('white','■')+'  '+c('bright-black','■')+c('bright-red','■')+c('bright-green','■')+c('bright-yellow','■')+c('bright-blue','■')+c('bright-magenta','■')+c('bright-cyan','■')+c('bright-white','■'));
+  L.push(x('faint','attrs')+'    '+x('bold','bold')+'  '+x('faint','faint')+'  '+x('italic','italic')+'  '+x('slow-blink','slow-blink')+'  '+x('fast-blink','fast-blink'));
+  L.push(x('faint','prompt')+'   '+an('success','✔ ok')+'  '+an('running','… running')+'  '+an('failure','✘ failed'));
   return previewLines(L);}
 function renderFlycheckPreview(){const a='flycheck',L=[];
   L.push(os(a,'flycheck-fringe-error','E')+os(a,'flycheck-fringe-warning','W')+os(a,'flycheck-fringe-info','I')+'  x = '+os(a,'flycheck-error','undefined_name')+'('+os(a,'flycheck-warning','unused_arg')+')  '+os(a,'flycheck-info','# note'));
