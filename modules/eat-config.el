@@ -431,13 +431,21 @@ pty; without tmux, moves point up in EAT's emacs-mode buffer."
 
 (defvar eat-mode-map)
 (declare-function eat-semi-char-mode "eat")
+(declare-function eat-self-input "eat")
 (with-eval-after-load 'eat
   (keymap-set eat-semi-char-mode-map "C-<up>" #'cj/term-copy-mode-up)
   ;; Escape forwards ESC to the pty, so it cancels tmux copy-mode (tmux binds
   ;; Escape to cancel) and works in TUIs; in EAT's own emacs/char mode it returns
   ;; to semi-char.  One key gets out of either copy view.
   (keymap-set eat-semi-char-mode-map "<escape>" #'cj/term-send-escape)
-  (keymap-set eat-mode-map "<escape>" #'eat-semi-char-mode))
+  (keymap-set eat-mode-map "<escape>" #'eat-semi-char-mode)
+  ;; Word-motion arrows edit the terminal program's input (claude, readline), so
+  ;; forward them to the pty.  EAT's default leaves them in the non-bound-keys
+  ;; list, which moved Emacs point instead and desynced it from the real cursor
+  ;; (point jumped back on the next keystroke).  Window arrows (S-, C-M-) keep
+  ;; reaching Emacs for windmove / buffer-move.
+  (dolist (key '("C-<left>" "C-<right>" "M-<left>" "M-<right>"))
+    (keymap-set eat-semi-char-mode-map key #'eat-self-input)))
 
 (provide 'eat-config)
 ;;; eat-config.el ends here

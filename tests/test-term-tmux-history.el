@@ -288,5 +288,13 @@ returns to semi-char from EAT's emacs/char mode -- one exit key for both."
       (cj/term-send-escape)
       (should (equal sent '("\e"))))))
 
+(ert-deftest test-term-word-motion-arrows-forwarded-not-window-arrows ()
+  "Normal: C-/M-left/right forward to the terminal (word motion in the program's
+input) instead of moving Emacs point; windmove's S-arrows still reach Emacs."
+  (dolist (key '("C-<left>" "C-<right>" "M-<left>" "M-<right>"))
+    (should (eq (keymap-lookup eat-semi-char-mode-map key) #'eat-self-input)))
+  (dolist (key '("S-<left>" "S-<right>"))
+    (should-not (eq (keymap-lookup eat-semi-char-mode-map key) #'eat-self-input))))
+
 (provide 'test-term-tmux-history)
 ;;; test-term-tmux-history.el ends here
