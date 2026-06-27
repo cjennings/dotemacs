@@ -404,6 +404,12 @@ Try to use the Calibre book id from the parent folder name (for example,
 		(calibredb-search-keyword-filter "")
 		(message "CalibreDB: no metadata; showing all"))))))
 
+(require 'system-lib)
+;; nov renders epub via shr, which paints with manual `face' properties.  Left in
+;; `global-font-lock-mode' font-lock overwrites them and the book loses its
+;; colors, the same issue as elfeed-show and mu4e-view.  Exclude nov-mode.
+(cj/exclude-from-global-font-lock 'nov-mode)
+
 (use-package nov
   :mode
   ("\\.epub\\'" . nov-mode)

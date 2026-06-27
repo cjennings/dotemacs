@@ -73,6 +73,12 @@
 
 ;; --------------------------------- EWW Config --------------------------------
 
+(require 'system-lib)
+;; eww renders pages with shr, which paints with manual `face' properties.  Left
+;; in `global-font-lock-mode' font-lock overwrites them and the page loses its
+;; colors, the same issue as elfeed-show and mu4e-view.  Exclude eww-mode.
+(cj/exclude-from-global-font-lock 'eww-mode)
+
 (use-package eww
   :ensure nil ;; built-in
   :bind
