@@ -309,7 +309,13 @@ opens the chosen recipient in `signel-chat'."
          (candidates (cons note-self cj/signel--contact-cache))
          (table (lambda (string pred action)
                   (if (eq action 'metadata)
-                      '(metadata
+                      `(metadata
+                        (category . signal-contact)
+                        (annotation-function
+                         . ,(lambda (cand)
+                              (let ((r (cdr (assoc cand candidates))))
+                                (when r
+                                  (concat "  " (propertize r 'face 'completions-annotations))))))
                         (display-sort-function . identity)
                         (cycle-sort-function . identity))
                     (complete-with-action action candidates string pred))))

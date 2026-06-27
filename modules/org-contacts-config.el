@@ -168,15 +168,29 @@ Added: %U"
 
 ;;; ------------------------- Quick Contact Functions ---------------------------
 
+(require 'system-lib)
+
 (defun cj/org-contacts-find ()
   "Find and open a contact."
   (interactive)
   (find-file contacts-file)
   (goto-char (point-min))
-  (let ((contact (completing-read "Find contact: "
-                                  (org-map-entries
-                                   (lambda () (nth 4 (org-heading-components)))
-                                   nil (list contacts-file)))))
+  (let* ((alist (org-map-entries
+                 (lambda ()
+                   (cons (nth 4 (org-heading-components))
+                         (or (org-entry-get nil "EMAIL")
+                             (org-entry-get nil "PHONE"))))
+                 nil (list contacts-file)))
+         (contact (completing-read
+                   "Find contact: "
+                   (cj/completion-table-annotated
+                    'contact
+                    (lambda (cand)
+                      (let ((info (cdr (assoc cand alist))))
+                        (when (and info (> (length info) 0))
+                          (concat "  " (propertize info 'face
+                                                   'completions-annotations)))))
+                    alist))))
     (goto-char (point-min))
     (search-forward contact)
     (org-fold-show-entry)
