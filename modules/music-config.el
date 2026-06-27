@@ -108,8 +108,6 @@
 (defvar emms-random-playlist)
 (defvar emms-playlist-selected-marker)
 (defvar emms-source-file-default-directory)
-(defvar emms-player-mpv-parameters)
-(defvar emms-player-mpv-regexp)
 (defvar emms-player-playing-p)
 (defvar emms-player-paused-p)
 (defvar emms-playlist-mode-map)
@@ -148,6 +146,57 @@
 
 (defvar cj/music-playlist-buffer-name "*EMMS-Playlist*"
   "Name of the EMMS playlist buffer used by this configuration.")
+
+;;; Subprocess mpv player (reliable playback)
+
+;; The IPC player (emms-player-mpv) drives mpv over a socket -- start mpv idle,
+;; connect, send loadfile.  That handshake was leaving mpv loaded but never
+;; streaming, so playback silently failed.  Driving mpv with the track as a
+;; direct argument -- the invocation that plays every time -- is the reliable
+;; path.  --no-config isolates this mpv from the interactive/video mpv setup so
+;; the two cannot interfere.  Pause is in place via process signals; in-track
+;; seek is not available with a subprocess player (the trade for reliability).
+
+(declare-function emms-player "emms")
+(declare-function emms-player-set "emms")
+(declare-function emms-player-simple-start "emms-player-simple")
+(declare-function emms-player-simple-stop "emms-player-simple")
+(defvar emms-player-simple-process-name)
+(defvar emms-player-cj/music-mpv)
+
+(defvar cj/music--mpv-regex
+  (concat "\\(?:\\." (regexp-opt cj/music-file-extensions) "\\'\\)"
+          "\\|\\`\\(?:https?\\|mms\\)://")
+  "Track names the subprocess mpv player handles: music files or stream URLs.")
+
+(defun cj/music--mpv-start (track)
+  "Play TRACK by running mpv with the track name as a direct argument."
+  (emms-player-simple-start (emms-track-name track)
+                            'emms-player-cj/music-mpv
+                            "mpv"
+                            (list "--no-video" "--no-config" "--really-quiet")))
+
+(defun cj/music--mpv-stop ()
+  "Stop the mpv subprocess."
+  (emms-player-simple-stop))
+
+(defun cj/music--mpv-playable-p (track)
+  "Return non-nil if the subprocess mpv player can play TRACK."
+  (and (executable-find "mpv")
+       (memq (emms-track-type track) '(file url))
+       (string-match cj/music--mpv-regex (emms-track-name track))))
+
+(defun cj/music--mpv-pause ()
+  "Pause the mpv subprocess in place by stopping it (SIGSTOP)."
+  (let ((proc (get-process emms-player-simple-process-name)))
+    (when (and proc (process-live-p proc))
+      (signal-process proc 'SIGSTOP))))
+
+(defun cj/music--mpv-resume ()
+  "Resume the paused mpv subprocess (SIGCONT)."
+  (let ((proc (get-process emms-player-simple-process-name)))
+    (when (and proc (process-live-p proc))
+      (signal-process proc 'SIGCONT))))
 
 ;;; Buffer-local state
 
@@ -843,7 +892,7 @@ For URL tracks: decoded URL."
   :commands (emms-mode-line-mode)
   :config
   (require 'emms-setup)
-  (require 'emms-player-mpv)
+  (require 'emms-player-simple)
   (require 'emms-playlist-mode)
   (require 'emms-source-file)
   (require 'emms-source-playlist)
@@ -852,8 +901,13 @@ For URL tracks: decoded URL."
   (setq emms-source-file-default-directory cj/music-root)
   (setq emms-playlist-default-major-mode 'emms-playlist-mode)
 
-  ;; Use MPV as player - MUST be set before emms-all
-  (setq emms-player-list '(emms-player-mpv))
+  ;; Use the reliable subprocess mpv player (built above) - MUST be set before emms-all
+  (setq emms-player-cj/music-mpv
+        (emms-player #'cj/music--mpv-start #'cj/music--mpv-stop
+                     #'cj/music--mpv-playable-p))
+  (emms-player-set emms-player-cj/music-mpv 'pause #'cj/music--mpv-pause)
+  (emms-player-set emms-player-cj/music-mpv 'resume #'cj/music--mpv-resume)
+  (setq emms-player-list '(emms-player-cj/music-mpv))
 
   ;; Now initialize EMMS
   (emms-all)
@@ -861,17 +915,6 @@ For URL tracks: decoded URL."
   ;; Disable modeline display (keep modeline clean)
   (emms-playing-time-display-mode -1)
   (emms-mode-line-mode -1)
-
-  ;; MPV configuration
-  ;; MPV supports both local files and stream URLs
-  (setq emms-player-mpv-parameters
-        '("--quiet" "--no-video" "--audio-display=no"))
-
-  ;; Update supported file types for mpv player
-  (setq emms-player-mpv-regexp
-        (concat "\\(?:\\`\\(?:https?\\|mms\\)://\\)\\|\\(?:\\."
-                (regexp-opt cj/music-file-extensions)
-                "\\'\\)"))
 
   ;; Keep cj/music-playlist-file in sync if playlist is cleared.
   ;; Ensure we don't stack duplicate advice on reload.
