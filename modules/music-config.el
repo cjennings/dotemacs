@@ -144,6 +144,9 @@
 (defvar cj/music-file-extensions '("aac" "flac" "m4a" "mp3" "ogg" "opus" "wav")
   "List of valid music file extensions.")
 
+(defvar cj/music-seek-seconds 5
+  "Seconds to move when seeking forward or backward in the current track.")
+
 (defvar cj/music-playlist-buffer-name "*EMMS-Playlist*"
   "Name of the EMMS playlist buffer used by this configuration.")
 
@@ -169,12 +172,21 @@
           "\\|\\`\\(?:https?\\|mms\\)://")
   "Track names the subprocess mpv player handles: music files or stream URLs.")
 
+(defvar cj/music--mpv-socket
+  (expand-file-name "emms/mpv-control.sock" user-emacs-directory)
+  "IPC control socket for the subprocess mpv player.
+mpv opens it per playback via --input-ipc-server.  It does NOT affect startup:
+mpv still plays the track passed as a direct argument, so the reliable start is
+unchanged.  The socket only carries control commands (seek) to the already
+playing process, which is where the old idle + loadfile handshake failed.")
+
 (defun cj/music--mpv-start (track)
   "Play TRACK by running mpv with the track name as a direct argument."
   (emms-player-simple-start (emms-track-name track)
                             'emms-player-cj/music-mpv
                             "mpv"
-                            (list "--no-video" "--no-config" "--really-quiet")))
+                            (list "--no-video" "--no-config" "--really-quiet"
+                                  (concat "--input-ipc-server=" cj/music--mpv-socket))))
 
 (defun cj/music--mpv-stop ()
   "Stop the mpv subprocess."
@@ -197,6 +209,32 @@
   (let ((proc (get-process emms-player-simple-process-name)))
     (when (and proc (process-live-p proc))
       (signal-process proc 'SIGCONT))))
+
+(defun cj/music--mpv-command (json)
+  "Send JSON (a one-line mpv IPC command) to the control socket.
+A no-op when nothing is playing or the socket is gone, so it never errors."
+  (when (file-exists-p cj/music--mpv-socket)
+    (ignore-errors
+      (let ((proc (make-network-process :name "cj-music-mpv-cmd"
+                                        :family 'local
+                                        :service cj/music--mpv-socket
+                                        :noquery t)))
+        (unwind-protect
+            (progn (process-send-string proc (concat json "\n"))
+                   (accept-process-output proc 0.1))
+          (delete-process proc))))))
+
+(defun cj/music-seek-forward ()
+  "Seek `cj/music-seek-seconds' seconds forward in the current track."
+  (interactive)
+  (cj/music--mpv-command
+   (format "{\"command\": [\"seek\", %d, \"relative\"]}" cj/music-seek-seconds)))
+
+(defun cj/music-seek-backward ()
+  "Seek `cj/music-seek-seconds' seconds backward in the current track."
+  (interactive)
+  (cj/music--mpv-command
+   (format "{\"command\": [\"seek\", %d, \"relative\"]}" (- cj/music-seek-seconds))))
 
 ;;; Buffer-local state
 
@@ -951,8 +989,8 @@ For URL tracks: decoded URL."
         (">"   . cj/music-next)
         ("P"   . cj/music-previous)
         ("<"   . cj/music-previous)
-        ("f"   . emms-seek-forward)
-        ("b"   . emms-seek-backward)
+        ("f"   . cj/music-seek-forward)
+        ("b"   . cj/music-seek-backward)
         ("q"   . emms-playlist-mode-bury-buffer)
         ("a"   . cj/music-fuzzy-select-and-add)
         ;; Toggles (aligned with ncmpcpp)
