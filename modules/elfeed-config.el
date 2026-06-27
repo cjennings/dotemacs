@@ -41,6 +41,13 @@
 (declare-function eww-browse-url "eww")
 (declare-function eww-readable "eww")
 
+;; elfeed paints its search and entry buffers with manual `face' text properties
+;; (the date, title, feed, and tag faces the theme styles).  Left in
+;; `global-font-lock-mode', font-lock overwrites those with syntactic string
+;; fontification, so the buffer loses the theme colors.  Exclude both modes, the
+;; same reason dashboard and mu4e are excluded.
+(cj/exclude-from-global-font-lock 'elfeed-search-mode 'elfeed-show-mode)
+
 ;; ------------------------------- Elfeed Config -------------------------------
 
 (use-package elfeed
