@@ -114,11 +114,14 @@ Signals `user-error' if METHOD-SYMBOL is nil or not fboundp."
   (with-timer title
     (funcall method-symbol)))
 
+(require 'system-lib)
+
 (defun cj/benchmark-this-method ()
   "Prompt for a title and method name, then time the execution of the method."
   (interactive)
   (let* ((title (read-string "Enter the title for the timing: "))
-         (method-name (completing-read "Enter the method name to time: " obarray
+         (method-name (completing-read "Enter the method name to time: "
+                                       (cj/completion-table 'function obarray)
                                        #'fboundp t))
          (method-symbol (intern-soft method-name)))
     (condition-case err

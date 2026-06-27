@@ -140,6 +140,8 @@ Change this value to use a different nickname.")
 	server-buffers))
 
 
+(require 'system-lib)
+
 (defun cj/erc-switch-to-buffer-with-completion ()
   "Switch to an ERC buffer using completion.
 If no ERC buffers exist, prompt to connect to a server.
@@ -148,7 +150,7 @@ Buffer names are shown with server context for clarity."
   (let* ((erc-buffers (erc-buffer-list))
 		 (buffer-names (mapcar #'buffer-name erc-buffers)))
 	(if buffer-names
-		(let ((selected (completing-read "Switch to ERC buffer: " buffer-names nil t)))
+		(let ((selected (completing-read "Switch to ERC buffer: " (cj/completion-table 'buffer buffer-names) nil t)))
 		  (switch-to-buffer selected))
 	  (message "No ERC buffers found.")
 	  (when (y-or-n-p "Connect to an IRC server? ")

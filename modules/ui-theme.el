@@ -37,13 +37,17 @@
 ;; ------------------------------- Switch Themes -------------------------------
 ;; loads themes in completing read, then persists via the functions below
 
+(require 'system-lib)
+
 (defun cj/switch-themes ()
   "Function to switch themes and save chosen theme name for persistence.
 Unloads any other applied themes before applying the chosen theme."
   (interactive)
   (let ((chosentheme (completing-read "Load custom theme: "
-                                      (mapcar #'symbol-name
-                                              (custom-available-themes)))))
+                                      (cj/completion-table
+                                       'theme
+                                       (mapcar #'symbol-name
+                                               (custom-available-themes))))))
     (cj/theme-disable-all)
     (cj/theme-load-name chosentheme))
   (cj/save-theme-to-file))

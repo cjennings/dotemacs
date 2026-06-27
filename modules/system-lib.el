@@ -164,6 +164,29 @@ contributes its own modes regardless of load order."
     (setq font-lock-global-modes
           (cj/--font-lock-global-modes-excluding font-lock-global-modes mode))))
 
+(defun cj/completion-table (category collection)
+  "Return a completion table over COLLECTION tagged with completion CATEGORY.
+COLLECTION is anything `completing-read' accepts (list, alist, obarray, hash
+table, or another table).  The table reports CATEGORY in its metadata so
+marginalia (and embark, consult, sorting) can recognize and annotate the
+candidates.  Use a standard category (file, buffer, function, theme, ...) when
+the candidates match one; marginalia then annotates them with no further work."
+  (lambda (string predicate action)
+    (if (eq action 'metadata)
+        `(metadata (category . ,category))
+      (complete-with-action action collection string predicate))))
+
+(defun cj/completion-table-annotated (category annotate collection)
+  "Like `cj/completion-table' but also attach ANNOTATE as the annotation function.
+ANNOTATE is called with a candidate string and returns its annotation suffix, or
+nil.  Use this for a custom CATEGORY that marginalia has no built-in annotator
+for: marginalia falls back to the table's own annotation function."
+  (lambda (string predicate action)
+    (if (eq action 'metadata)
+        `(metadata (category . ,category)
+                   (annotation-function . ,annotate))
+      (complete-with-action action collection string predicate))))
+
 (defun cj/format-region-with-program (program &rest args)
   "Replace the current buffer with PROGRAM ARGS run over its contents, via argv.
 Runs PROGRAM (with ARGS) on the whole buffer through `call-process-region'

@@ -959,6 +959,8 @@ when BUFFER isn't an AI-term buffer."
     (let ((kill-buffer-query-functions nil))
       (kill-buffer buffer))))
 
+(require 'system-lib)
+
 (defun cj/--ai-term-close-target ()
   "Return the AI-term buffer `cj/ai-term-close' should act on, or nil.
 
@@ -973,7 +975,8 @@ buffers; nil when none are alive."
          ((null (cdr buffers)) (car buffers))
          (t (get-buffer
              (completing-read "Close AI terminal: "
-                              (mapcar #'buffer-name buffers) nil t))))))))
+                              (cj/completion-table 'buffer (mapcar #'buffer-name buffers))
+                              nil t))))))))
 
 (defun cj/ai-term-close ()
   "Gracefully close an AI-term agent: kill its tmux session and buffer.
