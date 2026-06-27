@@ -157,6 +157,12 @@ detached from Emacs."
   (keymap-set ibuffer-mode-map "d" #'ibuffer-diff-with-file)
   (keymap-set ibuffer-mode-map "D" #'ibuffer-mark-for-delete))
 
+;; ibuffer paints its rows with manual `face' properties (nerd-icons + ibuffer
+;; faces).  Left in `global-font-lock-mode', font-lock leaks keyword fontification
+;; onto buffer and mode names, mixing wrong colors in.  Exclude it, the same fix
+;; as the shr-rendered reader modes.
+(cj/exclude-from-global-font-lock 'ibuffer-mode)
+
 ;;; -------------------------- Scratch Buffer Happiness -------------------------
 
 (defvar scratch-emacs-version-and-system
