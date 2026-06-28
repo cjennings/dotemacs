@@ -33,6 +33,15 @@
 
 ;; calibredb commands the curated menu drives (all autoloaded by calibredb)
 (declare-function calibredb-switch-library "calibredb" ())
+(declare-function calibredb-search-keyword-filter "calibredb-search")
+
+;; calibredb's filter-scope flags (set in `cj/--calibredb-open-to-favorites');
+;; declared special so the assignments compile clean when calibredb is absent.
+(defvar calibredb-tag-filter-p)
+(defvar calibredb-favorite-filter-p)
+(defvar calibredb-author-filter-p)
+(defvar calibredb-date-filter-p)
+(defvar calibredb-format-filter-p)
 (declare-function calibredb-filter-by-book-format "calibredb" ())
 (declare-function calibredb-filter-by-author-sort "calibredb" ())
 (declare-function calibredb-search-clear-filter "calibredb" ())
@@ -86,6 +95,26 @@ on every sort.  This refreshes with `calibredb-search-refresh-or-resume',
 which re-applies `calibredb-search-filter' instead."
   (setq calibredb-sort-by field)
   (calibredb-search-refresh-or-resume))
+
+(defun cj/--calibredb-open-to-favorites (&rest _)
+  "Filter the calibredb search to books tagged `calibredb-favorite-keyword'.
+Advice (:after) on `calibredb' so every launch lands on the favorite-keyword
+books (Craig's \"in-progress\" reading list); clear with L / x to see the
+whole library.  Scopes to the tag field (sets `calibredb-tag-filter-p',
+clears the other filter-scope flags), because a bare keyword filter matches
+the keyword in any field -- title, author, or the description -- and would
+surface books that merely mention it.  No-op unless a non-empty string
+keyword is set."
+  (when (and (boundp 'calibredb-favorite-keyword)
+             (stringp calibredb-favorite-keyword)
+             (not (string-empty-p calibredb-favorite-keyword))
+             (fboundp 'calibredb-search-keyword-filter))
+    (setq calibredb-tag-filter-p t
+          calibredb-favorite-filter-p nil
+          calibredb-author-filter-p nil
+          calibredb-date-filter-p nil
+          calibredb-format-filter-p nil)
+    (calibredb-search-keyword-filter calibredb-favorite-keyword)))
 
 (use-package calibredb
   :commands calibredb
@@ -155,7 +184,10 @@ which re-applies `calibredb-search-filter' instead."
   (setq calibredb-order "asc")
   (setq calibredb-id-width 7)
   (setq calibredb-favorite-icon "🔖")
-  (setq calibredb-favorite-keyword "in-progress"))
+  (setq calibredb-favorite-keyword "in-progress")
+  ;; Open every calibredb launch (dashboard, M-x, elsewhere) filtered to the
+  ;; in-progress favorites; L / x clears to the whole library.
+  (advice-add 'calibredb :after #'cj/--calibredb-open-to-favorites))
 
 ;; ------------------------------ Nov Epub Reader ------------------------------
 
