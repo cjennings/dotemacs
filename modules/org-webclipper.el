@@ -5,50 +5,17 @@
 ;; Layer: 4 (Optional).
 ;; Category: O/D/P.
 ;; Load shape: eager.
-;; Eager reason: none; web clipping runs via org-protocol/command, a Phase 4
-;;   protocol/command-loaded deferral candidate.
+;; Eager reason: none; protocol and direct clipping can load on command.
 ;; Top-level side effects: org-protocol handler registration via use-package.
-;; Runtime requires: none (configures packages via use-package).
+;; Runtime requires: none.
 ;; Direct test load: yes.
 ;;
-;; This package provides a seamless "fire-and-forget" workflow for clipping
-;; web pages from the browser directly into an Org file using org-protocol
-;; and org-web-tools.
+;; Captures web pages into Org from org-protocol, EWW, or W3M. The protocol path
+;; records URL/title dynamically around org-capture; the direct path clips the
+;; current browser buffer.
 ;;
-;; Features:
-;; - Browser bookmarklet integration via org-protocol
-;; - Automatic conversion to Org format using eww-readable and Pandoc
-;; - One-click capture from any web page
-;; - Preserves page structure and formatting
-;; - Smart heading adjustment (removes page title, demotes remaining headings)
-;;
-;; Setup:
-;; 1. Ensure this file is loaded in your Emacs configuration
-;; 2. Make sure emacsclient is configured for org-protocol
-;; 3. Add the following bookmarklet to your browser's bookmarks bar:
-;;
-;;    javascript:location.href='org-protocol://webclip?url='+encodeURIComponent(location.href)+'&title='+encodeURIComponent(document.title);void(0);
-;;
-;;    To add the bookmarklet:
-;;    a. Create a new bookmark in your browser
-;;    b. Set the name to: Clip to Org (or your preference)
-;;    c. Set the URL to the JavaScript code above
-;;    d. Save it to your bookmarks bar for easy access
-;;
-;; 4. Click the bookmarklet on any web page to clip its content
-;;
-;; The clipped content will be added to the file specified by `webclipped-file`
-;; under the "Webclipped Inbox" heading with proper formatting and metadata.
-;;
-;; Architecture:
-;; - cj/--process-webclip-content: Pure function for content processing
-;; - cj/org-protocol-webclip-handler: Handles URL fetching and capture
-;; - cj/org-webclipper-EWW: Direct capture from EWW/W3M buffers
-;;
-;; Requirements:
-;; - org-web-tools package
-;; - Pandoc installed on your system
-;; - Emacs server running (M-x server-start)
+;; Content is converted to readable Org, normalized, and filed under the
+;; configured webclip inbox heading.
 
 ;;; Code:
 

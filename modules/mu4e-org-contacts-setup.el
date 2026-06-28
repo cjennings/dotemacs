@@ -2,8 +2,10 @@
 ;; author: Craig Jennings <c@cjennings.net>
 
 ;;; Commentary:
-;; Simple setup file to enable org-contacts integration with mu4e.
-;; Add this to your mail-config.el or load it after both mu4e and org-contacts.
+;;
+;; Thin activation wrapper for mu4e-org-contacts-integration. If mu4e is loaded,
+;; enable org-contacts completion and disable mu4e's internal contact collector
+;; so completion has one source of truth.
 
 ;;; Code:
 

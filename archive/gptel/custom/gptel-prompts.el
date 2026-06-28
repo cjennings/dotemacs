@@ -29,58 +29,12 @@
 ;; Boston, MA 02111-1307, USA.
 
 ;;; Commentary:
-
-;; This package provides enhanced prompt management capabilities for GPTel,
-;; allowing you to organize and dynamically load AI prompts from external
-;; files rather than hardcoding them in your Emacs configuration.
-
-;; Key Features:
 ;;
-;; * Multi-format prompt support: Load prompts from .txt, .md, .org, .json,
-;;   .eld (Emacs Lisp data), .el (Emacs Lisp functions), and .poet/.jinja
-;;   (Prompt Poet/Jinja2 templates)
+;; Adds file-backed GPTel directives. Prompt files can be plain text, structured
+;; conversations, Elisp data/functions, or Prompt Poet/Jinja templates.
 ;;
-;; * Template interpolation: Use Jinja2-style {{variable}} syntax with
-;;   customizable variables and dynamic functions
-;;
-;; * File watching: Automatically reload prompts when files change
-;;
-;; * Project-aware prompts: Automatically load project-specific conventions
-;;   from CONVENTIONS.md or CLAUDE.md files
-;;
-;; * Conversation format support: Handle multi-turn conversations with
-;;   system/user/assistant roles
-
-;; Setup:
-;;
-;;   (use-package gptel-prompts
-;;     :after (gptel)
-;;     :custom
-;;     (gptel-prompts-directory "~/my-prompts")
-;;     :config
-;;     (gptel-prompts-update)
-;;     ;; Optional: auto-reload on file changes
-;;     (gptel-prompts-add-update-watchers))
-
-;; File Formats:
-;;
-;; * Plain text (.txt, .md, .org): Used as-is for system prompts
-;; * JSON (.json): Array of {role: "system/user/assistant", content: "..."}
-;; * Emacs Lisp data (.eld): List format for conversations
-;; * Emacs Lisp code (.el): Lambda functions for dynamic prompts
-;; * Prompt Poet (.poet, .j2, .jinja, .jinja2): YAML + Jinja2 templates
-
-;; Template Variables:
-;;
-;; Use {{variable_name}} in your prompts. Variables can be defined in
-;; `gptel-prompts-template-variables' or generated dynamically by functions
-;; in `gptel-prompts-template-functions'.
-
-;; Project Integration:
-;;
-;; Add `gptel-prompts-project-conventions' to `gptel-directives' to
-;; automatically load project-specific prompts from CONVENTIONS.md or
-;; CLAUDE.md files in your project root.
+;; The library can reload prompt files, interpolate configured template
+;; variables, and expose project-convention prompts from project roots.
 
 ;;; Code:
 

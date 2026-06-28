@@ -8,75 +8,17 @@
 ;; Layer: 3 (Domain Workflow).
 ;; Category: D/S.
 ;; Load shape: eager only when calendar-sync.local.el configures calendars.
-;; Eager reason: daily-driver workflow; calendars are expected synced at the
-;;   first session. Timers and network fetches are guarded for batch/test loads.
-;; Top-level side effects: defines a calendar keymap and conditionally registers
-;;   it under cj/custom-keymap; timer and network fetches guarded by
-;;   config/noninteractive checks.
+;; Eager reason: daily agenda workflow; timers and network fetches are guarded.
+;; Top-level side effects: defines C-; g map; starts sync only when configured.
 ;; Runtime requires: cl-lib, subr-x, system-lib, cj-org-text-lib, keybindings.
-;; Direct test load: yes (private config optional; degrades cleanly when absent).
+;; Direct test load: yes.
 ;;
-;; Simple, reliable one-way sync from multiple calendars to Org mode.
-;; Downloads .ics files from calendar URLs (Google, Proton, etc.) and
-;; converts to Org format. No OAuth, no API complexity, just file conversion.
+;; One-way calendar synchronization from configured .ics/API sources into Org
+;; files. Feed URLs may be inline or resolved from auth-source via :secret-host.
 ;;
-;; Features:
-;; - Multi-calendar support (sync multiple calendars to separate files)
-;; - Pure Emacs Lisp .ics parser (no external dependencies)
-;; - Recurring event support (RRULE expansion)
-;; - Timer-based automatic sync (every 60 minutes, configurable)
-;; - Self-contained in .emacs.d (no cron, portable across machines)
-;; - Read-only (can't corrupt source calendars)
-;; - Works with Chime for event notifications
-;;
-;; Recurring Events (RRULE):
-;;
-;; Calendar recurring events are defined once with an RRULE
-;; (recurrence rule) rather than as individual event instances. This
-;; module expands recurring events into individual org entries.
-;;
-;; Expansion uses a rolling window approach:
-;; - Past: 3 months before today
-;; - Future: 12 months after today
-;;
-;; Every sync regenerates the entire file based on the current date,
-;; so the window automatically advances as time passes. Old events
-;; naturally fall off after 3 months, and new future events appear
-;; as you approach them.
-;;
-;; Supported RRULE patterns:
-;; - FREQ=DAILY: Daily events
-;; - FREQ=WEEKLY;BYDAY=MO,WE,FR: Weekly on specific days
-;; - FREQ=MONTHLY: Monthly events (same day each month)
-;; - FREQ=YEARLY: Yearly events (anniversaries, birthdays)
-;; - INTERVAL: Repeat every N periods (e.g., every 2 weeks)
-;; - UNTIL: End date for recurrence
-;; - COUNT: Maximum occurrences (combined with date range limit)
-;;
-;; Setup:
-;; 1. Configure calendars in your init.el:
-;;    (setq calendar-sync-calendars
-;;          '((:name "google"
-;;             :url "***REMOVED***"
-;;             :file gcal-file)
-;;            (:name "proton"
-;;             :url "***REMOVED***"
-;;             :file pcal-file)))
-;;
-;; 2. Load and start:
-;;    (require 'calendar-sync)
-;;    (calendar-sync-start)
-;;
-;; 3. Add to org-agenda (optional):
-;;    (dolist (cal calendar-sync-calendars)
-;;      (add-to-list 'org-agenda-files (plist-get cal :file)))
-;;
-;; Usage:
-;; - M-x calendar-sync-now    ; Sync all or select specific calendar
-;; - M-x calendar-sync-start  ; Start auto-sync
-;; - M-x calendar-sync-stop   ; Stop auto-sync
-;; - M-x calendar-sync-toggle ; Toggle auto-sync
-;; - M-x calendar-sync-status ; Show sync status for all calendars
+;; The parser expands recurring events into a rolling window around today,
+;; regenerates target Org files on each sync, and keeps source calendars
+;; read-only. Commands under C-; g start, stop, toggle, inspect, and run syncs.
 
 ;;; Code:
 

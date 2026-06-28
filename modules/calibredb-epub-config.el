@@ -6,46 +6,17 @@
 ;; Layer: 4 (Optional).
 ;; Category: O/D/P.
 ;; Load shape: eager.
-;; Eager reason: none; optional ebook workflow, a command-loaded deferral
-;;   candidate for Phase 4.
-;; Top-level side effects: one add-hook, one advice-add, package config.
-;; Runtime requires: user-constants, subr-x.
+;; Eager reason: none; ebook commands can load by command.
+;; Top-level side effects: one hook, one advice, package config.
+;; Runtime requires: user-constants, subr-x, transient.
 ;; Direct test load: yes.
 ;;
-;; This module provides a comprehensive ebook management and reading experience
-;; within Emacs, integrating CalibreDB for library management and Nov for EPUB
-;; reading.
+;; CalibreDB and Nov integration for browsing the Calibre library and reading
+;; EPUBs inside Emacs. The module adds a curated CalibreDB transient, filter
+;; helpers, Nov typography, image centering, and reader-to-library navigation.
 ;;
-;; FEATURES:
-;; - CalibreDB integration for managing your Calibre ebook library
-;; - Nov mode for reading EPUB files with customized typography and layout
-;; - Seamless navigation between Nov reading buffers and CalibreDB entries
-;; - Image centering in EPUB documents without modifying buffer text
-;; - Quick filtering and searching within your ebook library
-;;
-;; KEY BINDINGS:
-;; - M-B: Open CalibreDB library browser
-;; - In CalibreDB search mode:
-;;   - l: Filter by tag
-;;   - L: Clear all filters
-;; - In Nov mode:
-;;   - z: Open current EPUB in external viewer (zathura)
-;;   - C-c C-b: Jump to CalibreDB entry for current book
-;;   - m: Set bookmark
-;;   - b: List bookmarks
-;;
-;; WORKFLOW:
-;; 1. Press M-B to browse your Calibre library
-;; 2. Use filters (l for tags, L to clear) to narrow results
-;; 3. Open an EPUB to read it in Nov with optimized typography
-;; 4. While reading, use C-c C-b to jump back to the book's metadata
-;; 5. Use z to open in external reader when needed
-;;
-;; CONFIGURATION NOTES:
-;; - Prefers EPUB format when available, falls back to PDF
-;; - Centers images in EPUB documents using display properties
-;; - Applies custom typography with larger fonts for comfortable reading
-;; - Uses visual-fill-column for centered text with appropriate margins
+;; EPUB is preferred when available; external opening remains available for
+;; formats or workflows better handled outside Emacs.
 
 ;;; Code:
 

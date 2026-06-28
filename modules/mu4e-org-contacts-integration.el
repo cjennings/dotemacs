@@ -2,8 +2,13 @@
 ;; author: Craig Jennings <c@cjennings.net>
 
 ;;; Commentary:
-;; This module provides seamless integration between org-contacts and mu4e's
-;; email composition, enabling automatic contact completion in email fields.
+;;
+;; Completion-at-point integration between org-contacts and mu4e/org-msg compose
+;; buffers. Header fields complete against org contact email strings; message
+;; bodies keep their normal TAB behavior.
+;;
+;; Dependencies are optional at file load. Activation is a no-op when mu4e or
+;; org-contacts is unavailable so the wider config can still load.
 
 ;;; Code:
 

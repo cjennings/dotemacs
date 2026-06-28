@@ -6,40 +6,17 @@
 ;; Layer: 2 (Core UX).
 ;; Category: C/P.
 ;; Load shape: eager.
-;; Eager reason: general linting setup; spec target is hook-loaded, a deferral
-;;   candidate.
-;; Top-level side effects: package configuration via use-package, binds into
-;;   cj/custom-keymap through use-package :map.
+;; Eager reason: linting keymap and mode hooks; could become hook-loaded.
+;; Top-level side effects: package config and C-; ? binding.
 ;; Runtime requires: keybindings.
-;; Direct test load: yes (requires keybindings explicitly).
+;; Direct test load: yes.
 ;;
-;; This file configures Flycheck for on-demand syntax and grammar checking.
-;; - Flycheck starts automatically only in sh-mode and emacs-lisp-mode
-
-;; - This binds a custom helper (=cj/flycheck-list-errors=) to "C-; ?"
-;;   for popping up Flycheck's error list in another window.
-
-;; - It also customizes Checkdoc to suppress only the "sentence-end-double-space"
-;;   and "warn-escape" warnings.
-
-;; - It registers LanguageTool for comprehensive grammar checking of prose files
-;;   (text-mode, markdown-mode, gfm-mode, org-mode).
-
-;; Note: Grammar checking is on-demand only to avoid performance issues.
-;; Hitting "C-; ?" runs cj/flycheck-prose-on-demand if in an org buffer.
-
-;; The cj/flycheck-prose-on-demand function:
-;; - Turns on flycheck for the local buffer
-;; - Enables LanguageTool checker
-;; - Triggers an immediate check
-;; - Displays errors in the *Flycheck errors* buffer
-
-;; Installation:
-;; On Arch Linux:
-;;   sudo pacman -S languagetool
+;; Flycheck configuration for automatic shell/Elisp linting and on-demand prose
+;; grammar checks. C-; ? opens the Flycheck error list, enabling prose checking
+;; first when appropriate.
 ;;
-;; The wrapper script at scripts/languagetool-flycheck formats LanguageTool's
-;; JSON output into flycheck-compatible format.  It requires Python 3.
+;; LanguageTool uses scripts/languagetool-flycheck to adapt JSON output to
+;; Flycheck's checker protocol.
 
 ;;; Code:
 

@@ -6,90 +6,18 @@
 ;; Layer: 1 (Foundation).
 ;; Category: F/S.
 ;; Load shape: eager.
-;; Eager reason: normalizes terminal/GUI key input so the first session's
-;;   keybindings resolve consistently.
-;; Top-level side effects: adds `cj/keyboard-compat-terminal-setup' to
-;;   `emacs-startup-hook'.
+;; Eager reason: normalizes terminal/GUI key input before custom bindings matter.
+;; Top-level side effects: adds cj/keyboard-compat-terminal-setup to startup.
 ;; Runtime requires: host-environment.
-;; Direct test load: yes (registers a startup hook; batch-safe).
+;; Direct test load: yes.
 ;;
-;; This module fixes keyboard input differences between terminal and GUI Emacs.
+;; Normalizes Meta+Shift bindings across GUI and terminal frames. GUI frames
+;; translate M-uppercase events to explicit M-S-lowercase keys; terminal frames
+;; decode arrow escape sequences before key lookup so ESC O prefixes do not trip
+;; M-S bindings.
 ;;
-;; THE PROBLEM: Meta+Shift keybindings behave differently in terminal vs GUI
-;; =========================================================================
-;;
-;; In Emacs, there are two ways to express "Meta + Shift + o":
-;;
-;;   1. M-O   (Meta + uppercase O) - key code 134217807
-;;   2. M-S-o (Meta + explicit Shift modifier + lowercase o) - key code 167772271
-;;
-;; These are NOT the same key in Emacs!
-;;
-;; GUI Emacs behavior:
-;;   When you press Meta+Shift+o on your keyboard, GUI Emacs receives M-O
-;;   (uppercase O). It does NOT receive M-S-o. This is because the keyboard
-;;   sends Shift+o as uppercase 'O', not as a Shift modifier plus lowercase 'o'.
-;;
-;; Terminal Emacs behavior:
-;;   Terminals send escape sequences for special keys. Arrow keys send:
-;;     - Up:    ESC O A
-;;     - Down:  ESC O B
-;;     - Right: ESC O C
-;;     - Left:  ESC O D
-;;
-;;   The problem: ESC O is interpreted as M-O by Emacs! So if you bind M-O
-;;   to a function, pressing the up arrow sends "ESC O A", Emacs sees "M-O"
-;;   and triggers your function instead of moving up. Arrow keys break.
-;;
-;; THE SOLUTION: Different handling for each display type
-;; ======================================================
-;;
-;; For terminal mode (handled by cj/keyboard-compat-terminal-setup):
-;;   - Use input-decode-map to translate arrow escape sequences BEFORE
-;;     any keybinding lookup. ESC O A becomes [up], not M-O followed by A.
-;;   - Keybindings use M-S-o syntax (some terminals support explicit Shift)
-;;   - Disable graphical icons that show as unicode artifacts
-;;
-;; For GUI mode (handled by cj/keyboard-compat-gui-setup):
-;;   - Use key-translation-map to translate M-O to M-S-o BEFORE lookup
-;;   - This way, pressing Meta+Shift+o (which sends M-O) gets translated
-;;     to M-S-o, matching the keybinding definitions
-;;   - All 18 Meta+Shift keybindings work correctly
-;;
-;; WHY NOT JUST USE M-O FOR KEYBINDINGS?
-;; =====================================
-;;
-;; We could bind to M-O directly, but:
-;;   1. Terminal arrow keys would break (ESC O prefix conflict)
-;;   2. We'd need to maintain two sets of bindings (M-O for GUI, something
-;;      else for terminal)
-;;
-;; By using M-S-o syntax everywhere and translating M-O -> M-S-o in GUI mode,
-;; we have one consistent set of keybindings that work everywhere.
-;;
-;; KEYBINDINGS AFFECTED:
-;; ====================
-;;
-;; The following M-S- keybindings are translated from M-uppercase in GUI:
-;;
-;;   M-O -> M-S-o  cj/kill-other-window (undead-buffers.el)
-;;   M-M -> M-S-m  cj/kill-all-other-buffers-and-windows (undead-buffers.el)
-;;   M-Y -> M-S-y  yank-media (keybindings.el)
-;;   M-F -> M-S-f  fontaine-set-preset (font-config.el)
-;;   M-W -> M-S-w  wttrin (weather-config.el)
-;;   M-E -> M-S-e  eww (eww-config.el)
-;;   M-L -> M-S-l  cj/switch-themes (ui-theme.el)
-;;   M-R -> M-S-r  cj/elfeed-open (elfeed-config.el)
-;;   M-V -> M-S-v  cj/split-and-follow-right (ui-navigation.el)
-;;   M-H -> M-S-h  cj/split-and-follow-below (ui-navigation.el)
-;;   M-T -> M-S-t  toggle-window-split (ui-navigation.el)
-;;   M-Z -> M-S-z  cj/undo-kill-buffer (ui-navigation.el)
-;;   M-U -> M-S-u  winner-undo (ui-navigation.el)
-;;   M-D -> M-S-d  dwim-shell-commands-menu (dwim-shell-config.el)
-;;   M-I -> M-S-i  edit-indirect-region (text-config.el)
-;;   M-C -> M-S-c  time-zones (chrono-tools.el)
-;;   M-B -> M-S-b  calibredb (calibredb-epub-config.el)
-;;   M-K -> M-S-k  show-kill-ring (show-kill-ring.el)
+;; Also provides terminal-specific display fallbacks, such as hiding icon glyphs
+;; that render poorly outside GUI frames.
 
 ;;; Code:
 

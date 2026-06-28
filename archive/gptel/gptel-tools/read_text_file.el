@@ -19,6 +19,10 @@
 ;; GNU General Public License for more details.
 
 ;;; Commentary:
+;;
+;; GPTel tool for safely reading text files under the user's home directory.
+;; It validates the resolved path, rejects directories and unreadable files,
+;; guards large files, and returns metadata alongside content.
 
 ;;; Code:
 

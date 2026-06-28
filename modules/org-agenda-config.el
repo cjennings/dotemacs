@@ -6,51 +6,18 @@
 ;; Layer: 3 (Domain Workflow).
 ;; Category: D/S.
 ;; Load shape: eager.
-;; Eager reason: daily agenda workflow; the user expects agenda available at the
-;;   first session.
-;; Top-level side effects: one add-hook and an idle timer that builds the agenda
-;;   file cache 10s after startup (guarded; spec tracks the cache lifecycle).
+;; Eager reason: agenda should be available in the first session.
+;; Top-level side effects: agenda hooks plus guarded idle cache build.
 ;; Runtime requires: user-constants, system-lib, cj-cache-lib.
 ;; Direct test load: yes.
 ;;
-;; Performance:
-;; - Caches agenda file list to avoid scanning projects directory on every view
-;; - Cache builds asynchronously 10 seconds after Emacs startup (non-blocking)
-;; - First agenda view uses cache if ready, otherwise builds synchronously
-;; - Subsequent views are instant (cached)
-;; - Cache auto-refreshes after 1 hour
-;; - Manual refresh: M-x cj/org-agenda-refresh-files (e.g., after adding projects)
+;; Org agenda configuration for global, project-scoped, and buffer-scoped task
+;; views. F8 opens the main agenda; modified F8 bindings narrow by project,
+;; current buffer, or task list.
 ;;
-;; Agenda views are tied to the F8 (fate) key.
-;;
-;;  "We are what we repeatedly do.
-;;   Excellence, then, is not an act, but a habit"
-;;                        -- Aristotle
-;;
-;;  "...watch your actions, they become habits;
-;;    watch your habits, they become character;
-;;    watch your character, for it becomes your destiny."
-;;                        -- Lao Tzu
-;;
-;;
-;; f8   - MAIN AGENDA which organizes all tasks and events into:
-;;        - all unfinished priority A tasks
-;;        - the weekly schedule, including the habit consistency graph
-;;        - all priority B tasks
-;;
-;; C-f8 - PROJECT AGENDA showing the main agenda filtered to a single project.
-;;        Prompts for project selection, then shows overdue/hi-pri/schedule/B tasks
-;;        scoped to that project's todo.org plus all calendars and inbox.
-;;
-;; s-f8 - TASK LIST containing all tasks from all agenda targets.
-;;
-;; M-f8 - TASK LIST containing all tasks from just the current org-mode buffer.
-;;
-;; NOTE:
-;; Files that contain information relevant to the agenda are: the inbox, the
-;; schedule-file, the synced calendars, and the per-project todo.org files found
-;; in immediate subdirectories of projects-dir.  (org-roam notes are refile
-;; targets, not agenda sources -- see org-refile-config.el.)
+;; Agenda files come from inbox, schedule files, synced calendars, and immediate
+;; project todo.org files. The file list is cached and rebuilt asynchronously to
+;; keep normal agenda opens fast.
 
 ;;; Code:
 (require 'user-constants)

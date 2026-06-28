@@ -6,69 +6,18 @@
 ;; Layer: 2 (Core UX).
 ;; Category: C/L.
 ;; Load shape: eager.
-;; Eager reason: the test keymap entry point and project-scoped runner state.
-;; Top-level side effects: defines a test keymap, registers it under cj/custom-keymap.
+;; Eager reason: registers the C-; t test runner entry point and state.
+;; Top-level side effects: defines and registers cj/test-map.
 ;; Runtime requires: ert, cl-lib, keybindings.
-;; Direct test load: yes (requires keybindings explicitly).
+;; Direct test load: yes.
 ;;
-;; This module provides a powerful ERT test runner with focus/unfocus workflow
-;; for efficient test-driven development in Emacs Lisp projects.
+;; Project-aware ERT runner with two modes: all tests or a focused file set.
+;; Test roots come from Projectile projects, falling back to the config's tests
+;; directory, and test files are discovered by the test-*.el convention.
 ;;
-;; PURPOSE:
-;;
-;; When working on large Emacs Lisp projects with many test files, you often
-;; want to focus on running just the tests relevant to your current work without
-;; waiting for the entire suite to run. This module provides a smart test runner
-;; that supports both running all tests and focusing on specific test files.
-;;
-;; WORKFLOW:
-;;
-;; 1. Run all tests initially to establish baseline (C-; t R)
-;; 2. Add test files to focus while working on a feature (C-; t a)
-;; 3. Run focused tests repeatedly as you develop (C-; t r)
-;; 4. Add more test files as needed (C-; t b from within test buffer)
-;; 5. View your focused test list at any time (C-; t v)
-;; 6. Clear focus and run all tests before finishing (C-; t c, then C-; t R)
-;;
-;; PROJECT INTEGRATION:
-;;
-;; - Automatically discovers test directories in Projectile projects
-;;   (looks for "test" or "tests" under project root)
-;; - Falls back to ~/.emacs.d/tests if not in a Projectile project
-;; - Test files must match pattern: test-*.el
-;;
-;; SPECIAL BEHAVIORS:
-;;
-;; - Smart test running: Automatically runs all or focused tests based on mode
-;; - Test extraction: Discovers test names via regex to run specific tests
-;; - At-point execution: Run individual test at cursor position (C-; t .)
-;; - Error handling: Continues loading tests even if individual files fail
-;;
-;; KEYBINDINGS:
-;;
-;; C-; t L   Load all test files
-;; C-; t R   Run all tests (full suite)
-;; C-; t r   Run tests smartly (all or focused based on mode)
-;; C-; t .   Run test at point
-;; C-; t a   Add test file to focus (with completion)
-;; C-; t b   Add current buffer's test file to focus
-;; C-; t c   Clear all focused test files
-;; C-; t v   View list of focused test files
-;; C-; t t   Toggle mode between 'all and 'focused
-;;
-;; RECOMMENDED USAGE:
-;;
-;; While implementing a feature:
-;;   - Add the main test file for the feature you're working on
-;;   - Add any related test files that might be affected
-;;   - Use C-; t r to repeatedly run just those focused tests
-;;   - This provides fast feedback during development
-;;
-;; Before committing:
-;;   - Clear the focus with C-; t c
-;;   - Run the full suite with C-; t R to ensure nothing broke
-;;   - Verify all tests pass before pushing changes
-;;
+;; Commands under C-; t load tests, run all/focused tests, run the test at point,
+;; and manage the per-project focus list.
+
 ;;; Code:
 
 (require 'ert)

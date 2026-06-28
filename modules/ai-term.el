@@ -1,4 +1,4 @@
-;;; ai-term.el --- In-Emacs AI-agent launcher with vertical-split terminal -*- lexical-binding: t; -*-
+;;; ai-term.el --- AI-agent terminals backed by EAT and tmux -*- lexical-binding: t; -*-
 
 ;; Author: Craig Jennings <c@cjennings.net>
 
@@ -7,70 +7,18 @@
 ;; Layer: 3 (Domain Workflow).
 ;; Category: D.
 ;; Load shape: eager.
-;; Eager reason: registers four global keys for the AI-agent terminal launcher; a
-;;   command-loaded deferral candidate.
-;; Top-level side effects: four global key bindings.
-;; Runtime requires: cl-lib, seq, cj-window-geometry-lib, cj-window-toggle-lib,
-;;   host-environment.
+;; Eager reason: binds M-SPC and the C-; a AI-agent prefix.
+;; Top-level side effects: global M-SPC binding and C-; a prefix map.
+;; Runtime requires: cl-lib, seq, window-toggle/geometry helpers, host-environment.
 ;; Direct test load: yes.
 ;;
-;; Picks an AI-agent project (a dir under ~/.emacs.d, ~/code/*, or
-;; ~/projects/* containing .ai/protocols.org), opens or reuses a terminal
-;; buffer named "agent [<basename>]", sends the agent's startup
-;; instruction to it, and routes the buffer to a side window via
-;; display-buffer-alist.  When the frame already has a window forming the
-;; half the agent would occupy (a right column on a desktop, a bottom row
-;; on a laptop), the agent reuses that slot rather than splitting a third
-;; window in; toggling off restores the displaced buffer to the slot.
-;; Otherwise placement is a host-aware split: a right-side split at 50%
-;; width on a desktop, a bottom split at 75% height on a laptop (see
-;; `cj/--ai-term-default-direction').  Multiple
-;; projects produce multiple coexisting buffers that share the same
-;; slot; switching among them is a buffer-switch, not a
-;; kill-and-recreate.
+;; Opens project-scoped AI agents in EAT buffers backed by tmux sessions. Project
+;; candidates come from configured roots that contain .ai/protocols.org.
 ;;
-;; Each project's agent runs inside a tmux session named
-;; "<cj/ai-term-tmux-session-prefix><basename>" (default prefix "aiv-").
-;; The prefix lets `tmux ls' be filtered to AI-term's own sessions, so
-;; after an Emacs crash the project picker can match surviving sessions
-;; back to their directories: matched projects sort to the top of the
-;; picker (flagged "[detached]" -- session alive, no Emacs buffer -- or
-;; "[running]" when a live terminal buffer exists), the rest follow in
-;; alphabetical order.
-;;
-;; Four F-key entry points:
-;;
-;; - F9     `cj/ai-term' -- DWIM dispatch.  If an agent buffer is
-;;          currently displayed in this frame, F9 toggles it off: when it
-;;          took over an existing window (a reused slot) the buffer it
-;;          displaced returns to that slot, when it was split into its own
-;;          window that window is removed, and when it fills the frame it
-;;          is buried.  Otherwise, if exactly one agent buffer is alive,
-;;          F9 re-displays it; if zero or two-plus are alive, F9 falls
-;;          through to the project picker.
-;; - C-F9   `cj/ai-term-pick-project' -- always show the project
-;;          picker, even when an agent buffer is currently displayed.
-;;          Used when the user wants to start a new project session
-;;          instead of toggling the current one.
-;; - s-F9   `cj/ai-term-next' -- step to the next active agent in the
-;;          queue.  The queue is every active agent in buffer-name order
-;;          (a stable rotation): attached agents (a live buffer) and
-;;          detached ones (a live tmux session with no Emacs buffer).
-;;          Stepping onto a detached agent attaches it.  When an agent
-;;          window is on screen, swap it to the next agent and focus it,
-;;          wrapping after the last; when none is shown but agents exist,
-;;          show the first.  This is the "switch among existing agents"
-;;          surface F9 deliberately doesn't provide.
-;; - M-F9   `cj/ai-term-close' -- gracefully close an agent: kill its
-;;          tmux session (stopping the agent process), then its terminal
-;;          buffer.  Its window stays in the layout (swapped to the
-;;          working buffer), so closing never collapses a split.  Confirms
-;;          first.  Targets the current agent, the sole live agent, or
-;;          prompts among several.
-;;
-;; Existing windmove (Shift-arrows) handles code <-> agent focus
-;; toggling.  Buffer-move (C-M-arrows) handles side-swap.  Neither
-;; needs anything new from this module.
+;; Agent display reuses the host-appropriate side slot when possible, otherwise
+;; splits right on desktop frames and below on laptop frames. Attached buffers
+;; and detached tmux sessions share the same rotation; selecting a detached
+;; agent recreates its EAT buffer and attaches to the live session.
 
 ;;; Code:
 
@@ -215,7 +163,7 @@ which the step materializes by attaching."
 Walks `buffer-list' (most-recently-selected first) and returns the
 first buffer that is not an AI-term agent buffer (per
 `cj/--ai-term-buffer-p') and is not an internal buffer (name starting
-with a space).  Used by the single-window F9 toggle-off so dismissing a
+with a space).  Used by the single-window toggle-off so dismissing a
 full-frame agent returns to the file the user was working in (e.g.
 todo.org) rather than swapping in another agent."
   (seq-find (lambda (b)
@@ -287,7 +235,7 @@ looked up in SESSIONS, so the lossy whitespace->hyphen transform in
 (defun cj/--ai-term-launch-command (dir)
   "Return the shell command line that runs the AI tool in a project tmux session.
 
-Uses `tmux new-session -A' so a second F9 on the same project reattaches
+Uses `tmux new-session -A' so a second toggle on the same project reattaches
 to the running session instead of spawning a new one.  The session name
 comes from `cj/--ai-term-tmux-session-name'; the first window is named
 `cj/ai-term-tmux-window-name' (default \"ai\") so a later hand-opened
@@ -452,7 +400,7 @@ direction applies.  Captured at toggle-off by
 `cj/--ai-term-display-saved'.")
 
 (defvar cj/--ai-term-last-was-bury nil
-  "Non-nil when the last F9 toggle-off used `bury-buffer'.
+  "Non-nil when the last toggle-off used `bury-buffer'.
 
 Set by `cj/ai-term' in its `toggle-off' branch: t when the agent
 window was the only window in the frame (so toggle-off buried
@@ -462,7 +410,7 @@ buried agent in the current window (the only one) or splitting per
 the saved direction.")
 
 (defvar cj/--ai-term-last-toggle-deleted-split nil
-  "Non-nil when the last F9 toggle-off deleted the agent's own split window.
+  "Non-nil when the last toggle-off deleted the agent's own split window.
 
 Set t by `cj/--ai-term-toggle-off' only when it actually `delete-window's
 the agent (a multi-window layout where the agent had its own window);
@@ -474,7 +422,7 @@ working window at the edge, displacing its buffer and collapsing the layout
 -- the toggle must be reversible (off then on returns the same windows).")
 
 (defvar cj/--ai-term-last-hidden-buffer nil
-  "The agent buffer hidden by the most recent F9 toggle-off.
+  "The agent buffer hidden by the most recent toggle-off.
 
 Captured in `cj/ai-term' just before an agent window is torn down, and
 consumed by `cj/--ai-term-dispatch' so the next toggle-on reopens the
@@ -520,7 +468,7 @@ cost of not auto-scaling if the frame itself resizes.")
   "Capture WINDOW's direction and size into module-level state.
 
 Sets `cj/--ai-term-last-direction' and `cj/--ai-term-last-size'
-so a subsequent F9 display can restore the user's chosen orientation
+so a subsequent display can restore the user's chosen orientation
 and size.  Called at toggle-off (just before the window is torn
 down).  The default direction is host-aware via
 `cj/--ai-term-default-direction' (used only when WINDOW fills its
@@ -544,7 +492,7 @@ action in the chain runs.
 This is more specific than `display-buffer-use-some-window', which
 would happily steal any non-selected window (e.g. a code window
 above the agent split) when the user is focused in agent and
-swaps projects via C-F9.  The selective lookup here keeps non-agent
+swaps projects via C-; a s.  The selective lookup here keeps non-agent
 windows undisturbed and preserves the user's split geometry across
 project changes."
   (let ((win (cj/--ai-term-displayed-agent-window)))
@@ -598,10 +546,10 @@ When the prior toggle-off was a bury (single-window state, flagged
 via `cj/--ai-term-last-was-bury') and the frame is still single-
 window, restore the agent into the selected window in place rather
 than splitting -- preserves the user's lone-window layout across
-F9 toggles.
+toggles.
 
 Otherwise delegates to `cj/window-toggle-display-saved' against the
-F9 state vars, falling back to the host-aware defaults from
+toggle state vars, falling back to the host-aware defaults from
 `cj/--ai-term-default-direction' and `cj/--ai-term-default-size'."
   (cond
    ((and cj/--ai-term-last-was-bury (one-window-p))
@@ -627,7 +575,7 @@ through four actions in order:
 2. `cj/--ai-term-reuse-existing-agent' -- otherwise, if any
    window in this frame already shows an agent-prefixed buffer,
    swap its buffer for the new one (preserves geometry across
-   project changes via C-F9).
+   project changes via C-; a s).
 3. `cj/--ai-term-reuse-edge-window' -- otherwise, if the frame
    already has a window forming the half the agent would occupy
    (the right column on a desktop, the bottom row on a laptop),
@@ -773,17 +721,17 @@ Signals `user-error' when no candidates exist."
           (expand-file-name chosen)))))
 
 (defun cj/--ai-term-dispatch ()
-  "Compute the F9 (`cj/ai-term') action without performing it.
+  "Compute the `cj/ai-term' (C-; a a) action without performing it.
 
 Returns one of:
 - (toggle-off . WINDOW)        -- agent is displayed in WINDOW; quit it.
 - (redisplay-recent . BUFFER)  -- 1+ alive agent buffers; show MRU.
 - (pick-project)               -- zero alive agent buffers; prompt.
 
-When 2+ agent buffers are alive, F9 redisplays the most-recently-
-selected one rather than opening the project picker.  C-F9 is the
-explicit \"start a different project\" surface; M-F9 is the explicit
-\"switch among existing agents\" surface.  F9 keeps a single, simple
+When 2+ agent buffers are alive, C-; a a redisplays the most-recently-
+selected one rather than opening the project picker.  C-; a s is the
+explicit \"start a different project\" surface; C-; a n is the explicit
+\"switch among existing agents\" surface.  C-; a a keeps a single, simple
 job: toggle whichever agent was last in use.
 
 A pure-decision helper so the dispatch logic is exercisable in tests
@@ -816,7 +764,7 @@ buffers; reinvoking on the same project reuses its existing terminal.
 
 With prefix ARG, display the buffer without selecting its window.
 
-Bound to C-F9 -- always shows the project picker, even when an agent
+Bound to C-; a s -- always shows the project picker, even when an agent
 buffer is currently displayed.
 
 EAT renders in terminal frames as well as GUI frames, so this
@@ -842,7 +790,7 @@ the agent itself."
          (other-buffer (window-buffer win) t)))))
 
 (defun cj/--ai-term-toggle-off (win)
-  "Hide the agent shown in WIN for an F9 toggle-off.  Always returns nil.
+  "Hide the agent shown in WIN for a toggle-off.  Always returns nil.
 
 Two cases, by window count:
 
@@ -855,7 +803,7 @@ Two cases, by window count:
   force a swap to a non-agent buffer to keep the toggle observable.
 
 - Multi-window: collapse the agent split outright by deleting its window, so
-  the working buffer (e.g. todo.org) reclaims the space.  F9 is a pure
+  the working buffer (e.g. todo.org) reclaims the space.  The toggle is a pure
   show/hide toggle of THE agent split -- it must never surface a different
   agent.  `quit-restore-window' can't guarantee that here: switching among
   several agents reuses the one slot via `set-window-buffer' (see
@@ -897,21 +845,21 @@ Two cases, by window count:
   nil)
 
 (defun cj/ai-term (&optional arg)
-  "Smart F9 dispatch for the AI-term launcher.
+  "DWIM dispatch for the AI-term launcher.  Bound to C-; a a.
 
 Behavior depends on the current state:
 
-- If an AI-term buffer is currently displayed in this frame, F9
+- If an AI-term buffer is currently displayed in this frame, it
   quits its window (toggle off, buffer stays alive).
-- Else, if exactly one alive AI-term buffer exists, F9 re-displays
+- Else, if exactly one alive AI-term buffer exists, it re-displays
   it (DWIM -- the obvious next step is to look at it).
-- Else (zero or 2+), F9 falls through to `cj/ai-term-pick-project'.
+- Else (zero or 2+), it falls through to `cj/ai-term-pick-project'.
 
 With prefix ARG, display the buffer without selecting its window
 when a buffer is being shown (no effect on the toggle-off branch).
 
-See `cj/ai-term-pick-project' (C-F9) to force the project picker.
-M-F9 closes an agent via `cj/ai-term-close'."
+See `cj/ai-term-pick-project' (C-; a s) to force the project picker.
+C-; a k closes an agent via `cj/ai-term-close'."
   (interactive "P")
   (pcase (cj/--ai-term-dispatch)
     (`(toggle-off . ,win)
@@ -945,7 +893,7 @@ Derives the tmux session name from BUFFER's `default-directory' (the
 project dir the terminal was created in) and kills it so the agent
 process stops.  When BUFFER is shown, swaps its window to a non-agent
 buffer (the working file) rather than deleting the window -- closing an
-agent must not collapse the user's window layout; the F9 hide toggle is
+agent must not collapse the user's window layout; the hide toggle is
 what collapses the split.  Then kills BUFFER (suppressing the
 process-still-running prompt -- the session is already down).  No-op
 when BUFFER isn't an AI-term buffer."
@@ -984,7 +932,7 @@ buffers; nil when none are alive."
 Targets the current agent buffer, the sole live agent, or prompts when
 several are alive (see `cj/--ai-term-close-target').  Asks for
 confirmation first -- this kills the running agent process, which can
-interrupt work in progress.  Bound to M-<f9>."
+interrupt work in progress.  Bound to C-; a k."
   (interactive)
   (let ((buffer (cj/--ai-term-close-target)))
     (unless buffer

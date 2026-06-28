@@ -20,55 +20,16 @@
 ;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 ;;; Commentary:
-
-;; This is to easily profile your Emacs init file (or any other
-;; script-like Emacs Lisp file, for that matter).
-
-;; It will go over all sexp's (balanced expressions) in the file and
-;; run them through `benchmark-run'.  It will then show the file with
-;; overlays applied in a way that let you easily find out which sexp's
-;; take the most time.  Since time is relative, it's not the absolute
-;; value that counts but the percentage of the total running time.
 ;;
-;; * All other sexp's with a percentage greater than
-;;   `profile-dotemacs-low-percentage' will be preceded by a
-;;   highlighted line, showing the results from `benchmark-run'.
-;;   Also, the more 'reddish' the background of the sexp, the more
-;;   time it needs.
-
-;; * All other sexp's will be grayed out to indicate that their
-;;   running time is miniscule.  You can still see the benchmark
-;;   results in the minibuffer by hovering over the sexp with the
-;;   mouse.
-
-;; You can only benchmark full sexp's, so if you wrapped large parts
-;; of your init file in some conditional clause, you'll have to remove
-;; that for getting finer granularity.
-
-;;; Usage:
-
-;; Start emacs as follows:
+;; Profiles profile-dotemacs-file by evaluating top-level sexps with
+;; benchmark-run, then overlays the source buffer so expensive forms stand out
+;; by percentage of total runtime.
 ;;
-;;    emacs -Q -l <PATH>/profile-dotemacs.el -f profile-dotemacs
+;; Run with:
+;;   emacs -Q -l /path/to/profile-dotemacs.el -f profile-dotemacs
 ;;
-;; with <PATH> being the path to where this file resides.
-
-;;; Caveats (thanks to Raffaele Ricciardi for reporting those):
-
-;; - The usual `--debug-init' for debugging your init file won't work
-;;   with profile-dotemacs, so you'll have to call
-;;   `toggle-debug-on-error', either on the commandline or at the
-;;   beginning of your init file.
-;; - `load-file-name' is nil when the init file is being loaded
-;;   by the profiler.  This might matter if you perform the
-;;   bulk of initializations in a different file.
-;; - Starting external shells like IELM or eshell in your init file
-;;   might mess with overlay creation, so this must not be done.
-
-;;; Download:
-
-;;  You can always get the latest version from
-;;       http://randomsample.de/profile-dotemacs.el
+;; Full sexps are the unit of measurement; split large conditional blocks before
+;; profiling if finer detail is needed.
 
 ;;; Code:
 

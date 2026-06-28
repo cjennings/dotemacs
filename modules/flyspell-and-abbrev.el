@@ -6,48 +6,18 @@
 ;; Layer: 2 (Core UX).
 ;; Category: C/P.
 ;; Load shape: eager.
-;; Eager reason: text-mode spelling and abbrev hooks; spec target is hook-loaded.
-;; Top-level side effects: package configuration via use-package (mode hooks).
+;; Eager reason: text-mode spelling and abbrev hooks.
+;; Top-level side effects: package configuration via use-package.
 ;; Runtime requires: cl-lib.
 ;; Direct test load: yes.
 ;;
-;; WORKFLOW:
-;; This module provides intelligent spell checking with automatic abbreviation
-;; creation to prevent repeated misspellings.
+;; On-demand Flyspell workflow with automatic abbrev creation from accepted
+;; corrections. C-' checks/corrects nearby misspellings; C-c f toggles Flyspell
+;; with mode-aware behavior.
 ;;
-;; KEYBINDINGS:
-;;   C-'   - Main spell check interface (cj/flyspell-then-abbrev)
-;;   C-c f - Toggle flyspell on/off (cj/flyspell-toggle)
-;;   M-o   - Access 'other options' during correction (save to dictionary, etc.)
-;;
-;; SPELL CHECKING WORKFLOW:
-;; 1. Press C-' to start spell checking
-;; 2. Finds the nearest misspelled word above the cursor
-;; 3. Prompts for correction or allows saving to personal dictionary
-;; 4. Press C-' again to move to the next misspelling
-;; 5. Each correction automatically creates an abbrev for future auto-expansion
-;;
-;; FLYSPELL ACTIVATION:
-;; Flyspell is NOT automatically enabled. You activate it manually:
-;; - C-c f - Toggle flyspell on (uses smart mode detection) or off
-;; - C-'   - Runs flyspell-buffer then starts correction workflow
-;;
-;; When enabled, flyspell adapts to the buffer type:
-;; - Programming modes (prog-mode): Only checks comments and strings
-;; - Text modes (text-mode): Checks all text
-;; - Other modes: Must enable manually with C-c f
-;;
-;; ABBREVIATION AUTO-EXPANSION:
-;; Each spell correction creates an abbrev that auto-expands the misspelling
-;; to the correct spelling when you type it in the future. This significantly
-;; increases typing speed over time.
-;;
-;; Original idea from Artur Malabarba:
-;; http://endlessparentheses.com/ispell-and-abbrev-the-perfect-auto-correct.html
-;;
-;; NOTES:
-;; The default flyspell keybinding "C-;" is unbound in this config as it's
-;; used for the custom keymap (cj/custom-keymap).
+;; Flyspell is not enabled globally. Programming buffers check comments/strings
+;; when enabled; prose buffers check all text. The default C-; Flyspell binding
+;; is intentionally left free for cj/custom-keymap.
 
 ;;; Code:
 

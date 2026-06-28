@@ -11,72 +11,17 @@
 ;; Layer: 4 (Optional).
 ;; Category: O/L.
 ;; Load shape: eager.
-;; Eager reason: none; navigation helper, a command-loaded deferral candidate.
-;; Top-level side effects: defines a jumper keymap.
+;; Eager reason: none; jump commands can autoload.
+;; Top-level side effects: defines jumper keymap.
 ;; Runtime requires: cl-lib.
 ;; Direct test load: yes.
 ;;
-;; Jumper provides a simple way to store and jump between locations
-;; in your codebase without needing to remember register assignments.
+;; Small register-backed jump list. Locations are stored in numbered registers,
+;; shown through completion with file/line context, and removed explicitly when
+;; no longer useful.
 ;;
-;; PURPOSE:
-;;
-;; When working on large codebases, you often need to jump between
-;; multiple related locations: a function definition, its tests, its
-;; callers, configuration files, etc. Emacs registers are perfect for
-;; this, but require you to remember which register you assigned to
-;; which location. Jumper automates register management, letting you
-;; focus on your work instead of bookkeeping.
-;;
-;; WORKFLOW:
-;;
-;; 1. Navigate to an important location in your code
-;; 2. Press M-SPC SPC to store it (automatically assigned to register 0)
-;; 3. Continue working, storing more locations as needed (registers 1-9)
-;; 4. Press M-SPC j to jump back to any stored location
-;; 5. Select from the list using completion (shows file, line, context)
-;; 6. Press M-SPC d to remove locations you no longer need
-;;
-;; RECOMMENDED USAGE:
-;;
-;; Store locations temporarily while working on a feature:
-;;   - Store the main function you're implementing
-;;   - Store the test file where you're writing tests
-;;   - Store the caller that needs updating
-;;   - Store the documentation that needs changes
-;;   - Jump between them freely as you work
-;;   - Clear them when done with the feature
-;;
-;; SPECIAL BEHAVIORS:
-;;
-;; - Duplicate prevention: Storing the same location twice shows a message
-;;   instead of wasting a register slot.
-;;
-;; - Single location toggle: When only one location is stored, M-SPC j
-;;   toggles between that location and your current position. Perfect for
-;;   rapid back-and-forth between two related files.
-;;
-;; - Last location tracking: The last position before each jump is saved
-;;   in register 'z', allowing quick "undo" of navigation.
-;;
-;; - Smart selection: With multiple locations, completing-read shows
-;;   helpful context: "[0] filename.el:42 - function definition..."
-;;
-;; KEYBINDINGS:
-;;
-;; M-SPC SPC   Store current location in next available register
-;; M-SPC j     Jump to a stored location (with completion)
-;; M-SPC d     Delete a stored location from the list
-;;
-;; CONFIGURATION:
-;;
-;; You can customize the prefix key and maximum locations:
-;;
-;;   (setq jumper-prefix-key "C-c j")  ; Change prefix key
-;;   (setq jumper-max-locations 20)    ; Store up to 20 locations
-;;
-;; Note: Changing jumper-max-locations requires restarting Emacs or
-;; manually reinitializing jumper--registers.
+;; A single stored location toggles with the current point; each jump records the
+;; previous point in register z for a quick return path.
 
 ;;; Code:
 

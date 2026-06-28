@@ -5,48 +5,17 @@
 ;; Layer: 2 (Core UX).
 ;; Category: C.
 ;; Load shape: eager.
-;; Eager reason: the F4/F6 developer command entry points.
-;; Top-level side effects: six global F-key bindings; conditionally registers a
-;;   C-; P binding.
+;; Eager reason: binds the F4/F6 developer command entry points.
+;; Top-level side effects: global F-key bindings and optional C-; P binding.
 ;; Runtime requires: cl-lib, system-lib, keybindings.
-;; Direct test load: yes (requires keybindings explicitly).
+;; Direct test load: yes.
 ;;
-;; Project-aware F-key block for developer workflows:
+;; Project-aware F-key dispatchers. F4 chooses compile/run/clean commands by
+;; project markers; C-F4 and M-F4 are fast paths. F6 runs all project tests or
+;; the current file's tests using language-specific command builders.
 ;;
-;;   F4    completing-read of compile/run candidates filtered by project type
-;;   C-F4  fast path: compile only (no-op on interpreted projects)
-;;   M-F4  fast path: clean + rebuild (no-op on interpreted projects)
-;;   S-F4  recompile (built-in)
-;;   F6    completing-read of test candidates: All tests / Current file's tests
-;;   C-F6  fast path: current file's tests
-;;
-;; F4 project-type detection runs against the projectile root and falls back
-;; to \\='unknown when no marker matches. Interpreted markers are checked
-;; before compiled markers, so a Python or Node project that also has a
-;; Makefile for tasks classifies as interpreted.
-;;
-;; F6 \"All tests\" delegates to `projectile-test-project'. F6 \"Current
-;; file's tests\" detects the language by extension, derives the runner
-;; command (elisp via the project Makefile, Python via pytest, Go via the
-;; package), and pipes through `compile' from the projectile root.
-;; TypeScript / JavaScript are detected but punted for v1 — the function
-;; signals a user-error rather than guessing a runner.
-;;
-;; M-F6 is reserved for Phase 2b (\"Run a test...\" menu entry with
-;; per-language test-name discovery). Phase 2b also adds buffer-local
-;; last-test memory and tree-sitter-based discovery for Python / Go /
-;; TypeScript. The tree-sitter discovery uses a capture-then-filter pattern
-;; (queries without `:match' / `:equal' / `:pred' predicates, with the
-;; pattern filter applied in Elisp) to sidestep Emacs bug #79687 — Emacs
-;; 30.2 emits unsuffixed `#match' predicates that libtree-sitter 0.26
-;; rejects. The fix lives on Emacs master (commit b0143530) and is
-;; targeted at Emacs 31; it has not been backported to the emacs-30
-;; branch as of 2026-05-03. See Mike Olson's writeup at
-;; https://mwolson.org/blog/emacs/2026-04-20-fixing-typescript-ts-mode-in-emacs-30-2/
-;; for the same workaround applied to font-lock.
-;;
-;; F7 (coverage) is wired in coverage-core.el. F5 is reserved for the debug
-;; ticket and intentionally left unbound here.
+;; Interpreted markers win over compiled markers so task Makefiles do not turn
+;; Python/Node projects into compile-first projects.
 
 ;;; Code:
 

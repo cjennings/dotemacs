@@ -2,6 +2,9 @@
 
 ;;; Commentary:
 ;;
+;; Helpers for converting exported VCF contacts into org-contacts data. The
+;; cleaner normalizes folded fields, birthdays, item-prefixed email/phone fields,
+;; and removes cards without useful identifying data before import.
 
 ;;; Code:
 

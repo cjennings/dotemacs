@@ -5,62 +5,17 @@
 ;; Layer: 2 (Core UX).
 ;; Category: L/C.
 ;; Load shape: eager.
-;; Eager reason: registers its C-; C comment submap at load. Currently eager by
-;;   init order; a deferral candidate for Phase 3/4 (command/autoload +
-;;   registration API).
-;; Top-level side effects: defines cj/comment-map, registers it under C-; C.
+;; Eager reason: registers C-; C comment helpers.
+;; Top-level side effects: defines and registers cj/comment-map.
 ;; Runtime requires: keybindings.
-;; Direct test load: yes (requires keybindings explicitly).
+;; Direct test load: yes.
 ;;
-;; This module provides custom comment formatting and manipulation utilities for code editing.
+;; Comment editing helpers: delete comments, reflow commented regions, and insert
+;; consistent section headers or boxes using the current mode's comment syntax.
 ;;
-;; Functions include:
-;; - deleting all comments in a buffer,
-;; - reformatting commented text into single-line paragraphs,
-;; - creating centered comment headers with customizable separator characters,
-;; - creating comment boxes around text
-;; - inserting hyphen-style centered comments.
-;;
-;; These utilities help create consistent, well-formatted code comments and section headers.
-;; Bound to keymap prefix: C-; C
-;;
-;; Comment Style Patterns:
-;;
-;; inline-border:
-;;   ========== inline-border ==========
-;;
-;; simple-divider:
-;;   ====================================
-;;   simple-divider
-;;   ====================================
-;;
-;; padded-divider:
-;;   ====================================
-;;     padded-divider
-;;   ====================================
-;;
-;; box:
-;;   ************************************
-;;   * box                              *
-;;   ************************************
-;;
-;; heavy-box:
-;;   ************************************
-;;   *                                  *
-;;   *          heavy-box               *
-;;   *                                  *
-;;   ************************************
-;;
-;; unicode-box:
-;;   ┌──────────────────────────────────┐
-;;   │ unicode-box                      │
-;;   └──────────────────────────────────┘
-;;
-;; block-banner:
-;;   /************************************
-;;    * block-banner
-;;    ************************************/
-;;
+;; Public commands live under C-; C. Decoration helpers validate single printable
+;; characters before generating comment borders.
+
 ;;; Code:
 
 (require 'keybindings)  ;; provides cj/custom-keymap

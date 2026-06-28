@@ -6,51 +6,18 @@
 ;; Layer: 2 (Core UX).
 ;; Category: C/P/S.
 ;; Load shape: eager.
-;; Eager reason: font setup for the first frame, plus font keybindings.
-;; Top-level side effects: binds five global font keys, runs font-installation
-;;   checks, configures packages via use-package.
+;; Eager reason: first-frame font setup and font keybindings.
+;; Top-level side effects: font keys, font checks, package config.
 ;; Runtime requires: host-environment, keybindings.
 ;; Direct test load: yes.
 ;;
-;; This module provides font configuration, including:
+;; Configures fontaine presets, text scaling keys, icon/emoji fonts, and
+;; programming ligatures. Presets are applied per frame so daemon clients get
+;; the intended fixed/variable pitch sizes.
 ;;
-;; 1. Font Management:
-;;    - Dynamic font preset switching via `fontaine' package
-;;    - Separate configurations for fixed-pitch and variable-pitch fonts
-;;    - Multiple size presets for different viewing contexts
-;;    - Per-frame font configuration tracking for daemon mode compatibility
-;;
-;; 2. Icon Support:
-;;    - All-the-icons integration with automatic font installation
-;;    - Nerd fonts support for enhanced icons in terminals and GUI
-;;    - Platform-specific emoji font configuration (Noto, Apple, Segoe)
-;;    - Emojify package for emoji rendering and insertion
-;;
-;; 3. Typography Enhancements:
-;;    - Programming ligatures via `ligature' package
-;;    - Mode-specific ligature rules for markdown and programming
-;;    - Text scaling keybindings for quick size adjustments
-;;
-;; 4. Utility Functions:
-;;    - `cj/font-installed-p': Check font availability
-;;    - `cj/display-available-fonts': Interactive font browser with samples
-;;    - Frame-aware font application for client/server setups
-;;
-;; Configuration Notes:
-;; - Default preset: BerkeleyMono Nerd Font; height 120 on laptops, 140 on desktops
-;; - Variable pitch: Lexend in the default preset; Merriweather for fallback presets
-;; - Handles both standalone and daemon mode Emacs instances
-;; - Emoji fonts selected based on OS availability
-;;
-;; Keybindings:
-;; - M-S-f: Select font preset (fontaine-set-preset)
-;; - C-z F: Display available fonts
-;; - C-+/C-=: Increase text scale
-;; - C--/C-_: Decrease text scale
-;; - C-c E i: Insert emoji
-;; - C-c E l: List emojis
-;;
-;;
+;; Also carries font-rendering safeguards for known HarfBuzz/font-cache crashes
+;; triggered by emoji and Arabic shaping in this setup.
+
 ;;; Code:
 
 (require 'host-environment)

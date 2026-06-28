@@ -6,104 +6,19 @@
 ;; Layer: 4 (Optional).
 ;; Category: O/D/S.
 ;; Load shape: eager.
-;; Eager reason: none; registers a recording keymap, but device probing should
-;;   run only on command (command-loaded target).
-;; Top-level side effects: defines cj/record-map and conditionally registers it
-;;   under C-; r.
+;; Eager reason: none; records only on command, but registers C-; r at load.
+;; Top-level side effects: defines cj/record-map and registers it when possible.
 ;; Runtime requires: system-lib, keybindings.
-;; Direct test load: yes (requires keybindings explicitly).
+;; Direct test load: yes.
 ;;
-;; Desktop video and audio recording from within Emacs using ffmpeg.
-;; Records from both microphone and system audio simultaneously, which
-;; makes it suitable for capturing meetings, presentations, and desktop activity.
+;; Starts and stops ffmpeg-backed audio/video recordings from Emacs. Audio
+;; captures microphone plus system monitor; video uses x11grab on X11 and
+;; wf-recorder piped into ffmpeg on Wayland.
 ;;
-;; Architecture:
-;;   - Audio recordings use ffmpeg directly with PulseAudio inputs → M4A/AAC
-;;   - Video recordings differ by display server:
-;;     - X11: ffmpeg with x11grab + PulseAudio → MKV
-;;     - Wayland: wf-recorder piped to ffmpeg for audio mixing → MKV
-;;       (wf-recorder captures the compositor, ffmpeg mixes in audio)
-;;
-;; Process lifecycle:
-;;   - Start: `start-process-shell-command` creates a shell running the
-;;     ffmpeg (or wf-recorder|ffmpeg) pipeline. Process ref is stored in
-;;     `cj/video-recording-ffmpeg-process' or `cj/audio-recording-ffmpeg-process'.
-;;   - Stop: SIGINT is sent to the shell's process group so all pipeline
-;;     children (wf-recorder, ffmpeg) receive it. We then poll until the
-;;     process actually exits, giving ffmpeg time to finalize the container.
-;;   - Cleanup: A process sentinel auto-clears the process variable and
-;;     updates the modeline if the process dies unexpectedly.
-;;
-;; Note: video-recordings-dir and audio-recordings-dir are defined
-;; (and directory created) in user-constants.el
-;;
-;; Quick Start
-;; ===========
-;; 1. Press C-; r s to run quick setup
-;; 2. Pick a microphone from the list
-;; 3. Pick an audio output — [in use] shows which apps are playing
-;; 4. Press C-; r a to start/stop audio recording
-;; 5. Recording starts - you'll see 󰍬 in your modeline
-;; 6. Press C-; r a again to stop (🔴 disappears)
-;;
-;; Device Setup
-;; ============
-;; C-; r a automatically prompts for device selection on first use.
-;; Device selection lasts for the current Emacs session only.
-;;
-;; Manual device selection:
-;;
-;; C-; r s (cj/recording-quick-setup) - RECOMMENDED
-;;   Two-step setup: pick a mic, then pick an audio output to capture.
-;;   Both steps show status: [in use], [ready], [available], [muted].
-;;   Audio outputs also show which apps are playing through them.
-;;   Sorted: in use → ready → available → muted.
-;;
-;; C-; r S (cj/recording-select-devices) - ADVANCED
-;;   Manual selection: choose mic and monitor separately.
-;;   Use when you need different devices for input/output.
-;;
-;; C-; r d (cj/recording-list-devices)
-;;   List all available audio devices and current configuration.
-;;
-;; C-; r w (cj/recording-show-active-audio) - DIAGNOSTIC TOOL
-;;   Show which apps are currently playing audio and through which device.
-;;   Use this DURING a phone call to see if the call audio is going through
-;;   the device you think it is. Helps diagnose "missing one side" issues.
-;;
-;; Pre-Recording Validation
-;; ========================
-;; Every time you start a recording, the system audio device is
-;; validated automatically:
-;;   1. If the configured monitor device no longer exists (e.g.
-;;      USB DAC unplugged), it's auto-updated to the current
-;;      default sink's monitor.
-;;   2. If no audio is currently playing through the monitored sink,
-;;      a warning is shown in the echo area. Recording proceeds
-;;      without interruption — run C-; r s to see active streams.
-;;
-;; Testing Devices Before Important Recordings
-;; ============================================
-;; Always test devices before important recordings:
-;;
-;; C-; r t b (cj/recording-test-both) - RECOMMENDED
-;;   Guided test: mic only, monitor only, then both together.
-;;   Catches hardware issues before they ruin recordings!
-;;
-;; C-; r t m (cj/recording-test-mic)
-;;   Quick 5-second mic test with playback.
-;;
-;; C-; r t s (cj/recording-test-monitor)
-;;   Quick 5-second system audio test with playback.
-;;
-;; To adjust volumes:
-;; - Use =M-x cj/recording-adjust-volumes= (or your keybinding =r l=)
-;; - Or customize permanently: =M-x customize-group RET cj-recording RET=
-;; - Or in your config:
-;;   #+begin_src emacs-lisp
-;;   (setq cj/recording-mic-boost 1.5)    ; 50% louder
-;;   (setq cj/recording-system-volume 0.7) ; 30% quieter
-;;
+;; Recording processes are tracked in module variables, stopped with SIGINT so
+;; containers finalize cleanly, and reflected in the modeline. Device selection
+;; is session-local; quick setup and device tests live under C-; r.
+
 ;;; Code:
 
 (require 'system-lib)
