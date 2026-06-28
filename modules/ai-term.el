@@ -30,6 +30,7 @@
 (require 'keybindings)  ;; provides cj/register-prefix-map (C-; a)
 
 (declare-function eat "eat" (&optional program arg))
+(declare-function cj/make-buffer-pattern-undead "undead-buffers")
 (defvar eat-buffer-name)
 (defvar eat-semi-char-mode-map)
 
@@ -515,6 +516,12 @@ repeated capture/replay drifts the dock height a couple rows per cycle."
       (setq cj/--ai-term-last-fullscreen (cj/--ai-term-window-sole-p win)))))
 
 (add-hook 'window-configuration-change-hook #'cj/--ai-term-track-geometry)
+
+;; Agent buffers ("agent [<project>]") are buried, not killed, by the
+;; kill-all sweep (F1 / `cj/dashboard-only').  Register the family pattern so
+;; every agent -- however and whenever created -- survives with its session.
+(with-eval-after-load 'undead-buffers
+  (cj/make-buffer-pattern-undead "\\`agent \\["))
 
 (defun cj/--ai-term-reuse-existing-agent (buffer _alist)
   "Display-buffer action: reuse any window in this frame already showing

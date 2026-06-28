@@ -32,7 +32,13 @@
 (defvar cj/undead-buffer-list
   '("*scratch*" "*EMMS-Playlist*" "*Messages*" "*ert*"
     "*AI-Assistant*")
-  "Buffers to bury instead of killing.")
+  "Buffer names to bury instead of killing (exact match).")
+
+(defvar cj/undead-buffer-regexps nil
+  "Regexps for buffer names to bury instead of killing, alongside
+`cj/undead-buffer-list'.  Use for dynamically-named buffer families where an
+exact name can't be pre-listed -- e.g. ai-term agents, named \"agent [<project>]\".
+Register one with `cj/make-buffer-pattern-undead'.")
 
 (defun cj/make-buffer-undead (name)
   "Append NAME to `cj/undead-buffer-list' if not present.
@@ -40,6 +46,23 @@ Signal an error if NAME is not a non-empty string. Return the updated list."
   (unless (and (stringp name) (> (length name) 0))
     (error "cj/bury-alive-add: NAME must be a non-empty string"))
   (add-to-list 'cj/undead-buffer-list name t))
+
+(defun cj/make-buffer-pattern-undead (regexp)
+  "Append REGEXP to `cj/undead-buffer-regexps' if not present.
+A buffer whose name matches REGEXP is buried instead of killed.  Signal an
+error if REGEXP is not a non-empty string.  Return the updated list."
+  (unless (and (stringp regexp) (> (length regexp) 0))
+    (error "cj/make-buffer-pattern-undead: REGEXP must be a non-empty string"))
+  (add-to-list 'cj/undead-buffer-regexps regexp t))
+
+(defun cj/--buffer-undead-p (name)
+  "Return non-nil when buffer NAME should be buried instead of killed.
+NAME is undead when it is in `cj/undead-buffer-list' (exact) or matches any
+regexp in `cj/undead-buffer-regexps'."
+  (and (stringp name)
+       (or (member name cj/undead-buffer-list)
+           (seq-some (lambda (re) (string-match-p re name))
+                     cj/undead-buffer-regexps))))
 
 (defun cj/kill-buffer-or-bury-alive (buffer)
   "Kill BUFFER or bury it if it's in `cj/undead-buffer-list'."
@@ -49,7 +72,7 @@ Signal an error if NAME is not a non-empty string. Return the updated list."
 		(progn
           (add-to-list 'cj/undead-buffer-list (buffer-name))
 		  (message "Added %s to bury-alive-list" (buffer-name)))
-      (if (member (buffer-name) cj/undead-buffer-list)
+      (if (cj/--buffer-undead-p (buffer-name))
 		  (bury-buffer)
 		(kill-buffer)))))
 (keymap-global-set "<remap> <kill-buffer>" #'cj/kill-buffer-or-bury-alive)
@@ -60,7 +83,7 @@ Undead-buffers are buffers in `cj/undead-buffer-list'."
   (let* ((buf (current-buffer))
 		 (name (buffer-name buf)))
 	(and
-     (not (member name cj/undead-buffer-list))
+     (not (cj/--buffer-undead-p name))
 	 (buffer-file-name buf)
 	 (buffer-modified-p buf))))
 
