@@ -96,6 +96,35 @@ the script and the audio path."
     (should (equal (plist-get make-process-args :command)
                    (list script audio)))))
 
+(ert-deftest test-tx-start-process-stderr-is-a-buffer-not-a-path ()
+  "Normal: :stderr is a live buffer, not a file path.
+Passing a path string makes Emacs create a phantom buffer named after the
+path, so stderr never reaches the log file and that buffer leaks per run."
+  (let* ((audio (make-temp-file "cj-tx-audio-" nil ".mp3"))
+         (script (make-temp-file "cj-tx-script-"))
+         (cj/transcriptions-list nil)
+         make-process-args)
+    (set-file-modes script #o755)
+    (unwind-protect
+        (cl-letf (((symbol-function 'cj/--transcription-script-path)
+                   (lambda () script))
+                  ((symbol-function 'cj/--init-log-file) #'ignore)
+                  ((symbol-function 'cj/--build-process-environment)
+                   (lambda (_) '("FOO=bar")))
+                  ((symbol-function 'make-process)
+                   (lambda (&rest kwargs)
+                     (setq make-process-args kwargs)
+                     'fake-process))
+                  ((symbol-function 'cj/--notify) #'ignore)
+                  ((symbol-function 'force-mode-line-update) #'ignore))
+          (cj/--start-transcription-process audio))
+      (delete-file audio)
+      (delete-file script))
+    (let ((stderr (plist-get make-process-args :stderr)))
+      (should (bufferp stderr))
+      (should (buffer-live-p stderr))
+      (when (buffer-live-p stderr) (kill-buffer stderr)))))
+
 ;;; cj/--transcription-sentinel
 
 (ert-deftest test-tx-sentinel-success-writes-transcript-and-updates-status ()
@@ -105,6 +134,7 @@ the entry status to `complete', and fires a normal-urgency notification."
          (log-file (make-temp-file "cj-tx-log-" nil ".log"))
          (process-buffer (generate-new-buffer " *cj-tx-test*"))
          (proc (list 'mock-process))
+         (stderr-buffer (generate-new-buffer " *cj-tx-test-stderr*"))
          (cj/transcriptions-list (list (list proc "/tmp/audio.mp3"
                                              (current-time) 'running)))
          notify-urgency)
@@ -121,12 +151,15 @@ the entry status to `complete', and fires a normal-urgency notification."
                    (lambda (_t _m &optional u) (setq notify-urgency u))))
           (cj/--transcription-sentinel proc "finished\n"
                                         "/tmp/audio.mp3"
-                                        txt-file log-file))
+                                        txt-file log-file stderr-buffer))
       (when (buffer-live-p process-buffer) (kill-buffer process-buffer))
+      (when (buffer-live-p stderr-buffer) (kill-buffer stderr-buffer))
       (delete-file txt-file)
       (delete-file log-file))
     ;; success notification uses default (nil/normal) urgency.
     (should-not notify-urgency)
+    ;; the stderr buffer is drained and killed, never leaked.
+    (should-not (buffer-live-p stderr-buffer))
     ;; entry status updated to complete.
     (let ((entry (car cj/transcriptions-list)))
       (should (eq (nth 3 entry) 'complete)))))
@@ -138,10 +171,14 @@ marks the entry as `error'."
          (log-file (make-temp-file "cj-tx-log-" nil ".log"))
          (process-buffer (generate-new-buffer " *cj-tx-fail*"))
          (proc (list 'mock-fail))
+         (stderr-buffer (generate-new-buffer " *cj-tx-fail-stderr*"))
          (cj/transcriptions-list (list (list proc "/tmp/audio.mp3"
                                              (current-time) 'running)))
+         log-contents
          notify-urgency)
-    (with-current-buffer process-buffer (insert "stderr blob"))
+    (with-current-buffer process-buffer (insert "partial transcript"))
+    (with-current-buffer stderr-buffer (insert "whisper: CUDA out of memory"))
+    (with-temp-file log-file (insert "HEADER\n"))
     (unwind-protect
         (cl-letf (((symbol-function 'process-buffer)
                    (lambda (_) process-buffer))
@@ -153,11 +190,18 @@ marks the entry as `error'."
                    (lambda (_t _m &optional u) (setq notify-urgency u))))
           (cj/--transcription-sentinel proc "exited abnormally\n"
                                         "/tmp/audio.mp3"
-                                        txt-file log-file))
+                                        txt-file log-file stderr-buffer)
+          (setq log-contents
+                (with-temp-buffer (insert-file-contents log-file) (buffer-string))))
       (when (buffer-live-p process-buffer) (kill-buffer process-buffer))
+      (when (buffer-live-p stderr-buffer) (kill-buffer stderr-buffer))
       (delete-file txt-file)
       (delete-file log-file))
     (should (eq notify-urgency 'critical))
+    ;; the actual stderr error text reaches the log on failure.
+    (should (string-match-p "CUDA out of memory" log-contents))
+    ;; the stderr buffer is killed, never leaked.
+    (should-not (buffer-live-p stderr-buffer))
     (let ((entry (car cj/transcriptions-list)))
       (should (eq (nth 3 entry) 'error)))))
 

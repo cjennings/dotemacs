@@ -195,6 +195,8 @@ transcript lands alongside the source, not next to the temp /tmp audio."
          (txt-file (car outputs))
          (log-file (cdr outputs))
          (buffer-name (format " *transcribe-%s*" (file-name-nondirectory audio-file)))
+         (stderr-buffer-name (format " *transcribe-stderr-%s*"
+                                     (file-name-nondirectory audio-file)))
          (process-name (format "transcribe-%s" (file-name-nondirectory audio-file))))
 
     (unless (file-executable-p script)
@@ -203,15 +205,25 @@ transcript lands alongside the source, not next to the temp /tmp audio."
     (cj/--init-log-file log-file audio-file script)
 
     (let* ((process-environment (cj/--build-process-environment cj/transcribe-backend))
+           ;; A live, explicitly-managed buffer for stderr.  Passing a file PATH
+           ;; to :stderr makes Emacs create a phantom buffer named after the
+           ;; path, so the error text never reaches the log file and that buffer
+           ;; leaks per run; the sentinel drains this buffer into the log and
+           ;; kills it.  Keeping stderr off the stdout :buffer leaves the
+           ;; transcript (stdout) clean.
+           (stderr-buffer (with-current-buffer (get-buffer-create stderr-buffer-name)
+                            (erase-buffer)
+                            (current-buffer)))
            (process (make-process
                      :name process-name
                      :buffer (get-buffer-create buffer-name)
                      :command (list script audio-file)
                      :sentinel (lambda (proc event)
-                                 (cj/--transcription-sentinel proc event audio-file txt-file log-file)
+                                 (cj/--transcription-sentinel proc event audio-file
+                                                              txt-file log-file stderr-buffer)
                                  (when cleanup-file
                                    (ignore-errors (delete-file cleanup-file))))
-                     :stderr log-file)))
+                     :stderr stderr-buffer)))
       (cj/--track-transcription process audio-file)
       (cj/--notify "Transcription"
                    (format "Started on %s" (file-name-nondirectory audio-file)))
@@ -294,20 +306,25 @@ References TXT-FILE on success (normal urgency), LOG-FILE on failure
                  (format "Errored.  Logs in %s" (file-name-nondirectory log-file))
                  'critical)))
 
-(defun cj/--transcription-sentinel (process event _audio-file txt-file log-file)
+(defun cj/--transcription-sentinel (process event _audio-file txt-file log-file stderr-buffer)
   "Sentinel for transcription PROCESS.
 EVENT is the process event string.  TXT-FILE and LOG-FILE are the
-associated output files."
+associated output files.  STDERR-BUFFER holds the process's stderr; its
+contents are appended to LOG-FILE so the \"Logs in <file>\" notification
+points at real error text, and the buffer is then killed so it does not
+leak per run."
   (let* ((success-p (and (string-match-p "finished" event)
                          (= 0 (process-exit-status process))))
          (process-buffer (process-buffer process)))
     (cj/--write-transcript-on-success process-buffer success-p txt-file)
-    (cj/--append-to-log process-buffer log-file event)
+    (cj/--append-to-log stderr-buffer log-file event)
     (cj/--update-transcription-status process success-p)
     (when (and success-p (not (cj/--should-keep-log success-p)))
       (delete-file log-file))
     (when (buffer-live-p process-buffer)
       (kill-buffer process-buffer))
+    (when (buffer-live-p stderr-buffer)
+      (kill-buffer stderr-buffer))
     (cj/--notify-completion success-p txt-file log-file)
     (run-at-time 600 nil #'cj/--cleanup-completed-transcriptions)
     (force-mode-line-update t)))
