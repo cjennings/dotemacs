@@ -716,6 +716,12 @@
     "web-mode-warning-face",
     "web-mode-whitespace-face"
   ],
+  "wttrin": [
+    "wttrin-instructions",
+    "wttrin-key",
+    "wttrin-mode-line-stale",
+    "wttrin-staleness-header"
+  ],
   "yasnippet": [
     "yas--field-debug-face",
     "yas-field-highlight-face"
