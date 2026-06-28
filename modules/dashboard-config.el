@@ -272,7 +272,7 @@ system-defaults) are preserved rather than overwritten."
       (setq initial-buffer-choice (lambda () (get-buffer "*dashboard*")))) ;; don't display dashboard if opening a file
   (setq dashboard-display-icons-p t)                                  ;; display icons on both GUI and terminal
   (setq dashboard-icon-type 'nerd-icons)                              ;; use `nerd-icons' package
-  (setq dashboard-set-file-icons t)                                   ;; per-filetype icons on the list items (nerd-icons colors them by type)
+  (setq dashboard-set-file-icons nil)                                 ;; no per-item icons on the list entries: URL bookmarks have no filename, so they'd render iconless next to file items -- dropping them all keeps the lists uniform
   (setq dashboard-set-heading-icons t)                                ;; nerd-icons on the section titles (Projects/Bookmarks/Recent)
   (setq dashboard-center-content t)                                   ;; horizontally center dashboard content
   (setq dashboard-bookmarks-show-path nil)                            ;; don't show paths in bookmarks
