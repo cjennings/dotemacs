@@ -21,10 +21,13 @@
 ;; ----------------------------------- Wttrin ----------------------------------
 
 (use-package wttrin
-  :vc (:url "git@cjennings.net:emacs-wttrin.git"
-       :branch "main"
-       :rev :newest)
-  ;; :load-path "~/code/emacs-wttrin"  ;; uncomment + comment :vc above for local dev
+  ;; Load from the local checkout (currently release/0.4.0) so recent wttrin
+  ;; changes are testable without a package pull.  Swap back to :vc below for
+  ;; production tracking.
+  :load-path "~/code/emacs-wttrin"
+  ;; :vc (:url "git@cjennings.net:emacs-wttrin.git"
+  ;;      :branch "release/0.4.0"
+  ;;      :rev :newest)
   :demand t  ;; REQUIRED: mode-line must start at Emacs startup
   :preface
   ;; Change this to t to enable debug logging
@@ -39,11 +42,8 @@
   (setopt wttrin-display-options "F")
   (setopt wttrin-favorite-location "New Orleans, LA")
   ;; Scale the weather font to fit the window width, clamped to a floor/cap
-  ;; (wttrin-font-height-min/-max, default 100/200).  setq (not setopt): the
-  ;; wttrin-auto-fit-font defcustom only exists once feature/center-buffer-text
-  ;; merges to main and the :vc package updates; until then this just sets a
-  ;; value the old code ignores, and the later defcustom won't clobber it.
-  (setq wttrin-auto-fit-font t)
+  ;; (wttrin-font-height-min/-max, default 100/200).
+  (setopt wttrin-auto-fit-font t)
   ;; Higher-accuracy geolocation via the whereami WiFi-scan script (Google-backed),
   ;; far better than IP behind a VPN or cellular hotspot.  Used by the picker's
   ;; "Current location (detect)" entry; wttrin falls back to its IP provider if the
