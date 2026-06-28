@@ -479,8 +479,21 @@ pty; without tmux, moves point up in EAT's emacs-mode buffer."
 (defvar eat-mode-map)
 (declare-function eat-semi-char-mode "eat")
 (declare-function eat-self-input "eat")
+
+(defun cj/eat-text-scale-reset ()
+  "Reset the text scale to its default in the current buffer."
+  (interactive)
+  (text-scale-set 0))
+
 (with-eval-after-load 'eat
   (keymap-set eat-semi-char-mode-map "C-<up>" #'cj/term-copy-mode-up)
+  ;; Zoom-out and reset reach Emacs, not the pty.  EAT binds C-- to
+  ;; eat-self-input (forwarded to the terminal), so without this the font can
+  ;; only grow: C-= / C-+ pass through and zoom in, but C-- never reaches
+  ;; text-scale-decrease.  Low cost -- the Claude TUI and tmux don't use Ctrl+-,
+  ;; and C-0 shadows digit-argument inside eat buffers only.
+  (keymap-set eat-semi-char-mode-map "C--" #'text-scale-decrease)
+  (keymap-set eat-semi-char-mode-map "C-0" #'cj/eat-text-scale-reset)
   ;; Escape forwards ESC to the pty, so it cancels tmux copy-mode (tmux binds
   ;; Escape to cancel) and works in TUIs; in EAT's own emacs/char mode it returns
   ;; to semi-char.  One key gets out of either copy view.
