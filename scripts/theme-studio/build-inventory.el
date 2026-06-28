@@ -13,8 +13,11 @@
 (let ((h (make-hash-table :test 'equal)))
   (dolist (f (face-list))
     (let* ((file (ignore-errors (symbol-file f 'defface)))
+           ;; Match /elpa/PKG-VERSION/ and also /elpa/PKG/ (unversioned local dev
+           ;; checkouts cloned in place), so locally-developed packages are
+           ;; captured too.  The version suffix is optional.
            (pkg (and (stringp file)
-                     (string-match "/\\(?:elpa\\|straight/build\\|site-lisp\\)/\\([a-zA-Z0-9._-]+?\\)-[0-9][^/]*/" file)
+                     (string-match "/\\(?:elpa\\|straight/build\\|site-lisp\\)/\\([a-zA-Z0-9._-]+?\\)\\(?:-[0-9][^/]*\\)?/" file)
                      (match-string 1 file))))
       (when pkg (push (symbol-name f) (gethash pkg h)))))
   (let (al)
