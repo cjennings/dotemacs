@@ -1,4 +1,4 @@
-;;; testutil-filesystem.el ---  -*- coding: utf-8; lexical-binding: t; -*-
+;;; testutil-filesystem.el --- Filesystem helpers for archived GPTel tests -*- coding: utf-8; lexical-binding: t; -*-
 ;;
 ;; Author: Craig Jennings <c@cjennings.net>
 ;;
@@ -27,11 +27,8 @@ By default, hidden entries (starting with '.') are excluded unless
 INCLUDE-HIDDEN is non-nil. FILTER-PREDICATE, if non-nil, is a predicate
 function called on each entry's absolute path; only entries where it returns
 non-nil are included."
-  ;; Convert 'path' to an absolute filename string
   (let* ((expanded-path (expand-file-name path))
-		 ;; get absolute paths in expanded directory
 		 (entries (directory-files expanded-path t nil t))
-		 ;; remove "." ".." entries
          (filtered-entries
           (cl-remove-if
            (lambda (entry)
@@ -40,10 +37,8 @@ non-nil are included."
                  (and (not include-hidden)
                       (string-prefix-p "." (f-filename entry)))))
            entries)))
-	;; apply filtered predicate if provided
     (if filter-predicate
 		(seq-filter filter-predicate filtered-entries)
-	  ;; retun filtered-entries
       filtered-entries)))
 
 (defun cj/get-file-info (path)

@@ -15,8 +15,8 @@
 	(insert-file-contents input-vcf)
 	(goto-char (point-min))
 
-	;; First, clean up multi-line fields (unfold them) BEFORE processing
-	;; This ensures PHOTO and other multi-line fields are on single lines
+	;; Unfold continuation lines before field-level parsing; PHOTO and NOTE values
+	;; often span multiple physical lines in exported VCF files.
 	(goto-char (point-min))
 	(while (re-search-forward "\n[ \t]+" nil t)
 	  (replace-match " " t t))
@@ -60,7 +60,7 @@
 			(field-value (match-string 3)))
 		(replace-match (format "%s%s:%s" field-type field-params field-value) t t)))
 
-	;; NOW remove unwanted fields (but not the converted TEL/EMAIL fields)
+	;; Remove Apple/Google metadata fields after preserving converted TEL/EMAIL data.
 	(let ((remove-patterns
 		   '("^PHOTO:.*$"
 			 "^X-ABRELATEDNAMES:.*$"
@@ -156,7 +156,7 @@
 
 				  (widen)))))))
 
-	  ;; Remove VCARDs with no identifying information (in reverse order to preserve positions)
+	  ;; Drop cards with no displayable name, in reverse order to keep positions valid.
 	  (dolist (vcard-range (reverse vcards-to-remove))
 		(delete-region (car vcard-range) (cdr vcard-range))
 		(message "Removed VCARD with no identifying information")))

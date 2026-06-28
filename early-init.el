@@ -21,7 +21,8 @@
 ;;   (add-hook 'after-init-hook 'benchmark-init/deactivate))
 
 ;; -------------------------------- Debug Flags --------------------------------
-;; debugging enabled during Emacs startup. disabled again after Emacs startup.
+;; Keep debug-on-error enabled only during startup; the startup hook restores the
+;; normal interactive behavior after init has loaded.
 
 ;; uncomment when repo signatures expire and package installation is necessary
 ;; (setq package-check-signature nil)
@@ -295,6 +296,8 @@ early-init.el.")
 			   bidi-inhibit-bpa t)         ;; additional speedup
 
 ;; Disable global font lock mode until after initialization
+;; Defer global font-lock until init finishes; major modes re-enable normal
+;; highlighting after startup.
 (setq-default global-font-lock-mode nil)
 (add-hook 'emacs-startup-hook #'global-font-lock-mode)
 
