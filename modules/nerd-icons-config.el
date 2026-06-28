@@ -72,7 +72,20 @@ every call. The `memq' check skips when the face is already present."
   :after (nerd-icons marginalia)
   :hook (marginalia-mode . nerd-icons-completion-marginalia-setup)
   :config
-  (nerd-icons-completion-mode))
+  (nerd-icons-completion-mode)
+  ;; The `cj/--nerd-icons-color-dir' advice forces `nerd-icons-yellow' onto every
+  ;; dir icon, so the package's inherit-behind `nerd-icons-completion-dir-face'
+  ;; can never win.  Redefine the file-category icon so completing-read folders
+  ;; carry the dir face: copy the icon first (the memoized original stays
+  ;; untouched, so dired/dirvish folders are unaffected) and prepend the dir face
+  ;; so it takes the foreground.  Files keep their own type face.
+  (cl-defmethod nerd-icons-completion-get-icon (cand (_cat (eql file)))
+    (if (string-suffix-p "/" cand)
+        (let ((icon (copy-sequence
+                     (nerd-icons-icon-for-dir cand :height nerd-icons-completion-icon-size))))
+          (add-face-text-property 0 (length icon) 'nerd-icons-completion-dir-face nil icon)
+          (concat icon " "))
+      (concat (nerd-icons-icon-for-file cand :height nerd-icons-completion-icon-size) " "))))
 
 (use-package nerd-icons-ibuffer
   :after nerd-icons
