@@ -182,5 +182,119 @@ the flag nil (no spurious set)."
         (kill-buffer "*test-sw-untouched-left*"))
       (cj/test--kill-agent-buffers))))
 
+;;; Geometry tracking (Approach B: remember the agent's fullscreen state)
+
+(ert-deftest test-ai-term--track-geometry-sole-sets-fullscreen ()
+  "Normal: an agent window that is the sole window in its frame sets
+`cj/--ai-term-last-fullscreen'."
+  (cj/test--kill-agent-buffers)
+  (let ((agent-name "agent [track-sole]")
+        (cj/--ai-term-last-fullscreen nil))
+    (unwind-protect
+        (save-window-excursion
+          (delete-other-windows)
+          (let ((agent-buf (get-buffer-create agent-name)))
+            (set-window-buffer (selected-window) agent-buf)
+            (should (one-window-p))
+            (cj/--ai-term-track-geometry)
+            (should (eq cj/--ai-term-last-fullscreen t))))
+      (cj/test--kill-agent-buffers))))
+
+(ert-deftest test-ai-term--track-geometry-split-clears-fullscreen ()
+  "Normal: an agent window shown as a split clears `cj/--ai-term-last-fullscreen'.
+The tracker must NOT re-capture dock direction/size here -- doing so on every
+window change drifts the dock height per cycle; toggle-off owns that capture."
+  (cj/test--kill-agent-buffers)
+  (let ((agent-name "agent [track-split]")
+        (left-name "*test-track-left*")
+        (cj/--ai-term-last-fullscreen t)        ; pretend it was fullscreen
+        (cj/--ai-term-last-direction nil)
+        (cj/--ai-term-last-size nil))
+    (unwind-protect
+        (save-window-excursion
+          (delete-other-windows)
+          (let ((agent-buf (get-buffer-create agent-name))
+                (left-buf (get-buffer-create left-name)))
+            (set-window-buffer (selected-window) left-buf)
+            (let ((agent-win (split-window (selected-window) nil 'right)))
+              (set-window-buffer agent-win agent-buf)
+              (should-not (one-window-p))
+              (cj/--ai-term-track-geometry)
+              (should-not cj/--ai-term-last-fullscreen)   ; flag cleared
+              (should-not cj/--ai-term-last-size))))       ; dock size NOT re-captured here
+      (when (get-buffer left-name) (kill-buffer left-name))
+      (cj/test--kill-agent-buffers))))
+
+(ert-deftest test-ai-term--track-geometry-no-agent-retains-state ()
+  "Boundary: with no agent window displayed, the tracker leaves the last-seen
+fullscreen flag untouched -- that is the just-left state to replay."
+  (cj/test--kill-agent-buffers)
+  (let ((cj/--ai-term-last-fullscreen t))
+    (unwind-protect
+        (save-window-excursion
+          (delete-other-windows)
+          (set-window-buffer (selected-window)
+                             (get-buffer-create "*test-track-none*"))
+          (should-not (cj/--ai-term-displayed-agent-window))
+          (cj/--ai-term-track-geometry)
+          (should (eq cj/--ai-term-last-fullscreen t)))   ; unchanged
+      (when (get-buffer "*test-track-none*") (kill-buffer "*test-track-none*"))
+      (cj/test--kill-agent-buffers))))
+
+(ert-deftest test-ai-term--display-saved-restores-fullscreen-when-last-fullscreen ()
+  "Normal: when the agent was last fullscreen and the target frame is a single
+window, display-saved restores it in place rather than docking -- Craig's case
+of leaving a fullscreen agent, switching to another fullscreen buffer, then
+M-SPC.  A stale dock size is on record; the split path must NOT run."
+  (cj/test--kill-agent-buffers)
+  (let ((agent-name "agent [restore-fullscreen]")
+        (cj/--ai-term-last-fullscreen t)
+        (cj/--ai-term-last-was-bury nil)
+        (cj/--ai-term-last-direction 'right)
+        (cj/--ai-term-last-size 40))
+    (unwind-protect
+        (save-window-excursion
+          (delete-other-windows)
+          (let* ((other-buf (get-buffer-create "*test-rfs-other*"))
+                 (agent-buf (get-buffer-create agent-name))
+                 (win (selected-window))
+                 (split-called nil))
+            (set-window-buffer win other-buf)
+            (should (one-window-p))
+            (cl-letf (((symbol-function 'display-buffer-in-direction)
+                       (lambda (&rest _) (setq split-called t) (selected-window))))
+              (cj/--ai-term-display-saved agent-buf nil))
+            (should (one-window-p))                       ; no split -- stayed full-frame
+            (should (eq (window-buffer win) agent-buf))   ; agent took the lone window
+            (should-not split-called)))                   ; dock path never ran
+      (when (get-buffer "*test-rfs-other*") (kill-buffer "*test-rfs-other*"))
+      (cj/test--kill-agent-buffers))))
+
+(ert-deftest test-ai-term--display-saved-docks-when-not-fullscreen ()
+  "Boundary: without the fullscreen flag (or a bury), a single-window summon
+docks via the saved-direction split.  The discriminator is the remembered
+state, not merely `one-window-p', so first-open and ordinary summons still
+dock rather than seizing the whole frame."
+  (cj/test--kill-agent-buffers)
+  (let ((agent-name "agent [dock-not-fullscreen]")
+        (cj/--ai-term-last-fullscreen nil)
+        (cj/--ai-term-last-was-bury nil)
+        (cj/--ai-term-last-direction 'right)
+        (cj/--ai-term-last-size 40))
+    (unwind-protect
+        (save-window-excursion
+          (delete-other-windows)
+          (let ((agent-buf (get-buffer-create agent-name))
+                (split-called nil))
+            (set-window-buffer (selected-window)
+                               (get-buffer-create "*test-dock-other*"))
+            (should (one-window-p))
+            (cl-letf (((symbol-function 'display-buffer-in-direction)
+                       (lambda (&rest _) (setq split-called t) (selected-window))))
+              (cj/--ai-term-display-saved agent-buf nil))
+            (should split-called)))            ; dock path ran despite one-window-p
+      (when (get-buffer "*test-dock-other*") (kill-buffer "*test-dock-other*"))
+      (cj/test--kill-agent-buffers))))
+
 (provide 'test-ai-term--single-window-toggle)
 ;;; test-ai-term--single-window-toggle.el ends here

@@ -464,6 +464,19 @@ and a fraction-of-frame produces the wrong size on replay
 (squeezes the other windows).  An integer is unambiguous, at the
 cost of not auto-scaling if the frame itself resizes.")
 
+(defvar cj/--ai-term-last-fullscreen nil
+  "Non-nil when the agent window was last seen filling its frame.
+
+Maintained by `cj/--ai-term-track-geometry' on
+`window-configuration-change-hook': set t whenever a live agent window is
+the sole window in its frame, cleared when the agent is shown as a split
+\(its dock direction and size are captured then instead).  Consulted by
+`cj/--ai-term-display-saved' so a summon into a single-window frame
+restores the agent fullscreen rather than docking it -- the sole-window
+state isn't a representable dock size, so this flag is how it round-trips.
+Unlike `cj/--ai-term-last-was-bury' it does not depend on a toggle-off, so
+it also covers leaving the agent by switching buffers or `C-x 1'.")
+
 (defun cj/--ai-term-capture-state (window)
   "Capture WINDOW's direction and size into module-level state.
 
@@ -479,6 +492,29 @@ is not live."
    'cj/--ai-term-last-direction
    'cj/--ai-term-last-size
    '(right below left)))
+
+(defun cj/--ai-term-window-sole-p (window)
+  "Return non-nil when WINDOW is the only live window in its frame.
+A frame's sole window is its root window; once split, the root is an
+internal window and no live window equals it."
+  (and (window-live-p window)
+       (eq window (frame-root-window (window-frame window)))))
+
+(defun cj/--ai-term-track-geometry (&rest _)
+  "Track whether the displayed agent window is fullscreen.
+
+Run from `window-configuration-change-hook'.  Sets
+`cj/--ai-term-last-fullscreen' to whether a live agent window is the sole
+window in its frame, and leaves it untouched when no agent window is
+displayed -- that retained value is the just-left state a later summon
+replays.  Dock direction and size stay owned by the toggle-off capture
+\(`cj/--ai-term-capture-state'); this hook must not re-capture them, or the
+repeated capture/replay drifts the dock height a couple rows per cycle."
+  (let ((win (cj/--ai-term-displayed-agent-window)))
+    (when (window-live-p win)
+      (setq cj/--ai-term-last-fullscreen (cj/--ai-term-window-sole-p win)))))
+
+(add-hook 'window-configuration-change-hook #'cj/--ai-term-track-geometry)
 
 (defun cj/--ai-term-reuse-existing-agent (buffer _alist)
   "Display-buffer action: reuse any window in this frame already showing
@@ -540,19 +576,27 @@ keeping the toggle reversible."
         win))))
 
 (defun cj/--ai-term-display-saved (buffer alist)
-  "Display-buffer action: split per saved direction and size.
+  "Display-buffer action: restore fullscreen in a single-window frame,
+otherwise split per saved direction and size.
 
-When the prior toggle-off was a bury (single-window state, flagged
-via `cj/--ai-term-last-was-bury') and the frame is still single-
-window, restore the agent into the selected window in place rather
-than splitting -- preserves the user's lone-window layout across
-toggles.
+When the frame is a single window and the agent was last fullscreen
+\(`cj/--ai-term-last-fullscreen', tracked by `cj/--ai-term-track-geometry')
+or the prior toggle-off was a single-window bury
+\(`cj/--ai-term-last-was-bury'), restore the agent into the selected window
+in place rather than splitting.  This round-trips a fullscreen agent --
+left by toggle-off, `C-x 1', or switching buffers -- since the sole-window
+state isn't a representable dock size.
 
 Otherwise delegates to `cj/window-toggle-display-saved' against the
 toggle state vars, falling back to the host-aware defaults from
 `cj/--ai-term-default-direction' and `cj/--ai-term-default-size'."
   (cond
-   ((and cj/--ai-term-last-was-bury (one-window-p))
+   ;; NOMINI t: don't count an active minibuffer as a second window.  A summon
+   ;; can run with a picker prompt up, and a bare `one-window-p' then returns
+   ;; nil on a structurally single-window frame, misfiring the fullscreen
+   ;; restore into a dock -- which clears the fullscreen flag and cascades.
+   ((and (or cj/--ai-term-last-fullscreen cj/--ai-term-last-was-bury)
+         (one-window-p t))
     (setq cj/--ai-term-last-was-bury nil)
     (let ((win (selected-window)))
       (set-window-buffer win buffer)
