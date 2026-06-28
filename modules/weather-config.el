@@ -39,6 +39,12 @@
   ;; colors) is unchanged.
   (setopt wttrin-display-options "F")
   (setopt wttrin-favorite-location "New Orleans, LA")
+  ;; Scale the weather font to fit the window width, clamped to a floor/cap
+  ;; (wttrin-font-height-min/-max, default 100/200).  setq (not setopt): the
+  ;; wttrin-auto-fit-font defcustom only exists once feature/center-buffer-text
+  ;; merges to main and the :vc package updates; until then this just sets a
+  ;; value the old code ignores, and the later defcustom won't clobber it.
+  (setq wttrin-auto-fit-font t)
   ;; Higher-accuracy geolocation via the whereami WiFi-scan script (Google-backed),
   ;; far better than IP behind a VPN or cellular hotspot.  Used by the picker's
   ;; "Current location (detect)" entry; wttrin falls back to its IP provider if the
