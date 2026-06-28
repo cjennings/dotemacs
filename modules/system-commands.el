@@ -6,14 +6,14 @@
 ;; Layer: 3 (Domain Workflow).
 ;; Category: D/S.
 ;; Load shape: eager.
-;; Eager reason: registers the C-; ! system-command keymap; high-impact commands
+;; Eager reason: binds C-; ! to the system-command menu; high-impact commands
 ;;   that should run only by command (command-loaded target).
-;; Top-level side effects: defines a system-command keymap under cj/custom-keymap.
+;; Top-level side effects: binds C-; ! to the system-command menu in cj/custom-keymap.
 ;; Runtime requires: keybindings, host-environment, rx.
 ;; Direct test load: yes (requires keybindings explicitly).
 ;;
 ;; System commands for logout, lock, suspend, shutdown, reboot, and Emacs
-;; exit/restart. Provides both a keymap (C-; !) and a completing-read menu.
+;; exit/restart. C-; ! opens a completing-read menu of all commands.
 ;;
 ;; Commands include:
 ;; - Logout (terminate user session)
@@ -28,8 +28,8 @@
 ;;
 ;;; Code:
 
-;; `keybindings' provides `cj/custom-keymap', which is referenced at load
-;; time by the `keymap-set' call at the tail of this file.  An
+;; `keybindings' provides `cj/custom-keymap' and `cj/register-command',
+;; referenced at load time by the binding call at the tail of this file.  An
 ;; `eval-when-compile' require would silence the byte-compiler but leave
 ;; the load-time reference void if anything required `system-commands'
 ;; before `keybindings'.  Make the dependency explicit.
@@ -181,29 +181,10 @@ daemon alive rather than killing the session blindly."
     (when-let ((cmd (alist-get choice commands nil nil #'equal)))
       (call-interactively cmd))))
 
-(defvar-keymap cj/system-command-map
-  :doc "Keymap for system commands."
-  "!" #'cj/system-command-menu
-  "L" #'cj/system-cmd-logout
-  "r" #'cj/system-cmd-reboot
-  "s" #'cj/system-cmd-shutdown
-  "S" #'cj/system-cmd-suspend
-  "l" #'cj/system-cmd-lock
-  "E" #'cj/system-cmd-exit-emacs
-  "e" #'cj/system-cmd-restart-emacs)
-(cj/register-prefix-map "!" cj/system-command-map)
-
-(with-eval-after-load 'which-key
-  (which-key-add-key-based-replacements
-    "C-; !" "system commands"
-    "C-; ! !" "system command menu"
-    "C-; ! L" "logout"
-    "C-; ! E" "exit Emacs"
-    "C-; ! S" "suspend"
-    "C-; ! e" "restart Emacs"
-    "C-; ! l" "lock screen"
-    "C-; ! r" "reboot"
-    "C-; ! s" "shutdown"))
+;; C-; ! opens the completing-read menu directly.  The per-command leaf
+;; keys (s/r/e/l/L/E/S) were removed 2026-06-28 to reclaim the key
+;; real-estate; every command stays reachable through the menu.
+(cj/register-command "!" #'cj/system-command-menu "system commands")
 
 (provide 'system-commands)
 ;;; system-commands.el ends here

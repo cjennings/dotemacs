@@ -2,8 +2,9 @@
 
 ;;; Commentary:
 
-;; The system command keymap should remain mounted as a prefix under C-; ! so
-;; which-key can show the documented subcommands.
+;; C-; ! is bound directly to the completing-read menu.  The per-command leaf
+;; keys (s/r/e/l/L/E/S) were removed to reclaim the key real-estate; every
+;; command stays reachable through the menu (see the menu-dispatch test).
 
 ;;; Code:
 
@@ -14,23 +15,21 @@
 
 (require 'system-commands)
 
-(ert-deftest test-system-commands-keymap-normal-prefix-mounted ()
-  "Normal: C-; ! remains a prefix keymap, not a direct command."
-  (should (eq (keymap-lookup cj/custom-keymap "!")
-              cj/system-command-map)))
+(ert-deftest test-system-commands-keymap-normal-menu-bound-directly ()
+  "Normal: C-; ! is the completing-read menu command, not a prefix keymap."
+  (let ((binding (keymap-lookup cj/custom-keymap "!")))
+    (should (eq binding 'cj/system-command-menu))
+    (should (commandp binding))))
 
-(ert-deftest test-system-commands-keymap-normal-documented-subkeys ()
-  "Normal: documented system command subkeys resolve under the prefix."
-  (dolist (binding '(("!" . cj/system-command-menu)
-                     ("L" . cj/system-cmd-logout)
-                     ("r" . cj/system-cmd-reboot)
-                     ("s" . cj/system-cmd-shutdown)
-                     ("S" . cj/system-cmd-suspend)
-                     ("l" . cj/system-cmd-lock)
-                     ("E" . cj/system-cmd-exit-emacs)
-                     ("e" . cj/system-cmd-restart-emacs)))
-    (should (eq (keymap-lookup cj/system-command-map (car binding))
-                (cdr binding)))))
+(ert-deftest test-system-commands-keymap-normal-leaf-subkeys-removed ()
+  "Normal: no subkeys hang off C-; !, and the commands remain defined."
+  ;; "!" is now a command, not a prefix, so there is no submap to walk into.
+  (should-not (keymapp (keymap-lookup cj/custom-keymap "!")))
+  ;; The commands themselves stay defined and reachable via the menu.
+  (dolist (cmd '(cj/system-cmd-logout cj/system-cmd-reboot cj/system-cmd-shutdown
+                 cj/system-cmd-suspend cj/system-cmd-lock cj/system-cmd-exit-emacs
+                 cj/system-cmd-restart-emacs))
+    (should (fboundp cmd))))
 
 (provide 'test-system-commands-keymap)
 ;;; test-system-commands-keymap.el ends here
