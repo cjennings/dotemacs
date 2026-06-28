@@ -110,7 +110,9 @@ existing split does.  No-op when SIDE is nil."
 (defun cj/window-resize-sticky ()
   "Resize the active window's divider in the just-pressed arrow's direction
 \(via `windsize'), then keep `cj/window-resize-map' active so bare arrows keep
-nudging until any other key.  Bound to `C-; b <left>/<right>/<up>/<down>'.
+nudging until any other key.  Bound to `C-; b <arrow>' and to the global
+`M-<arrow>' keys (each direction); the arrow is read with `event-basic-type',
+so the Meta modifier on the M-<arrow> path is stripped and both behave alike.
 
 When the selected window is the sole window in the frame there is no
 divider to move, so the first arrow instead splits a sliver away on the
@@ -119,12 +121,20 @@ buffer; the current window keeps almost the whole frame and the following
 arrows shrink it via `windsize', so it reads the same as resizing an
 existing split."
   (interactive)
-  (let ((key (key-description (vector last-command-event))))
+  (let ((key (format "<%s>" (event-basic-type last-command-event))))
     (if (one-window-p)
         (cj/window--pull-away (cj/window-pull-side key))
       (let ((cmd (keymap-lookup cj/window-resize-map key)))
         (when cmd (call-interactively cmd)))))
   (set-transient-map cj/window-resize-map t))
+
+;; M-<arrow> mirrors `C-; b <arrow>': one chord to pull a split from a sole
+;; window or nudge a divider.  M-<up>/<down> are otherwise unbound; M-<left>/
+;; <right> shed their word-motion, which stays on `C-<left>'/`C-<right>'.
+(keymap-global-set "M-<left>"  #'cj/window-resize-sticky)
+(keymap-global-set "M-<right>" #'cj/window-resize-sticky)
+(keymap-global-set "M-<up>"    #'cj/window-resize-sticky)
+(keymap-global-set "M-<down>"  #'cj/window-resize-sticky)
 
 ;; ------------------------------ Window Splitting -----------------------------
 

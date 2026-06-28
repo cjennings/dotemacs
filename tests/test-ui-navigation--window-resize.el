@@ -82,5 +82,50 @@ real window split happens under `--batch'."
     (should (eq (keymap-lookup cj/buffer-and-file-map arrow)
                 #'cj/window-resize-sticky))))
 
+(ert-deftest test-ui-navigation-window-resize-sticky-meta-arrow-pulls-away ()
+  "Normal: M-<arrow> reaches the same pull-away as the bare arrow.  The
+direction is derived with `event-basic-type', so the Meta modifier is stripped
+and a sole window pulls a sliver to the side opposite the arrow, exactly as the
+bare-arrow path does."
+  (dolist (case '((M-down  . above)
+                  (M-up    . below)
+                  (M-left  . right)
+                  (M-right . left)))
+    (let ((pulled nil)
+          (overriding-terminal-local-map nil)
+          (pre-command-hook nil))
+      (cl-letf (((symbol-function 'one-window-p) (lambda (&rest _) t))
+                ((symbol-function 'cj/window--pull-away)
+                 (lambda (dir) (setq pulled dir))))
+        (let ((last-command-event (car case)))
+          (cj/window-resize-sticky)))
+      (should (eq pulled (cdr case)))           ; meta stripped, pulled to opposite side
+      (should overriding-terminal-local-map)))) ; loop armed
+
+(ert-deftest test-ui-navigation-window-resize-sticky-meta-arrow-resizes ()
+  "Normal: with more than one window, M-<arrow> dispatches the matching
+`windsize' command, same as the bare arrow -- the Meta modifier is stripped
+before the resize-map lookup."
+  (dolist (case '((M-left  . windsize-left)
+                  (M-right . windsize-right)
+                  (M-up    . windsize-up)
+                  (M-down  . windsize-down)))
+    (let ((ran nil)
+          (overriding-terminal-local-map nil)
+          (pre-command-hook nil))
+      (cl-letf (((symbol-function 'one-window-p) (lambda (&rest _) nil))
+                ((symbol-function (cdr case))
+                 (lambda (&rest _) (interactive) (setq ran t))))
+        (let ((last-command-event (car case)))
+          (cj/window-resize-sticky)))
+      (should ran)
+      (should overriding-terminal-local-map))))
+
+(ert-deftest test-ui-navigation-window-resize-bound-under-meta-arrow ()
+  "Normal: each global `M-<arrow>' reaches the sticky-resize command."
+  (dolist (arrow '("M-<left>" "M-<right>" "M-<up>" "M-<down>"))
+    (should (eq (keymap-lookup (current-global-map) arrow)
+                #'cj/window-resize-sticky))))
+
 (provide 'test-ui-navigation--window-resize)
 ;;; test-ui-navigation--window-resize.el ends here
