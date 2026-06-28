@@ -178,7 +178,6 @@ Adjust it live with `cj/nov-widen-text' and `cj/nov-narrow-text'.")
   (if (and buffer-file-name
            (string-match-p "\\.epub\\'" buffer-file-name))
       (progn
-        ;; Load nov if not already loaded
         (unless (featurep 'nov)
           (require 'nov nil t))
         ;; Call nov-mode if available, otherwise fallback to default behavior

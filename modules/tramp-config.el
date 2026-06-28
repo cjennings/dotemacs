@@ -57,7 +57,6 @@
   (setq tramp-auto-save-directory
 		(expand-file-name "tramp-auto-save" user-emacs-directory))
 
-  ;; Create directory if it doesn't exist
   (unless (file-exists-p tramp-auto-save-directory)
 	(make-directory tramp-auto-save-directory t))
 

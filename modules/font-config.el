@@ -193,7 +193,6 @@ If FRAME is nil, uses the selected frame."
   (all-the-icons-nerd-fonts-prefer))
 
 ;; ----------------------------- Emoji Fonts Per OS ----------------------------
-;; Set emoji fonts in priority order (first found wins)
 
 (defun cj/setup-emoji-fontset (&optional _frame)
   "Set emoji fonts in priority order (first found wins).

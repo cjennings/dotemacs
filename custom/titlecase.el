@@ -175,7 +175,8 @@ for docs on BEGIN, END and STYLE."
                                            titlecase-skip-words-regexps
                                            "\\|")))
             (goto-char (match-end 0))
-            ;; TODO: Document what this does (it's late)
+            ;; If the skip regexp consumed the final word, exit before the main loop tries
+            ;; to advance past END.
             (when (>= (point) end)
               (throw :done 'skipped)))
            ;; Phrasal verbs!
@@ -210,16 +211,8 @@ for docs on BEGIN, END and STYLE."
            ((and (memq style titlecase-styles-capitalize-non-short-words)
                  (> (length this-word) titlecase-short-word-length))
             (capitalize-word 1))
-           ;; Sentence style just capitalizes the first word.  Since we can't be
-           ;; sure how the user has already capitalized anything, we just skip
-           ;; the current word.  HOWEVER, there are times when downcasing the
-           ;; rest of the sentence is warranted.  --- NOTE 2022-05-09: Now I'm
-           ;; thinking about it, does `sentence' style need to do anything
-           ;; whatsoever?  Maybe I just need to include a test toward the top of
-           ;; the enclosing function to make `titlecase-default-case-function'
-           ;; be `downcase-word' if `titlecase-downcase-sentences' is true... or
-           ;; something of that nature.  I might be over-engineering this, is
-           ;; what I'm saying.  Curious, isn't it?
+           ;; Sentence style either leaves later words unchanged or downcases them,
+           ;; depending on titlecase-downcase-sentences.
            ((eq style 'sentence)
             (funcall (if titlecase-downcase-sentences
                          #'downcase-word

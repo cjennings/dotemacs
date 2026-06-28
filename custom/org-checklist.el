@@ -47,9 +47,8 @@
 ;;; Code:
 (require 'org)
 (defvar org-state)
-;; FIXME: This library requires
-;; https://git.savannah.gnu.org/cgit/a2ps.git/tree/contrib/emacs/a2ps-print.el file
-;; It is a part of a2ps distribution.
+;; Optional print support: a2ps-print.el ships with a2ps. Without it, checklist
+;; reset/export still works, but print commands that call a2ps-buffer are absent.
 (load "a2ps-print" 'no-error)
 (defvar a2ps-switches)
 (declare-function a2ps-buffer "a2ps-print" (argp))

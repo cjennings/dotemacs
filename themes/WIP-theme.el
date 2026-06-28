@@ -2,7 +2,7 @@
 
 ;;; Commentary:
 ;; Generated from WIP.json by scripts/theme-studio/build-theme.el.
-;; Do not hand-edit; re-run the converter.
+;; Treat the JSON as authoritative; regenerate instead of hand-editing this file.
 
 ;;; Code:
 

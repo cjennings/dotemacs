@@ -52,7 +52,6 @@ See `cj/--webclip-url' for the binding contract.")
 (defun cj/webclipper-ensure-initialized ()
   "Ensure webclipper is initialized when first used."
   (unless cj/webclipper-initialized
-    ;; Load required packages now
     (require 'org-protocol)
     (require 'org-capture)
     (require 'org-web-tools)

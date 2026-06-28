@@ -1,36 +1,14 @@
-;;; early-init.el ---  -*- lexical-binding: t; coding: utf-8; no-byte-compile: t; -*-
+;;; early-init.el --- Startup bootstrap before init.el -*- lexical-binding: t; coding: utf-8; no-byte-compile: t; -*-
 
 ;;; Commentary:
-
-;; DEBUG FLAGS
-;; Debug flags are default on while this config is loading since errors should
-;; be loud and highly noticeable. They are restored to their default off once
-;; the config has completed.
-
-;; STARTUP PERFORMANCE
-;; Increasing garbage collection to a very high number decreases startup time.
-;; setting the file-name-handler and vc-handled-backends avoids some regexp
-;; slowness during startup. All original values are restored once Emacs is
-;; finished with startup.
-
-;; LOCAL REPOSITORIES
-;; This config doesn't work if the packages it relies on fail. Having local
-;; package repositories also allows for full config portability behind corporate
-;; firewalls and fast recovery from package issues no matter the network
-;; situation.
-
-;; The localrepo directory contains all the last known good packages for this
-;; config. The directory is added as a repository to the package archive list
-;; first, and given the highest priority number. This allows for a portable
-;; installation and reinstallation. This directory averages ~70 MB.
-
-;; Having a full local mirror of all elpa, melpa, and org repositories gives you
-;; more flexibility but at a higher storage cost. The script
-;; 'create-elpa-mirror.sh in user-emacs-directory/scripts directory will clone
-;; them all locally. As of Saturday, March 30, 2024 the directory containing all
-;; gnu, nongnu, melpa, melpa-stable, and org packages takes around 1.9 GB.
-;; For more information on the localrepo and elpa mirrors, read the commentary
-;; in local-repository.el.
+;;
+;; Early startup policy: make init errors loud, speed package/bootstrap work,
+;; configure package archives, and suppress expensive UI defaults before the
+;; first frame appears.
+;;
+;; Package archives prefer the checked-in localrepo, then local ELPA mirrors,
+;; then online archives. Startup-only GC and file-name-handler changes are
+;; paired with later session owners such as gcmh.
 
 ;;; Code:
 
