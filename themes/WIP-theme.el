@@ -265,6 +265,8 @@
  '(eat-term-color-magenta ((t (:foreground "#8255b5"))))
  '(eat-term-color-cyan ((t (:foreground "#88b2c3"))))
  '(eat-term-color-white ((t (:foreground "#bfc4d0"))))
+ '(eat-term-color-22 ((t (:foreground "#002f00"))))
+ '(eat-term-color-52 ((t (:foreground "#2f0000"))))
  '(eat-term-color-bright-black ((t (:foreground "#8e919a" :weight bold))))
  '(eat-term-color-bright-red ((t (:foreground "#cb6b4d" :weight bold))))
  '(eat-term-color-bright-green ((t (:foreground "#74932f" :weight bold))))

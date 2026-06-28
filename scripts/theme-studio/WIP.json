@@ -3564,6 +3564,18 @@
     "inherit": null,
     "source": "user"
    },
+   "eat-term-color-22": {
+    "fg": "#002f00",
+    "bg": null,
+    "inherit": null,
+    "source": "user"
+   },
+   "eat-term-color-52": {
+    "fg": "#2f0000",
+    "bg": null,
+    "inherit": null,
+    "source": "user"
+   },
    "eat-term-color-bright-black": {
     "fg": "#8e919a",
     "bg": null,
