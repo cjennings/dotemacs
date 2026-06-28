@@ -408,14 +408,15 @@ Try to use the Calibre book id from the parent folder name (for example,
 
 ;; ------------------------- Nov bookmark naming -------------------------------
 ;; In a nov buffer "m" is bound to `bookmark-set' (above).  nov's
-;; `nov-bookmark-make-record' names the record after `(buffer-name)' -- the EPUB
-;; filename, extension and all.  Rebuild it as "Author, Title" parsed from the
-;; filename: under Calibre's "<Title> - <Author>.epub" naming the filename is
-;; more complete than the EPUB's embedded metadata (which carries truncated
-;; titles and author-sort "Last, First" forms).
+;; Both nov (EPUB) and pdf-view (PDF) name a new bookmark after the buffer --
+;; the file's name, extension and all.  Rebuild it as "Author, Title" parsed
+;; from the filename: under Calibre's "<Title> - <Author>.<ext>" naming the
+;; filename is more complete than the file's embedded metadata (which carries
+;; truncated titles and author-sort "Last, First" forms).  One :filter-return
+;; advice serves both record functions; the parser is extension-agnostic.
 
-(defun cj/--nov-clean-title (s)
-  "Clean a title or author S parsed from an EPUB filename, or nil when blank.
+(defun cj/--reading-clean-title (s)
+  "Clean a title or author S parsed from a book filename, or nil when blank.
 Restores a colon where Calibre sanitized \":\" to \"_\" (\"Frege_ A Guide\"
 -> \"Frege: A Guide\"), turns any leftover underscore into a space, and
 collapses runs of whitespace."
@@ -425,34 +426,39 @@ collapses runs of whitespace."
            (out (string-trim (replace-regexp-in-string "[ \t]+" " " spaced))))
       (and (not (string-empty-p out)) out))))
 
-(defun cj/--nov-bookmark-name-from-file (path)
-  "Return \"Author, Title\" derived from an EPUB PATH's filename, or nil.
+(defun cj/--reading-bookmark-name-from-file (path)
+  "Return \"Author, Title\" derived from a book PATH's filename, or nil.
 Splits the filename (sans extension) on its last \" - \" into title and
 author per Calibre's \"<Title> - <Author>\" convention, restoring colons and
 reordering to \"Author, Title\".  Falls back to the cleaned whole name when
-there is no \" - \" separator."
+there is no \" - \" separator.  Extension-agnostic, so it serves EPUB and PDF."
   (when (and (stringp path) (not (string-empty-p path)))
     (let ((base (file-name-sans-extension (file-name-nondirectory path))))
       (if (string-match "\\`\\(.+\\) - \\(.+\\)\\'" base)
-          (let ((title (cj/--nov-clean-title (match-string 1 base)))
-                (author (cj/--nov-clean-title (match-string 2 base))))
+          (let ((title (cj/--reading-clean-title (match-string 1 base)))
+                (author (cj/--reading-clean-title (match-string 2 base))))
             (cond ((and author title) (format "%s, %s" author title))
                   (title title)
                   (author author)
                   (t nil)))
-        (cj/--nov-clean-title base)))))
+        (cj/--reading-clean-title base)))))
 
-(defun cj/--nov-bookmark-rename-record (record)
-  "Replace RECORD's bookmark name with \"Author, Title\" from its EPUB filename.
-Advice (:filter-return) on `nov-bookmark-make-record'.  RECORD is
-\(NAME . ALIST) carrying a `filename'; left unchanged when no name derives."
-  (let ((name (cj/--nov-bookmark-name-from-file
+(defun cj/--reading-bookmark-rename-record (record)
+  "Replace RECORD's bookmark name with \"Author, Title\" from its filename.
+Advice (:filter-return) on `nov-bookmark-make-record' and
+`pdf-view-bookmark-make-record'.  RECORD is (NAME . ALIST) carrying a
+`filename'; left unchanged when no name derives."
+  (let ((name (cj/--reading-bookmark-name-from-file
                (alist-get 'filename (cdr record)))))
     (if name (cons name (cdr record)) record)))
 
 (with-eval-after-load 'nov
   (advice-add 'nov-bookmark-make-record :filter-return
-              #'cj/--nov-bookmark-rename-record))
+              #'cj/--reading-bookmark-rename-record))
+
+(with-eval-after-load 'pdf-view
+  (advice-add 'pdf-view-bookmark-make-record :filter-return
+              #'cj/--reading-bookmark-rename-record))
 
 (defun cj/--nov-image-padding-cols (col-width img-px font-width-px)
   "Return left-padding columns to center an IMG-PX-wide image in COL-WIDTH cols.
