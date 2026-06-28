@@ -7610,10 +7610,10 @@
   },
   "nerd-icons-completion": {
    "nerd-icons-completion-dir-face": {
-    "fg": null,
+    "fg": "#dab53d",
     "bg": null,
     "inherit": null,
-    "source": "default"
+    "source": "user"
    }
   },
   "orderless": {

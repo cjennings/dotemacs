@@ -793,6 +793,7 @@
  '(markdown-reference-face ((t (:inherit markdown-markup-face))))
  '(markdown-strike-through-face ((t (:strike-through t))))
  '(markdown-url-face ((t (:inherit font-lock-string-face))))
+ '(nerd-icons-completion-dir-face ((t (:foreground "#dab53d"))))
  '(orderless-match-face-0 ((t (:foreground "#e0c266" :weight bold :slant italic))))
  '(orderless-match-face-1 ((t (:foreground "#809c50" :weight bold :slant italic))))
  '(orderless-match-face-2 ((t (:foreground "#8255b5" :weight bold :slant italic))))
