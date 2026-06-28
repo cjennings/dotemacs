@@ -1,4 +1,4 @@
-;;; custom-line-paragraph.el ---  -*- coding: utf-8; lexical-binding: t; -*-
+;;; custom-line-paragraph.el --- Line and paragraph editing commands -*- coding: utf-8; lexical-binding: t; -*-
 ;; Author: Craig Jennings <c@cjennings.net>
 ;;
 ;;; Commentary:
@@ -14,16 +14,9 @@
 ;; Runtime requires: keybindings (expand-region on demand via declare-function).
 ;; Direct test load: yes (requires keybindings explicitly).
 ;;
-;; This module provides the following line and paragraph manipulation utilities:
-;;
-;; - joining lines in a region or the current line with the previous one
-;; - joining separate lines into a single paragraph
-;; - duplicating lines or regions (optional commenting)
-;; - removing duplicate lines
-;; - removing lines containing specific text
-;; - underlining text with a custom character
-;;
-;; Bound to keymap prefix  C-; l
+;; Line and paragraph transforms under C-; l: join, duplicate, delete matching
+;; lines, remove duplicates, and underline text. Commands operate on the active
+;; region when present and otherwise on the current line or paragraph.
 ;;
 ;;; Code:
 

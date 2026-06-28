@@ -1,4 +1,4 @@
-﻿;;; local-repository.el --- local repository functionality -*- lexical-binding: t; coding: utf-8; -*-
+;;; local-repository.el --- Local package archive helpers -*- lexical-binding: t; coding: utf-8; -*-
 ;; author Craig Jennings <c@cjennings.net>
 
 ;;; Commentary:
@@ -6,12 +6,15 @@
 ;; Layer: 4 (Optional).
 ;; Category: O/D/P.
 ;; Load shape: eager.
-;; Eager reason: none; local package-mirror workflow, a command-loaded deferral
-;;   candidate.
+;; Eager reason: none; local package mirror commands can autoload.
 ;; Top-level side effects: none.
-;; Runtime requires: elpa-mirror.
+;; Runtime requires: elpa-mirror when updating the mirror.
 ;; Direct test load: yes.
 ;;
+;; Adds the checked-in local package archive to package-archives with high
+;; priority, and provides a command to refresh that archive from installed
+;; packages via elpa-mirror.
+
 ;;; Code:
 
 (require 'elpa-mirror nil t)  ;; optional; cj/update-localrepo-repository fails at call-time if absent

@@ -1,4 +1,4 @@
-;;; custom-ordering.el ---  -*- coding: utf-8; lexical-binding: t; -*-
+;;; custom-ordering.el --- Region sorting and list-format transforms -*- coding: utf-8; lexical-binding: t; -*-
 
 ;;; Commentary:
 ;;
@@ -13,22 +13,10 @@
 ;;   declare-function).
 ;; Direct test load: yes (requires keybindings explicitly).
 ;;
-;; Text transformation and sorting utilities for reformatting data structures.
+;; Region transforms under C-; o for sorting, reversing, numbering, quote
+;; toggling, and converting between line lists and comma-separated arrays.
+;; Helpers preserve trailing newlines where line-oriented callers expect them.
 ;;
-;; Array/list formatting:
-;; - arrayify/listify - convert lines to comma-separated format (with/without quotes, brackets)
-;; - unarrayify - convert arrays back to separate lines
-;;
-;; Line manipulation:
-;; - toggle-quotes - swap double ↔ single quotes
-;; - reverse-lines - reverse line order
-;; - number-lines - add line numbers with custom format (supports zero-padding)
-;; - alphabetize-region - sort words alphabetically
-;; - comma-separated-text-to-lines - split CSV text into lines
-;;
-;; Convenience functions: listify, arrayify-json, arrayify-python
-;; Bound to keymap prefix C-; o
-
 ;;; Code:
 
 (require 'cl-lib)

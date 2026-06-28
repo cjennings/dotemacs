@@ -1,4 +1,4 @@
-;;; custom-text-enclose.el ---  -*- coding: utf-8; lexical-binding: t; -*-
+;;; custom-text-enclose.el --- Wrap, unwrap, and prefix text ranges -*- coding: utf-8; lexical-binding: t; -*-
 
 ;;; Commentary:
 ;;
@@ -12,23 +12,10 @@
 ;; Runtime requires: keybindings (change-inner on demand via declare-function).
 ;; Direct test load: yes (requires keybindings explicitly).
 ;;
-;; Text enclosure utilities for wrapping and line manipulation.
+;; Text enclosure commands under C-; s. Commands wrap or unwrap the active
+;; region/word at point, and add prefixes, suffixes, indentation, or dedentation
+;; across selected lines.
 ;;
-;; Wrapping functions:
-;; - surround-word-or-region - wrap text with same delimiter on both sides
-;; - wrap-word-or-region - wrap with different opening/closing delimiters
-;; - unwrap-word-or-region - remove surrounding delimiters
-;;
-;; Line manipulation:
-;; - append-to-lines - add suffix to each line
-;; - prepend-to-lines - add prefix to each line
-;; - indent-lines - add leading whitespace (spaces or tabs)
-;; - dedent-lines - remove leading whitespace
-;;
-;; Most functions work on region or entire buffer when no region is active.
-;;
-;; Bound to keymap prefix C-; s
-
 ;;; Code:
 
 (require 'keybindings)  ;; provides cj/custom-keymap

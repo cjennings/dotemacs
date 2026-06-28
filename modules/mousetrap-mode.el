@@ -1,4 +1,4 @@
-;;; mousetrap-mode.el ---  -*- coding: utf-8; lexical-binding: t; -*-
+;;; mousetrap-mode.el --- Profile-based mouse event blocking -*- coding: utf-8; lexical-binding: t; -*-
 ;;
 ;;; Commentary:
 ;;
@@ -11,25 +11,12 @@
 ;; Runtime requires: cl-lib.
 ;; Direct test load: yes.
 ;;
-;; Mouse Trap Mode is a minor mode for Emacs that disables most mouse and
-;; trackpad events to prevent accidental text modifications.  Hitting the
-;; trackpad and finding my text is being inserted in an unintended place is
-;; quite annoying, especially when you're overcaffeinated.
+;; Global minor mode that blocks accidental mouse edits while preserving allowed
+;; interaction categories per major-mode profile: scroll, click, drag, and
+;; multi-click.
 ;;
-;; The mode uses a profile-based architecture to selectively enable/disable
-;; mouse events based on the current major mode.  Profiles define which
-;; event categories are allowed (scrolling, clicks, drags, etc.), and modes
-;; are mapped to profiles.
-;;
-;; The keymap is built dynamically when the mode is toggled, so you can
-;; change profiles or mode mappings and re-enable the mode without reloading
-;; your Emacs configuration.
-;;
-;; Keymaps are buffer-local via `emulation-mode-map-alists', so each buffer
-;; gets the correct profile for its major mode independently.
-;;
-;; Inspired by this blog post from Malabarba
-;; https://endlessparentheses.com/disable-mouse-only-inside-emacs.html
+;; The mode builds buffer-local emulation keymaps from profiles, so changing a
+;; profile or mode mapping takes effect after toggling the mode.
 ;;
 ;;; Code:
 

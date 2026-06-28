@@ -1,4 +1,4 @@
-;;; test-undead-buffers.el ---  -*- coding: utf-8; lexical-binding: t; -*-
+;;; test-undead-buffers.el --- Tests for undead buffer kill/bury behavior -*- coding: utf-8; lexical-binding: t; -*-
 
 ;;; Commentary:
 ;; ERT tests for undead-buffers.el.

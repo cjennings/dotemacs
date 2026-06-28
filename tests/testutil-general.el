@@ -1,4 +1,4 @@
-;;; testutil-general.el ---  -*- coding: utf-8; lexical-binding: t; -*-
+;;; testutil-general.el --- Shared filesystem helpers for ERT tests -*- coding: utf-8; lexical-binding: t; -*-
 ;;
 ;; Author: Craig Jennings <c@cjennings.net>
 ;;

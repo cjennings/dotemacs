@@ -1,4 +1,4 @@
-;;; weather-config.el ---  -*- lexical-binding: t; coding: utf-8; -*-
+;;; weather-config.el --- wttrin weather display and modeline setup -*- lexical-binding: t; coding: utf-8; -*-
 ;; author: Craig Jennings <c@cjennings.net>
 ;;; Commentary:
 ;;
@@ -11,9 +11,8 @@
 ;; Runtime requires: none (configures packages via use-package).
 ;; Direct test load: yes.
 ;;
-;; Call M-W to open wttrin with your preferred location list immediately.
-;; Adjust the city list by editing `wttrin-default-locations` or answering wttrin prompts when asked.
-;; Forecasts arrive in an Emacs buffer, so you can stay keyboard-only while checking weather.
+;; Configures wttrin for favorite-location forecasts, mode-line weather, and
+;; whereami-backed geolocation. M-S-w opens the weather buffer.
 ;;
 ;;; Code:
 

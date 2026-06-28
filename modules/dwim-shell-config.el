@@ -1,99 +1,23 @@
-;; dwim-shell-config.el --- Dired Shell Commands -*- coding: utf-8; lexical-binding: t; -*-
+;;; dwim-shell-config.el --- Dired shell command menu -*- coding: utf-8; lexical-binding: t; -*-
 ;;
 ;;; Commentary:
 ;;
 ;; Layer: 3 (Domain Workflow).
 ;; Category: D/P.
 ;; Load shape: eager.
-;; Eager reason: none; Dired/Dirvish shell commands, a command-loaded deferral
-;;   candidate.
+;; Eager reason: none; Dired/Dirvish shell commands can load by command.
 ;; Top-level side effects: package configuration via use-package.
-;; Runtime requires: cl-lib.
+;; Runtime requires: cl-lib, system-lib.
 ;; Direct test load: yes.
 ;;
-;; This module provides a collection of DWIM (Do What I Mean) shell commands
-;; for common file operations in Dired and other buffers. It leverages the
-;; `dwim-shell-command' package to execute shell commands on marked files
-;; with smart templating and progress tracking.
+;; Configures dwim-shell-command actions for marked Dired/Dirvish files:
+;; media conversion, archive/PDF/document operations, external opening, and a
+;; curated transient menu. Commands use dwim-shell templates for marked files or
+;; the current buffer file.
 ;;
-;; Features:
-;; - Audio/Video conversion (mp3, opus, webp, HEVC)
-;; - Image manipulation (resize, flip, format conversion)
-;; - PDF operations (merge, split, password protection, OCR)
-;; - Archive management (zip/unzip)
-;; - Document conversion (epub to org, docx to pdf, pdf to txt)
-;; - Git operations (clone from clipboard)
-;; - External file opening with context awareness
-;;
-;; Workflow:
-;; 1. *Mark files in Dired/Dirvish*
-;;    - Use =m= to mark individual files
-;;    - Use =* .= to mark by extension
-;;    - Use =% m= to mark by regexp
-;;    - Or operate on the file under cursor if nothing is marked
-;;
-;; 2. *Execute a DWIM command*
-;;    - Call the command via =M-x dwim-shell-commands-[command-name]=
-;;    - Or bind frequently used commands to keys
-;;
-;; 3. *Command execution*
-;;    - The command runs asynchronously in the background
-;;    - A =*Async Shell Command*= buffer shows progress
-;;    - Files are processed with smart templating (replacing =<<f>>=, =<<fne>>=, etc.)
-;;
-;; 4. *Results*
-;;    - New files appear in the Dired/Dirvish buffer
-;;    - Buffer auto-refreshes when command completes
-;;    - Errors appear in the async buffer if something fails
-;;
-;; Requirements:
-;; The commands rely on various external utilities that need to be installed:
-;; - ffmpeg: Audio/video conversion
-;; - imagemagick (convert): Image manipulation
-;; - qpdf: PDF operations (requires version 8.x+ for secure password handling)
-;; - tesseract: OCR functionality
-;; - pandoc: Document conversion
-;; - atool: Archive extraction
-;; - rsvg-convert: SVG to PNG conversion
-;; - pdftotext: PDF text extraction
-;; - git: Version control operations
-;; - gpgconf: GPG agent management
-;; - 7z (p7zip): Secure password-protected archives
-;;
-;; On Arch Linux, install the requirements with:
-;; #+begin_src bash
-;; sudo pacman -S --needed ffmpeg imagemagick qpdf tesseract tesseract-data-eng pandoc atool librsvg poppler git gnupg p7zip zip unzip mkvtoolnix-cli mpv ruby
-;; #+end_src
-;;
-;; On MacOS, install the requirements with:
-;; #+begin_src bash
-;; brew install ffmpeg imagemagick qpdf tesseract pandoc atool librsvg poppler gnupg p7zip mkvtoolnix mpv
-;; #+end_src
-;;
-;; Usage:
-;; Commands operate on marked files in Dired or the current file in other modes.
-;; The package automatically replaces standard shell commands with DWIM versions
-;; for a more intuitive experience.
-;;
-;; Security:
-;; Password-protected operations (PDF encryption, archive encryption) use secure
-;; methods to avoid exposing passwords in process lists or command history:
-;; - PDF operations: Use temporary files with restrictive permissions (mode 600)
-;; - Archive operations: Use 7z instead of zip for better password handling
-;; - Temporary password files are automatically cleaned up after use
-;; - Note: Switched from zip to 7z for encryption due to zip's insecure -P flag
-;;
-;; Template Variables:
-;; - <<f>>: Full path to file
-;; - <<fne>>: File name without extension
-;; - <<e>>: File extension
-;; - <<b>>: Base name (file name with extension, no directory)
-;; - <<d>>: Directory path
-;; - <<n>>: Sequential number (for batch renaming)
-;; - <<td>>: Temporary directory
-;; - <<cb>>: Clipboard contents
-;; - <<*>>: All marked files
-;;
+;; Password-bearing operations avoid command-line secrets by writing temporary
+;; password files with restrictive permissions and deleting them from the process
+;; sentinel after the spawned command exits.
 
 ;;; Code:
 

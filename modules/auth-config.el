@@ -1,4 +1,4 @@
-;; auth-config.el --- Configuration for Authentication Utilities -*- lexical-binding: t; coding: utf-8; -*-
+;;; auth-config.el --- Authentication and GPG integration -*- lexical-binding: t; coding: utf-8; -*-
 ;; author Craig Jennings <c@cjennings.net>
 
 ;;; Commentary:
@@ -6,29 +6,16 @@
 ;; Layer: 1 (Foundation).
 ;; Category: F/D.
 ;; Load shape: eager.
-;; Eager reason: auth-source and GPG/epa setup that other modules rely on for
-;;   credentials early in the session.
-;; Top-level side effects: auth-source/epa configuration via use-package and setq.
+;; Eager reason: credentials and GPG setup are needed by other modules early.
+;; Top-level side effects: auth-source/epa setup and oauth2-auto cache advice.
 ;; Runtime requires: system-lib, user-constants.
-;; Direct test load: yes (configuration only).
+;; Direct test load: yes.
 ;;
-;; Configuration for Emacs authentication and GPG integration:
-
-;; • auth-source
-;;   – Forces use of your default authinfo file
-;;   – Disable external GPG agent in favor of Emacs's own prompt
-;;   – Keeps auth-source debug logging disabled by default
-
-;; • Easy PG Assistant (epa)
-;;   – Force using the 'gpg2' executable for encryption/decryption operations
-
-;; • oauth2-auto cache fix (via advice)
-;;   – oauth2-auto version 20250624.1919 has caching bug on line 206
-;;   – Function oauth2-auto--plstore-read has `or nil` disabling cache
-;;   – This caused GPG passphrase prompts every ~15 minutes during gcal-sync
-;;   – Fix: Advice to enable hash-table cache without modifying package
-;;   – Works across package updates
-;;   – Fixed 2025-11-11
+;; Central auth-source, GPG, and credential-debug setup. Auth lookups use the
+;; configured authinfo file; passphrase caching is left to gpg-agent.
+;;
+;; Advises oauth2-auto's plstore reader to restore in-memory caching and avoid
+;; repeated GPG prompts during calendar/mail refreshes.
 
 ;;; Code:
 

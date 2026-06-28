@@ -1,4 +1,4 @@
-;;; custom-whitespace.el ---  -*- coding: utf-8; lexical-binding: t; -*-
+;;; custom-whitespace.el --- Whitespace cleanup commands -*- coding: utf-8; lexical-binding: t; -*-
 
 ;;; Commentary:
 ;;
@@ -12,19 +12,10 @@
 ;; Runtime requires: keybindings.
 ;; Direct test load: yes (requires keybindings explicitly).
 ;;
-;; This module provides whitespace manipulation operations for cleaning and transforming whitespace in text.
-
-;; Functions include:
-
-;; - removing leading and trailing whitespace
-;; - collapsing multiple spaces to single spaces
-;; - deleting blank lines
-;; - converting whitespace to hyphens.
-
-;; All operations work on the current line, active region, or entire buffer depending on context.
-
-;; Bound to keymap prefix C-; w
-
+;; Whitespace cleanup under C-; w: trim line edges, collapse runs of spaces,
+;; delete blank lines, enforce a single blank line, and hyphenate whitespace.
+;; Commands choose region, buffer, or current line based on prefix/mark state.
+;;
 ;;; Code:
 
 (require 'keybindings)  ;; provides cj/custom-keymap
