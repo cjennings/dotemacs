@@ -27,6 +27,7 @@
 
 (declare-function eat "eat" (&optional program arg))
 (declare-function eshell "eshell" (&optional arg))
+(declare-function cj/dashboard-only "dashboard-config")
 (defvar eat-mode-map)
 (defvar eat-semi-char-mode-map)
 (defvar eshell-buffer-name)
@@ -110,12 +111,17 @@ ARGS is (TERMINAL OUTPUT)."
   (eat-sixel-render-formats '(xpm svg half-block background none)) ; inline images (on by default)
   (eat-query-before-killing-running-terminal 'auto) ; confirm before killing a terminal with a live process
   :config
-  ;; F12 and C-; must reach Emacs from inside EAT.  In semi-char mode (EAT's
-  ;; default) EAT forwards unbound keys to the terminal -- a letter runs
+  ;; F1, F12, and C-; must reach Emacs from inside EAT.  In semi-char mode
+  ;; (EAT's default) EAT forwards unbound keys to the terminal -- a letter runs
   ;; `eat-self-input' -- so bind these explicitly or they never reach Emacs:
-  ;; F12 toggles the terminal window, C-; opens the global prefix map.
+  ;; F1 runs the kill-all sweep back to the dashboard (`cj/dashboard-only',
+  ;; which buries agent buffers rather than killing them), F12 toggles the
+  ;; terminal window, C-; opens the global prefix map.  Unlike ghostel, EAT
+  ;; needs no exception-list or keymap rebuild -- the bind alone suffices.
+  (keymap-set eat-semi-char-mode-map "<f1>" #'cj/dashboard-only)
   (keymap-set eat-semi-char-mode-map "<f12>" #'cj/term-toggle)
   (keymap-set eat-semi-char-mode-map "C-;" cj/custom-keymap)
+  (keymap-set eat-mode-map "<f1>" #'cj/dashboard-only)
   (keymap-set eat-mode-map "<f12>" #'cj/term-toggle)
   (keymap-set eat-mode-map "C-;" cj/custom-keymap))
 
