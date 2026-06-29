@@ -172,9 +172,15 @@ does not run the command."
 (ert-deftest test-system-cmd-restart-emacs-no-service-aborts ()
   "Error: when no emacs.service exists, restart aborts without running anything."
   (let ((ran nil))
+    ;; Drive the real service check to nil at its boundary (no systemctl on
+    ;; PATH) rather than mocking cj/system-cmd--emacs-service-available-p
+    ;; itself: cj/system-cmd-restart-emacs reaches that helper through a
+    ;; native-comp intra-file direct call that bypasses a symbol-function
+    ;; redefinition, so the helper-level mock silently no-ops and the real
+    ;; check passes on a machine that has emacs.service.  executable-find is a
+    ;; subr the helper calls, and its trampoline honors the cl-letf swap.
     (cl-letf (((symbol-function 'daemonp) (lambda () t))
-              ((symbol-function 'cj/system-cmd--emacs-service-available-p)
-               (lambda () nil))
+              ((symbol-function 'executable-find) (lambda (&rest _) nil))
               ((symbol-function 'read-char-choice) (lambda (&rest _) ?y))
               ((symbol-function 'call-process-shell-command)
                (lambda (&rest _) (setq ran t))))
