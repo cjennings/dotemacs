@@ -41,6 +41,21 @@
 (defvar emms-playlist-mode-map)
 (defvar dirvish-mode-map)
 
+;; Playlist-header faces.  Defined here so the `cj/music--header-text'
+;; references are valid (an undefined face spams "Invalid face reference" on
+;; every render).  Appearance inherits themed base faces so the active theme
+;; owns the colors -- the literal values were dropped in the route-colors pass.
+(defface cj/music-header-face '((t :inherit shadow))
+  "Playlist-header field labels (Playlist, Current, Mode, Keys).")
+(defface cj/music-header-value-face '((t :inherit default))
+  "Playlist-header field values.")
+(defface cj/music-mode-on-face '((t :inherit warning))
+  "Active mode indicator in the playlist header.")
+(defface cj/music-mode-off-face '((t :inherit shadow))
+  "Inactive mode indicator in the playlist header.")
+(defface cj/music-keyhint-face '((t :inherit shadow))
+  "Key hints in the playlist header.")
+
 ;; Foreign functions used lazily after their packages load.
 (declare-function emms-playlist-mode "emms-playlist-mode")
 (declare-function emms-playlist-track-at "emms-playlist-mode")
