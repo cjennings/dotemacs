@@ -110,11 +110,11 @@ deletes the popup frame instead of leaving it orphaned.
 Components integrated:
 - cj/quick-capture (real)
 - org-capture (MOCKED — signals user-error \"Abort\")
-- cj/org-capture--delete-popup-frame (MOCKED — records the call)"
+- cj/org-capture-reap-popup-frames (MOCKED — records the call)"
   (let ((deleted 0))
     (cl-letf (((symbol-function 'org-capture)
                (lambda (&rest _) (user-error "Abort")))
-              ((symbol-function 'cj/org-capture--delete-popup-frame)
+              ((symbol-function 'cj/org-capture-reap-popup-frames)
                (lambda () (cl-incf deleted))))
       (cj/quick-capture))
     (should (= deleted 1))))
@@ -124,7 +124,7 @@ Components integrated:
   (let ((deleted 0))
     (cl-letf (((symbol-function 'org-capture)
                (lambda (&rest _) (signal 'quit nil)))
-              ((symbol-function 'cj/org-capture--delete-popup-frame)
+              ((symbol-function 'cj/org-capture-reap-popup-frames)
                (lambda () (cl-incf deleted))))
       (cj/quick-capture))
     (should (= deleted 1))))
@@ -134,19 +134,32 @@ Components integrated:
 the finalize hook owns that."
   (let ((deleted 0))
     (cl-letf (((symbol-function 'org-capture) (lambda (&rest _) nil))
-              ((symbol-function 'cj/org-capture--delete-popup-frame)
+              ((symbol-function 'cj/org-capture-reap-popup-frames)
                (lambda () (cl-incf deleted))))
       (cj/quick-capture))
     (should (= deleted 0))))
 
-;;; cj/org-capture--popup-frame-p
+;;; cj/org-capture--frame-reapable-p
 
-(ert-deftest test-org-capture-config-popup-frame-p ()
-  "Normal/Boundary: true only when the selected frame is named \"org-capture\"."
-  (cl-letf (((symbol-function 'frame-parameter) (lambda (&rest _) "org-capture")))
-    (should (cj/org-capture--popup-frame-p)))
-  (cl-letf (((symbol-function 'frame-parameter) (lambda (&rest _) "emacs")))
-    (should-not (cj/org-capture--popup-frame-p))))
+(ert-deftest test-org-capture-config-frame-reapable-p-no-capture-ui ()
+  "Normal: an \"org-capture\" frame showing only non-capture buffers is reapable."
+  (should (cj/org-capture--frame-reapable-p
+           "org-capture" '("agent [.emacs.d]" "*dashboard*"))))
+
+(ert-deftest test-org-capture-config-frame-reapable-p-capture-buffer-spares ()
+  "Boundary: a CAPTURE-* buffer means the popup is mid-capture — not reapable."
+  (should-not (cj/org-capture--frame-reapable-p
+               "org-capture" '("CAPTURE-todo.org" "*dashboard*"))))
+
+(ert-deftest test-org-capture-config-frame-reapable-p-select-menu-spares ()
+  "Boundary: the *Org Select* template menu means mid-capture — not reapable."
+  (should-not (cj/org-capture--frame-reapable-p
+               "org-capture" '("*Org Select*"))))
+
+(ert-deftest test-org-capture-config-frame-reapable-p-other-frame-never ()
+  "Error: a frame not named \"org-capture\" is never reapable, even when empty."
+  (should-not (cj/org-capture--frame-reapable-p
+               "Emacs 30.2 : agent [.emacs.d]" '("agent [.emacs.d]"))))
 
 ;;; cj/org-capture--popup-frame  (find the popup frame by name)
 

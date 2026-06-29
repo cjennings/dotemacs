@@ -345,22 +345,43 @@ Captured On: %U" :prepend t)
   ) ;; end use-package org-protocol
 
 ;; ---------------------- Popup Capture Frame Auto-Close ----------------------
-;; The quick-capture script (Hyprland Super+Shift+N) opens an emacsclient
+;; The quick-capture script (Hyprland Super+N) opens an emacsclient
 ;; frame named "org-capture"; Hyprland window rules float and center it by
 ;; that name. These hooks close the frame when the capture finalizes or
 ;; aborts, so the popup never lingers. Frames not named "org-capture" are
 ;; untouched — normal in-Emacs captures keep their windows.
 
-(defun cj/org-capture--popup-frame-p ()
-  "Return non-nil when the selected frame is the quick-capture popup."
-  (equal (frame-parameter nil 'name) "org-capture"))
+(defun cj/org-capture--frame-reapable-p (frame-name buffer-names)
+  "Non-nil when a frame named FRAME-NAME showing BUFFER-NAMES is a reapable popup.
+Reapable means the quick-capture popup (FRAME-NAME equal to \"org-capture\") with
+no capture UI left in any window — no *Org Select* menu and no CAPTURE-* buffer.
+A popup still mid-capture has capture UI and is not reapable, so it is spared."
+  (and (equal frame-name "org-capture")
+       (not (seq-some (lambda (b)
+                        (cj/org-capture--popup-sole-window-p frame-name b))
+                      buffer-names))))
 
-(defun cj/org-capture--delete-popup-frame ()
-  "Delete the current frame when it is the quick-capture popup."
-  (when (cj/org-capture--popup-frame-p)
-    (delete-frame)))
+(defun cj/org-capture-reap-popup-frames ()
+  "Delete every quick-capture popup frame that no longer shows capture UI.
+Reaps across ALL frames, not just the selected one: a capture that finalizes,
+aborts, or errors while the daemon's selected frame is something else (the common
+multi-frame case) still cleans up its \"org-capture\" popup, while a popup
+mid-capture is spared.  Never deletes the last remaining frame.  Safe to call
+anytime — bound to nothing, run via M-x when a stray popup needs clearing."
+  (interactive)
+  (dolist (f (frame-list))
+    (when (and (frame-live-p f)
+               (cdr (frame-list))           ; never delete the last frame
+               (cj/org-capture--frame-reapable-p
+                (frame-parameter f 'name)
+                (mapcar (lambda (w) (buffer-name (window-buffer w)))
+                        (window-list f 'no-minibuf))))
+      (delete-frame f))))
 
-(add-hook 'org-capture-after-finalize-hook #'cj/org-capture--delete-popup-frame)
+;; Reap on every capture exit.  `remove-hook' first so a live module reload swaps
+;; the retired narrow (selected-frame) handler for this one without leaving both.
+(remove-hook 'org-capture-after-finalize-hook #'cj/org-capture--delete-popup-frame)
+(add-hook 'org-capture-after-finalize-hook #'cj/org-capture-reap-popup-frames)
 
 ;; The popup opens a fresh emacsclient frame still showing the daemon's last
 ;; buffer.  `org-mks' shows the *Org Select* menu via
@@ -439,9 +460,9 @@ daemon's main frame and the capture would otherwise land there."
           (when frame (select-frame-set-input-focus frame))
           (let ((org-capture-templates (cj/--quick-capture-template inbox-file)))
             (org-capture nil "t")))
-      (quit (cj/org-capture--delete-popup-frame))
+      (quit (cj/org-capture-reap-popup-frames))
       (error (message "Quick-capture: %s" (error-message-string err))
-             (cj/org-capture--delete-popup-frame)))))
+             (cj/org-capture-reap-popup-frames)))))
 
 (provide 'org-capture-config)
 ;;; org-capture-config.el ends here.
