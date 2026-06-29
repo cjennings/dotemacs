@@ -447,7 +447,7 @@ Uses feh on X11, the `set-wallpaper' script on Wayland."
 ;; at home.  `q' in that frame runs `cj/dirvish-popup-quit', which quits Dirvish
 ;; and deletes the popup frame so a stray launch never orphans it; `q' in any
 ;; other frame quits Dirvish normally.  The launcher script calls this command
-;; instead of plain `dirvish'.  This mirrors the Super+Shift+N quick-capture
+;; instead of plain `dirvish'.  This mirrors the Super+N quick-capture
 ;; popup (see `cj/quick-capture' in org-capture-config.el).
 
 (defun cj/--dirvish-popup-frame ()
