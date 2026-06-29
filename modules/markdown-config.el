@@ -1,4 +1,4 @@
-;;; markdown-config --- Settings for Editing Markdown -*- lexical-binding: t; coding: utf-8; -*-
+;;; markdown-config.el --- Settings for Editing Markdown -*- lexical-binding: t; coding: utf-8; -*-
 ;; author Craig Jennings <c@cjennings.net>
 
 ;;; Commentary:

@@ -1,4 +1,4 @@
-;;; help-utils --- Help Integrations and Searches -*- lexical-binding: t; coding: utf-8; -*-
+;;; help-utils.el --- Help Integrations and Searches -*- lexical-binding: t; coding: utf-8; -*-
 ;; author Craig Jennings <c@cjennings.net>
 ;;
 ;;; Commentary:

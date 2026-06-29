@@ -1,4 +1,4 @@
-;;; font-config --- Font Defaults and Related Functionality -*- lexical-binding: t; coding: utf-8; -*-
+;;; font-config.el --- Font Defaults and Related Functionality -*- lexical-binding: t; coding: utf-8; -*-
 ;; author: Craig Jennings <c@cjennings.net>
 
 ;;; Commentary:

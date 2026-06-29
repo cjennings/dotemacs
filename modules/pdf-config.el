@@ -1,4 +1,4 @@
-;;; pdf-config --- PDF Viewer Setup -*- lexical-binding: t; coding: utf-8; -*-
+;;; pdf-config.el --- PDF Viewer Setup -*- lexical-binding: t; coding: utf-8; -*-
 ;; author Craig Jennings <c@cjennings.net>
 
 ;;; Commentary:

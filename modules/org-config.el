@@ -1,4 +1,4 @@
-;;; org-config --- Settings and Enhancements to Org Mode -*- lexical-binding: t; coding: utf-8; -*-
+;;; org-config.el --- Settings and Enhancements to Org Mode -*- lexical-binding: t; coding: utf-8; -*-
 ;; author Craig Jennings <c@cjennings.net>
 ;;; Commentary:
 ;;

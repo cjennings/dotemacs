@@ -1,4 +1,4 @@
-;;; text-config --- Text Settings and Functionality -*- lexical-binding: t; coding: utf-8; -*-
+;;; text-config.el --- Text Settings and Functionality -*- lexical-binding: t; coding: utf-8; -*-
 ;; author Craig Jennings <c@cjennings.net>
 
 ;;; Commentary:

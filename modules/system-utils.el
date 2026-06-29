@@ -1,4 +1,4 @@
-;;; system-utils --- System-Wide Utilities -*- lexical-binding: t; coding: utf-8; -*-
+;;; system-utils.el --- System-Wide Utilities -*- lexical-binding: t; coding: utf-8; -*-
 ;; author Craig Jennings <c@cjennings.net>
 ;;
 ;;; Commentary:

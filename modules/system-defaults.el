@@ -1,4 +1,4 @@
-;;; system-defaults --- Non-UI Preferences -*- lexical-binding: t; coding: utf-8-unix; -*-
+;;; system-defaults.el --- Non-UI Preferences -*- lexical-binding: t; coding: utf-8-unix; -*-
 ;; author: Craig Jennings <c@cjennings.net>
 ;;
 ;;; Commentary:

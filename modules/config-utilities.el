@@ -1,4 +1,4 @@
-;;; config-utilities  --- Config Hacking Utilities -*- lexical-binding: t; coding: utf-8; -*-
+;;; config-utilities.el --- Config Hacking Utilities -*- lexical-binding: t; coding: utf-8; -*-
 ;; author Craig Jennings <c@cjennings.net>
 
 ;;; Commentary:

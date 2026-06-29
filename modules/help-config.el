@@ -1,4 +1,4 @@
-;;; help-config --- Help Functionality Configuration -*- lexical-binding: t; coding: utf-8; -*-
+;;; help-config.el --- Help Functionality Configuration -*- lexical-binding: t; coding: utf-8; -*-
 ;; author Craig Jennings <c@cjennings.net>
 
 ;;; Commentary:

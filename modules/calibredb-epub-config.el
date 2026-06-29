@@ -1,4 +1,4 @@
-;;; calibredb-epub-config --- Functionality for Ebook Management and Display -*- lexical-binding: t; coding: utf-8; -*-
+;;; calibredb-epub-config.el --- Functionality for Ebook Management and Display -*- lexical-binding: t; coding: utf-8; -*-
 ;; author Craig Jennings <c@cjennings.net>
 
 ;;; Commentary:

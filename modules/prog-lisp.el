@@ -1,4 +1,4 @@
-;;; prog-lisp --- Lisp Specific Settings and Functionality -*- lexical-binding: t; coding: utf-8; -*-
+;;; prog-lisp.el --- Lisp Specific Settings and Functionality -*- lexical-binding: t; coding: utf-8; -*-
 ;; author Craig Jennings <c@cjennings.net>
 
 ;;; Commentary:

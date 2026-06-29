@@ -1,4 +1,4 @@
-;;; prog-yaml --- YAML Settings -*- lexical-binding: t; coding: utf-8; -*-
+;;; prog-yaml.el --- YAML Settings -*- lexical-binding: t; coding: utf-8; -*-
 ;; author: Craig Jennings <c@cjennings.net>
 
 ;;; Commentary:

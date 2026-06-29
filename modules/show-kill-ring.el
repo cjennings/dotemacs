@@ -1,4 +1,4 @@
-;;; show-kill-ring --- Displays Previous Kill Ring Entries -*- lexical-binding: t; coding: utf-8; -*-
+;;; show-kill-ring.el --- Displays Previous Kill Ring Entries -*- lexical-binding: t; coding: utf-8; -*-
 ;; Show Kill Ring
 ;; Stolen from Steve Yegge when he wasn't looking
 ;; enhancements and bugs added by Craig Jennings <c@cjennings.net>
