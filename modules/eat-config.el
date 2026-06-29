@@ -308,6 +308,16 @@ Escape."
   (interactive)
   (cj/--term-send-string "\e"))
 
+(defun cj/term-backward-kill-word ()
+  "Delete the previous word in the terminal program's input line.
+Sends M-DEL (ESC DEL) to the pty, which readline and most line editors map to
+backward-kill-word -- the same word-boundary delete C-<backspace> does in normal
+Emacs buffers (it stops at punctuation).  EAT's default forwards C-<backspace> as
+a bare key the program ignores, so the word never gets deleted; sending the
+escape sequence the program actually understands is what makes the key work."
+  (interactive)
+  (cj/--term-send-string "\e\d"))
+
 (defun cj/term--tmux-output (&rest args)
   "Run tmux with ARGS and return its stdout.
 Signal `user-error' when tmux exits with a non-zero status."
@@ -505,6 +515,10 @@ pty; without tmux, moves point up in EAT's emacs-mode buffer."
   ;; to semi-char.  One key gets out of either copy view.
   (keymap-set eat-semi-char-mode-map "<escape>" #'cj/term-send-escape)
   (keymap-set eat-mode-map "<escape>" #'eat-semi-char-mode)
+  ;; Ctrl+Backspace deletes the previous word, matching its behavior in normal
+  ;; buffers.  Terminals send no standard code for it, so EAT's default forwards
+  ;; a bare key the program drops; send M-DEL instead (readline backward-kill-word).
+  (keymap-set eat-semi-char-mode-map "C-<backspace>" #'cj/term-backward-kill-word)
   ;; Word-motion arrows edit the terminal program's input (claude, readline), so
   ;; forward them to the pty.  EAT's default leaves them in the non-bound-keys
   ;; list, which moved Emacs point instead and desynced it from the real cursor
