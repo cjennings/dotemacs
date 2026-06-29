@@ -5,9 +5,10 @@
 ;; font-config.el is mostly top-level font/package setup.  These smoke tests
 ;; cover the logic that should stay correct regardless of which fonts are
 ;; installed: the install check, and the daemon-frame font applier (env-gui-p
-;; guard plus idempotency).  The module :demand's fontaine and all-the-icons,
-;; so the tests skip when those packages are absent rather than failing on a
-;; bare checkout.  GUI and font lookups are stubbed so the run stays headless.
+;; guard plus idempotency).  The module :demand's fontaine and references
+;; nerd-icons, so the tests skip when those packages are absent rather than
+;; failing on a bare checkout.  GUI and font lookups are stubbed so the run
+;; stays headless.
 
 ;;; Code:
 
@@ -21,9 +22,8 @@
 
 (defconst test-font-config--available
   (and (locate-library "fontaine")
-       (locate-library "all-the-icons")
-       (locate-library "all-the-icons-nerd-fonts"))
-  "Non-nil when the packages font-config :demand's are loadable.")
+       (locate-library "nerd-icons"))
+  "Non-nil when the packages font-config needs are loadable.")
 
 ;;; cj/font-installed-p
 

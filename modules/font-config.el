@@ -165,32 +165,27 @@ If FRAME is nil, uses the selected frame."
 	  t
 	nil))
 
-;; ------------------------------- All The Icons -------------------------------
-;; icons made available through fonts
+;; ------------------------------- Nerd Icons fonts ----------------------------
+;; nerd-icons (configured in nerd-icons-config.el) renders glyphs from the
+;; "Symbols Nerd Font Mono" font.  Auto-install it on the first GUI frame when
+;; it is missing -- the same convenience the dropped all-the-icons setup gave.
 
-(declare-function all-the-icons-install-fonts "all-the-icons")
+(declare-function nerd-icons-install-fonts "nerd-icons")
 
-(defun cj/maybe-install-all-the-icons-fonts (&optional _frame)
-  "Install all-the-icons fonts if needed and we have a GUI."
+(defun cj/maybe-install-nerd-icons-fonts (&optional _frame)
+  "Install the nerd-icons font if it is missing and we have a GUI."
   (when (and (env-gui-p)
-             (not (cj/font-installed-p "all-the-icons")))
-    (all-the-icons-install-fonts t)
+             (not (cj/font-installed-p "Symbols Nerd Font Mono")))
+    (nerd-icons-install-fonts t)
     ;; Remove this hook after successful installation
-    (remove-hook 'server-after-make-frame-hook #'cj/maybe-install-all-the-icons-fonts)))
+    (remove-hook 'server-after-make-frame-hook #'cj/maybe-install-nerd-icons-fonts)))
 
-(use-package all-the-icons
-  :demand t
-  :config
-  ;; Handle both daemon and non-daemon modes
+;; nerd-icons loads after this module (see init.el order), so defer the wiring
+;; until it is present.  Daemon: install on the first GUI frame; otherwise now.
+(with-eval-after-load 'nerd-icons
   (if (daemonp)
-      (add-hook 'server-after-make-frame-hook #'cj/maybe-install-all-the-icons-fonts)
-    (cj/maybe-install-all-the-icons-fonts)))
-
-(use-package all-the-icons-nerd-fonts
-  :after all-the-icons
-  :demand t
-  :config
-  (all-the-icons-nerd-fonts-prefer))
+      (add-hook 'server-after-make-frame-hook #'cj/maybe-install-nerd-icons-fonts)
+    (cj/maybe-install-nerd-icons-fonts)))
 
 ;; ----------------------------- Emoji Fonts Per OS ----------------------------
 

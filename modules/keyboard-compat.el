@@ -68,12 +68,6 @@ This runs after init to override any package settings."
                 nerd-icons-icon-for-buffer))
     (advice-add fn :around #'cj/--icon-blank-in-terminal)))
 
-(with-eval-after-load 'all-the-icons
-  (dolist (fn '(all-the-icons-icon-for-file
-                all-the-icons-icon-for-dir
-                all-the-icons-icon-for-mode))
-    (advice-add fn :around #'cj/--icon-blank-in-terminal)))
-
 ;; =============================================================================
 ;; GUI-specific fixes
 ;; =============================================================================

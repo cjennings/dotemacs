@@ -2,7 +2,7 @@
 
 ;;; Commentary:
 ;; cj/apply-font-settings-to-frame, cj/cleanup-frame-list, and
-;; cj/maybe-install-all-the-icons-fonts were defined inside use-package
+;; cj/maybe-install-nerd-icons-fonts were defined inside use-package
 ;; :config / with-eval-after-load (unreachable under `make test').  Lifting
 ;; them to top level makes their branching unit-testable; env-gui-p and the
 ;; package side-effect calls are mocked at the boundary.
@@ -57,9 +57,9 @@
   (let ((installed nil))
     (cl-letf (((symbol-function 'env-gui-p) (lambda () t))
               ((symbol-function 'cj/font-installed-p) (lambda (_n) nil))
-              ((symbol-function 'all-the-icons-install-fonts) (lambda (&rest _) (setq installed t)))
+              ((symbol-function 'nerd-icons-install-fonts) (lambda (&rest _) (setq installed t)))
               ((symbol-function 'remove-hook) #'ignore))
-      (cj/maybe-install-all-the-icons-fonts))
+      (cj/maybe-install-nerd-icons-fonts))
     (should installed)))
 
 (ert-deftest test-font-maybe-install-icons-already-present-skips ()
@@ -67,8 +67,8 @@
   (let ((installed nil))
     (cl-letf (((symbol-function 'env-gui-p) (lambda () t))
               ((symbol-function 'cj/font-installed-p) (lambda (_n) t))
-              ((symbol-function 'all-the-icons-install-fonts) (lambda (&rest _) (setq installed t))))
-      (cj/maybe-install-all-the-icons-fonts))
+              ((symbol-function 'nerd-icons-install-fonts) (lambda (&rest _) (setq installed t))))
+      (cj/maybe-install-nerd-icons-fonts))
     (should-not installed)))
 
 (provide 'test-font-config--frame-lifecycle)
