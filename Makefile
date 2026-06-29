@@ -459,11 +459,15 @@ profile:
 	fi
 
 # Move completed tasks (DONE/CANCELLED level-2 subtrees) out of "Open Work"
-# and into the "Resolved" section of todo.org. Wraps todo-cleanup.el's
-# --archive-done; a no-op when nothing is in a closed state.
+# and into the "Resolved" section of todo.org, then age that section: tasks
+# closed more than a week ago move out to archive/task-archive.org, keeping
+# only the last week of closed tasks in todo.org. Wraps todo-cleanup.el's
+# --archive-done; a no-op when nothing is closed and nothing has aged out.
 task-sorted:
 	@echo "Archiving resolved tasks in todo.org..."
 	@$(EMACS) --batch -q -l .ai/scripts/todo-cleanup.el --archive-done todo.org
+	@echo "Linting todo.org..."
+	@$(EMACS) --batch -q -l .ai/scripts/lint-org.el todo.org
 
 clean: clean-tests clean-compiled
 	@echo "✓ Clean complete"
