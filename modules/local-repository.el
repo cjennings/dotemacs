@@ -24,7 +24,7 @@
 ;; ------------------------------ Utility Function -----------------------------
 
 
-(defun car-member (value list)
+(defun localrepo--car-member (value list)
   "Check if VALUE exists as the car of any cons cell in LIST."
   (member value (mapcar #'car list)))
 
@@ -65,11 +65,11 @@ keep them in source control."
 
 (defun localrepo-initialize ()
 "Add the repository to the package archives, then gives it a high priority."
-  (unless (car-member localrepo-repository-id package-archives)
+  (unless (localrepo--car-member localrepo-repository-id package-archives)
 	(add-to-list 'package-archives
 				 (cons localrepo-repository-id localrepo-repository-location)))
 
-  (unless (car-member localrepo-repository-id package-archive-priorities)
+  (unless (localrepo--car-member localrepo-repository-id package-archive-priorities)
 	(add-to-list 'package-archive-priorities
 				 (cons localrepo-repository-id localrepo-repository-priority))))
 

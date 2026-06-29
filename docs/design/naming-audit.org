@@ -1,0 +1,91 @@
+#+TITLE: Naming Audit — Public/Private Boundaries in Owned Elisp
+#+AUTHOR: Craig Jennings
+#+DATE: 2026-06-29
+
+* Purpose
+
+A one-time audit of symbol-naming boundaries across config-owned Elisp, plus
+the standing allowlist future reviews cite instead of re-arguing. The
+convention itself lives in =.claude/rules/elisp.md=; this file records what the
+scan found and how each finding was classified.
+
+* Convention (summary)
+
+- User-facing commands and shared helpers: =cj/name=.
+- Private helpers inside cj-owned modules: =cj/--name=.
+- Package-like standalone modules: =package-name= for public API,
+  =package--name= for internals (e.g. =calendar-sync--=, =mouse-trap--=,
+  =localrepo-=).
+- No new unprefixed =defun=/=defvar=/=defcustom=/=defconst= in owned modules.
+- Tested private helpers may stay private; the test references them directly.
+
+* Scan method
+
+#+begin_src sh
+rg -n '^\((defun|defvar|defcustom|defconst|defgroup|defmacro) [^ )/]+' modules custom
+#+end_src
+
+The raw scan over-reports. Two large classes are not findings:
+
+- *Foreign forward-declarations.* A bare =(defvar foreign-var)= with no value
+  declares another package's special variable to quiet the byte-compiler. It
+  defines nothing owned. The bulk of the raw hits are these (=org-*=, =emms-*=,
+  =lsp-*=, =eat-*=, =mu4e-*=, and so on).
+- *Vendored third-party files* under =custom/= (=elpa-mirror.el= =elpamr-=,
+  =eplot.el= =eplot-=). These keep their upstream prefixes by policy.
+
+* Findings
+
+** Renamed (clear low-risk, done 2026-06-29)
+
+| Old                                      | New                           | Why                                       |
+|------------------------------------------+-------------------------------+-------------------------------------------|
+| =car-member= (local-repository.el)       | =localrepo--car-member=       | Unprefixed, generic name with real        |
+|                                          |                               | collision risk; pure non-interactive      |
+|                                          |                               | helper used only within its module +      |
+|                                          |                               | test.                                     |
+|------------------------------------------+-------------------------------+-------------------------------------------|
+| =unpropertize-kill-ring=                 | =cj/--unpropertize-kill-ring= | Unprefixed; non-interactive               |
+| (system-defaults.el)                     |                               | =kill-emacs-hook= function, contained to  |
+|                                          |                               | its module + tests.                       |
+|------------------------------------------+-------------------------------+-------------------------------------------|
+
+** Acceptable package prefixes (allowlist — no change)
+
+These are deliberate, consistent module prefixes, not unprefixed leaks:
+
+- =env-= / =env--= — host-environment.el.
+- =localrepo-= — local-repository.el (public API + defcustoms).
+- =mouse-trap-= / =mouse-trap--= — mousetrap-mode.el.
+- =show-kill-= — show-kill-ring.el.
+- =my-eww-= / =my-eww--= — eww-config.el.
+- =signel-= / =signel--= — signal-config.el.
+
+** Deferred — needs a focused, approved pass (not unattended)
+
+Each carries a risk that argues for Craig's eyes rather than a no-approvals
+rename:
+
+- *Keybound / interactive commands*: =toggle-window-split= (bound =M-S-t=),
+  =ensure-macros-file=, =empty-kill-ring=. A rename touches muscle-memory keys
+  and =M-x= history; do it with =defalias= shims and a live check.
+- *Cross-module macro*: =with-timer= (config-utilities.el, used in wrap-up.el
+  and an architecture test). A macro rename forces recompilation of every
+  caller; verify the whole graph.
+- *defcustoms*: =theme-file=, =fallback-theme-name= (ui-theme.el). Renaming a
+  =defcustom= orphans any persisted Customize value; use
+  =define-obsolete-variable-alias=. (No custom-file currently sets them, so the
+  risk is latent, not active.)
+- *High-blast user constants*: the unprefixed =*-dir= / =*-file= constants in
+  user-constants.el (=org-dir=, =projects-dir=, =books-dir=, and so on) are
+  referenced across the whole config. They want their own dedicated rename
+  task, not a drive-by.
+
+* Acceptance
+
+- The scan resolves to: two renames done, a documented allowlist of acceptable
+  prefixes, and a deferred list with rationale. No unexplained unprefixed owned
+  symbols remain.
+- The two renames are covered by their existing module tests (updated in place).
+- Future module reviews cite this file and =elisp.md= rather than re-deriving
+  the boundary.

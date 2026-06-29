@@ -266,10 +266,10 @@ appears only once per session."
 
 ;; ------------------ Unpropertize Kill Ring For Performance -----------------
 
-(defun unpropertize-kill-ring ()
+(defun cj/--unpropertize-kill-ring ()
   (setq kill-ring (mapcar 'substring-no-properties kill-ring)))
 
-(add-hook 'kill-emacs-hook 'unpropertize-kill-ring)
+(add-hook 'kill-emacs-hook 'cj/--unpropertize-kill-ring)
 
 ;; ------------------------------- GNU 'ls' On BSD -------------------------------
 

@@ -8,7 +8,7 @@
 ;; writes land, where backups go, and whether the minibuffer GC hooks are
 ;; installed.  Load happens in the shared sandbox (testutil-system-defaults.el).
 ;;
-;; The module's functions (cj/disabled, the GC hook bodies, unpropertize-kill-ring,
+;; The module's functions (cj/disabled, the GC hook bodies, cj/--unpropertize-kill-ring,
 ;; cj/log-comp-warning) are covered by test-system-defaults-functions.el, and the
 ;; vc-follow-symlinks default by test-system-defaults-vc-follow-symlinks.el.
 

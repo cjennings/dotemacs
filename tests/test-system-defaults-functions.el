@@ -9,7 +9,7 @@
 ;;   cj/minibuffer-setup-hook     -- inflate gc-cons-threshold while
 ;;                                   typing in the minibuffer
 ;;   cj/minibuffer-exit-hook      -- restore gc-cons-threshold on exit
-;;   unpropertize-kill-ring       -- strip text properties from
+;;   cj/--unpropertize-kill-ring       -- strip text properties from
 ;;                                   kill-ring at shutdown
 ;;   cj/log-comp-warning          -- route native-comp warnings to a
 ;;                                   file rather than the *Warnings*
@@ -79,13 +79,13 @@
   (should (eq (cj/disabled) nil))
   (should (commandp #'cj/disabled)))
 
-;;; unpropertize-kill-ring
+;;; cj/--unpropertize-kill-ring
 
 (ert-deftest test-system-defaults-unpropertize-kill-ring-strips-properties ()
   "Normal: every kill-ring entry comes back with no text properties."
   (let ((kill-ring (list (propertize "alpha" 'face 'bold)
                          (propertize "beta" 'face 'underline))))
-    (unpropertize-kill-ring)
+    (cj/--unpropertize-kill-ring)
     (should (equal kill-ring '("alpha" "beta")))
     (should-not (text-properties-at 0 (nth 0 kill-ring)))
     (should-not (text-properties-at 0 (nth 1 kill-ring)))))
@@ -93,7 +93,7 @@
 (ert-deftest test-system-defaults-unpropertize-kill-ring-boundary-empty-ring ()
   "Boundary: an empty `kill-ring' stays empty after the strip pass."
   (let ((kill-ring nil))
-    (unpropertize-kill-ring)
+    (cj/--unpropertize-kill-ring)
     (should (null kill-ring))))
 
 ;;; cj/log-comp-warning
