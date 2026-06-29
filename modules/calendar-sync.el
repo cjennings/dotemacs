@@ -381,12 +381,28 @@ Syncs all calendars immediately, then every `calendar-sync-interval-minutes'."
     ;; User can manually sync or it will happen on next timer tick if auto-sync is enabled
     ))
 
-;; Start auto-sync if enabled and calendars are configured
-;; Syncs immediately then every calendar-sync-interval-minutes (default: 60 minutes)
+;; Defer auto-sync until calendar data is first needed.
+;;
+;; The :secret-host feed URLs live in authinfo.gpg, and BOTH the immediate sync
+;; and every periodic timer tick resolve them.  Calling `calendar-sync-start' at
+;; load (immediate sync + recurring timer) therefore decrypts authinfo.gpg right
+;; after startup, prompting for the GPG passphrase on a cold gpg-agent (e.g.
+;; after a reboot).  Defer the whole start to the first org-agenda use, so the
+;; unlock happens when the user actually asks for calendar data.  A manual
+;; `calendar-sync-start' / `calendar-sync-now' still works on demand.
+(defun calendar-sync--auto-start-on-first-agenda ()
+  "Start auto-sync on the first org-agenda use, then remove this hook.
+One-shot: deferring `calendar-sync-start' until the agenda is first built keeps a
+cold gpg-agent from being prompted for the authinfo passphrase at startup.
+Removes itself before starting so a `calendar-sync-start' error can't re-fire it."
+  (remove-hook 'org-agenda-mode-hook #'calendar-sync--auto-start-on-first-agenda)
+  (calendar-sync-start))
+
+;; Arm the deferred start when auto-sync is enabled and calendars are configured.
 (when (and calendar-sync-auto-start
            calendar-sync-calendars
            (not noninteractive))
-  (calendar-sync-start))
+  (add-hook 'org-agenda-mode-hook #'calendar-sync--auto-start-on-first-agenda))
 
 
 (provide 'calendar-sync)
