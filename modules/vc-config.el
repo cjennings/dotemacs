@@ -8,7 +8,7 @@
 ;; Eager reason: the C-x g Magit entry point and the git keymap.
 ;; Top-level side effects: defines two keymaps, registers under cj/custom-keymap,
 ;;   package configuration via use-package.
-;; Runtime requires: user-constants, keybindings.
+;; Runtime requires: user-constants, keybindings, system-lib.
 ;; Direct test load: yes (requires keybindings explicitly).
 ;;
 ;; C-x g is my general entry to Magit's version control via the status page.
@@ -26,6 +26,7 @@
 
 (require 'user-constants)  ;; provides code-dir
 (require 'keybindings)  ;; provides cj/custom-keymap
+(require 'system-lib)  ;; completion table + file annotator
 
 ;; Forward declaration: cj/vc-map is defined later in this file (see
 ;; `defvar-keymap' below) but referenced earlier in a use-package :bind form.
@@ -199,7 +200,13 @@ repository's README if found, else `dired's the clone."
            (read-directory-name "Clone to: " code-dir))
           ;; C-u: Choose from configured list
           (current-prefix-arg
-           (completing-read "Clone to: " cj/git-clone-dirs nil t))
+           (completing-read "Clone to: "
+                            (cj/completion-table-annotated
+                             'cj-clone-dir
+                             (cj/completion-file-annotator
+                              (lambda (c) (expand-file-name c)))
+                             cj/git-clone-dirs)
+                            nil t))
           ;; No prefix: Use default (first in list)
           (t (car cj/git-clone-dirs)))))
 

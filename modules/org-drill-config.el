@@ -8,7 +8,7 @@
 ;; Eager reason: none; optional flashcard workflow, a command-loaded deferral
 ;;   candidate for Phase 4.
 ;; Top-level side effects: defines a drill keymap, registers it under cj/custom-keymap.
-;; Runtime requires: user-constants, keybindings.
+;; Runtime requires: user-constants, keybindings, system-lib.
 ;; Direct test load: yes (requires keybindings explicitly).
 ;;
 ;; Notes: Org-Drill
@@ -29,6 +29,7 @@
 
 (require 'user-constants)                       ;; `drill-dir'
 (require 'keybindings)                           ;; provides `cj/custom-keymap'
+(require 'system-lib)                            ;; completion table + file annotator
 (declare-function org-drill "org-drill" (&optional scope drill-match resume-p))
 (declare-function org-drill-resume "org-drill" ())
 (declare-function org-capture "org-capture" (&optional goto keys))
@@ -57,7 +58,13 @@ drill commands and the drill capture templates share."
 (defun cj/--drill-pick-file (dir)
   "Prompt for one of the drill Org files in DIR; return its absolute path."
   (expand-file-name
-   (completing-read "Choose flashcard file: " (cj/--drill-files-or-error dir) nil t)
+   (completing-read "Choose flashcard file: "
+                    (cj/completion-table-annotated
+                     'cj-drill-file
+                     (cj/completion-file-annotator
+                      (lambda (c) (expand-file-name c dir)))
+                     (cj/--drill-files-or-error dir))
+                    nil t)
    dir))
 
 (defun cj/--drill-pick-dir (other-dir)

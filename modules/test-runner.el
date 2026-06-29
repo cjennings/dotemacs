@@ -8,7 +8,7 @@
 ;; Load shape: eager.
 ;; Eager reason: registers the C-; t test runner entry point and state.
 ;; Top-level side effects: defines and registers cj/test-map.
-;; Runtime requires: ert, cl-lib, keybindings.
+;; Runtime requires: ert, cl-lib, keybindings, system-lib.
 ;; Direct test load: yes.
 ;;
 ;; Project-aware ERT runner with two modes: all tests or a focused file set.
@@ -23,6 +23,7 @@
 (require 'ert)
 (require 'cl-lib)
 (require 'keybindings)  ;; provides cj/custom-keymap
+(require 'system-lib)   ;; completion table + file annotator
 
 ;;; External Variables and Functions
 
@@ -209,7 +210,11 @@ Returns: \\='success if added successfully,
 												 :test #'string=))
 			 (selected (if unfocused-files
 						   (completing-read "Add test file to focus: "
-											unfocused-files
+											(cj/completion-table-annotated
+											 'cj-test-file
+											 (cj/completion-file-annotator
+											  (lambda (c) (expand-file-name c dir)))
+											 unfocused-files)
 											nil t)
 						 (user-error "All test files are already focused"))))
         (pcase (cj/test--do-focus-add selected available-files focused-files)
@@ -278,7 +283,13 @@ Returns: \\='success if removed successfully,
   (if (null focused-files)
 	  (user-error "No focused files to remove")
 	(let ((selected (completing-read "Remove from focus: "
-									 focused-files
+									 (cj/completion-table-annotated
+									  'cj-test-file
+									  (cj/completion-file-annotator
+									   (lambda (c)
+										 (expand-file-name
+										  c (cj/test--get-test-directory))))
+									  focused-files)
 									 nil t)))
       (pcase (cj/test--do-focus-remove selected focused-files)
         ('success

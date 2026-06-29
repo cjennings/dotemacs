@@ -219,14 +219,24 @@ Directories are suffixed with /; files are plain. Hidden dirs/files skipped."
     (sort acc #'string-lessp)))
 
 (defun cj/music--completion-table (candidates)
-  "Completion table for CANDIDATES preserving order and case-insensitive match."
-  (lambda (string pred action)
-    (if (eq action 'metadata)
-        '(metadata
-          (display-sort-function . identity)
-          (cycle-sort-function . identity)
-          (completion-ignore-case . t))
-      (complete-with-action action candidates string pred))))
+  "Completion table for CANDIDATES preserving order and case-insensitive match.
+Tags the `cj-music-file' category and annotates each candidate (a path relative
+to `cj/music-root', with a trailing slash for directories) with its size and
+modification date so marginalia can show them."
+  (let ((annotate (cj/completion-file-annotator
+                   (lambda (c)
+                     (expand-file-name
+                      (if (string-suffix-p "/" c) (substring c 0 -1) c)
+                      cj/music-root)))))
+    (lambda (string pred action)
+      (if (eq action 'metadata)
+          `(metadata
+            (category . cj-music-file)
+            (annotation-function . ,annotate)
+            (display-sort-function . identity)
+            (cycle-sort-function . identity)
+            (completion-ignore-case . t))
+        (complete-with-action action candidates string pred)))))
 
 (defun cj/music--ensure-playlist-buffer ()
   "Ensure EMMS playlist buffer exists and is in playlist mode. Return buffer."

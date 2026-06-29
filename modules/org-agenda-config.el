@@ -245,7 +245,16 @@ scoped to that project's todo.org plus calendars, schedule, and inbox."
                                (file-exists-p (expand-file-name "todo.org" dir))))
                         all-dirs))
          (project-names (mapcar #'file-name-nondirectory project-dirs))
-         (chosen (completing-read "Show agenda for project: " project-names nil t))
+         (chosen (completing-read
+                  "Show agenda for project: "
+                  (cj/completion-table-annotated
+                   'cj-agenda-project
+                   (cj/completion-file-annotator
+                    (lambda (c)
+                      (expand-file-name "todo.org"
+                                        (expand-file-name c projects-dir))))
+                   project-names)
+                  nil t))
          (todo-file (expand-file-name "todo.org"
                                       (expand-file-name chosen projects-dir)))
          (org-agenda-files (cons todo-file (cj/--org-agenda-base-files))))

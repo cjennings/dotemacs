@@ -9,7 +9,7 @@
 ;; Eager reason: none; calendar/timer commands, a command-loaded deferral
 ;;   candidate.
 ;; Top-level side effects: package configuration via use-package.
-;; Runtime requires: user-constants.
+;; Runtime requires: user-constants, system-lib.
 ;; Direct test load: yes.
 ;;
 ;; This module centralizes configuration for Emacs time-related tools:
@@ -21,6 +21,7 @@
 ;;; Code:
 
 (require 'user-constants)
+(require 'system-lib)  ;; provides cj/completion-table-annotated, cj/completion-file-annotator
 
 ;; Declared by the lazily-loaded `tmr' package; quiet the byte-compiler
 ;; without forcing the package to load.
@@ -107,7 +108,12 @@ Present all audio files in the sounds directory and set the chosen file as
                          (if current-file
                              (format " (current: %s)" current-file)
                            ""))
-                 sound-files nil t nil nil current-file)))
+                 (cj/completion-table-annotated
+                  'cj-sound-file
+                  (cj/completion-file-annotator
+                   (lambda (c) (expand-file-name c sounds-dir)))
+                  sound-files)
+                 nil t nil nil current-file)))
           (if (or (null selected-file) (string-empty-p selected-file))
               (message "No file selected")
             (message "%s" (cj/tmr--apply-sound-file selected-file)))))))))

@@ -9,7 +9,7 @@
 ;; Eager reason: help/info/man configuration and its keybindings; eager only by
 ;;   init order, a deferral candidate.
 ;; Top-level side effects: two global keys, package configuration via use-package.
-;; Runtime requires: none.
+;; Runtime requires: system-lib.
 ;; Direct test load: yes.
 ;;
 ;; This module enhances Emacs' built-in help system and documentation features.
@@ -25,6 +25,7 @@
 
 ;;; Code:
 
+(require 'system-lib)  ;; completion table + file annotator
 
 (setq help-window-select t) ;; Always select the help buffer in a separate window
 
@@ -90,7 +91,11 @@ Preserves any unsaved changes and checks if the file exists."
 							  info-files))
 		 (chosen-name (completing-read
 					   "Select Info file: "
-					   (mapcar #'car files-alist)
+					   (cj/completion-table-annotated
+						'cj-info-file
+						(cj/completion-file-annotator
+						 (lambda (c) (cdr (assoc c files-alist))))
+						(mapcar #'car files-alist))
 					   nil t))
 		 (chosen-file (cdr (assoc chosen-name files-alist))))
 	(when chosen-file

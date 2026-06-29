@@ -9,7 +9,7 @@
 ;; Eager reason: none; blog publishing is a command-loaded deferral candidate
 ;;   for Phase 4.
 ;; Top-level side effects: package configuration via use-package.
-;; Runtime requires: user-constants, host-environment.
+;; Runtime requires: user-constants, host-environment, system-lib.
 ;; Direct test load: yes.
 ;;
 ;; Integrates ox-hugo for publishing Org files to a Hugo website.
@@ -27,6 +27,7 @@
 
 (require 'user-constants)
 (require 'host-environment)
+(require 'system-lib)  ;; completion table + file annotator
 
 ;; --------------------------------- Constants ---------------------------------
 
@@ -166,7 +167,12 @@ Switches #+hugo_draft between true and false."
     (if (null drafts)
         (message "No drafts found in %s" cj/hugo-content-org-dir)
       (let ((choice (completing-read "Open draft: "
-                                     (mapcar #'car drafts) nil t)))
+                                     (cj/completion-table-annotated
+                                      'cj-hugo-draft
+                                      (cj/completion-file-annotator
+                                       (lambda (c) (cdr (assoc c drafts))))
+                                      (mapcar #'car drafts))
+                                     nil t)))
         (find-file (cdr (assoc choice drafts)))))))
 
 ;; ---------------------------- Preview and Publish ----------------------------

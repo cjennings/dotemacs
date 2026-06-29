@@ -187,6 +187,27 @@ for: marginalia falls back to the table's own annotation function."
                    (annotation-function . ,annotate))
       (complete-with-action action collection string predicate))))
 
+(defun cj/completion-file-annotator (candidate->path)
+  "Return an annotation function for completion candidates backed by files.
+CANDIDATE->PATH maps a candidate string to its absolute file path, or nil when
+the candidate has no backing file.  The returned function, suitable as a
+completion table's annotation function (see `cj/completion-table-annotated'),
+yields a suffix with the file size and modification date for a regular file,
+the marker \"dir\" plus the date for a directory, or nil when the path is nil
+or the file is missing -- so marginalia then shows no suffix for that
+candidate."
+  (lambda (cand)
+    (let ((path (funcall candidate->path cand)))
+      (when (and path (file-exists-p path))
+        (let* ((attrs (file-attributes path))
+               (dirp  (eq t (file-attribute-type attrs)))
+               (size  (if dirp "dir"
+                        (file-size-human-readable (file-attribute-size attrs))))
+               (date  (format-time-string
+                       "%Y-%m-%d"
+                       (file-attribute-modification-time attrs))))
+          (format "  %8s  %s" size date))))))
+
 (defun cj/format-region-with-program (program &rest args)
   "Replace the current buffer with PROGRAM ARGS run over its contents, via argv.
 Runs PROGRAM (with ARGS) on the whole buffer through `call-process-region'
