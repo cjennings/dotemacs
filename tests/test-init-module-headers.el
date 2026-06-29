@@ -135,6 +135,8 @@
     "tramp-config"
     "transcription-config"
     "video-audio-recording"
+    "video-audio-recording-devices"
+    "video-audio-recording-capture"
     "weather-config"
     "wrap-up")
   "Modules annotated with the load-graph header contract.

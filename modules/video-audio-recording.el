@@ -8,21 +8,27 @@
 ;; Load shape: eager.
 ;; Eager reason: none; records only on command, but registers C-; r at load.
 ;; Top-level side effects: defines cj/record-map and registers it when possible.
-;; Runtime requires: system-lib, keybindings.
+;; Runtime requires: system-lib, keybindings, video-audio-recording-devices,
+;;   video-audio-recording-capture.
 ;; Direct test load: yes.
 ;;
 ;; Starts and stops ffmpeg-backed audio/video recordings from Emacs. Audio
 ;; captures microphone plus system monitor; video uses x11grab on X11 and
 ;; wf-recorder piped into ffmpeg on Wayland.
 ;;
-;; Recording processes are tracked in module variables, stopped with SIGINT so
-;; containers finalize cleanly, and reflected in the modeline. Device selection
-;; is session-local; quick setup and device tests live under C-; r.
+;; This is the public face of the module: it owns configuration and the
+;; recording process-handle state, the device-diagnostic and device-test
+;; commands, the toggle commands, and the C-; r keymap.  PulseAudio
+;; discovery lives in video-audio-recording-devices and the ffmpeg capture
+;; engine in video-audio-recording-capture, both required here.  Every
+;; public name is unchanged so existing callers and tests keep working.
 
 ;;; Code:
 
 (require 'system-lib)
 (require 'keybindings)  ;; provides cj/custom-keymap
+(require 'video-audio-recording-devices)
+(require 'video-audio-recording-capture)
 
 ;;; ============================================================
 ;;; Configuration Variables
@@ -56,7 +62,8 @@ If nil, will auto-detect on first use.")
 
 ;; These hold the Emacs process objects for running recordings.
 ;; The process is the shell that runs the ffmpeg (or wf-recorder|ffmpeg)
-;; pipeline. When non-nil, a recording is in progress.
+;; pipeline. When non-nil, a recording is in progress.  The capture engine
+;; reads and clears them; the toggle commands below read them.
 
 (defvar cj/video-recording-ffmpeg-process nil
   "Emacs process object for the active video recording shell, or nil.")
@@ -65,204 +72,7 @@ If nil, will auto-detect on first use.")
   "Emacs process object for the active audio recording shell, or nil.")
 
 ;;; ============================================================
-;;; Modeline Indicator
-;;; ============================================================
-
-(defun cj/recording-modeline-indicator ()
-  "Return modeline string showing active recordings.
-Shows 🎤 (microphone) for audio, 🎬 (clapper board) for video.
-Checks if process is actually alive, not just if variable is set."
-  (let ((audio-active (and cj/audio-recording-ffmpeg-process
-                          (process-live-p cj/audio-recording-ffmpeg-process)))
-        (video-active (and cj/video-recording-ffmpeg-process
-                          (process-live-p cj/video-recording-ffmpeg-process))))
-    (cond
-     ((and audio-active video-active) " 🎤🎬 ")
-     (audio-active " 🎤 ")
-     (video-active " 🎬 ")
-     (t ""))))
-
-;;; ============================================================
-;;; Process Lifecycle (Sentinel and Graceful Shutdown)
-;;; ============================================================
-
-(defun cj/recording-process-sentinel (process event)
-  "Sentinel for recording processes — handles unexpected exits.
-PROCESS is the ffmpeg shell process, EVENT describes what happened.
-This is called by Emacs when the process changes state (exits, is
-killed, etc.).  It clears the process variable and updates the modeline
-so the recording indicator disappears even if the recording crashes or
-is killed externally."
-  (when (memq (process-status process) '(exit signal))
-    (cond
-     ((eq process cj/audio-recording-ffmpeg-process)
-      (setq cj/audio-recording-ffmpeg-process nil)
-      (message "Audio recording stopped: %s" (string-trim event)))
-     ((eq process cj/video-recording-ffmpeg-process)
-      (setq cj/video-recording-ffmpeg-process nil)
-      (message "Video recording stopped: %s" (string-trim event))))
-    (force-mode-line-update t)))
-
-(defun cj/recording--wait-for-exit (process timeout-secs)
-  "Wait for PROCESS to exit, polling until done or TIMEOUT-SECS elapsed.
-Returns t if the process exited within the timeout, nil if it timed out.
-
-This replaces fixed `sit-for' delays with an actual check that ffmpeg has
-finished writing its output file. Container finalization (writing index
-tables, flushing buffers) can take several seconds for large recordings,
-so a fixed 0.5s wait was causing zero-byte output files."
-  (let ((deadline (+ (float-time) timeout-secs)))
-    (while (and (process-live-p process)
-                (< (float-time) deadline))
-      (accept-process-output process 0.1))
-    (not (process-live-p process))))
-
-;;; ============================================================
-;;; Dependency Checks
-;;; ============================================================
-
-(defun cj/recording-check-ffmpeg ()
-  "Check if ffmpeg is available.  Error if not found."
-  (unless (executable-find "ffmpeg")
-    (user-error "Ffmpeg not found.  Install with: sudo pacman -S ffmpeg")
-    nil)
-  t)
-
-(defun cj/recording--wayland-p ()
-  "Return non-nil if running under Wayland."
-  (string= (getenv "XDG_SESSION_TYPE") "wayland"))
-
-(defun cj/recording--check-wf-recorder ()
-  "Check if wf-recorder is available (needed for Wayland video capture)."
-  (if (executable-find "wf-recorder")
-      t
-    (user-error "wf-recorder not found. Install with: sudo pacman -S wf-recorder")
-    nil))
-
-;;; ============================================================
-;;; PulseAudio Device Discovery
-;;; ============================================================
-;;
-;; Audio devices are discovered via `pactl list sources short'.
-;; Two types of sources matter:
-;;   - Input sources (microphones): capture your voice
-;;   - Monitor sources (*.monitor): capture system audio output
-;;     These tap into what's playing through speakers/headphones,
-;;     which is how we capture system audio (music, calls, etc.).
-;;
-;; Device selection is required before first recording. The quick
-;; setup (C-; r s) groups hardware devices and lets you pick one
-;; device to use for both mic and monitor — ideal for headsets.
-
-(defun cj/recording--parse-pactl-output (output)
-  "Parse pactl sources OUTPUT into structured list.
-Returns list of (device-name driver state) tuples.
-Extracted as a separate function for testability."
-  (let ((sources nil))
-    (dolist (line (split-string output "\n" t))
-      (when (string-match "^[0-9]+\t\\([^\t]+\\)\t\\([^\t]+\\)\t\\([^\t]+\\)\t\\([^\t]+\\)" line)
-        (let ((device (match-string 1 line))
-              (driver (match-string 2 line))
-              (state (match-string 4 line)))
-          (push (list device driver state) sources))))
-    (nreverse sources)))
-
-(defun cj/recording-parse-sources ()
-  "Parse pactl sources output into structured list.
-Returns list of (device-name driver state) tuples."
-  (cj/recording--parse-pactl-output
-   (shell-command-to-string "pactl list sources short 2>/dev/null")))
-
-(defun cj/recording-friendly-state (state)
-  "Convert technical STATE name to user-friendly label.
-STATE is the raw state from pactl (SUSPENDED, RUNNING, IDLE, etc.)."
-  (pcase state
-    ("SUSPENDED" "Ready")
-    ("RUNNING" "Active")
-    ("IDLE" "Ready")
-    (_ state)))
-
-(defun cj/recording--get-default-sink-monitor ()
-  "Return the PulseAudio monitor source for the default audio output.
-The monitor source captures whatever is playing through the default sink
-(music, calls, system sounds, etc.).  This is the correct device
-for capturing \"what I hear\" regardless of which output hardware is active."
-  (let ((default-sink (string-trim
-                       (shell-command-to-string
-                        "pactl get-default-sink 2>/dev/null"))))
-    (if (string-empty-p default-sink)
-        (user-error "No default audio output found.  Is PulseAudio/PipeWire running?")
-      (concat default-sink ".monitor"))))
-
-(defun cj/recording--parse-pactl-verbose (output record-type)
-  "Parse verbose pactl OUTPUT into structured list.
-RECORD-TYPE is \"Source\" or \"Sink\" — the record header in pactl output.
-Returns list of (name description mute state) tuples."
-  (let ((entries nil)
-        (header-re (concat "^" record-type " #"))
-        (current-name nil)
-        (current-desc nil)
-        (current-mute nil)
-        (current-state nil))
-    (dolist (line (split-string output "\n"))
-      (cond
-       ((string-match-p header-re line)
-        (when current-name
-          (push (list current-name current-desc current-mute current-state)
-                entries))
-        (setq current-name nil current-desc nil
-              current-mute nil current-state nil))
-       ((string-match "^\\s-+Name:\\s-+\\(.+\\)" line)
-        (setq current-name (match-string 1 line)))
-       ((string-match "^\\s-+Description:\\s-+\\(.+\\)" line)
-        (setq current-desc (match-string 1 line)))
-       ((string-match "^\\s-+Mute:\\s-+\\(.+\\)" line)
-        (setq current-mute (match-string 1 line)))
-       ((string-match "^\\s-+State:\\s-+\\(.+\\)" line)
-        (setq current-state (match-string 1 line)))))
-    (when current-name
-      (push (list current-name current-desc current-mute current-state)
-            entries))
-    (nreverse entries)))
-
-(defun cj/recording--get-available-mics ()
-  "Return available microphone sources as list of (name description state mute).
-Filters out monitor sources but includes muted devices (shown with
-a [muted] label in the UI).  Uses the friendly description from
-PulseAudio (e.g. \"Jabra SPEAK 510 Mono\") rather than the raw
-device name.  State is the PulseAudio state string (RUNNING, IDLE,
-or SUSPENDED).  Mute is \"yes\" or \"no\"."
-  (let* ((output (shell-command-to-string "pactl list sources 2>/dev/null"))
-         (sources (cj/recording--parse-pactl-verbose output "Source"))
-         (mics nil))
-    (dolist (source sources)
-      (let ((name (nth 0 source))
-            (desc (nth 1 source))
-            (mute (nth 2 source))
-            (state (nth 3 source)))
-        (when (not (string-match-p "\\.monitor$" name))
-          (push (list name (or desc name) state mute) mics))))
-    (nreverse mics)))
-
-(defun cj/recording--get-available-sinks ()
-  "Return available audio sinks as list of (name description state mute).
-Includes muted sinks (shown with a [muted] label in the UI).  Uses
-the friendly description from PulseAudio (e.g. \"JDS Labs Element IV
-Analog Stereo\").  State is the PulseAudio state string (RUNNING,
-IDLE, or SUSPENDED).  Mute is \"yes\" or \"no\"."
-  (let* ((output (shell-command-to-string "pactl list sinks 2>/dev/null"))
-         (sinks (cj/recording--parse-pactl-verbose output "Sink"))
-         (result nil))
-    (dolist (sink sinks)
-      (let ((name (nth 0 sink))
-            (desc (nth 1 sink))
-            (mute (nth 2 sink))
-            (state (nth 3 sink)))
-        (push (list name (or desc name) state mute) result)))
-    (nreverse result)))
-
-;;; ============================================================
-;;; Device Selection UI
+;;; Device Diagnostics and Selection Commands
 ;;; ============================================================
 
 (defun cj/recording-list-devices ()
@@ -323,26 +133,6 @@ identify which device the phone app is actually using for output."
     (switch-to-buffer-other-window "*Active Audio Playback*")
     (message "Showing active audio playback. Press 'g' to refresh, 'q' to quit.")))
 
-(defun cj/recording-select-device (prompt device-type)
-  "Interactively select an audio device.
-PROMPT is shown to user.  DEVICE-TYPE is \\='mic or \\='monitor for filtering.
-Monitor devices end in .monitor (they tap system audio output).
-Returns selected device name or nil."
-  (let* ((sources (cj/recording-parse-sources))
-         (filtered (if (eq device-type 'monitor)
-                       (seq-filter (lambda (s) (string-match-p "\\.monitor$" (car s))) sources)
-                     (seq-filter (lambda (s) (not (string-match-p "\\.monitor$" (car s)))) sources)))
-         (choices (mapcar (lambda (s)
-                           (let ((device (nth 0 s))
-                                 (_driver (nth 1 s))
-                                 (_state (nth 2 s))
-                                 (friendly-state (cj/recording-friendly-state (nth 2 s))))
-                             (cons (format "%-10s %s" friendly-state device) device)))
-                         filtered)))
-    (if choices
-        (cdr (assoc (completing-read prompt choices nil t) choices))
-      (user-error "No %s devices found" (if (eq device-type 'monitor) "monitor" "input")))))
-
 (defun cj/recording-select-devices ()
   "Interactively select microphone and system audio devices separately.
 Sets `cj/recording-mic-device' and `cj/recording-system-device'."
@@ -355,191 +145,9 @@ Sets `cj/recording-mic-device' and `cj/recording-system-device'."
            cj/recording-mic-device
            cj/recording-system-device))
 
-(defun cj/recording-group-devices-by-hardware ()
-  "Group audio sources by physical hardware device.
-Returns alist of (friendly-name . (mic-source . monitor-source)).
-Only includes devices that have BOTH a mic and a monitor source,
-since recording needs both to capture your voice and system audio."
-  (let ((sources (cj/recording-parse-sources))
-        (devices (make-hash-table :test 'equal))
-        (result nil))
-    ;; Group sources by base device name (hardware identifier)
-    (dolist (source sources)
-      (let* ((device (nth 0 source))
-             ;; Extract hardware ID — the unique part identifying the physical device.
-             ;; Different device types use different naming conventions in PulseAudio.
-             (base-name (cond
-                         ;; USB devices: extract usb-XXXXX-XX part
-                         ((string-match "\\.\\(usb-[^.]+\\-[0-9]+\\)\\." device)
-                          (match-string 1 device))
-                         ;; Built-in (PCI) devices: extract pci-XXXXX part
-                         ((string-match "\\.\\(pci-[^.]+\\)\\." device)
-                          (match-string 1 device))
-                         ;; Bluetooth devices: extract and normalize MAC address
-                         ;; (input uses colons, output uses underscores)
-                         ((string-match "bluez_\\(?:input\\|output\\)\\.\\([^.]+\\)" device)
-                          (replace-regexp-in-string "_" ":" (match-string 1 device)))
-                         (t device)))
-             (is-monitor (string-match-p "\\.monitor$" device))
-             (device-entry (gethash base-name devices)))
-        (unless device-entry
-          (setf device-entry (cons nil nil))
-          (puthash base-name device-entry devices))
-        (if is-monitor
-            (setcdr device-entry device)
-          (setcar device-entry device))))
-
-    ;; Convert hash table to alist with user-friendly names
-    (maphash (lambda (base-name pair)
-               (when (and (car pair) (cdr pair))
-                 (let ((friendly-name
-                        (cond
-                         ((string-match-p "usb.*[Jj]abra" base-name) "Jabra SPEAK 510 USB")
-                         ((string-match-p "^usb-" base-name) "USB Audio Device")
-                         ((string-match-p "^pci-" base-name) "Built-in Audio")
-                         ((string-match-p "^[0-9A-Fa-f:]+$" base-name) "Bluetooth Headset")
-                         (t base-name))))
-                   (push (cons friendly-name pair) result))))
-             devices)
-    (nreverse result)))
-
-(defun cj/recording--device-sort-key (state muted)
-  "Return a numeric sort key for a device with STATE and MUTED flag.
-Lower values sort first: RUNNING (0) → IDLE (1) → SUSPENDED (2) → muted (3)."
-  (if (equal muted "yes")
-      3
-    (pcase (upcase (or state ""))
-      ("RUNNING" 0)
-      ("IDLE" 1)
-      (_ 2))))
-
-(defun cj/recording--device-status-label (state muted)
-  "Return a human-readable status label for a device.
-MUTED is \"yes\" or \"no\".  STATE is the PulseAudio state string."
-  (if (equal muted "yes")
-      "[muted]"
-    (pcase (upcase (or state ""))
-      ("RUNNING" "[in use]")
-      ("IDLE"    "[ready]")
-      (_         "[available]"))))
-
-(defun cj/recording--label-devices (devices)
-  "Build labeled (label . name) alist from DEVICES for `completing-read'.
-DEVICES is a list of (name description state mute) as returned by
-`cj/recording--get-available-mics' or `cj/recording--get-available-sinks'.
-Labels are formatted as \"Description [in use]\" etc.
-Sorted: in use → ready → available → muted."
-  (let* ((labeled (mapcar
-                   (lambda (dev)
-                     (let* ((name  (nth 0 dev))
-                            (desc  (nth 1 dev))
-                            (state (nth 2 dev))
-                            (muted (nth 3 dev))
-                            (label (concat desc " "
-                                           (cj/recording--device-status-label state muted))))
-                       (list label name (cj/recording--device-sort-key state muted))))
-                   devices))
-         (sorted (sort labeled (lambda (a b) (< (nth 2 a) (nth 2 b))))))
-    (mapcar (lambda (entry) (cons (nth 0 entry) (nth 1 entry))) sorted)))
-
-(defun cj/recording--get-sink-apps ()
-  "Return alist mapping sink index to list of application names.
-Parses `pactl list sink-inputs' to find which apps are playing
-audio through each sink."
-  (let ((output (shell-command-to-string "pactl list sink-inputs 2>/dev/null"))
-        (apps (make-hash-table :test 'equal))
-        (current-sink nil))
-    (dolist (line (split-string output "\n"))
-      (cond
-       ((string-match "^Sink Input #" line)
-        (setq current-sink nil))
-       ((string-match "^[ \t]+Sink:[ \t]+\\([0-9]+\\)" line)
-        (setq current-sink (match-string 1 line)))
-       ((and current-sink
-             (string-match "application\\.name = \"\\([^\"]+\\)\"" line))
-        (let ((existing (gethash current-sink apps)))
-          (unless (member (match-string 1 line) existing)
-            (puthash current-sink
-                     (append existing (list (match-string 1 line)))
-                     apps))))))
-    ;; Convert hash to alist
-    (let ((result nil))
-      (maphash (lambda (k v) (push (cons k v) result)) apps)
-      result)))
-
-(defun cj/recording--label-sinks (sinks)
-  "Build labeled (label . name) alist from SINKS for `completing-read'.
-Like `cj/recording--label-devices' but also appends application names
-for sinks with active audio streams.  E.g. \"JDS Labs [in use] (Firefox)\"."
-  (let* ((sink-apps (cj/recording--get-sink-apps))
-         (sinks-short (shell-command-to-string "pactl list sinks short 2>/dev/null"))
-         (labeled
-          (mapcar
-           (lambda (dev)
-             (let* ((name  (nth 0 dev))
-                    (desc  (nth 1 dev))
-                    (state (nth 2 dev))
-                    (muted (nth 3 dev))
-                    (index (cj/recording--get-sink-index name sinks-short))
-                    (apps  (and index (cdr (assoc index sink-apps))))
-                    (status (cj/recording--device-status-label state muted))
-                    (app-str (if apps (concat " (" (string-join apps ", ") ")") ""))
-                    (label (concat desc " " status app-str)))
-               (list label name (cj/recording--device-sort-key state muted))))
-           sinks))
-         (sorted (sort labeled (lambda (a b) (< (nth 2 a) (nth 2 b))))))
-    (mapcar (lambda (entry) (cons (nth 0 entry) (nth 1 entry))) sorted)))
-
-(defun cj/recording--select-from-labeled (prompt entries)
-  "Prompt user with PROMPT to select from labeled ENTRIES.
-ENTRIES is an alist of (label . device-name).  Appends a Cancel option.
-Returns the selected device name, or signals user-error if cancelled."
-  (let* ((alist (append entries '(("Cancel" . nil))))
-         (choice (completing-read prompt
-                                  (lambda (string pred action)
-                                    (if (eq action 'metadata)
-                                        '(metadata (display-sort-function . identity))
-                                      (complete-with-action action alist string pred)))
-                                  nil t))
-         (device (cdr (assoc choice alist))))
-    (unless device
-      (user-error "Device setup cancelled"))
-    device))
-
-(defun cj/recording-quick-setup ()
-  "Quick device setup for recording — two-step mic + sink selection.
-Step 1: Pick a microphone.  Each mic shows its status:
-  [in use]    = an app is actively using this mic
-  [ready]     = recently used, still open
-  [available] = no app has this mic open
-  [muted]     = device is muted in PulseAudio
-Step 2: Pick an audio output to capture.  Same status labels, plus
-application names for outputs with active streams (e.g. \"Firefox\").
-Devices are sorted: in use → ready → available → muted.
-The chosen output's .monitor source is set as the system audio device.
-
-This approach is portable across systems — plug in a new mic, run this
-command, and it appears in the list.  No hardware-specific configuration
-needed."
-  (interactive)
-  (let* ((mic-entries (cj/recording--label-devices (cj/recording--get-available-mics))))
-    (unless mic-entries
-      (user-error "No microphones found.  Is a mic connected?"))
-    (let ((mic-device (cj/recording--select-from-labeled "Select microphone: " mic-entries))
-          (sink-entries (cj/recording--label-sinks (cj/recording--get-available-sinks))))
-      (let ((sink-device (cj/recording--select-from-labeled "Select audio output to capture: " sink-entries)))
-        (setq cj/recording-mic-device mic-device)
-        (setq cj/recording-system-device (concat sink-device ".monitor"))
-        (message "Recording ready!\n  Mic: %s\n  System audio: %s.monitor"
-                 (car (rassoc mic-device mic-entries))
-                 (file-name-nondirectory sink-device))))))
-
 ;;; ============================================================
 ;;; Device Testing
 ;;; ============================================================
-;;
-;; These functions record short clips and play them back so you can
-;; verify hardware works BEFORE an important recording.
 
 (defun cj/recording--test-device (device prefix prompt-action)
   "Record 5 seconds from DEVICE and play it back.
@@ -613,91 +221,6 @@ Run this before important recordings to verify everything works."
   (message "Device testing complete. If you heard audio in all tests, recording will work!"))
 
 ;;; ============================================================
-;;; Device Validation
-;;; ============================================================
-
-(defun cj/recording-get-devices ()
-  "Get audio devices, prompting user if not already configured.
-Returns (mic-device . system-device) cons cell.
-If devices aren't set, goes straight into quick setup (mic selection)."
-  (unless (and cj/recording-mic-device cj/recording-system-device)
-    (cj/recording-quick-setup))
-  (unless (and cj/recording-mic-device cj/recording-system-device)
-    (user-error "Audio devices not configured.  Run C-; r s (quick setup) or C-; r S (manual select)"))
-  (cj/recording--validate-system-audio)
-  (cons cj/recording-mic-device cj/recording-system-device))
-
-(defun cj/recording--source-exists-p (source-name pactl-output)
-  "Return non-nil if SOURCE-NAME exists in PACTL-OUTPUT.
-PACTL-OUTPUT should be the output of `pactl list sources short'."
-  (let ((found nil))
-    (dolist (line (split-string pactl-output "\n" t))
-      (when (string-match "^[0-9]+\t\\([^\t]+\\)\t" line)
-        (when (equal source-name (match-string 1 line))
-          (setq found t))))
-    found))
-
-(defun cj/recording--get-sink-index (sink-name sinks-output)
-  "Return the numeric index of SINK-NAME from SINKS-OUTPUT.
-SINKS-OUTPUT should be the output of `pactl list sinks short'.
-Returns the index as a string, or nil if not found."
-  (let ((index nil))
-    (dolist (line (split-string sinks-output "\n" t))
-      (when (string-match "^\\([0-9]+\\)\t\\([^\t]+\\)\t" line)
-        (when (equal sink-name (match-string 2 line))
-          (setq index (match-string 1 line)))))
-    index))
-
-(defun cj/recording--sink-has-active-audio-p (sink-index pactl-output)
-  "Return non-nil if SINK-INDEX has active audio streams.
-PACTL-OUTPUT should be the output of `pactl list sink-inputs'.
-SINK-INDEX is the numeric sink index as a string."
-  (let ((found nil)
-        (lines (split-string pactl-output "\n")))
-    (dolist (line lines)
-      (when (string-match "^[ \t]+Sink:[ \t]+\\([0-9]+\\)" line)
-        (when (equal sink-index (match-string 1 line))
-          (setq found t))))
-    found))
-
-(defun cj/recording--validate-system-audio ()
-  "Validate that the configured system audio device will capture audio.
-Checks two things:
-1. Does the configured device still exist as a PulseAudio source?
-2. Is anything currently playing through the monitored sink?
-
-Auto-fixes stale devices by falling back to the default sink's monitor.
-Warns (but doesn't block) if no audio is currently playing.
-Respects the user's explicit sink choice from quick-setup."
-  (when cj/recording-system-device
-    (let* ((sources-output (shell-command-to-string "pactl list sources short 2>/dev/null"))
-           (current-default (cj/recording--get-default-sink-monitor))
-           (device-exists (cj/recording--source-exists-p
-                           cj/recording-system-device sources-output)))
-      ;; Check 1: Device no longer exists — auto-update
-      (unless device-exists
-        (let ((old cj/recording-system-device))
-          (setq cj/recording-system-device current-default)
-          (message "System audio device updated: %s → %s (old device no longer exists)"
-                   old current-default)))
-      ;; Check 2: No active audio on the monitored sink — warn
-      (let* ((sink-name (if (string-suffix-p ".monitor" cj/recording-system-device)
-                            (substring cj/recording-system-device 0 -8)
-                          cj/recording-system-device))
-             (sinks-output (shell-command-to-string "pactl list sinks short 2>/dev/null"))
-             (sink-index (cj/recording--get-sink-index sink-name sinks-output))
-             (sink-inputs (shell-command-to-string "pactl list sink-inputs 2>/dev/null"))
-             (has-audio (and sink-index
-                             (cj/recording--sink-has-active-audio-p sink-index sink-inputs))))
-        (unless has-audio
-          (message "Warning: No audio connected to %s. Run C-; r s to check devices"
-                   sink-name)
-          (cj/log-silently
-           (concat "No audio connected to %s. "
-                   "Run C-; r s to see active streams and switch devices")
-           sink-name))))))
-
-;;; ============================================================
 ;;; Toggle Commands (User-Facing)
 ;;; ============================================================
 
@@ -738,235 +261,6 @@ Otherwise use the default location in `audio-recordings-dir'."
                         audio-recordings-dir))))
       (make-directory directory t)
       (cj/ffmpeg-record-audio directory))))
-
-;;; ============================================================
-;;; Start Recording
-;;; ============================================================
-
-(defun cj/recording--build-video-command (mic-device system-device filename on-wayland)
-  "Build the shell command string for video recording.
-MIC-DEVICE and SYSTEM-DEVICE are PulseAudio device names.
-FILENAME is the output .mkv path.  ON-WAYLAND selects the capture method.
-
-On Wayland: wf-recorder captures screen as H.264 in matroska container,
-piped to ffmpeg which adds mic + system audio, then writes the final MKV.
-
-On X11: ffmpeg captures screen directly via x11grab with PulseAudio audio."
-  (if on-wayland
-      (progn
-        (cj/recording--check-wf-recorder)
-        (format (concat "wf-recorder -y -c libx264 -m matroska -f /dev/stdout 2>/dev/null | "
-                        "ffmpeg -i pipe:0 "
-                        "-f pulse -i %s "
-                        "-f pulse -i %s "
-                        "-filter_complex \"[1:a]volume=%.1f[mic];[2:a]volume=%.1f[sys];[mic][sys]amerge=inputs=2[out]\" "
-                        "-map 0:v -map \"[out]\" "
-                        "-c:v copy "
-                        "%s")
-                (shell-quote-argument mic-device)
-                (shell-quote-argument system-device)
-                cj/recording-mic-boost
-                cj/recording-system-volume
-                (shell-quote-argument filename)))
-    (format (concat "ffmpeg -framerate 30 -f x11grab -i :0.0+ "
-                    "-f pulse -i %s "
-                    "-ac 1 "
-                    "-f pulse -i %s "
-                    "-ac 2 "
-                    "-filter_complex \"[1:a]volume=%.1f[mic];[2:a]volume=%.1f[sys];[mic][sys]amerge=inputs=2[out]\" "
-                    "-map 0:v -map \"[out]\" "
-                    "%s")
-            (shell-quote-argument mic-device)
-            (shell-quote-argument system-device)
-            cj/recording-mic-boost
-            cj/recording-system-volume
-            (shell-quote-argument filename))))
-
-(defun cj/recording--build-audio-command (mic-device system-device filename)
-  "Build the ffmpeg shell command string for audio-only recording.
-MIC-DEVICE and SYSTEM-DEVICE are PulseAudio device names.  FILENAME is
-the output .m4a path.  Mixes mic + system monitor into a single AAC file."
-  (format (concat "ffmpeg "
-                  "-f pulse -i %s "   ; Input 0: microphone
-                  "-f pulse -i %s "   ; Input 1: system audio monitor
-                  "-filter_complex \""
-                  "[0:a]volume=%.1f[mic];"
-                  "[1:a]volume=%.1f[sys];"
-                  "[mic][sys]amix=inputs=2:duration=longest[out]\" "
-                  "-map \"[out]\" "
-                  "-c:a aac "
-                  "-b:a 64k "
-                  "%s")
-          (shell-quote-argument mic-device)
-          (shell-quote-argument system-device)
-          cj/recording-mic-boost
-          cj/recording-system-volume
-          (shell-quote-argument filename)))
-
-(defun cj/ffmpeg-record-video (directory)
-  "Start a video recording, saving output to DIRECTORY.
-Uses wf-recorder on Wayland, x11grab on X11."
-  (cj/recording-check-ffmpeg)
-  (unless cj/video-recording-ffmpeg-process
-    ;; On Wayland, kill any orphan wf-recorder processes left over from
-    ;; previous crashes. Without this, old wf-recorders hold the compositor
-    ;; capture and new ones fail silently. This one stays a broad by-name
-    ;; kill on purpose: the orphans' launching shells are already dead, so
-    ;; there is no live PID to scope to. The stop path, by contrast, scopes
-    ;; to our own shell's child (see cj/recording--interrupt-child-wf-recorder).
-    (when (cj/recording--wayland-p)
-      (call-process "pkill" nil nil nil "-INT" "wf-recorder")
-      (sit-for 0.1))
-    (let* ((devices (cj/recording-get-devices))
-           (mic-device (car devices))
-           (system-device (cdr devices))
-           (location (expand-file-name directory))
-           (name (format-time-string "%Y-%m-%d-%H-%M-%S"))
-           (filename (expand-file-name (concat name ".mkv") location))
-           (on-wayland (cj/recording--wayland-p))
-           (record-command (cj/recording--build-video-command
-                            mic-device system-device filename on-wayland)))
-      (setq cj/video-recording-ffmpeg-process
-            (start-process-shell-command "ffmpeg-video-recording"
-                                         "*ffmpeg-video-recording*"
-                                         record-command))
-      (set-process-query-on-exit-flag cj/video-recording-ffmpeg-process nil)
-      (set-process-sentinel cj/video-recording-ffmpeg-process #'cj/recording-process-sentinel)
-      (force-mode-line-update t)
-      (message "Started video recording to %s (%s, mic: %.1fx, system: %.1fx)."
-               filename
-               (if on-wayland "Wayland/wf-recorder" "X11")
-               cj/recording-mic-boost cj/recording-system-volume))))
-
-(defun cj/ffmpeg-record-audio (directory)
-  "Start an audio recording, saving output to DIRECTORY.
-Records from microphone and system audio monitor (configured device),
-mixing them together into a single M4A/AAC file.
-
-The filter graph mixes two PulseAudio inputs:
-  [mic] → volume boost → amerge → AAC encoder → .m4a
-  [sys] → volume boost ↗"
-  (cj/recording-check-ffmpeg)
-  (unless cj/audio-recording-ffmpeg-process
-    (let* ((devices (cj/recording-get-devices))
-           (mic-device (car devices))
-           (system-device (cdr devices))
-           (location (expand-file-name directory))
-           (name (format-time-string "%Y-%m-%d-%H-%M-%S"))
-           (filename (expand-file-name (concat name ".m4a") location))
-           (ffmpeg-command
-            (cj/recording--build-audio-command mic-device system-device filename)))
-      (message "Recording from mic: %s + ALL system outputs" mic-device)
-      (cj/log-silently "Audio recording ffmpeg command: %s" ffmpeg-command)
-      (setq cj/audio-recording-ffmpeg-process
-            (start-process-shell-command "ffmpeg-audio-recording"
-                                         "*ffmpeg-audio-recording*"
-                                         ffmpeg-command))
-      (set-process-query-on-exit-flag cj/audio-recording-ffmpeg-process nil)
-      (set-process-sentinel cj/audio-recording-ffmpeg-process #'cj/recording-process-sentinel)
-      (force-mode-line-update t)
-      (message "Started recording to %s (mic: %.1fx, all system audio: %.1fx)"
-               filename cj/recording-mic-boost cj/recording-system-volume))))
-
-;;; ============================================================
-;;; Stop Recording
-;;; ============================================================
-;;
-;; Stopping a recording requires careful process management, especially
-;; on Wayland where we have a two-process pipeline (wf-recorder | ffmpeg).
-;;
-;; Wayland shutdown order (CRITICAL — order matters!):
-;;   1. Kill wf-recorder first (the producer). This closes the pipe
-;;      to ffmpeg, giving ffmpeg a clean EOF on its video input.
-;;   2. Signal the process group with SIGINT so ffmpeg begins its
-;;      graceful shutdown (flushing audio, writing container metadata).
-;;   3. Wait for the shell/ffmpeg to actually exit. MKV container
-;;      finalization (index tables, seek entries) can take several
-;;      seconds. A fixed `sit-for' is insufficient.
-;;   4. Kill any remaining wf-recorder as a safety net.
-;;
-;; Why producer-first matters: In a `wf-recorder | ffmpeg` pipeline,
-;; sending SIGINT to all processes simultaneously causes ffmpeg to
-;; abort mid-stream (no clean EOF on pipe:0). The result is no output
-;; file at all. Killing the producer first lets ffmpeg see EOF, start
-;; its orderly shutdown, and then SIGINT reinforces "stop now."
-;;
-;; X11 shutdown: simpler — ffmpeg is the only process, so we just
-;; send SIGINT to the process group and wait.
-
-(defun cj/recording--interrupt-child-wf-recorder (shell-pid)
-  "Send SIGINT to the wf-recorder child of SHELL-PID, if any.
-Scopes the producer-first stop to the wf-recorder this module launched
-\(a child of our recording shell) via `pkill -P', instead of killing
-every wf-recorder on the system by name.  Does nothing when SHELL-PID
-is nil (the shell already exited, so there is no child to signal)."
-  (when shell-pid
-    (call-process "pkill" nil nil nil
-                  "-INT" "-P" (number-to-string shell-pid) "wf-recorder")))
-
-(defun cj/video-recording-stop ()
-  "Stop the video recording, waiting for ffmpeg to finalize the file.
-On Wayland, kills wf-recorder first so ffmpeg gets a clean EOF on its
-video input pipe, then signals the process group. Waits up to 5 seconds
-for ffmpeg to write container metadata before giving up."
-  (interactive)
-  (if (not cj/video-recording-ffmpeg-process)
-      (message "No video recording in progress.")
-    (let ((proc cj/video-recording-ffmpeg-process))
-      ;; On Wayland, kill the producer (wf-recorder) FIRST so ffmpeg sees
-      ;; a clean EOF on pipe:0. This triggers ffmpeg's orderly shutdown:
-      ;; drain remaining frames, write container metadata, close file.
-      ;; Without this, simultaneous SIGINT to both causes ffmpeg to abort
-      ;; without creating a file.
-      (when (cj/recording--wayland-p)
-        (cj/recording--interrupt-child-wf-recorder (process-id proc))
-        (sit-for 0.3))  ; Brief pause for pipe to close
-      ;; Now send SIGINT to the process group. On Wayland, this reaches
-      ;; ffmpeg (which is already shutting down from the pipe EOF) and
-      ;; reinforces the stop. On X11, this is the primary shutdown signal.
-      (let ((pid (process-id proc)))
-        (when pid
-          (signal-process (- pid) 2)))  ; 2 = SIGINT
-      ;; Wait for ffmpeg to finalize the container. MKV files need index
-      ;; tables written at the end — without this wait, the file is truncated.
-      (let ((exited (cj/recording--wait-for-exit proc 5)))
-        (unless exited
-          (message "Warning: recording process did not exit within 5 seconds")))
-      ;; Safety net: signal our own straggler wf-recorder on Wayland.
-      ;; If the shell already exited, process-id returns nil and this is
-      ;; a no-op (the child is already gone with it).
-      (when (cj/recording--wayland-p)
-        (cj/recording--interrupt-child-wf-recorder (process-id proc)))
-      ;; The sentinel handles clearing cj/video-recording-ffmpeg-process
-      ;; and updating the modeline. If the process already exited during
-      ;; our wait, the sentinel has already fired. If not, force cleanup.
-      (when (eq cj/video-recording-ffmpeg-process proc)
-        (setq cj/video-recording-ffmpeg-process nil)
-        (force-mode-line-update t))
-      (message "Stopped video recording."))))
-
-(defun cj/audio-recording-stop ()
-  "Stop the audio recording, waiting for ffmpeg to finalize the file.
-Sends SIGINT to the process group and waits up to 3 seconds for ffmpeg
-to flush audio frames and write the M4A container trailer."
-  (interactive)
-  (if (not cj/audio-recording-ffmpeg-process)
-      (message "No audio recording in progress.")
-    (let ((proc cj/audio-recording-ffmpeg-process))
-      ;; Send SIGINT to the process group (see video-recording-stop for details)
-      (let ((pid (process-id proc)))
-        (when pid
-          (signal-process (- pid) 2)))
-      ;; M4A finalization is faster than MKV, but still needs time to write
-      ;; the AAC trailer and flush the output buffer.
-      (let ((exited (cj/recording--wait-for-exit proc 3)))
-        (unless exited
-          (message "Warning: recording process did not exit within 3 seconds")))
-      ;; Fallback cleanup if sentinel hasn't fired yet
-      (when (eq cj/audio-recording-ffmpeg-process proc)
-        (setq cj/audio-recording-ffmpeg-process nil)
-        (force-mode-line-update t))
-      (message "Stopped audio recording."))))
 
 ;;; ============================================================
 ;;; Volume Adjustment
@@ -1020,6 +314,7 @@ Changes take effect on the next recording (not the current one)."
     "C-; r t m" "test microphone"
     "C-; r t s" "test system audio"
     "C-; r t b" "test both (guided)"))
+
 
 (provide 'video-audio-recording)
 ;;; video-audio-recording.el ends here.
