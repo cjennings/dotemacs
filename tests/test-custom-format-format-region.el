@@ -1,7 +1,7 @@
-;;; test-custom-misc-format-region.el --- Tests for cj/--format-region -*- lexical-binding: t; -*-
+;;; test-custom-format-format-region.el --- Tests for cj/--format-region -*- lexical-binding: t; -*-
 
 ;;; Commentary:
-;; Tests for the cj/--format-region function from custom-misc.el
+;; Tests for the cj/--format-region function from custom-format.el
 ;;
 ;; This function reformats text by applying three operations:
 ;; 1. untabify - converts tabs to spaces
@@ -28,7 +28,7 @@
   "Stub keymap for testing.")
 
 ;; Now load the actual production module
-(require 'custom-misc)
+(require 'custom-format)
 
 ;;; Test Helpers
 
@@ -157,5 +157,5 @@ Returns the buffer string after operation."
       ;; Should complete without error
       (should (string= (buffer-string) "hello world")))))
 
-(provide 'test-custom-misc-format-region)
-;;; test-custom-misc-format-region.el ends here
+(provide 'test-custom-format-format-region)
+;;; test-custom-format-format-region.el ends here

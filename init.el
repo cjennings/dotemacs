@@ -36,7 +36,9 @@
 (require 'custom-datetime)       ;; date/timestamp insertion in various formats
 (require 'custom-buffer-file)    ;; custom buffer and file operations and keymap
 (require 'custom-line-paragraph) ;; operations on lines and paragraphs
-(require 'custom-misc)           ;; miscellaneous functions
+(require 'custom-counts)         ;; word and character counts
+(require 'custom-format)         ;; region/buffer reformatting
+(require 'custom-text-transform) ;; fraction-glyph text transforms
 (require 'custom-ordering)       ;; ordering and sorting operations
 (require 'custom-text-enclose)   ;; operations to append, prepend, and surround text
 (require 'custom-whitespace)     ;; whitespace operations

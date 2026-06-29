@@ -1,7 +1,7 @@
-;;; test-custom-misc-count-words.el --- Tests for cj/--count-words -*- lexical-binding: t; -*-
+;;; test-custom-counts-count-words.el --- Tests for cj/--count-words -*- lexical-binding: t; -*-
 
 ;;; Commentary:
-;; Tests for the cj/--count-words function from custom-misc.el
+;; Tests for the cj/--count-words function from custom-counts.el
 ;;
 ;; This function counts words in a region using Emacs's built-in count-words.
 ;; A word is defined by Emacs's word boundaries, which generally means
@@ -24,7 +24,7 @@
   "Stub keymap for testing.")
 
 ;; Now load the actual production module
-(require 'custom-misc)
+(require 'custom-counts)
 
 ;;; Test Helpers
 
@@ -144,5 +144,5 @@ words in it."))
       (let ((end (match-end 0)))
         (should (= 3 (cj/--count-words start end)))))))
 
-(provide 'test-custom-misc-count-words)
-;;; test-custom-misc-count-words.el ends here
+(provide 'test-custom-counts-count-words)
+;;; test-custom-counts-count-words.el ends here

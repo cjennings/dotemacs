@@ -1,7 +1,7 @@
-;;; test-custom-misc-cj-count-characters-buffer-or-region.el --- Tests for cj/count-characters-buffer-or-region -*- lexical-binding: t; -*-
+;;; test-custom-counts-count-characters-buffer-or-region.el --- Tests for cj/count-characters-buffer-or-region -*- lexical-binding: t; -*-
 
 ;;; Commentary:
-;; Tests for the cj/count-characters-buffer-or-region function from custom-misc.el
+;; Tests for the cj/count-characters-buffer-or-region function from custom-counts.el
 ;;
 ;; This function counts characters in the active region or the entire buffer
 ;; if no region is active. It displays the count in the minibuffer.
@@ -18,7 +18,7 @@
   "Stub keymap for testing.")
 
 ;; Now load the actual production module
-(require 'custom-misc)
+(require 'custom-counts)
 
 ;;; Setup and Teardown
 
@@ -35,7 +35,7 @@
 
 ;;; Normal Cases
 
-(ert-deftest test-custom-misc-cj-count-characters-buffer-or-region-normal-whole-buffer-counts-all ()
+(ert-deftest test-custom-counts-count-characters-buffer-or-region-normal-whole-buffer-counts-all ()
   "Should count all characters in buffer when no region is active."
   (test-count-characters-buffer-or-region-setup)
   (unwind-protect
@@ -51,7 +51,7 @@
             (should (string-match-p "13 characters.*buffer" message-output)))))
     (test-count-characters-buffer-or-region-teardown)))
 
-(ert-deftest test-custom-misc-cj-count-characters-buffer-or-region-normal-active-region-counts-region ()
+(ert-deftest test-custom-counts-count-characters-buffer-or-region-normal-active-region-counts-region ()
   "Should count characters in active region."
   (test-count-characters-buffer-or-region-setup)
   (unwind-protect
@@ -70,7 +70,7 @@
             (should (string-match-p "5 characters.*region" message-output)))))
     (test-count-characters-buffer-or-region-teardown)))
 
-(ert-deftest test-custom-misc-cj-count-characters-buffer-or-region-normal-multiline-buffer-counts-all ()
+(ert-deftest test-custom-counts-count-characters-buffer-or-region-normal-multiline-buffer-counts-all ()
   "Should count characters including newlines in buffer."
   (test-count-characters-buffer-or-region-setup)
   (unwind-protect
@@ -86,7 +86,7 @@
             (should (string-match-p "20 characters.*buffer" message-output)))))
     (test-count-characters-buffer-or-region-teardown)))
 
-(ert-deftest test-custom-misc-cj-count-characters-buffer-or-region-normal-multiline-region-counts-region ()
+(ert-deftest test-custom-counts-count-characters-buffer-or-region-normal-multiline-region-counts-region ()
   "Should count characters including newlines in region."
   (test-count-characters-buffer-or-region-setup)
   (unwind-protect
@@ -108,7 +108,7 @@
 
 ;;; Boundary Cases
 
-(ert-deftest test-custom-misc-cj-count-characters-buffer-or-region-boundary-empty-buffer-returns-zero ()
+(ert-deftest test-custom-counts-count-characters-buffer-or-region-boundary-empty-buffer-returns-zero ()
   "Should return 0 for empty buffer."
   (test-count-characters-buffer-or-region-setup)
   (unwind-protect
@@ -122,7 +122,7 @@
             (should (string-match-p "0 characters.*buffer" message-output)))))
     (test-count-characters-buffer-or-region-teardown)))
 
-(ert-deftest test-custom-misc-cj-count-characters-buffer-or-region-boundary-empty-region-counts-buffer ()
+(ert-deftest test-custom-counts-count-characters-buffer-or-region-boundary-empty-region-counts-buffer ()
   "Should count whole buffer when region is empty (point equals mark).
 When mark and point are at the same position, use-region-p returns nil,
 so the function correctly falls back to counting the entire buffer."
@@ -144,7 +144,7 @@ so the function correctly falls back to counting the entire buffer."
             (should (string-match-p "13 characters.*buffer" message-output)))))
     (test-count-characters-buffer-or-region-teardown)))
 
-(ert-deftest test-custom-misc-cj-count-characters-buffer-or-region-boundary-large-buffer-counts-all ()
+(ert-deftest test-custom-counts-count-characters-buffer-or-region-boundary-large-buffer-counts-all ()
   "Should handle very large buffer."
   (test-count-characters-buffer-or-region-setup)
   (unwind-protect
@@ -160,7 +160,7 @@ so the function correctly falls back to counting the entire buffer."
               (should (string-match-p "100000 characters.*buffer" message-output))))))
     (test-count-characters-buffer-or-region-teardown)))
 
-(ert-deftest test-custom-misc-cj-count-characters-buffer-or-region-boundary-unicode-counts-correctly ()
+(ert-deftest test-custom-counts-count-characters-buffer-or-region-boundary-unicode-counts-correctly ()
   "Should count unicode characters (emoji, RTL text) correctly."
   (test-count-characters-buffer-or-region-setup)
   (unwind-protect
@@ -177,7 +177,7 @@ so the function correctly falls back to counting the entire buffer."
                                     message-output)))))
     (test-count-characters-buffer-or-region-teardown)))
 
-(ert-deftest test-custom-misc-cj-count-characters-buffer-or-region-boundary-whitespace-only-counts-whitespace ()
+(ert-deftest test-custom-counts-count-characters-buffer-or-region-boundary-whitespace-only-counts-whitespace ()
   "Should count whitespace characters."
   (test-count-characters-buffer-or-region-setup)
   (unwind-protect
@@ -193,7 +193,7 @@ so the function correctly falls back to counting the entire buffer."
             (should (string-match-p "7 characters.*buffer" message-output)))))
     (test-count-characters-buffer-or-region-teardown)))
 
-(ert-deftest test-custom-misc-cj-count-characters-buffer-or-region-boundary-single-character-returns-one ()
+(ert-deftest test-custom-counts-count-characters-buffer-or-region-boundary-single-character-returns-one ()
   "Should return 1 for single character buffer."
   (test-count-characters-buffer-or-region-setup)
   (unwind-protect
@@ -208,7 +208,7 @@ so the function correctly falls back to counting the entire buffer."
             (should (string-match-p "1 character.*buffer" message-output)))))
     (test-count-characters-buffer-or-region-teardown)))
 
-(ert-deftest test-custom-misc-cj-count-characters-buffer-or-region-boundary-narrowed-buffer-counts-visible ()
+(ert-deftest test-custom-counts-count-characters-buffer-or-region-boundary-narrowed-buffer-counts-visible ()
   "Should count only visible characters in narrowed buffer."
   (test-count-characters-buffer-or-region-setup)
   (unwind-protect
@@ -227,5 +227,5 @@ so the function correctly falls back to counting the entire buffer."
             (should (string-match-p "7 characters.*buffer" message-output)))))
     (test-count-characters-buffer-or-region-teardown)))
 
-(provide 'test-custom-misc-cj-count-characters-buffer-or-region)
-;;; test-custom-misc-cj-count-characters-buffer-or-region.el ends here
+(provide 'test-custom-counts-count-characters-buffer-or-region)
+;;; test-custom-counts-count-characters-buffer-or-region.el ends here

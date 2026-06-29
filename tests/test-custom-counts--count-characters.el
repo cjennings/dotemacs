@@ -1,7 +1,7 @@
-;;; test-custom-misc-cj--count-characters.el --- Tests for cj/--count-characters -*- lexical-binding: t; -*-
+;;; test-custom-counts--count-characters.el --- Tests for cj/--count-characters -*- lexical-binding: t; -*-
 
 ;;; Commentary:
-;; Tests for the cj/--count-characters internal implementation function from custom-misc.el
+;; Tests for the cj/--count-characters internal implementation function from custom-counts.el
 ;;
 ;; This internal function counts characters between START and END positions.
 ;; It validates that START is not greater than END and returns the character count.
@@ -18,7 +18,7 @@
   "Stub keymap for testing.")
 
 ;; Now load the actual production module
-(require 'custom-misc)
+(require 'custom-counts)
 
 ;;; Setup and Teardown
 
@@ -34,7 +34,7 @@
 
 ;;; Normal Cases
 
-(ert-deftest test-custom-misc-cj--count-characters-normal-simple-text-returns-count ()
+(ert-deftest test-custom-counts--count-characters-normal-simple-text-returns-count ()
   "Should count characters in simple text region."
   (test-count-characters-setup)
   (unwind-protect
@@ -44,7 +44,7 @@
           (should (= result 13))))
     (test-count-characters-teardown)))
 
-(ert-deftest test-custom-misc-cj--count-characters-normal-partial-region-returns-count ()
+(ert-deftest test-custom-counts--count-characters-normal-partial-region-returns-count ()
   "Should count characters in partial region."
   (test-count-characters-setup)
   (unwind-protect
@@ -54,7 +54,7 @@
           (should (= result 5))))
     (test-count-characters-teardown)))
 
-(ert-deftest test-custom-misc-cj--count-characters-normal-multiline-returns-count ()
+(ert-deftest test-custom-counts--count-characters-normal-multiline-returns-count ()
   "Should count characters including newlines."
   (test-count-characters-setup)
   (unwind-protect
@@ -67,7 +67,7 @@
 
 ;;; Boundary Cases
 
-(ert-deftest test-custom-misc-cj--count-characters-boundary-empty-region-returns-zero ()
+(ert-deftest test-custom-counts--count-characters-boundary-empty-region-returns-zero ()
   "Should return 0 for empty region (start equals end)."
   (test-count-characters-setup)
   (unwind-protect
@@ -77,7 +77,7 @@
           (should (= result 0))))
     (test-count-characters-teardown)))
 
-(ert-deftest test-custom-misc-cj--count-characters-boundary-single-character-returns-one ()
+(ert-deftest test-custom-counts--count-characters-boundary-single-character-returns-one ()
   "Should return 1 for single character region."
   (test-count-characters-setup)
   (unwind-protect
@@ -87,7 +87,7 @@
           (should (= result 1))))
     (test-count-characters-teardown)))
 
-(ert-deftest test-custom-misc-cj--count-characters-boundary-large-region-returns-count ()
+(ert-deftest test-custom-counts--count-characters-boundary-large-region-returns-count ()
   "Should handle very large region."
   (test-count-characters-setup)
   (unwind-protect
@@ -98,7 +98,7 @@
             (should (= result 100000)))))
     (test-count-characters-teardown)))
 
-(ert-deftest test-custom-misc-cj--count-characters-boundary-unicode-returns-count ()
+(ert-deftest test-custom-counts--count-characters-boundary-unicode-returns-count ()
   "Should count unicode characters (emoji, RTL text, combining characters)."
   (test-count-characters-setup)
   (unwind-protect
@@ -110,7 +110,7 @@
           (should (= result (- (point-max) (point-min))))))
     (test-count-characters-teardown)))
 
-(ert-deftest test-custom-misc-cj--count-characters-boundary-whitespace-only-returns-count ()
+(ert-deftest test-custom-counts--count-characters-boundary-whitespace-only-returns-count ()
   "Should count whitespace characters."
   (test-count-characters-setup)
   (unwind-protect
@@ -121,7 +121,7 @@
           (should (= result 7))))
     (test-count-characters-teardown)))
 
-(ert-deftest test-custom-misc-cj--count-characters-boundary-newlines-at-boundaries-returns-count ()
+(ert-deftest test-custom-counts--count-characters-boundary-newlines-at-boundaries-returns-count ()
   "Should count newlines at start and end."
   (test-count-characters-setup)
   (unwind-protect
@@ -132,7 +132,7 @@
           (should (= result 9))))
     (test-count-characters-teardown)))
 
-(ert-deftest test-custom-misc-cj--count-characters-boundary-binary-content-returns-count ()
+(ert-deftest test-custom-counts--count-characters-boundary-binary-content-returns-count ()
   "Should handle binary content."
   (test-count-characters-setup)
   (unwind-protect
@@ -144,7 +144,7 @@
 
 ;;; Error Cases
 
-(ert-deftest test-custom-misc-cj--count-characters-error-start-greater-than-end-signals-error ()
+(ert-deftest test-custom-counts--count-characters-error-start-greater-than-end-signals-error ()
   "Should signal error when start is greater than end."
   (test-count-characters-setup)
   (unwind-protect
@@ -154,7 +154,7 @@
                       :type 'error))
     (test-count-characters-teardown)))
 
-(ert-deftest test-custom-misc-cj--count-characters-error-positions-out-of-bounds-handled ()
+(ert-deftest test-custom-counts--count-characters-error-positions-out-of-bounds-handled ()
   "Should handle positions beyond buffer bounds (Emacs handles this)."
   (test-count-characters-setup)
   (unwind-protect
@@ -167,5 +167,5 @@
           (should (= result 5))))
     (test-count-characters-teardown)))
 
-(provide 'test-custom-misc-cj--count-characters)
-;;; test-custom-misc-cj--count-characters.el ends here
+(provide 'test-custom-counts--count-characters)
+;;; test-custom-counts--count-characters.el ends here

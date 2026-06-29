@@ -574,5 +574,14 @@ Signals an error if:
     "C-; b <down>"  "resize divider down"))
 
 
+;; --- previous-buffer toggle (formerly in custom-misc.el) ---
+(defun cj/switch-to-previous-buffer ()
+  "Switch to previously open buffer.
+Repeated invocations toggle between the two most recently open buffers."
+  (interactive)
+  (switch-to-buffer (other-buffer (current-buffer) 1)))
+
+(cj/register-command "SPC" #'cj/switch-to-previous-buffer "prev buffer")
+
 (provide 'custom-buffer-file)
 ;;; custom-buffer-file.el ends here.

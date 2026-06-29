@@ -228,5 +228,21 @@ Operate on the active region designated by START and END."
     "C-; w t" "untabify"
     "C-; w T" "tabify"))
 
+;; --- align-regexp space enforcement + alignment/fill bindings ---
+;; (formerly in custom-misc.el)
+(defun cj/align-regexp-with-spaces (orig-fun &rest args)
+  "Call ORIG-FUN with ARGS while temporarily disabling tabs for alignment.
+This advice ensures =align-regexp' uses spaces by binding =indent-tabs-mode'
+to nil."
+  (let ((indent-tabs-mode nil))
+	(apply orig-fun args)))
+
+;; avoid double advice stacking in case the file is reloaded
+(advice-remove 'align-regexp #'cj/align-regexp-with-spaces)
+(advice-add    'align-regexp :around #'cj/align-regexp-with-spaces)
+
+(cj/register-command "A" #'align-regexp "align regexp")
+(cj/register-command "|" #'display-fill-column-indicator-mode "fill column")
+
 (provide 'custom-whitespace)
 ;;; custom-whitespace.el ends here.

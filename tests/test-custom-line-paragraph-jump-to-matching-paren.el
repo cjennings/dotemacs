@@ -1,7 +1,7 @@
-;;; test-custom-misc-jump-to-matching-paren.el --- Tests for cj/jump-to-matching-paren -*- lexical-binding: t; -*-
+;;; test-custom-line-paragraph-jump-to-matching-paren.el --- Tests for cj/jump-to-matching-paren -*- lexical-binding: t; -*-
 
 ;;; Commentary:
-;; Tests for the cj/jump-to-matching-paren function from custom-misc.el
+;; Tests for the cj/jump-to-matching-paren function from custom-line-paragraph.el
 ;;
 ;; This function jumps to matching delimiters using Emacs's sexp navigation.
 ;; It works with any delimiter that has matching syntax according to the
@@ -32,7 +32,7 @@
   "Stub keymap for testing.")
 
 ;; Now load the actual production module
-(require 'custom-misc)
+(require 'custom-line-paragraph)
 
 ;;; Test Helpers
 
@@ -193,5 +193,5 @@ POINT-POSITION is 1-indexed (1 = first character)."
   ;; The parens in the string should be ignored
   (should (= 18 (test-jump-to-matching-paren "(\"hello (world)\")" 1))))
 
-(provide 'test-custom-misc-jump-to-matching-paren)
-;;; test-custom-misc-jump-to-matching-paren.el ends here
+(provide 'test-custom-line-paragraph-jump-to-matching-paren)
+;;; test-custom-line-paragraph-jump-to-matching-paren.el ends here

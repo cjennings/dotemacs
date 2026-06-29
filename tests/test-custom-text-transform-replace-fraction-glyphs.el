@@ -1,7 +1,7 @@
-;;; test-custom-misc-replace-fraction-glyphs.el --- Tests for cj/--replace-fraction-glyphs -*- lexical-binding: t; -*-
+;;; test-custom-text-transform-replace-fraction-glyphs.el --- Tests for cj/--replace-fraction-glyphs -*- lexical-binding: t; -*-
 
 ;;; Commentary:
-;; Tests for the cj/--replace-fraction-glyphs function from custom-misc.el
+;; Tests for the cj/--replace-fraction-glyphs function from custom-text-transform.el
 ;;
 ;; This function bidirectionally converts between text fractions (1/4) and
 ;; Unicode fraction glyphs (¼). It supports 5 common fractions:
@@ -28,7 +28,7 @@
   "Stub keymap for testing.")
 
 ;; Now load the actual production module
-(require 'custom-misc)
+(require 'custom-text-transform)
 
 ;;; Test Helpers
 
@@ -181,5 +181,5 @@ Returns the buffer string after operation."
       ;; Should complete without error
       (should (string= (buffer-string) "1/4")))))
 
-(provide 'test-custom-misc-replace-fraction-glyphs)
-;;; test-custom-misc-replace-fraction-glyphs.el ends here
+(provide 'test-custom-text-transform-replace-fraction-glyphs)
+;;; test-custom-text-transform-replace-fraction-glyphs.el ends here

@@ -166,5 +166,36 @@ If the line is empty or contains only whitespace, abort with a message."
     "C-; l r" "remove matching"
     "C-; l u" "underscore line"))
 
+;; --- delimiter jump (formerly in custom-misc.el) ---
+(defun cj/jump-to-matching-paren ()
+  "Jump to the matching delimiter if point is on (or just after) one.
+If not on a delimiter, show a message. Respects the current syntax table."
+  (interactive)
+  (let* ((ca (char-after))
+		 (cb (char-before))
+		 ;; Check if on opening paren
+		 (open-p (and ca (eq (char-syntax ca) ?\()))
+		 ;; Check if on or just after closing paren
+		 (close-p (or (and ca (eq (char-syntax ca) ?\)))
+					  (and cb (eq (char-syntax cb) ?\))))))
+	(cond
+	 ;; Jump forward from opening
+	 (open-p
+	  (condition-case err
+		  (forward-sexp)
+		(scan-error
+		 (message "No matching delimiter: %s" (error-message-string err)))))
+	 ;; Jump backward from closing
+	 (close-p
+	  (condition-case err
+		  (backward-sexp)
+		(scan-error
+		 (message "No matching delimiter: %s" (error-message-string err)))))
+	 ;; Not on delimiter
+	 (t
+	  (message "Point is not on a delimiter.")))))
+
+(cj/register-command ")" #'cj/jump-to-matching-paren "jump to paren")
+
 (provide 'custom-line-paragraph)
 ;;; custom-line-paragraph.el ends here.
