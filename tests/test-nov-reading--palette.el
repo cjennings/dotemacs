@@ -13,27 +13,59 @@
 (require 'nov-reading)
 
 (declare-function cj/nov--reading-palette-face "nov-reading" (name))
+(declare-function cj/nov--reading-palette-plist "nov-reading" (name))
 (declare-function cj/nov--next-reading-palette "nov-reading" (current names))
 (defvar cj/nov-reading-palettes)
+
+;; Each palette entry is a property list: :face supplies bg/fg, :heading and
+;; :link recolor shr's heading/link faces.  Structural keys are optional.
+(defconst test-nov-reading--palettes
+  '(("sepia" :face cj/nov-reading-sepia
+             :heading cj/nov-reading-sepia-heading
+             :link cj/nov-reading-sepia-link)
+    ("dark"  :face cj/nov-reading-dark))
+  "Bundle-shaped palette fixture: sepia carries structural faces, dark omits them.")
 
 ;;; ----------------------- cj/nov--reading-palette-face -----------------------
 
 (ert-deftest test-nov-reading-palette-face-known ()
-  "Normal: a known palette name resolves to its face."
-  (let ((cj/nov-reading-palettes '(("sepia" . cj/nov-reading-sepia)
-                                   ("dark"  . cj/nov-reading-dark))))
+  "Normal: a known palette name resolves to its :face."
+  (let ((cj/nov-reading-palettes test-nov-reading--palettes))
     (should (eq (cj/nov--reading-palette-face "sepia") 'cj/nov-reading-sepia))
     (should (eq (cj/nov--reading-palette-face "dark") 'cj/nov-reading-dark))))
 
 (ert-deftest test-nov-reading-palette-face-unknown ()
   "Error: an unknown name resolves to nil."
-  (let ((cj/nov-reading-palettes '(("sepia" . cj/nov-reading-sepia))))
+  (let ((cj/nov-reading-palettes test-nov-reading--palettes))
     (should-not (cj/nov--reading-palette-face "nope"))))
 
 (ert-deftest test-nov-reading-palette-face-nil ()
   "Boundary: a nil name resolves to nil."
-  (let ((cj/nov-reading-palettes '(("sepia" . cj/nov-reading-sepia))))
+  (let ((cj/nov-reading-palettes test-nov-reading--palettes))
     (should-not (cj/nov--reading-palette-face nil))))
+
+;;; ---------------------- cj/nov--reading-palette-plist -----------------------
+
+(ert-deftest test-nov-reading-palette-plist-structural-faces ()
+  "Normal: a palette's :heading and :link faces are retrievable from its plist."
+  (let ((cj/nov-reading-palettes test-nov-reading--palettes))
+    (should (eq (plist-get (cj/nov--reading-palette-plist "sepia") :heading)
+                'cj/nov-reading-sepia-heading))
+    (should (eq (plist-get (cj/nov--reading-palette-plist "sepia") :link)
+                'cj/nov-reading-sepia-link))))
+
+(ert-deftest test-nov-reading-palette-plist-omitted-structural ()
+  "Boundary: a palette that omits structural keys yields nil for them."
+  (let ((cj/nov-reading-palettes test-nov-reading--palettes))
+    (should (eq (plist-get (cj/nov--reading-palette-plist "dark") :face)
+                'cj/nov-reading-dark))
+    (should-not (plist-get (cj/nov--reading-palette-plist "dark") :heading))
+    (should-not (plist-get (cj/nov--reading-palette-plist "dark") :link))))
+
+(ert-deftest test-nov-reading-palette-plist-unknown ()
+  "Error: an unknown palette name yields a nil plist."
+  (let ((cj/nov-reading-palettes test-nov-reading--palettes))
+    (should-not (cj/nov--reading-palette-plist "nope"))))
 
 ;;; ----------------------- cj/nov--next-reading-palette -----------------------
 
