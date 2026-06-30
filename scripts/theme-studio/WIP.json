@@ -437,7 +437,7 @@
    "sky"
   ],
   [
-   "#5f8bf9",
+   "#5178db",
    "link",
    "link"
   ]
@@ -1046,7 +1046,7 @@
    "height": null
   },
   "link": {
-   "fg": "#5f8bf9",
+   "fg": "#5178db",
    "bg": null,
    "distant-fg": null,
    "family": null,
@@ -1571,7 +1571,16 @@
   "pkg:nerd-icons:nerd-icons-red",
   "pkg:nerd-icons:nerd-icons-red-alt",
   "pkg:nerd-icons:nerd-icons-silver",
-  "pkg:nerd-icons:nerd-icons-yellow"
+  "pkg:nerd-icons:nerd-icons-yellow",
+  "pkg:nov-reading:cj/nov-reading-light",
+  "pkg:nov-reading:cj/nov-reading-dark",
+  "pkg:nov-reading:cj/nov-reading-sepia",
+  "pkg:nov-reading:cj/nov-reading-sepia-heading",
+  "pkg:nov-reading:cj/nov-reading-sepia-link",
+  "pkg:nov-reading:cj/nov-reading-dark-heading",
+  "pkg:nov-reading:cj/nov-reading-dark-link",
+  "pkg:nov-reading:cj/nov-reading-light-heading",
+  "pkg:nov-reading:cj/nov-reading-light-link"
  ],
  "packages": {
   "org-mode": {
@@ -3564,18 +3573,6 @@
     "inherit": null,
     "source": "user"
    },
-   "eat-term-color-22": {
-    "fg": "#002f00",
-    "bg": null,
-    "inherit": null,
-    "source": "user"
-   },
-   "eat-term-color-52": {
-    "fg": "#2f0000",
-    "bg": null,
-    "inherit": null,
-    "source": "user"
-   },
    "eat-term-color-bright-black": {
     "fg": "#8e919a",
     "bg": null,
@@ -3678,6 +3675,18 @@
    },
    "eat-shell-prompt-annotation-failure": {
     "fg": "#a85b42",
+    "bg": null,
+    "inherit": null,
+    "source": "user"
+   },
+   "eat-term-color-22": {
+    "fg": "#002f00",
+    "bg": null,
+    "inherit": null,
+    "source": "user"
+   },
+   "eat-term-color-52": {
+    "fg": "#2f0000",
     "bg": null,
     "inherit": null,
     "source": "user"
@@ -4499,6 +4508,75 @@
     "fg": "#bfc4d0",
     "bg": null,
     "weight": "bold",
+    "inherit": null,
+    "source": "user"
+   }
+  },
+  "nov-reading": {
+   "cj/nov-reading-sepia": {
+    "fg": "#ab8d2e",
+    "bg": null,
+    "inherit": null,
+    "source": "user"
+   },
+   "cj/nov-reading-dark": {
+    "fg": "#7c838a",
+    "bg": null,
+    "inherit": null,
+    "source": "user"
+   },
+   "cj/nov-reading-light": {
+    "fg": "#100f0f",
+    "bg": "#7c838a",
+    "inherit": null,
+    "source": "user"
+   },
+   "cj/nov-reading-sepia-heading": {
+    "fg": "#54677d",
+    "bg": null,
+    "inherit": "cj/nov-reading-sepia",
+    "height": 1.2,
+    "source": "user"
+   },
+   "cj/nov-reading-sepia-link": {
+    "fg": "#5178db",
+    "bg": null,
+    "underline": {
+     "color": null,
+     "style": "line"
+    },
+    "inherit": null,
+    "source": "user"
+   },
+   "cj/nov-reading-dark-heading": {
+    "fg": null,
+    "bg": null,
+    "inherit": null,
+    "source": "default"
+   },
+   "cj/nov-reading-dark-link": {
+    "fg": "#5178db",
+    "bg": null,
+    "underline": {
+     "color": null,
+     "style": "line"
+    },
+    "inherit": "cj/nov-reading-dark",
+    "source": "user"
+   },
+   "cj/nov-reading-light-heading": {
+    "fg": null,
+    "bg": null,
+    "inherit": null,
+    "source": "default"
+   },
+   "cj/nov-reading-light-link": {
+    "fg": "#5178db",
+    "bg": null,
+    "underline": {
+     "color": null,
+     "style": "line"
+    },
     "inherit": null,
     "source": "user"
    }
@@ -5815,7 +5893,7 @@
     "source": "user"
    },
    "shr-link": {
-    "fg": "#5f8bf9",
+    "fg": "#5178db",
     "bg": null,
     "underline": {
      "style": "line",
@@ -8674,6 +8752,32 @@
    "web-mode-whitespace-face": {
     "fg": null,
     "bg": "#68228b",
+    "inherit": null,
+    "source": "default"
+   }
+  },
+  "wttrin": {
+   "wttrin-instructions": {
+    "fg": null,
+    "bg": null,
+    "inherit": null,
+    "source": "default"
+   },
+   "wttrin-key": {
+    "fg": null,
+    "bg": null,
+    "inherit": null,
+    "source": "default"
+   },
+   "wttrin-mode-line-stale": {
+    "fg": null,
+    "bg": null,
+    "inherit": null,
+    "source": "default"
+   },
+   "wttrin-staleness-header": {
+    "fg": null,
+    "bg": null,
     "inherit": null,
     "source": "default"
    }
