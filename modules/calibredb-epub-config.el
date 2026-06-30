@@ -31,6 +31,8 @@
 (declare-function nov-render-document "nov" ())
 (defvar nov-text-width)                 ; from nov.el; set buffer-local here
 
+(require 'nov-reading)  ;; reading-view theme layer: palettes + typography + size
+
 ;; calibredb commands the curated menu drives (all autoloaded by calibredb)
 (declare-function calibredb-switch-library "calibredb" ())
 (declare-function calibredb-search-keyword-filter "calibredb-search")
@@ -314,12 +316,8 @@ A positive DELTA narrows the text column; a negative DELTA widens it."
 (defun cj/nov-apply-preferences ()
   "Apply preferences after nov-mode has launched."
   (interactive)
-  ;; Use Merriweather for comfortable reading with appropriate scaling.
-  ;; (Reading fg color stripped; falls back to the theme default until a
-  ;; themeable reading face exists -- see todo.org.)
-  (face-remap-add-relative 'variable-pitch :family "Merriweather" :height 1.0)
-  (face-remap-add-relative 'default :family "Merriweather" :height 180)
-  (face-remap-add-relative 'fixed-pitch :height 180)
+  ;; Reading typography + color palette live in the nov-reading theme layer.
+  (cj/nov-reading-setup)
   ;; Enable visual-line-mode for proper text wrapping
   (visual-line-mode 1)
   ;; Set fill-column as a fallback
@@ -428,14 +426,19 @@ Try to use the Calibre book id from the parent folder name (for example,
 		("<" . nov-history-back)
 		(">" . nov-history-forward)
 		("," . backward-paragraph)
-		;; +/= widen the text column, -/_ narrow it (50%..100% of the window)
-		("+" . cj/nov-widen-text)
-		("=" . cj/nov-widen-text)
-		("-" . cj/nov-narrow-text)
-		("_" . cj/nov-narrow-text)
+		;; +/- adjust the page font size, = resets it to the default height
+		("+" . cj/nov-reading-text-bigger)
+		("-" . cj/nov-reading-text-smaller)
+		("=" . cj/nov-reading-text-reset)
+		;; { } adjust the text-column width (50%..100% of the window)
+		("}" . cj/nov-widen-text)
+		("{" . cj/nov-narrow-text)
 		;; open current EPUB with zathura (same key in pdf-view)
 		("z" . cj/nov-open-external)
 		("t" . nov-goto-toc)
+		;; c cycles reading palettes (sepia/dark/light/none); C picks one by name
+		("c" . cj/nov-cycle-reading-palette)
+		("C" . cj/nov-set-reading-palette)
 		("C-c C-b" . cj/nov-jump-to-calibredb)))
 
 ;; ------------------------- Nov bookmark naming -------------------------------

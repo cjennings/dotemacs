@@ -173,12 +173,13 @@ re-render of the document."
   (should (commandp #'cj/nov-narrow-text)))
 
 (ert-deftest test-calibredb-epub-nov-width-commands-bound-in-nov-mode-map ()
-  "Normal: +/= widen and -/_ narrow the text column in `nov-mode-map'."
+  "Normal: { } adjust the text column in `nov-mode-map' (+/-/= are font size)."
   (skip-unless (and (require 'nov nil t) (boundp 'nov-mode-map)))
-  (should (eq (keymap-lookup nov-mode-map "+") #'cj/nov-widen-text))
-  (should (eq (keymap-lookup nov-mode-map "=") #'cj/nov-widen-text))
-  (should (eq (keymap-lookup nov-mode-map "-") #'cj/nov-narrow-text))
-  (should (eq (keymap-lookup nov-mode-map "_") #'cj/nov-narrow-text)))
+  (should (eq (keymap-lookup nov-mode-map "}") #'cj/nov-widen-text))
+  (should (eq (keymap-lookup nov-mode-map "{") #'cj/nov-narrow-text))
+  (should (eq (keymap-lookup nov-mode-map "+") #'cj/nov-reading-text-bigger))
+  (should (eq (keymap-lookup nov-mode-map "-") #'cj/nov-reading-text-smaller))
+  (should (eq (keymap-lookup nov-mode-map "=") #'cj/nov-reading-text-reset)))
 
 ;;; -------------------------- cj/nov-apply-preferences ------------------------
 

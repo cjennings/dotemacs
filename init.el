@@ -90,6 +90,7 @@
 ;; ---------------------- Added Features And Integrations ----------------------
 
 
+(require 'nov-reading)           ;; epub reading-view theme layer (palettes + size)
 (require 'calibredb-epub-config) ;; ebook reader/manager settings
 (require 'dashboard-config)      ;; the nice landing page with links
 (require 'dirvish-config)        ;; file manager configuration

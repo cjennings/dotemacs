@@ -343,6 +343,14 @@ GNUS_SEED={
  "gnus-cite-1":{"fg":"sage"},"gnus-cite-2":{"fg":"steel"},"gnus-cite-3":{"fg":"gold"},"gnus-cite-4":{"fg":"blue"},"gnus-cite-5":{"fg":"sage"},"gnus-cite-6":{"fg":"steel"},"gnus-cite-7":{"fg":"gold"},"gnus-cite-8":{"fg":"blue"},"gnus-cite-9":{"fg":"sage"},"gnus-cite-10":{"fg":"steel"},"gnus-cite-11":{"fg":"gold"},"gnus-cite-attribution":{"fg":"silver","italic":True},
  "gnus-signature":{"fg":"pewter","italic":True},"gnus-button":{"fg":"blue","underline":True},
  "gnus-emphasis-bold":{"bold":True},"gnus-emphasis-italic":{"italic":True},"gnus-emphasis-underline":{"underline":True},"gnus-emphasis-strikethru":{"fg":"pewter","strike":True},"gnus-emphasis-highlight-words":{"fg":"gold","bold":True}}
+# nov-reading: the EPUB reading-view palettes (config faces, not a package). Each
+# is the buffer-local default bg+fg for a reading mode; seeded with the module's
+# starting hex so the studio shows sepia/dark/light from the first render.
+NOV_READING_FACES=("cj/nov-reading-sepia cj/nov-reading-dark cj/nov-reading-light").split()
+NOV_READING_SEED={
+ "cj/nov-reading-sepia":{"bg":"#1f1b16","fg":"#c9b187"},
+ "cj/nov-reading-dark":{"bg":"#15140f","fg":"#cfc8b8"},
+ "cj/nov-reading-light":{"bg":"#ece3cf","fg":"#2a2622"}}
 
 # The bespoke package apps, single-sourced here. Each row is
 # (key, label, preview, FACES, prefix, SEED); add an app by adding one row.
@@ -365,6 +373,7 @@ BESPOKE_APP_SPECS=[
  ("dired","dired","dired",DIRED_FACES,"dired-",DIRED_SEED),
  ("dirvish","dirvish","dirvish",DIRVISH_FACES,"dirvish-",DIRVISH_SEED),
  ("calibredb","calibredb","calibredb",CALIBREDB_FACES,"calibredb-",CALIBREDB_SEED),
+ ("nov-reading","nov reading view","novreading",NOV_READING_FACES,"cj/nov-reading-",NOV_READING_SEED),
  ("erc","erc","erc",ERC_FACES,"erc-",ERC_SEED),
  ("org-drill","org-drill","orgdrill",ORGDRILL_FACES,"org-drill-",ORGDRILL_SEED),
  ("org-noter","org-noter","orgnoter",ORGNOTER_FACES,"org-noter-",ORGNOTER_SEED),
