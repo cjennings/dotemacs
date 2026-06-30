@@ -47,6 +47,28 @@
          (event (test-calendar-sync-make-vevent "Regular Event" start end)))
     (should-not (calendar-sync--parse-exception-event event))))
 
+;;; Normal Cases — attendee extraction (singly-declined occurrence)
+
+(ert-deftest test-calendar-sync--parse-exception-event-extracts-attendees ()
+  "Normal: a RECURRENCE-ID override carrying an ATTENDEE block parses :attendees,
+so a singly-declined occurrence can have its user status re-derived downstream
+by `calendar-sync--apply-single-exception'."
+  (let* ((start (test-calendar-sync-time-days-from-now 7 10 0))
+         (end (test-calendar-sync-time-days-from-now 7 11 0))
+         (event (concat "BEGIN:VEVENT\n"
+                        "UID:override@google.com\n"
+                        "RECURRENCE-ID:20260203T090000Z\n"
+                        "SUMMARY:1:1 with Hayk\n"
+                        "ATTENDEE;CN=Craig;PARTSTAT=DECLINED:mailto:craig@example.com\n"
+                        "DTSTART:" (test-calendar-sync-ics-datetime start) "\n"
+                        "DTEND:" (test-calendar-sync-ics-datetime end) "\n"
+                        "END:VEVENT"))
+         (plist (calendar-sync--parse-exception-event event))
+         (attendees (plist-get plist :attendees)))
+    (should attendees)
+    (should (equal "craig@example.com" (plist-get (car attendees) :email)))
+    (should (equal "DECLINED" (plist-get (car attendees) :partstat)))))
+
 ;;; Error Cases
 
 (ert-deftest test-calendar-sync--parse-exception-event-error-unparseable-times ()

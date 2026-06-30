@@ -162,5 +162,49 @@ Weekly meeting with one instance rescheduled from 09:00 to 10:00."
     (should (string-match-p "10:00" org-output))
     (should (string-match-p "15:00" org-output))))
 
+(ert-deftest test-integration-declined-single-occurrence-is-dropped ()
+  "A recurring event with one occurrence declined via a RECURRENCE-ID override
+is filtered out end-to-end, while the other occurrences survive.
+
+This is the singly-declined-occurrence case: declining one instance of a series
+in Google Calendar emits a RECURRENCE-ID override carrying the user's
+PARTSTAT=DECLINED.  The override must carry its attendee block all the way from
+`calendar-sync--parse-exception-event' through
+`calendar-sync--apply-single-exception' (status re-derivation) to
+`calendar-sync--filter-declined' for the drop to happen."
+  (let* ((calendar-sync-skip-declined t)
+         (calendar-sync-user-emails '("craig@example.com"))
+         (base-start (test-calendar-sync-time-days-from-now 0 9 0))
+         (base-end (test-calendar-sync-time-days-from-now 0 10 0))
+         (rec-id (test-calendar-sync-time-days-from-now 7 9 0))
+         (decl-start (test-calendar-sync-time-days-from-now 7 9 0))
+         (decl-end (test-calendar-sync-time-days-from-now 7 10 0))
+         (ics-content
+          (concat "BEGIN:VCALENDAR\n"
+                  "VERSION:2.0\n"
+                  "BEGIN:VEVENT\n"
+                  "UID:1on1@google.com\n"
+                  "SUMMARY:1on1 with Hayk\n"
+                  "DTSTART:" (test-calendar-sync-ics-datetime-local base-start) "\n"
+                  "DTEND:" (test-calendar-sync-ics-datetime-local base-end) "\n"
+                  "RRULE:FREQ=WEEKLY;COUNT=4\n"
+                  "END:VEVENT\n"
+                  ;; Week 2 declined: RECURRENCE-ID override with PARTSTAT=DECLINED
+                  "BEGIN:VEVENT\n"
+                  "UID:1on1@google.com\n"
+                  "RECURRENCE-ID:" (test-calendar-sync-ics-datetime-local rec-id) "\n"
+                  "SUMMARY:1on1 with Hayk DECLINEDWEEK\n"
+                  "ATTENDEE;CN=Craig;PARTSTAT=DECLINED:mailto:craig@example.com\n"
+                  "DTSTART:" (test-calendar-sync-ics-datetime-local decl-start) "\n"
+                  "DTEND:" (test-calendar-sync-ics-datetime-local decl-end) "\n"
+                  "END:VEVENT\n"
+                  "END:VCALENDAR"))
+         (org-output (calendar-sync--parse-ics ics-content)))
+    (should (stringp org-output))
+    ;; The non-declined occurrences survive.
+    (should (string-match-p "1on1 with Hayk" org-output))
+    ;; The declined occurrence (unique marker) is dropped.
+    (should-not (string-match-p "DECLINEDWEEK" org-output))))
+
 (provide 'test-integration-calendar-sync-recurrence-exceptions)
 ;;; test-integration-calendar-sync-recurrence-exceptions.el ends here

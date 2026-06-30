@@ -51,7 +51,15 @@ Returns nil if not found."
   "Parse a RECURRENCE-ID override EVENT-STR into an exception plist, or nil.
 Returns nil when EVENT-STR carries no RECURRENCE-ID, or its recurrence-id /
 start time fail to parse.  The plist holds :recurrence-id (localized),
-:recurrence-id-raw, :start, :end, :summary, :description, :location."
+:recurrence-id-raw, :start, :end, :summary, :description, :location,
+:attendees.
+
+:attendees is carried so `calendar-sync--apply-single-exception' can
+re-derive the user's status when a single occurrence is declined: a
+RECURRENCE-ID override is exactly how a calendar marks one occurrence of a
+recurring series declined, and without the attendee block here the override
+inherits the series' \"accepted\" status and the declined occurrence is never
+dropped by `calendar-sync--filter-declined'."
   (let ((recurrence-id (calendar-sync--get-recurrence-id event-str)))
     (when recurrence-id
       (let* ((recurrence-id-line (calendar-sync--get-recurrence-id-line event-str))
@@ -72,7 +80,12 @@ start time fail to parse.  The plist holds :recurrence-id (localized),
              (description (calendar-sync--clean-text
                            (calendar-sync--get-property event-str "DESCRIPTION")))
              (location (calendar-sync--clean-text
-                        (calendar-sync--get-property event-str "LOCATION"))))
+                        (calendar-sync--get-property event-str "LOCATION")))
+             ;; Carry the override's attendee block so a singly-declined
+             ;; occurrence can re-derive the user's status downstream.
+             (attendee-lines (calendar-sync--get-all-property-lines event-str "ATTENDEE"))
+             (attendees (delq nil (mapcar #'calendar-sync--parse-attendee-line
+                                          attendee-lines))))
         (when (and recurrence-id-parsed start-parsed)
           (list :recurrence-id (calendar-sync--localize-parsed-datetime
                                 recurrence-id-parsed recurrence-id-is-utc recurrence-id-tzid)
@@ -81,7 +94,8 @@ start time fail to parse.  The plist holds :recurrence-id (localized),
                 :end end-parsed
                 :summary summary
                 :description description
-                :location location))))))
+                :location location
+                :attendees attendees))))))
 
 (defun calendar-sync--collect-recurrence-exceptions (ics-content)
   "Collect all RECURRENCE-ID events from ICS-CONTENT.
