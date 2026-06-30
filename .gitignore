@@ -100,3 +100,6 @@ __pycache__/
 # editor/image backup files
 *.bak
 smoke/
+
+# personal task list — kept local, not tracked
+todo.org
