@@ -370,6 +370,262 @@ Sets up diff-mode for navigation."
       (diff-mode)
       (goto-char (point-min)))))
 
+(defun cj/--diff-buffer-renderer (ws-only difft-available)
+  "Choose the diff renderer symbol from WS-ONLY and DIFFT-AVAILABLE.
+`whitespace' for a whitespace-only diff (a plain unified diff with trailing
+whitespace highlighted, because difftastic treats it as no change and renders it
+blank); otherwise `difftastic' when available, else `regular'."
+  (cond (ws-only 'whitespace)
+        (difft-available 'difftastic)
+        (t 'regular)))
+
+(defun cj/--diff-whitespace-only-p (file-a file-b)
+  "Return non-nil if FILE-A and FILE-B differ ONLY in whitespace.
+Route-1 detection via diff(1): true when a plain `diff' reports a difference but
+`diff -w' (ignore all whitespace) reports none.  Identical files differ in
+nothing, so they are not whitespace-only."
+  (and (not (zerop (call-process "diff" nil nil nil "-q" file-a file-b)))
+       (zerop (call-process "diff" nil nil nil "-q" "-w" file-a file-b))))
+
+(defun cj/--buffer-differs-prompt-string (name ws-only-p)
+  "Build the buffer-differs prompt question for buffer NAME.
+When WS-ONLY-P is non-nil, fold a terse \"(whitespace only)\" parenthetical into
+the question so the reader knows the difference is whitespace before choosing."
+  (format "%s changed on disk%s"
+          name (if ws-only-p " (whitespace only)" "")))
+
+(defun cj/--buffer-differs-choices ()
+  "Return the terse `read-multiple-choice' menu for the disk-changed save prompt.
+Inline names are single words so the menu fits at a glance; the full meaning is
+in each description (the ? help).  s overwrites the file with the buffer; r
+discards the buffer's edits and rereads from disk."
+  '((?s "save"   "overwrite the file with this buffer")
+    (?d "diff"   "show what changed, then ask again")
+    (?w "clean"  "clean whitespace and save")
+    (?r "revert" "discard edits and reread from disk")
+    (?c "cancel" "leave the buffer as is")))
+
+(defun cj/--buffer-changed-on-disk-p (buffer)
+  "Return non-nil if BUFFER is modified AND its file changed on disk since visited.
+This is the disk-changed conflict: there are unsaved edits to lose AND the file
+underneath has moved, so a plain save would silently overwrite the disk version."
+  (when (buffer-live-p buffer)
+    (with-current-buffer buffer
+      (and (buffer-modified-p)
+           buffer-file-name
+           (file-exists-p buffer-file-name)
+           (not (verify-visited-file-modtime buffer))))))
+
+(defun cj/--buffer-differs-action (key)
+  "Map a disk-changed-prompt KEY to an action symbol, or nil when unmapped.
+`save' overwrites the file, `clean-save' cleans whitespace then saves, `revert'
+rereads from disk, `cancel' does nothing, and `diff' peeks (the caller re-prompts)."
+  (pcase key
+    (?s 'save)
+    (?w 'clean-save)
+    (?r 'revert)
+    (?d 'diff)
+    (?c 'cancel)))
+
+(defun cj/--buffer-differs-dispatch (buffer action)
+  "Carry out ACTION for BUFFER after a disk-changed prompt.
+`save' overwrites the file with the buffer; `clean-save' strips trailing
+whitespace first; `revert' discards the buffer's edits and rereads the disk;
+`cancel' leaves the buffer untouched.  Save updates the recorded modtime first so
+the stock `save-buffer' does not re-ask its own \"changed on disk\" question."
+  (with-current-buffer buffer
+    (pcase action
+      ('save (set-visited-file-modtime) (save-buffer))
+      ('clean-save (delete-trailing-whitespace) (set-visited-file-modtime) (save-buffer))
+      ('revert (revert-buffer t t))
+      ('cancel (message "Save cancelled; buffer left as is"))
+      (_ nil))))
+
+(defun cj/--read-choice-with-diff (prompt choices show-diff-fn)
+  "Read a `read-multiple-choice' key for PROMPT and CHOICES; d toggles a diff.
+SHOW-DIFF-FN displays the buffer/file diff and returns its buffer.  The d key
+shows the diff, or hides it when it is already shown (a toggle).  Any other key
+-- a terminating choice -- closes a still-open diff window before returning that
+key, so the diff never lingers after the decision is made."
+  (let ((key nil) (diff-buf nil))
+    (while (not key)
+      (let ((k (car (read-multiple-choice prompt choices))))
+        (if (eq k ?d)
+            (let ((win (and (buffer-live-p diff-buf) (get-buffer-window diff-buf))))
+              (if win
+                  (progn (quit-window nil win) (setq diff-buf nil))
+                (setq diff-buf (funcall show-diff-fn))))
+          (setq key k))))
+    (let ((win (and (buffer-live-p diff-buf) (get-buffer-window diff-buf))))
+      (when win (quit-window nil win)))
+    key))
+
+(defun cj/--buffer-differs-read-key (buffer ws-only)
+  "Read a disk-changed-prompt key for BUFFER via `read-multiple-choice'.
+WS-ONLY non-nil folds a terse \"(whitespace only)\" note into the prompt.  d
+toggles the buffer/file diff; a terminating choice closes a still-open diff."
+  (cj/--read-choice-with-diff
+   (cj/--buffer-differs-prompt-string (buffer-name buffer) ws-only)
+   (cj/--buffer-differs-choices)
+   (lambda () (with-current-buffer buffer (cj/diff-buffer-with-file)))))
+
+(defun cj/save-buffer (&optional arg)
+  "Save the current buffer; show a legible menu when the file changed on disk.
+A normal save falls straight through to `save-buffer' (ARG, the prefix argument,
+is passed along so \\[universal-argument] \\[save-buffer] still marks for backup).
+When the buffer has unsaved edits AND the file changed on disk since it was
+visited, offer a terse labeled menu -- save / diff / clean / revert / cancel --
+instead of the stock yes/no \"Save anyway?\" prompt.  Bound to \\`C-x C-s'."
+  (interactive "P")
+  (if (not (cj/--buffer-changed-on-disk-p (current-buffer)))
+      (save-buffer arg)
+    (let* ((buf (current-buffer))
+           (ws-only (cj/--buffer-file-whitespace-only-p buf))
+           (key (cj/--buffer-differs-read-key buf ws-only)))
+      (cj/--buffer-differs-dispatch buf (cj/--buffer-differs-action key)))))
+
+(defun cj/--save-some-buffers-action (key)
+  "Map a save-loop KEY to (THIS-ACTION . LOOP-EFFECT), or nil when unmapped.
+THIS-ACTION is `save', `clean-save', `skip', or `diff'.  LOOP-EFFECT is
+`continue' (keep prompting), `save-rest' (save this and all remaining without
+asking), `stop' (act on this, skip the rest), or `reprompt' (peek, then ask the
+same buffer again)."
+  (pcase key
+    (?y '(save . continue))
+    (?n '(skip . continue))
+    (?w '(clean-save . continue))
+    (?! '(save . save-rest))
+    (?. '(save . stop))
+    (?q '(skip . stop))
+    (?d '(diff . reprompt))))
+
+(defun cj/--save-some-buffers-choices ()
+  "Return the terse `read-multiple-choice' choices for the save loop.
+Single-word inline names keep the menu to the minimum space; the full meaning is
+in each description (the ? help)."
+  '((?y "save"   "save this buffer")
+    (?n "skip"   "do not save this buffer")
+    (?w "clean"  "clean whitespace and save this buffer")
+    (?d "diff"   "show what changed, then ask again")
+    (?! "all"    "save this and all remaining buffers")
+    (?. "only"   "save this buffer, then skip the rest")
+    (?q "none"   "stop; save no more buffers")))
+
+(defun cj/--buffer-file-whitespace-only-p (buffer)
+  "Return non-nil if BUFFER's text differs from its visited file ONLY in whitespace.
+Writes the buffer to a temp file and reuses `cj/--diff-whitespace-only-p'.  Nil
+when BUFFER visits no file or the file is gone."
+  (when (buffer-live-p buffer)
+    (with-current-buffer buffer
+      (let ((file (buffer-file-name)))
+        (when (and file (file-exists-p file))
+          (let ((temp (make-temp-file "cbf-ws-buf-" nil
+                                      (or (file-name-extension file t) "")))
+                (content (buffer-string)))
+            (unwind-protect
+                (progn (with-temp-file temp (insert content))
+                       (cj/--diff-whitespace-only-p file temp))
+              (when (file-exists-p temp) (delete-file temp)))))))))
+
+(defun cj/--save-some-buffers-plan (buffers key-fn)
+  "Resolve each buffer in BUFFERS to a per-buffer action using KEY-FN.
+KEY-FN is called with a buffer and returns a `read-multiple-choice' key; the diff
+re-prompt is the caller's concern, so KEY-FN never returns ?d.  Returns a list of
+\(BUFFER . ACTION) where ACTION is `save', `clean-save', or `skip', honoring
+`save-rest' (! saves this and all remaining) and `stop' (./q act on this, then
+skip the rest).  KEY-FN is not consulted once a buffer triggers save-rest or stop."
+  (let ((plan nil) (mode 'ask))
+    (dolist (buf buffers (nreverse plan))
+      (pcase mode
+        ('save-all (push (cons buf 'save) plan))
+        ('done (push (cons buf 'skip) plan))
+        ('ask
+         (pcase (cj/--save-some-buffers-action (funcall key-fn buf))
+           (`(,act . save-rest) (push (cons buf act) plan) (setq mode 'save-all))
+           (`(,act . stop)      (push (cons buf act) plan) (setq mode 'done))
+           (`(,act . ,_)        (push (cons buf act) plan))
+           (_                   (push (cons buf 'skip) plan))))))))
+
+(declare-function files--buffers-needing-to-be-saved "files" (pred))
+
+(defun cj/--save-some-buffers-read-key (buffer ws-only)
+  "Read a save-loop key for BUFFER via `read-multiple-choice'.
+WS-ONLY non-nil folds a terse \"(whitespace only)\" note into the prompt.  d
+toggles the buffer/file diff; a terminating choice closes a still-open diff."
+  (cj/--read-choice-with-diff
+   (format "Save %s%s"
+           (if (buffer-file-name buffer)
+               (file-name-nondirectory (buffer-file-name buffer))
+             (buffer-name buffer))
+           (if ws-only " (whitespace only)" ""))
+   (cj/--save-some-buffers-choices)
+   (lambda () (with-current-buffer buffer (cj/diff-buffer-with-file)))))
+
+(defun cj/--save-some-buffers-execute (plan)
+  "Carry out PLAN, a list of (BUFFER . ACTION); return the number saved.
+ACTION `clean-save' deletes trailing whitespace before saving; `save' saves as-is;
+`skip' leaves the buffer alone."
+  (let ((n 0))
+    (dolist (entry plan n)
+      (let ((buffer (car entry)))
+        (when (buffer-live-p buffer)
+          (with-current-buffer buffer
+            (pcase (cdr entry)
+              ('clean-save (delete-trailing-whitespace) (save-buffer) (setq n (1+ n)))
+              ('save (save-buffer) (setq n (1+ n)))
+              (_ nil))))))))
+
+(defun cj/save-some-buffers (&optional arg pred)
+  "Save modified buffers with a legible, labeled prompt per buffer.
+A `read-multiple-choice' replacement for `save-some-buffers': the options are
+shown on screen rather than recalled as keys, with an added clean-whitespace-and-
+save action and a per-buffer \"(whitespace only)\" note.  ARG and PRED match
+`save-some-buffers' -- ARG non-nil saves all without asking; PRED selects which
+buffers are considered.  Installed over `save-some-buffers' by advice, so \\[save-some-buffers]
+and the save-on-exit prompt both use it."
+  (interactive "P")
+  (unless pred
+    (setq pred
+          (if (and (symbolp save-some-buffers-default-predicate)
+                   (get save-some-buffers-default-predicate
+                        'save-some-buffers-function))
+              (funcall save-some-buffers-default-predicate)
+            save-some-buffers-default-predicate)))
+  (let (queried autosaved-buffers files-done inhibit-message)
+    (save-window-excursion
+      ;; Save buffers flagged for unconditional save first (mirrors the original).
+      (dolist (buffer (buffer-list))
+        (with-current-buffer buffer
+          (when (and buffer-save-without-query (buffer-modified-p))
+            (push (buffer-name) autosaved-buffers)
+            (save-buffer))))
+      (let* ((candidates (files--buffers-needing-to-be-saved pred))
+             (plan (if arg
+                       (mapcar (lambda (b) (cons b 'save)) candidates)
+                     (when candidates (setq queried t))
+                     (cj/--save-some-buffers-plan
+                      candidates
+                      (lambda (b)
+                        (cj/--save-some-buffers-read-key
+                         b (cj/--buffer-file-whitespace-only-p b)))))))
+        (setq files-done (cj/--save-some-buffers-execute plan)))
+      ;; Let other things (abbrevs, etc.) save at this point.
+      (dolist (func save-some-buffers-functions)
+        (setq inhibit-message (or (funcall func nil arg) inhibit-message)))
+      (or queried (> files-done 0) inhibit-message
+          (cond
+           ((null autosaved-buffers)
+            (when (called-interactively-p 'any)
+              (message "(No files need saving)")))
+           ((= (length autosaved-buffers) 1)
+            (message "(Saved %s)" (car autosaved-buffers)))
+           (t (message "(Saved %d files: %s)" (length autosaved-buffers)
+                       (mapconcat #'identity autosaved-buffers ", "))))))
+    files-done))
+
+(advice-add 'save-some-buffers :override #'cj/save-some-buffers)
+(keymap-global-set "C-x C-s" #'cj/save-buffer)
+
 (defun cj/diff-buffer-with-file ()
   "Compare the current modified buffer with the saved version.
 Uses difftastic if available for syntax-aware diffing, otherwise
@@ -389,17 +645,27 @@ Signals an error if the buffer is not visiting a file."
             (insert buffer-content))
           ;; Check if there are any differences first
           (if (zerop (call-process "diff" nil nil nil "-q" file temp-file))
-              (message "No differences between buffer and file")
-            ;; Run diff/difftastic and display in buffer
-            (let* ((using-difftastic (cj/executable-exists-p "difft"))
-                   (buffer-name (if using-difftastic
+              (progn (message "No differences between buffer and file") nil)
+            ;; Pick a renderer: difftastic for content diffs, but a plain unified
+            ;; diff with trailing whitespace highlighted for whitespace-only ones
+            ;; (difftastic treats trailing whitespace as no change and hides it).
+            (let* ((renderer (cj/--diff-buffer-renderer
+                              (cj/--diff-whitespace-only-p file temp-file)
+                              (cj/executable-exists-p "difft")))
+                   (buffer-name (if (eq renderer 'difftastic)
                                     "*Diff (difftastic)*"
                                   "*Diff (unified)*"))
                    (diff-buffer (get-buffer-create buffer-name)))
-              (if using-difftastic
+              (if (eq renderer 'difftastic)
                   (cj/--diff-with-difftastic file temp-file diff-buffer)
-                (cj/--diff-with-regular-diff file temp-file diff-buffer))
-              (display-buffer diff-buffer))))
+                (cj/--diff-with-regular-diff file temp-file diff-buffer)
+                (when (eq renderer 'whitespace)
+                  (with-current-buffer diff-buffer
+                    (setq-local show-trailing-whitespace t))))
+              (display-buffer diff-buffer)
+              ;; Return the diff buffer so callers (the save prompts) can toggle
+              ;; and auto-close its window.
+              diff-buffer)))
       ;; Clean up temp file
       (when (file-exists-p temp-file)
         (delete-file temp-file)))))
