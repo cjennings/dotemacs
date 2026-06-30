@@ -87,12 +87,6 @@ Undead-buffers are buffers in `cj/undead-buffer-list'."
 	 (buffer-file-name buf)
 	 (buffer-modified-p buf))))
 
-(defun cj/save-some-buffers (&optional arg)
-  "Save some buffers, omitting those in `cj/undead-buffer-list'.
-ARG is passed to `save-some-buffers'."
-  (interactive "P")
-  (save-some-buffers arg #'cj/undead-buffer-p))
-
 (defun cj/kill-buffer-and-window ()
   "Delete window and kill or bury its buffer."
   (interactive)
@@ -129,7 +123,7 @@ split is preserved.  Buffers in `cj/undead-buffer-list' are buried."
 (defun cj/kill-all-other-buffers-and-windows ()
   "Kill or bury all other buffers, then delete other windows."
   (interactive)
-  (cj/save-some-buffers)
+  (save-some-buffers nil #'cj/undead-buffer-p)
   (delete-other-windows)
   (mapc #'cj/kill-buffer-or-bury-alive
 		(delq (current-buffer) (buffer-list))))

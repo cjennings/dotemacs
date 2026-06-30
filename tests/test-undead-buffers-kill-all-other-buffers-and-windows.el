@@ -133,23 +133,26 @@
     (test-kill-all-other-buffers-and-windows-teardown)))
 
 (ert-deftest test-kill-all-other-buffers-and-windows-should-prompt-for-modified-buffers ()
-  "Should call cj/save-some-buffers to handle modified buffers."
+  "Should call save-some-buffers with the undead predicate to handle modified buffers."
   (test-kill-all-other-buffers-and-windows-setup)
   (unwind-protect
       (let ((main (current-buffer))
             (file (cj/create-temp-test-file-with-content "original"))
-            save-called)
-        ;; Mock cj/save-some-buffers to track if it's called
-        (cl-letf (((symbol-function 'cj/save-some-buffers)
-                   (lambda (&optional arg)
-                     (setq save-called t))))
+            save-called save-pred)
+        ;; Mock save-some-buffers (the standard API the override hooks) to track
+        ;; the call and the predicate passed.
+        (cl-letf (((symbol-function 'save-some-buffers)
+                   (lambda (&optional _arg pred &rest _)
+                     (setq save-called t
+                           save-pred pred))))
           (let ((buf (find-file-noselect file)))
             (unwind-protect
                 (progn
                   (with-current-buffer buf
                     (insert "modified"))
                   (cj/kill-all-other-buffers-and-windows)
-                  (should save-called))
+                  (should save-called)
+                  (should (eq save-pred #'cj/undead-buffer-p)))
               (when (buffer-live-p buf)
                 (set-buffer-modified-p nil)
                 (kill-buffer buf))))))
