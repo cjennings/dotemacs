@@ -211,10 +211,20 @@ fetcher) or :account + :calendar-id (the \\='api fetcher).  Dispatches on the
 :fetcher key, defaulting to the .ics path.
 Updates calendar state and saves to disk on completion.
 The fetch and conversion run in external processes so parsing and writing large
-calendar files do not block the interactive Emacs thread."
-  (if (eq (plist-get calendar :fetcher) 'api)
-      (calendar-sync--sync-calendar-api calendar)
-    (calendar-sync--sync-calendar-ics calendar)))
+calendar files do not block the interactive Emacs thread.
+
+Skips a calendar whose previous sync is still in flight, so a timer tick that
+fires before a slow fetch finishes does not launch a second overlapping sync for
+the same calendar."
+  (let ((name (plist-get calendar :name)))
+    (cond
+     ((calendar-sync--syncing-p name)
+      (calendar-sync--log-silently
+       "calendar-sync: [%s] sync already in flight; skipping overlapping tick" name))
+     ((eq (plist-get calendar :fetcher) 'api)
+      (calendar-sync--sync-calendar-api calendar))
+     (t
+      (calendar-sync--sync-calendar-ics calendar)))))
 
 (defun calendar-sync--require-calendars ()
   "Return non-nil if calendars are configured, else warn and return nil."

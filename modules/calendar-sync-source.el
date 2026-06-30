@@ -90,13 +90,26 @@ Hash table mapping calendar name (string) to state plist with:
             (let ((cal-states (alist-get 'calendar-states state)))
               (clrhash calendar-sync--calendar-states)
               (dolist (entry cal-states)
-                (puthash (car entry) (cdr entry) calendar-sync--calendar-states)))))
+                (let ((st (cdr entry)))
+                  ;; A persisted `syncing' status is stale in a fresh process
+                  ;; (no sync is actually running), so reset it; otherwise the
+                  ;; in-flight guard would skip that calendar forever.
+                  (when (eq (plist-get st :status) 'syncing)
+                    (setq st (plist-put (copy-sequence st) :status 'never)))
+                  (puthash (car entry) st calendar-sync--calendar-states))))))
       (error
        (calendar-sync--log-silently "calendar-sync: Error loading state: %s" (error-message-string err))))))
 
 (defun calendar-sync--get-calendar-state (calendar-name)
   "Get state plist for CALENDAR-NAME, or nil if not found."
   (gethash calendar-name calendar-sync--calendar-states))
+
+(defun calendar-sync--syncing-p (calendar-name)
+  "Return non-nil when CALENDAR-NAME has an in-flight sync.
+Used to skip an overlapping sync when a timer tick fires while the previous
+sync for the same calendar is still running."
+  (eq (plist-get (calendar-sync--get-calendar-state calendar-name) :status)
+      'syncing))
 
 (defun calendar-sync--set-calendar-state (calendar-name state)
   "Set STATE plist for CALENDAR-NAME."
