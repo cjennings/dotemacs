@@ -43,6 +43,7 @@ PYS=[
 ]
 ELS=[
  [('cmd',';;'),('cm',' cache.el')],
+ [('cmd',';;'),('cm',' '),('warn','TODO'),('cm',': add an LRU eviction policy')],
  [('punc','('),('kw','require'),('p',' '),('con',"'cl-lib"),('punc',')')],
  [],
  [('punc','('),('kw','defvar'),('p',' '),('var','cache--tbl'),('p',' '),('punc','('),('fnc','make-hash-table'),('p',' '),('con',':test'),('p',' '),('con',"'equal"),('punc','))')],
@@ -55,7 +56,7 @@ ELS=[
  [('p','        '),('punc','('),('fnc','puthash'),('p',' '),('var','key'),('p',' '),('var','v'),('p',' '),('var','cache--tbl'),('punc',') '),('var','v'),('punc','))))')],
  [],
  [('punc','('),('kw','defun'),('p',' '),('fnd','cache-clear'),('p',' '),('punc','()')],
- [('p','  '),('doc','"Empty the memo table."')],
+ [('p','  '),('doc','"Empty the memo table.  See '),('dmark','\\\\[cache-get]'),('doc','."')],
  [('p','  '),('punc','('),('kw','interactive'),('punc',')')],
  [('p','  '),('punc','('),('fnc','clrhash'),('p',' '),('var','cache--tbl'),('punc',')')],
  [('p','  '),('punc','('),('fnc','message'),('p',' '),('str','"cleared'),('esc','\\n'),('str','"'),('punc','))')],
@@ -65,6 +66,9 @@ ELS=[
  [('p','  '),('punc','('),('kw','let'),('p',' '),('punc','(('),('var','acc'),('p',' '),('con','nil'),('punc','))')],
  [('p','    '),('punc','('),('fnc','maphash'),('p',' '),('punc','('),('kw','lambda'),('p',' '),('punc','('),('var','k'),('p',' '),('var','_v'),('punc',')'),('p',' '),('punc','('),('fnc','push'),('p',' '),('var','k'),('p',' '),('var','acc'),('punc','))')],
  [('p','      '),('var','cache--tbl'),('punc',')'),('p',' '),('var','acc'),('punc','))')],
+ [],
+ [('punc','('),('kw','defun'),('p',' '),('fnd','cache--key-p'),('p',' '),('punc','('),('var','s'),('punc',')')],
+ [('p','  '),('punc','('),('fnc','string-match'),('p',' '),('str','"'),('rxgb','\\\\'),('rxgc','('),('str','key'),('rxgb','\\\\'),('rxgc',')'),('str','"'),('p',' '),('var','s'),('punc','))')],
  [],
  [('punc','('),('kw','provide'),('p',' '),('con',"'cache"),('punc',')')],
 ]
@@ -134,7 +138,7 @@ CS=[
  [],
  [('cmd','//'),('cm',' returns -1 on null input')],
  [('ty','int'),('p',' '),('fnd','push'),('punc','('),('ty','Order'),('p',' '),('op','*'),('var','o'),('punc',')'),('p',' '),('dec','__attribute__'),('punc','(('),('dec','nonnull'),('punc','))'),('p',' '),('punc','{')],
- [('p','    '),('kw','if'),('p',' '),('punc','('),('var','o'),('p',' '),('op','=='),('p',' '),('con','NULL'),('punc',')'),('p',' '),('kw','return'),('p',' '),('num','-1'),('punc',';')],
+ [('p','    '),('kw','if'),('p',' '),('punc','('),('neg','!'),('var','o'),('punc',')'),('p',' '),('kw','return'),('p',' '),('num','-1'),('punc',';')],
  [('p','    '),('fnc','printf'),('punc','('),('str','"id=%d'),('esc','\\n'),('str','"'),('punc',','),('p',' '),('var','o'),('op','->'),('prop','id'),('punc',');')],
  [('p','    '),('kw','return'),('p',' '),('num','0'),('punc',';')],
  [('punc','}')],

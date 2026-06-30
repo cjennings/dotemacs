@@ -52,6 +52,11 @@ SYNTAX = {
         "font-lock-delimiter-face",
         "font-lock-misc-punctuation-face",
     ],
+    "warn": ["font-lock-warning-face"],
+    "dmark": ["font-lock-doc-markup-face"],
+    "neg": ["font-lock-negation-char-face"],
+    "rxgb": ["font-lock-regexp-grouping-backslash"],
+    "rxgc": ["font-lock-regexp-grouping-construct"],
 }
 
 UI = [

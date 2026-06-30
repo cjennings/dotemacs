@@ -312,9 +312,12 @@ CATS=[["bg","bg (ground)","Aa Bb 123"],["p","fg","other / whitespace"],["kw","ke
  ["ty","type / class","int  str  Order  Queue"],["prop","property / field","id  name  items"],
  ["con","constant","None  nil  NULL  true"],["num","number","8080  100  -1"],
  ["str","string",'"dupre"  "fmt"'],["esc","escape","\\n  \\t"],["re","regexp","/^#[0-9a-f]+/"],
- ["doc","docstring",'"""..."""'],["cm","comment","# reject nil"],["cmd","comment delim","#  //  ;;"],
+ ["rxgb","regexp backslash","\\\\("],["rxgc","regexp construct","\\( \\)"],
+ ["doc","docstring",'"""..."""'],["dmark","doc mark","\\[cmd]  `sym'"],
+ ["cm","comment","# reject nil"],["cmd","comment delim","#  //  ;;"],
  ["var","variable / use","value  key  self"],["op","operator",":  =  ->  =="],
- ["punc","punctuation","{ }  ( )  ;"]]
+ ["neg","negation char","!"],["punc","punctuation","{ }  ( )  ;"],
+ ["warn","warn","TODO  FIXME"]]
 UI_FACES=[["cursor","cursor","Aa|"],["region","region (selection)","selected text"],
  ["hl-line","hl-line (current line)","current line"],["highlight","highlight","hover"],
  ["mode-line","mode-line","status active"],
