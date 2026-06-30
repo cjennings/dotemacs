@@ -59,12 +59,11 @@ auto-save-list/
 # reveal.js local clone (managed by scripts/setup-reveal.sh)
 /reveal.js/
 
-# Claude tooling (session notes, personal workflows, protocols)
+# Claude tooling — gitignored, not published to the public mirror
 /.ai/
-
-# Claude Code — personal overrides only (bundle content is tracked)
-/.claude/settings.local.json
-/.claude/.cache/
+/.claude/
+/CLAUDE.md
+/AGENTS.md
 history
 .stignore
 
