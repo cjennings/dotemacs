@@ -1,0 +1,158 @@
+#+TITLE: Spec: Migrate Tests Off Mocking C Primitives
+#+AUTHOR: Craig Jennings
+#+DATE: 2026-06-30
+#+STATUS: Draft — for discussion
+
+* Status
+
+Draft. Pulled out of =todo.org= (=** TODO [#C] Migrate tests off mocking
+primitives (native-comp robustness) :test:refactor:solo:=) so the scope and
+approach can be settled before any code moves. Execution is deferred; this
+document is the discussion vehicle.
+
+Companion reference: [[file:native-comp-subr-mocking.org][native-comp-subr-mocking.org]] holds the full mechanism, the
+upstream research, and the 2026-06-21 decision. This spec does not restate the
+mechanism; it plans the remaining work that decision deferred.
+
+* Background — how we hit this
+
+We re-enabled native compilation config-wide (early-init.el, commit 3fd28987,
+2026-06-20). Tests that had been green for months immediately started failing
+with no change to their source — the first 8 were window-primitive mocks in
+=test-dirvish-config-wrappers.el= and =test-calibredb-epub-config.el=
+(=window-body-width=, =window-margins=, =current-window-configuration=,
+=get-buffer-window=), throwing =wrong-number-of-arguments= for a zero-arg mock
+lambda called with one argument.
+
+** What we struggled with (the consequences)
+
+- *Intermittent, non-deterministic failure.* The same test passed, then
+  crashed, then passed again within a session. Native-comp generates a
+  per-primitive trampoline =.eln= lazily and caches it on disk; whether a mock
+  "works" depends on whether that trampoline has been built yet. The
+  non-determinism was the tell, and it made the failures hard to trust or
+  reproduce.
+- *Three distinct failure modes from one cause* (full detail in the companion
+  doc): (1) trampoline generation failure under =--batch=; (2) silent bypass —
+  natively-compiled callers ignore the mock and run the real primitive, so a
+  test passes for the wrong reason; (3) arity mismatch — the trampoline calls
+  the mock with the primitive's *maximum* arity, so a fixed-arity mock narrower
+  than the primitive throws. Mode 3 is the one that bit us; modes 1 and 2 sit
+  latent.
+- *The tempting quick fix is the dangerous one.* Disabling subr trampolines
+  (=native-comp-enable-subr-trampolines nil=) is the most-cited workaround, but
+  in our native-comp-heavy setup it produces mode 2 — tests that pass while
+  asserting against the real primitive. A quiet false pass is worse than a loud
+  crash.
+- *Scale of the latent surface.* The suite mocks subrs in hundreds of places.
+  The variadic sweep touched 188 arity-narrow mocks.
+
+** What is already done (the stopgap, 2026-06-21)
+
+Not currently broken — two things shipped (commits 571da499, b62c3c88):
+
+1. *Variadic sweep.* Every arity-narrow subr mock got =&rest _= appended, which
+   tolerates the trampoline's full-arity call. Deterministic, keeps trampolines
+   on, so no silent bypass. Fixes mode 3.
+2. *Meta-test gate.* =tests/test-meta-subr-mock-arity.el= statically scans every
+   test file for =symbol-function= / =fset= / =setf= subr redefinitions and
+   fails =make test= if any mock can't accept the primitive's maximum arity. A
+   new arity-narrow mock can't merge silently.
+
+The stopgap fixes the mode we actually suffered. It leaves modes 1 and 2 latent.
+The durable fix the ecosystem (and our own =elisp-testing.md=) points to is to
+*not redefine primitives at all*. That is the work this spec scopes.
+
+* The real scope — most mocks should NOT move
+
+The raw inventory is large, but the headline number is misleading. =testing.md=
+says to mock external boundaries; converting those to "drive real state" would
+mean running real shells and touching the real filesystem in unit tests — the
+opposite of what we want. So the actual migration target is narrow.
+
+Current subr-mock sites across 261 test files (=cl-letf= / =fset= / =advice-add=
+on the named primitive):
+
+| Primitive               | Sites | Classification          | Disposition                       |
+|-------------------------+-------+-------------------------+-----------------------------------|
+| shell-command-to-string |    62 | external boundary       | keep mocked (variadic)            |
+|-------------------------+-------+-------------------------+-----------------------------------|
+| executable-find         |    60 | external boundary       | keep mocked (variadic)            |
+|-------------------------+-------+-------------------------+-----------------------------------|
+| shell-command           |    29 | external boundary       | keep mocked (variadic)            |
+|-------------------------+-------+-------------------------+-----------------------------------|
+| call-process            |    17 | external boundary       | keep mocked (variadic)            |
+|-------------------------+-------+-------------------------+-----------------------------------|
+| current-time            |    11 | time boundary           | keep mocked (variadic)            |
+|-------------------------+-------+-------------------------+-----------------------------------|
+| save-buffer             |    10 | file I/O boundary       | keep, or real temp-file fixture   |
+|-------------------------+-------+-------------------------+-----------------------------------|
+| write-region            |     4 | file I/O boundary       | keep, or real temp-file fixture   |
+|-------------------------+-------+-------------------------+-----------------------------------|
+| message                 |    69 | output-silencing        | keep mocked (variadic)            |
+|-------------------------+-------+-------------------------+-----------------------------------|
+| completing-read         |    25 | UI prompt               | MIGRATE — extract pure internal   |
+|-------------------------+-------+-------------------------+-----------------------------------|
+| read-string             |    16 | UI prompt               | MIGRATE — extract pure internal   |
+|-------------------------+-------+-------------------------+-----------------------------------|
+| yes-or-no-p             |    14 | UI prompt               | MIGRATE — extract pure internal   |
+|-------------------------+-------+-------------------------+-----------------------------------|
+| read-from-minibuffer    |     6 | UI prompt               | MIGRATE — extract pure internal   |
+|-------------------------+-------+-------------------------+-----------------------------------|
+
+The genuine migration target is the UI-prompt bucket: ~61 sites. Per
+=elisp-testing.md='s Interactive-vs-Internal rule, the fix is to extract a pure
+internal that takes the value as an argument and test that directly, leaving the
+interactive wrapper a thin un-tested (or smoke-tested) shell. That removes the
+prompt mock entirely — immune to all three failure modes — and improves the
+production code's testability as a side effect.
+
+Boundary mocks (shell, file I/O, time, =executable-find=, =call-process=) stay
+mocked: that is correct unit-test practice, and the variadic form already
+handles native-comp. =message= is output-silencing, not logic — keep it.
+
+* Proposed approach
+
+Not a single sweep. The migration touches production code (each extraction is a
+small design change), so it is incremental and reviewable, not mechanical.
+
+1. *Scoped exemplar pass first.* Pick one module with a few prompt-mocks, do the
+   extract-internal conversion there, set the pattern, and measure the per-case
+   effort. This calibrates the rest.
+2. *Batch by module afterward.* Convert remaining UI-prompt sites a module at a
+   time, each its own commit, with the suite green between.
+3. *Leave boundaries alone.* No conversion of shell / file / time / process
+   mocks. The meta-test keeps them arity-safe.
+
+* Open decisions (resolve in discussion)
+
+** TODO Confirm the scope: UI-prompt mocks only, boundaries stay
+Is the migration scoped to the ~61 UI-prompt sites (completing-read, read-string,
+yes-or-no-p, read-from-minibuffer), with all boundary mocks explicitly out of
+scope? Or is there an appetite to also convert the file-I/O mocks
+(=save-buffer=, =write-region=) to real temp-file fixtures where it reads
+cleaner?
+
+** TODO Reframe the todo.org task title to match the real scope
+The current title — "Migrate tests off mocking primitives" — reads as all 300+
+sites. If we agree on UI-prompt-only, retitle to something like "Extract pure
+internals for UI-prompt-mocked tests" so a future session does not re-scope it
+as a wholesale sweep.
+
+** TODO Pick the exemplar module for the first pass
+Which module gets the calibrating conversion? A small one with 2-4 prompt-mocks
+is ideal. Candidate selection needs a per-module breakdown of the ~61 sites
+(not yet collected).
+
+** TODO Decide priority and timing
+Currently =[#C]=, =:solo:=. The suite is not broken (stopgap holds), so this is
+test-quality debt, not urgent. Confirm it stays low and gets done in batches
+between other work, rather than as a dedicated push.
+
+* Non-goals
+
+- Re-deriving or re-documenting the native-comp trampoline mechanism (see the
+  companion doc).
+- Converting boundary mocks (shell, file I/O, time, process, executable-find).
+- Removing the variadic-mock convention or the meta-test gate — both stay; they
+  are the standing protection for every mock that legitimately remains.
