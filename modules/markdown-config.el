@@ -70,10 +70,34 @@ lives in a separate command."
   ;; rendered.
   (browse-url "http://localhost:8080/imp"))
 
+;; strapdown.js renders the markdown client-side.  It is vendored under
+;; assets/ and embedded inline rather than loaded from
+;; http://ndossougbe.github.io/strapdown/dist/strapdown.js: the CDN was plain
+;; HTTP (mixed content), an unmaintained third-party github.io page (a
+;; supply-chain and MITM surface), and made the preview fail with no network.
+;; The bundle (jQuery + marked + bootstrap themes) is self-contained, so inlining
+;; it serves the whole preview from localhost.  Refresh by re-downloading the
+;; dist build into assets/strapdown.js.
+(defconst cj/markdown--strapdown-file
+  (expand-file-name "assets/strapdown.js" user-emacs-directory)
+  "Path to the vendored strapdown.js bundle served with the markdown preview.")
+
+(defvar cj/markdown--strapdown-cache nil
+  "Cached contents of `cj/markdown--strapdown-file', read once on first preview.")
+
+(defun cj/markdown--strapdown-js ()
+  "Return the vendored strapdown.js source, reading and caching it once."
+  (or cj/markdown--strapdown-cache
+      (setq cj/markdown--strapdown-cache
+            (with-temp-buffer
+              (insert-file-contents-literally cj/markdown--strapdown-file)
+              (buffer-string)))))
+
 (defun cj/markdown-html (buffer)
   (princ (with-current-buffer buffer
-		   (format "<!DOCTYPE html><html><title>Impatient Markdown</title><xmp theme=\"united\" style=\"display:none;\"> %s  </xmp><script src=\"http://ndossougbe.github.io/strapdown/dist/strapdown.js\"></script></html>"
-				   (buffer-substring-no-properties (point-min) (point-max))))
+		   (format "<!DOCTYPE html><html><title>Impatient Markdown</title><xmp theme=\"united\" style=\"display:none;\"> %s  </xmp><script>%s</script></html>"
+				   (buffer-substring-no-properties (point-min) (point-max))
+				   (cj/markdown--strapdown-js)))
 		 (current-buffer)))
 
 ;; Bind the preview key after the defun so use-package's `:bind' autoload

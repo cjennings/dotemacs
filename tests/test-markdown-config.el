@@ -37,8 +37,27 @@
             (let ((html (buffer-string)))
               (should (string-match-p "<!DOCTYPE html>" html))
               (should (string-match-p "<xmp" html))
-              (should (string-match-p "strapdown\\.js" html))
               (should (string-match-p "some \\*\\*markdown\\*\\*" html)))))
+      (kill-buffer src))))
+
+(ert-deftest test-markdown-html-vendors-strapdown-no-external-cdn ()
+  "Normal: the preview embeds the vendored strapdown inline and references no
+external CDN, so the preview works offline and doesn't load third-party JS over
+plain HTTP."
+  (let ((src (generate-new-buffer " *md-cdn*")))
+    (unwind-protect
+        (progn
+          (with-current-buffer src (insert "# Hello"))
+          (with-temp-buffer
+            (cj/markdown-html src)
+            (let ((html (buffer-string)))
+              ;; No external CDN of any kind.
+              (should-not (string-match-p "ndossougbe" html))
+              (should-not (string-match-p "src=\"https?://" html))
+              ;; Vendored strapdown is embedded inline (a bare <script> with the
+              ;; ~121KB bundle, not a <script src=...>).
+              (should (string-match-p "<script>" html))
+              (should (> (length html) 100000)))))
       (kill-buffer src))))
 
 (ert-deftest test-markdown-html-empty-source-buffer ()
