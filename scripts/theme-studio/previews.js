@@ -476,20 +476,29 @@ function novReadingPage(a,face,label){
   const cls=isLocateOnPane(a,curApp())?' class="locate-onpane"':'';
   const title=attresc(formatLocateTitle(locateFaceMeta(a,face,LOCATE_REG)));
   const page=ofs(a,face)+";width:34em;max-width:100%;border-radius:6px;box-shadow:0 1px 8px #0007;padding:24px 30px 18px;font:13pt/1.62 Georgia,'Times New Roman',serif";
+  // Structural faces recolor the title (heading) and an inline link, derived by
+  // suffix from the palette face so tuning them in the studio repaints the page.
+  const hface=face+'-heading',lface=face+'-link';
+  const htitle=attresc(formatLocateTitle(locateFaceMeta(a,hface,LOCATE_REG)));
+  const hfg=effFg(pkgEffFg(a,hface));
   return `<div data-owner-app="${a}" data-face="${face}"${cls} title="${title}" style="${page}">`
     +`<div style="text-align:center;font-variant:small-caps;letter-spacing:.08em;font-size:10pt;opacity:.72;margin-bottom:3px">Nathaniel Hawthorne &middot; Twice-Told Tales</div>`
-    +`<div style="text-align:center;font:italic 600 16pt/1.3 Georgia,serif;margin:.15em 0 1em">Dr. Heidegger&rsquo;s Experiment</div>`
+    +`<div data-owner-app="${a}" data-face="${hface}"${cls} title="${htitle}" style="text-align:center;font:italic 600 16pt/1.3 Georgia,serif;margin:.15em 0 1em;color:${hfg}">Dr. Heidegger&rsquo;s Experiment</div>`
     +`<p style="margin:0 0 .75em">`
     +`<span style="float:left;font:600 320%/.74 Georgia,serif;padding:6px 8px 0 0">T</span>`
     +`hat very singular man, old Dr. Heidegger, once invited four venerable friends to meet him in his study. There were three white-bearded gentlemen, Mr. Medbourne, Colonel Killigrew, and Mr. Gascoigne, and a withered gentlewoman whose name was the Widow Wycherly.</p>`
-    +`<p style="margin:0 0 .75em;text-indent:1.4em">They were all melancholy old creatures, who had been unfortunate in life, and whose greatest misfortune it was that they were not long ago in their graves. <em>If the powder be genuine,</em> said the doctor, the rose of half a century should bloom again.</p>`
+    +`<p style="margin:0 0 .75em;text-indent:1.4em">They were all melancholy old creatures, who had been unfortunate in life. <em>If the powder be genuine,</em> said the doctor, `+os(a,lface,'the rose of half a century')+` should bloom again.</p>`
     +`<div style="text-align:center;font-size:9.5pt;opacity:.6;margin-top:.7em">${esc(label)} &middot; 12</div>`
     +`</div>`;}
 function renderNovReadingPreview(){
   const a='nov-reading',faces=(APPS[a]&&APPS[a].faces)||[];
   if(!faces.length)return genericPreview(a);
+  // One book page per base palette (the bg/fg faces); the per-palette heading
+  // and link faces color the title and inline link within each page rather than
+  // getting a page of their own.
+  const base=faces.filter(r=>!/-heading$|-link$/.test(r[0]));
   let h='<div style="padding:14px 16px;display:flex;flex-direction:column;gap:18px;align-items:center">';
-  for(const row of faces)h+=novReadingPage(a,row[0],row[1]);
+  for(const row of base)h+=novReadingPage(a,row[0],row[1]);
   return h+'</div>';}
 function renderSlackPreview(){const a='slack',L=[];
   L.push(os(a,'slack-room-info-title-room-name-face','#general')+'  '+os(a,'slack-room-info-title-face','Acme Workspace'));

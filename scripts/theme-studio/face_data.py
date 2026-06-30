@@ -346,11 +346,20 @@ GNUS_SEED={
 # nov-reading: the EPUB reading-view palettes (config faces, not a package). Each
 # is the buffer-local default bg+fg for a reading mode; seeded with the module's
 # starting hex so the studio shows sepia/dark/light from the first render.
-NOV_READING_FACES=("cj/nov-reading-sepia cj/nov-reading-dark cj/nov-reading-light").split()
+NOV_READING_FACES=("cj/nov-reading-sepia cj/nov-reading-dark cj/nov-reading-light "
+ "cj/nov-reading-sepia-heading cj/nov-reading-sepia-link "
+ "cj/nov-reading-dark-heading cj/nov-reading-dark-link "
+ "cj/nov-reading-light-heading cj/nov-reading-light-link").split()
 NOV_READING_SEED={
  "cj/nov-reading-sepia":{"bg":"#1f1b16","fg":"#c9b187"},
  "cj/nov-reading-dark":{"bg":"#15140f","fg":"#cfc8b8"},
- "cj/nov-reading-light":{"bg":"#ece3cf","fg":"#2a2622"}}
+ "cj/nov-reading-light":{"bg":"#ece3cf","fg":"#2a2622"},
+ "cj/nov-reading-sepia-heading":{"fg":"#e6c98a"},
+ "cj/nov-reading-sepia-link":{"fg":"#c98f5a","underline":True},
+ "cj/nov-reading-dark-heading":{"fg":"#e8e0cc"},
+ "cj/nov-reading-dark-link":{"fg":"#8fb0c4","underline":True},
+ "cj/nov-reading-light-heading":{"fg":"#5a3d28"},
+ "cj/nov-reading-light-link":{"fg":"#8a5a2a","underline":True}}
 
 # The bespoke package apps, single-sourced here. Each row is
 # (key, label, preview, FACES, prefix, SEED); add an app by adding one row.
