@@ -106,6 +106,20 @@
           (kill-buffer))
       (delete-file temp-file))))
 
+(ert-deftest test-make-script-executable-non-prog-mode-skipped ()
+  "Boundary: a shebang file visited in a non-prog-mode buffer (a script being
+read, quoted, or reviewed) is NOT silently made executable.  The auto-exec hook
+runs on every save globally, so it must only act on actual script buffers."
+  (let ((temp-file (test--create-temp-script "#!/bin/bash\necho hello")))
+    (unwind-protect
+        (with-current-buffer (find-file-noselect temp-file)
+          (text-mode)
+          (should-not (test--file-executable-p temp-file))
+          (cj/make-script-executable)
+          (should-not (test--file-executable-p temp-file))
+          (kill-buffer))
+      (delete-file temp-file))))
+
 ;;; Edge Cases
 
 (ert-deftest test-make-script-executable-edge-no-buffer-file ()

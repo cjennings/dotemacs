@@ -166,8 +166,12 @@ Overrides default prog-mode keybindings with shell-specific commands."
 ;; Automatically set execute permission on shell scripts with shebangs
 
 (defun cj/make-script-executable ()
-  "Make the current file executable if it has a shebang."
+  "Make the current file executable if it is a script buffer with a shebang.
+Runs from a global `after-save-hook', so it gates on `prog-mode': a shebang in a
+text, org, or fundamental-mode buffer (a script being read, quoted, or reviewed)
+is left alone rather than silently made executable."
   (when (and buffer-file-name
+             (derived-mode-p 'prog-mode)
              (not (file-executable-p buffer-file-name))
              (save-excursion
                (goto-char (point-min))
