@@ -3136,6 +3136,29 @@ function renderShrPreview(){const a='shr',L=[];
   L.push(os(a,'shr-text','some ')+os(a,'shr-code','inline_code()')+os(a,'shr-text',', a ')+os(a,'shr-mark','highlighted mark')+os(a,'shr-text',', ')+os(a,'shr-strike-through','struck out')+os(a,'shr-text',', a footnote')+os(a,'shr-sup','[1]')+os(a,'shr-text',','));
   L.push(os(a,'shr-text','an ')+os(a,'shr-abbreviation','HTML')+os(a,'shr-text',' abbreviation, and an ')+os(a,'shr-sliced-image','[image]')+os(a,'shr-text',' slice.'));
   return previewLines(L);}
+// nov-reading: a realistic book page per palette, not the line-based format.
+// Each palette face supplies the page bg+fg (via ofs); the serif typography and
+// hierarchy are CSS so the preview reads like an actual novel page. Tuning a
+// palette face repaints its page. data-owner-app/-face keep face-locate working.
+function novReadingPage(a,face,label){
+  const cls=isLocateOnPane(a,curApp())?' class="locate-onpane"':'';
+  const title=attresc(formatLocateTitle(locateFaceMeta(a,face,LOCATE_REG)));
+  const page=ofs(a,face)+";width:34em;max-width:100%;border-radius:6px;box-shadow:0 1px 8px #0007;padding:24px 30px 18px;font:13pt/1.62 Georgia,'Times New Roman',serif";
+  return `<div data-owner-app="${a}" data-face="${face}"${cls} title="${title}" style="${page}">`
+    +`<div style="text-align:center;font-variant:small-caps;letter-spacing:.08em;font-size:10pt;opacity:.72;margin-bottom:3px">Nathaniel Hawthorne &middot; Twice-Told Tales</div>`
+    +`<div style="text-align:center;font:italic 600 16pt/1.3 Georgia,serif;margin:.15em 0 1em">Dr. Heidegger&rsquo;s Experiment</div>`
+    +`<p style="margin:0 0 .75em">`
+    +`<span style="float:left;font:600 320%/.74 Georgia,serif;padding:6px 8px 0 0">T</span>`
+    +`hat very singular man, old Dr. Heidegger, once invited four venerable friends to meet him in his study. There were three white-bearded gentlemen, Mr. Medbourne, Colonel Killigrew, and Mr. Gascoigne, and a withered gentlewoman whose name was the Widow Wycherly.</p>`
+    +`<p style="margin:0 0 .75em;text-indent:1.4em">They were all melancholy old creatures, who had been unfortunate in life, and whose greatest misfortune it was that they were not long ago in their graves. <em>If the powder be genuine,</em> said the doctor, the rose of half a century should bloom again.</p>`
+    +`<div style="text-align:center;font-size:9.5pt;opacity:.6;margin-top:.7em">${esc(label)} &middot; 12</div>`
+    +`</div>`;}
+function renderNovReadingPreview(){
+  const a='nov-reading',faces=(APPS[a]&&APPS[a].faces)||[];
+  if(!faces.length)return genericPreview(a);
+  let h='<div style="padding:14px 16px;display:flex;flex-direction:column;gap:18px;align-items:center">';
+  for(const row of faces)h+=novReadingPage(a,row[0],row[1]);
+  return h+'</div>';}
 function renderSlackPreview(){const a='slack',L=[];
   L.push(os(a,'slack-room-info-title-room-name-face','#general')+'  '+os(a,'slack-room-info-title-face','Acme Workspace'));
   L.push(os(a,'slack-room-info-section-title-face','Topic')+'  '+os(a,'slack-room-info-section-label-face','daily standup')+'   '+os(a,'slack-room-unread-face','3 unread'));
@@ -3288,6 +3311,7 @@ const PACKAGE_PREVIEWS={
   org:renderOrgPreview,magit:renderMagitPreview,elfeed:renderElfeedPreview,eat:renderEatPreview,
   dashboard:renderDashboardPreview,mu4e:renderMu4ePreview,gnus:renderGnusPreview,orgfaces:renderOrgFacesPreview,lsp:renderLspPreview,gitgutter:renderGitGutterPreview,
   flycheck:renderFlycheckPreview,dired:renderDiredPreview,dirvish:renderDirvishPreview,calibredb:renderCalibredbPreview,
+  novreading:renderNovReadingPreview,
   erc:renderErcPreview,orgdrill:renderOrgdrillPreview,orgnoter:renderOrgnoterPreview,signel:renderSignelPreview,
   pearl:renderPearlPreview,slack:renderSlackPreview,telega:renderTelegaPreview,shr:renderShrPreview,
   nerdicons:renderNerdIconsPreview
