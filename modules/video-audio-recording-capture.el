@@ -229,7 +229,12 @@ On X11: ffmpeg captures screen directly via x11grab with PulseAudio audio."
 (defun cj/recording--build-audio-command (mic-device system-device filename)
   "Build the ffmpeg shell command string for audio-only recording.
 MIC-DEVICE and SYSTEM-DEVICE are PulseAudio device names.  FILENAME is
-the output .m4a path.  Mixes mic + system monitor into a single AAC file."
+the output .flac path.  Mixes mic + system monitor into a single lossless
+FLAC file.  FLAC is used instead of AAC/M4A for two reasons: it is
+lossless (no encoder-quality loss, which matters for transcription
+accuracy), and its frames are self-contained so an abruptly stopped
+recording is still decodable -- unlike MP4, which needs a moov trailer
+written at close."
   (format (concat "ffmpeg "
                   "-f pulse -i %s "   ; Input 0: microphone
                   "-f pulse -i %s "   ; Input 1: system audio monitor
@@ -238,8 +243,7 @@ the output .m4a path.  Mixes mic + system monitor into a single AAC file."
                   "[1:a]volume=%.1f[sys];"
                   "[mic][sys]amix=inputs=2:duration=longest[out]\" "
                   "-map \"[out]\" "
-                  "-c:a aac "
-                  "-b:a 64k "
+                  "-c:a flac "
                   "%s")
           (shell-quote-argument mic-device)
           (shell-quote-argument system-device)
@@ -287,10 +291,10 @@ Uses wf-recorder on Wayland, x11grab on X11."
 (defun cj/ffmpeg-record-audio (directory)
   "Start an audio recording, saving output to DIRECTORY.
 Records from microphone and system audio monitor (configured device),
-mixing them together into a single M4A/AAC file.
+mixing them together into a single lossless FLAC file.
 
 The filter graph mixes two PulseAudio inputs:
-  [mic] → volume boost → amerge → AAC encoder → .m4a
+  [mic] → volume boost → amix → FLAC encoder → .flac
   [sys] → volume boost ↗"
   (cj/recording-check-ffmpeg)
   (unless cj/audio-recording-ffmpeg-process
@@ -299,7 +303,7 @@ The filter graph mixes two PulseAudio inputs:
            (system-device (cdr devices))
            (location (expand-file-name directory))
            (name (format-time-string "%Y-%m-%d-%H-%M-%S"))
-           (filename (expand-file-name (concat name ".m4a") location))
+           (filename (expand-file-name (concat name ".flac") location))
            (ffmpeg-command
             (cj/recording--build-audio-command mic-device system-device filename)))
       (message "Recording from mic: %s + ALL system outputs" mic-device)
@@ -370,7 +374,7 @@ for ffmpeg to write container metadata before giving up."
 (defun cj/audio-recording-stop ()
   "Stop the audio recording, waiting for ffmpeg to finalize the file.
 Sends SIGINT to the process group and waits up to 3 seconds for ffmpeg
-to flush audio frames and write the M4A container trailer."
+to flush audio frames and finalize the FLAC stream."
   (interactive)
   (if (not cj/audio-recording-ffmpeg-process)
       (message "No audio recording in progress.")
@@ -379,8 +383,10 @@ to flush audio frames and write the M4A container trailer."
       (let ((pid (process-id proc)))
         (when pid
           (signal-process (- pid) 2)))
-      ;; M4A finalization is faster than MKV, but still needs time to write
-      ;; the AAC trailer and flush the output buffer.
+      ;; On a clean stop ffmpeg seeks back and backfills the FLAC STREAMINFO
+      ;; (total samples, MD5) so duration reads correctly.  Even a hard
+      ;; truncation leaves a decodable file, since FLAC frames are
+      ;; self-contained -- there is no end-of-file trailer to miss.
       (let ((exited (cj/recording--wait-for-exit proc 3)))
         (unless exited
           (message "Warning: recording process did not exit within 3 seconds")))

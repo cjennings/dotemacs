@@ -260,8 +260,8 @@
           (should (string-match-p "-f pulse" command))))
     (test-command-structure-teardown)))
 
-(ert-deftest test-audio-recording-command-outputs-m4a ()
-  "Test that audio recording outputs to .m4a file."
+(ert-deftest test-audio-recording-command-outputs-flac ()
+  "Test that audio recording outputs to .flac file."
   (test-command-structure-setup)
   (unwind-protect
       (let ((command nil))
@@ -272,7 +272,7 @@
                   ((symbol-function 'cj/recording--validate-system-audio)
                    (lambda () nil)))
           (cj/ffmpeg-record-audio audio-recordings-dir)
-          (should (string-match-p "\\.m4a" command))))
+          (should (string-match-p "\\.flac" command))))
     (test-command-structure-teardown)))
 
 ;;; Common Command Structure (Both Video and Audio)

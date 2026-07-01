@@ -164,8 +164,8 @@
           (should update-called)))
     (test-ffmpeg-teardown)))
 
-(ert-deftest test-video-audio-recording-ffmpeg-record-audio-normal-creates-m4a-file ()
-  "Test that audio recording creates .m4a file."
+(ert-deftest test-video-audio-recording-ffmpeg-record-audio-normal-creates-flac-file ()
+  "Test that audio recording creates .flac file."
   (test-ffmpeg-setup)
   (unwind-protect
       (let ((command nil))
@@ -176,7 +176,7 @@
                   ((symbol-function 'cj/recording--validate-system-audio)
                    (lambda () nil)))
           (cj/ffmpeg-record-audio audio-recordings-dir)
-          (should (string-match-p "\\.m4a" command))))
+          (should (string-match-p "\\.flac" command))))
     (test-ffmpeg-teardown)))
 
 ;;; Stop Functions - Normal Cases

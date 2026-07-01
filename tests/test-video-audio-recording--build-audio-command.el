@@ -3,8 +3,8 @@
 ;;; Commentary:
 ;; Unit tests for cj/recording--build-audio-command.
 ;; Verifies correct ffmpeg command construction for audio-only recording
-;; (mic + system monitor mixed to M4A/AAC), including shell quoting of
-;; device names and output paths.
+;; (mic + system monitor mixed to lossless FLAC), including shell quoting
+;; of device names and output paths.
 
 ;;; Code:
 
@@ -19,14 +19,17 @@
 ;;; Normal Cases
 
 (ert-deftest test-video-audio-recording--build-audio-command-normal-uses-ffmpeg-pulse ()
-  "Normal: audio command uses ffmpeg with two PulseAudio inputs mixed to AAC."
+  "Normal: audio command uses ffmpeg with two PulseAudio inputs mixed to FLAC."
   (let ((cj/recording-mic-boost 2.0)
         (cj/recording-system-volume 1.0))
-    (let ((cmd (cj/recording--build-audio-command "mic" "sys" "/tmp/out.m4a")))
+    (let ((cmd (cj/recording--build-audio-command "mic" "sys" "/tmp/out.flac")))
       (should (string-match-p "ffmpeg" cmd))
       (should (string-match-p "-f pulse -i" cmd))
       (should (string-match-p "amix=inputs=2" cmd))
-      (should (string-match-p "-c:a aac" cmd)))))
+      (should (string-match-p "-c:a flac" cmd))
+      ;; Lossless: no lossy bitrate cap should be emitted.
+      (should-not (string-match-p "-b:a" cmd))
+      (should-not (string-match-p "-c:a aac" cmd)))))
 
 (ert-deftest test-video-audio-recording--build-audio-command-normal-devices-in-command ()
   "Normal: both mic and system device names appear in the command."
