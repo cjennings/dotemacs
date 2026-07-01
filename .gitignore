@@ -102,3 +102,6 @@ smoke/
 
 # personal task list — kept local, not tracked
 todo.org
+
+# Claude Code: task archive (follows todo file privacy)
+/archive/task-archive.org
