@@ -108,7 +108,7 @@ Add =:fetcher 'api= entries.  Old =:url= entries stay on the
          :file ,dcal-file)
         (:name "pcal"
          :fetcher ics
-         :url "***REMOVED***"
+         :url "https://calendar.proton.me/api/calendar/v1/url/.../calendar.ics"
          :file ,pcal-file)))
 #+end_src
 

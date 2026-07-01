@@ -72,7 +72,7 @@ Example:
            :calendar-id \"primary\"
            :file gcal-file)
           (:name \"proton\"
-           :url \"***REMOVED***"
+           :url \"https://calendar.proton.me/api/calendar/v1/url/.../calendar.ics\"
            :file pcal-file)))")
 
 (defcustom calendar-sync-private-config-file
