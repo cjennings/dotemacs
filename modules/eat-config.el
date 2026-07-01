@@ -83,6 +83,33 @@ ARGS is (TERMINAL OUTPUT)."
 
 (advice-add 'eat-term-process-output :filter-args #'cj/--eat-reset-sgr-at-newline)
 
+;; EAT 0.9.4 charset-designation bug.  Its parser (eat--t-handle-output) accepts
+;; a wide set of final bytes for an `ESC ( x' charset designation, but the store
+;; step (eat--t-set-charset) only maps two of them: "0" -> dec-line-drawing and
+;; "B" -> us-ascii.  Any other accepted byte (e.g. ESC ( A, the UK set) falls
+;; through the `pcase' to nil, and nil gets stored as that slot's charset.  The
+;; next character written then trips (cl-assert charset) in eat--t-write, and
+;; because writes are driven by the eat--process-output-queue timer it errors
+;; once per output chunk -- the "cl-assertion-failed (charset) [N times]" storm.
+;; We can't patch the vendored pcase without a fork the next package update would
+;; revert, so guard the one function that injects the nil: coerce a nil charset
+;; to us-ascii (the safe default the byte would have mapped to) before it lands.
+
+(declare-function eat--t-set-charset "eat")
+
+(defun cj/--eat-charset-never-nil (args)
+  "`:filter-args' advice for `eat--t-set-charset'.
+ARGS is (SLOT CHARSET).  Return it with a nil CHARSET replaced by
+`us-ascii', so EAT never stores nil for a charset designation it does
+not recognize (which would later trip (cl-assert charset) on write)."
+  (list (car args) (or (cadr args) 'us-ascii)))
+
+;; eat--t-set-charset is an internal function defined only once eat.el loads
+;; (the package is deferred), so add the advice after load rather than at top
+;; level.
+(with-eval-after-load 'eat
+  (advice-add 'eat--t-set-charset :filter-args #'cj/--eat-charset-never-nil))
+
 ;; ------------------------------- eat package ---------------------------------
 
 (use-package eat
