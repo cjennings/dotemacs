@@ -803,6 +803,52 @@ function renderSymbolOverlayPreview(){const a='symbol-overlay',L=[];
   L.push('transient highlight at point (no pin):');
   L.push('  (setq '+os(a,'symbol-overlay-default-face','current-symbol')+' 42)');
   return previewLines(L);}
+function renderIndentGuidesPreview(){const a='highlight-indent-guides',L=[],o=(f,t)=>os(a,'highlight-indent-guides-'+f,t);
+  // The character method draws a glyph per level; the column method paints
+  // bands. top-* marks the innermost block at point, stack-* its enclosing
+  // blocks — shown as a separate responsive slice of the same code.
+  L.push(";; method 'character — one glyph per indent level:");
+  L.push('def render(app):');
+  L.push(o('character-face','│')+'   for face in faces:');
+  L.push(o('character-face','│')+'   '+o('character-face','│')+'   if face.bold:');
+  L.push(o('character-face','│')+'   '+o('character-face','│')+'   '+o('character-face','│')+'   emit(face)');
+  L.push('');
+  L.push('point inside emit() — responsive guides: top marks the');
+  L.push('innermost block, stack the enclosing ones:');
+  L.push(o('stack-character-face','│')+'   '+o('stack-character-face','│')+'   '+o('top-character-face','│')+'   emit(face)   ← point here');
+  L.push('');
+  L.push(";; method 'column — alternating odd/even bands:");
+  L.push(o('odd-face',' ')+'   for face in faces:');
+  L.push(o('odd-face',' ')+'   '+o('even-face',' ')+'   if face.bold:');
+  L.push(o('odd-face',' ')+'   '+o('even-face',' ')+'   '+o('odd-face',' ')+'   emit(face)');
+  L.push('responsive column bands at the same point:');
+  L.push(o('stack-odd-face',' ')+'   '+o('stack-even-face',' ')+'   '+o('top-odd-face',' ')+'   emit(face)');
+  L.push(o('stack-even-face',' ')+'   '+o('top-even-face',' ')+'   · even variants of stack and top');
+  return previewLines(L);}
+function renderYasnippetPreview(){const a='yasnippet',L=[];
+  L.push(';; TAB on "defun" expanded the snippet; the active field');
+  L.push(';; carries yas-field-highlight-face until you type:');
+  L.push('(defun '+os(a,'yas-field-highlight-face','function-name')+' (args)');
+  L.push('  "docstring"');
+  L.push('  body)');
+  L.push('');
+  L.push('with yas-debug on, every field overlay is marked:');
+  L.push('(defun name ('+os(a,'yas--field-debug-face','args')+')   · yas--field-debug-face');
+  return previewLines(L);}
+function renderPrescientPreview(){const a='prescient',L=[];
+  L.push('M-x with prescient filtering — input: the stu');
+  L.push('  '+os(a,'prescient-primary-highlight','the')+'me-studio-open       · first component match');
+  L.push('  theme-'+os(a,'prescient-secondary-highlight','stu')+'dio-shots      · later component match');
+  L.push('  '+os(a,'prescient-primary-highlight','the')+'me-'+os(a,'prescient-secondary-highlight','stu')+'dio-gen        · both in one candidate');
+  return previewLines(L);}
+function renderFlyspellCorrectPreview(){const a='flyspell-correct',L=[];
+  L.push('flyspell-correct-wrapper on a misspelling — the word');
+  L.push('being corrected is highlighted while the menu is up:');
+  L.push('');
+  L.push('  the '+os(a,'flyspell-correct-highlight-face','teh')+' quick brown fox');
+  L.push('');
+  L.push('  1 the   2 tech   3 ten   [s]ave [a]ccept s[k]ip');
+  return previewLines(L);}
 function renderAiTermPreview(){const a='ai-term',L=[];
   // What these faces actually paint: the Claude Code TUI inside an agent
   // terminal. The banner is the fixed accent (every session); each /color

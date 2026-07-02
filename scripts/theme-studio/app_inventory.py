@@ -36,6 +36,10 @@ PREVIEW_KEYS = {
     "org-roam": "orgroam",
     "hl-todo": "hltodo",
     "symbol-overlay": "symboloverlay",
+    "highlight-indent-guides": "indentguides",
+    "yasnippet": "yasnippet",
+    "prescient": "prescient",
+    "flyspell-correct": "flyspellcorrect",
 }
 
 # Custom display labels for inventory apps whose package name is an acronym
