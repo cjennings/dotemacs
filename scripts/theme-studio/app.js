@@ -562,6 +562,8 @@ const PACKAGE_PREVIEWS={
   dashboard:renderDashboardPreview,mu4e:renderMu4ePreview,gnus:renderGnusPreview,orgfaces:renderOrgFacesPreview,lsp:renderLspPreview,gitgutter:renderGitGutterPreview,
   flycheck:renderFlycheckPreview,dired:renderDiredPreview,dirvish:renderDirvishPreview,calibredb:renderCalibredbPreview,
   novreading:renderNovReadingPreview,aiterm:renderAiTermPreview,
+  company:renderCompanyPreview,companybox:renderCompanyBoxPreview,transient:renderTransientPreview,
+  magitsection:renderMagitSectionPreview,rainbowdelims:renderRainbowDelimitersPreview,
   erc:renderErcPreview,orgdrill:renderOrgdrillPreview,orgnoter:renderOrgnoterPreview,signel:renderSignelPreview,
   pearl:renderPearlPreview,slack:renderSlackPreview,telega:renderTelegaPreview,shr:renderShrPreview,
   nerdicons:renderNerdIconsPreview

@@ -848,5 +848,33 @@ class PinnedPackages(unittest.TestCase):
         self.assertIn("all-the-icons-blue", faces)
 
 
+class BespokePreviewFaceCoverage(unittest.TestCase):
+    """Realism gate for the bespoke scenes built over inventory apps: a scene
+    that skips faces silently reads as "themed everything" when it didn't.
+    Every face of each app listed here must appear verbatim in previews.js."""
+
+    FULL_COVERAGE_APPS = [
+        "company", "company-box", "transient", "magit-section",
+        "rainbow-delimiters",
+    ]
+
+    def test_every_face_appears_in_the_renderer(self):
+        with open(os.path.join(os.path.dirname(__file__), "previews.js")) as f:
+            body = f.read()
+        missing = []
+        for app in self.FULL_COVERAGE_APPS:
+            for face, _label, _seed in generate.APPS[app]["faces"]:
+                # Renderers build names as prefix+suffix (os(a,'company-'+f,..)),
+                # so accept the bare suffix appearing after the app prefix too.
+                suffix = face
+                for prefix in (app + "-", "magit-", "rainbow-delimiters-"):
+                    if face.startswith(prefix):
+                        suffix = face[len(prefix):]
+                        break
+                if face not in body and suffix not in body:
+                    missing.append(face)
+        self.assertEqual(missing, [])
+
+
 if __name__ == "__main__":
     unittest.main()

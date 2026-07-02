@@ -17,10 +17,15 @@ from face_data import BESPOKE_APP_SPECS, PINNED_PACKAGE_FACES
 BESPOKE_APPS = {spec[0] for spec in BESPOKE_APP_SPECS} | {"org"}
 
 
-# Inventory apps (not in BESPOKE_APPS) default to the generic preview. A few have
-# a dedicated PACKAGE_PREVIEWS renderer in app.js, keyed by name here.
+# Inventory apps (not in BESPOKE_APPS) default to the generic preview. Apps with
+# a dedicated PACKAGE_PREVIEWS renderer in app.js are keyed by name here.
 PREVIEW_KEYS = {
     "markdown-mode": "markdown",
+    "company": "company",
+    "company-box": "companybox",
+    "transient": "transient",
+    "magit-section": "magitsection",
+    "rainbow-delimiters": "rainbowdelims",
 }
 
 # Custom display labels for inventory apps whose package name is an acronym

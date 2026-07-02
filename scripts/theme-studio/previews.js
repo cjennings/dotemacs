@@ -500,6 +500,98 @@ function renderNovReadingPreview(){
   let h='<div style="padding:14px 16px;display:flex;flex-direction:column;gap:18px;align-items:center">';
   for(const row of base)h+=novReadingPage(a,row[0],row[1]);
   return h+'</div>';}
+function renderCompanyPreview(){const a='company',L=[],o=(f,t)=>os(a,'company-'+f,t);
+  // A code buffer mid-completion: the inline ghost preview at point, the
+  // tooltip popup with every row variant, and the echo-area fallback.
+  const pad=(s,n)=>s+' '.repeat(Math.max(0,n-s.length));
+  L.push('(defun cj/play-track (file)');
+  L.push('  (cj/music-'+o('preview-common','pl')+o('preview','aylist-load')+'   ; inline preview at point');
+  L.push('');
+  const row=(qa,common,rest,ann,rowFace,commonFace,annFace,qaFace,bar)=>
+    o(qaFace,' '+qa+' ')+o(commonFace,common)+o(rowFace,pad(rest,26-common.length))+o(annFace,pad(ann,10))+bar;
+  L.push('  '+row('1','cj/music-pl','aylist-load','Command','tooltip-selection','tooltip-common-selection','tooltip-annotation-selection','tooltip-quick-access-selection',o('tooltip-scrollbar-thumb',' ')));
+  L.push('  '+row('2','cj/music-pl','aylist-save','Command','tooltip','tooltip-common','tooltip-annotation','tooltip-quick-access',o('tooltip-scrollbar-thumb',' ')));
+  L.push('  '+row('3','cj/music-pl','aylist-reload','Command','tooltip','tooltip-common','tooltip-annotation','tooltip-quick-access',o('tooltip-scrollbar-track',' ')));
+  L.push('  '+o('tooltip-quick-access',' 4 ')+o('tooltip-mouse',pad('cj/music-playing-p  (mouse is here)',36))+o('tooltip-annotation','Function  ')+o('tooltip-scrollbar-track',' '));
+  L.push('  '+o('tooltip-quick-access',' 5 ')+o('tooltip-deprecated','cj/music-play-file-old')+o('tooltip',pad('',14))+o('tooltip-annotation','Command   ')+o('tooltip-scrollbar-track',' '));
+  L.push('');
+  L.push('  During C-s "'+o('tooltip-search','loa')+'" in the tooltip:');
+  L.push('  '+o('tooltip-quick-access-selection',' 1 ')+o('tooltip-search-selection',pad('cj/music-playlist-load',36))+o('tooltip-annotation-selection','Command   ')+o('tooltip-scrollbar-thumb',' '));
+  L.push('  '+o('tooltip-quick-access',' 2 ')+o('tooltip','cj/music-down')+o('tooltip-search','loa')+o('tooltip',pad('der-fn',20))+o('tooltip-annotation','Function  ')+o('tooltip-scrollbar-track',' '));
+  L.push('  and the ghost text becomes '+o('preview-search','cj/music-playlist-load'));
+  L.push('');
+  L.push('  M-x display: '+o('echo-common','cj/music-pl')+o('echo','aylist-load')+'  '+o('echo','cj/music-playlist-save')+'   (company-echo frontend)');
+  return previewLines(L);}
+function renderCompanyBoxPreview(){const a='company-box',L=[],o=(f,t)=>os(a,'company-box-'+f,t);
+  // company-box is the icons frontend: same popup, plus an icon column and
+  // its own background/scrollbar/numbers faces.
+  const pad=(s,n)=>s+' '.repeat(Math.max(0,n-s.length));
+  L.push('(setq cj/theme-ac|');
+  L.push('');
+  L.push('  '+o('background',' ƒ ')+o('selection',pad(' cj/theme-accent-color',30))+o('numbers',' 1 ')+o('scrollbar','▐'));
+  L.push('  '+o('background',' ƒ ')+o('candidate',pad(' cj/theme-accent-face',30))+o('numbers',' 2 ')+o('scrollbar','▐'));
+  L.push('  '+o('background',' □ ')+o('candidate',pad(' cj/theme-accents',24))+o('annotation','(list)')+o('numbers',' 3 ')+o('background','▕'));
+  L.push('  '+o('background',' ⚙ ')+o('candidate',pad(' cj/theme-active-p',24))+o('annotation','(fn)  ')+o('numbers',' 4 ')+o('background','▕'));
+  return previewLines(L);}
+function renderTransientPreview(){const a='transient',L=[],o=(f,t)=>os(a,'transient-'+f,t);
+  // A magit-commit-style transient: argument infixes with every key class,
+  // action columns, and the exotic key faces in plausible bindings.
+  L.push(o('heading','Arguments'));
+  L.push(' '+o('key','-a')+' Stage all modified and deleted files ('+o('argument','--all')+')');
+  L.push(' '+o('key','-e')+' Allow empty commit ('+o('inactive-argument','--allow-empty')+')');
+  L.push(' '+o('key','-v')+' Show diff of changes ('+o('argument','--verbose')+')');
+  L.push(' '+o('key','=A')+' Override the author '+o('active-infix','--author=')+o('value','Craig Jennings'));
+  L.push(' '+o('key','-S')+' Sign using gpg '+o('argument','--gpg-sign=')+o('inactive-value','unset'));
+  L.push('');
+  L.push(o('heading','Create')+'        '+o('heading','Edit HEAD')+'      '+o('heading','Edit'));
+  L.push(' '+o('key','c')+' '+o('enabled-suffix','Commit')+'      '+o('key','e')+' Extend      '+o('key','f')+' Fixup');
+  L.push(' '+o('key-exit','q')+' Quit        '+o('key','w')+' Reword      '+o('key','F')+' Instant fixup');
+  L.push(' '+o('key-return','C-g')+' Back      '+o('key','a')+' Amend       '+o('disabled-suffix','s Squash (disabled)'));
+  L.push('');
+  L.push(o('heading','Key classes')+'   '+o('delimiter','|')+' = transient-delimiter');
+  L.push(' '+o('key-stay','-t')+' toggles stay open     '+o('key-recurse','o')+' opens a sub-transient');
+  L.push(' '+o('key-stack','C-z')+' suspends to stack    '+o('key-noop','x')+' bound to nothing here');
+  L.push(' '+o('nonstandard-key','<f6>')+' nonstandard binding  '+o('mismatched-key','d!')+' mismatched with suffix');
+  L.push(' '+o('unreachable-key','M-x')+' '+o('unreachable','unreachable at this level')+'   '+o('higher-level','shown at a higher level'));
+  L.push(' '+o('inapt-suffix','r Rebase (inapt while merging)')+'   '+o('inapt-argument','--interactive (inapt)'));
+  return previewLines(L);}
+function renderMagitSectionPreview(){const a='magit-section',L=[],o=(f,t)=>os(a,'magit-section-'+f,t);
+  const pad=(s,n)=>s+' '.repeat(Math.max(0,n-s.length));
+  // The section library under magit/forge/etc: headings with child counts,
+  // the highlighted current section, and a region-selected heading.
+  L.push(os(a,'magit-left-margin','▶ ')+o('heading','Unstaged changes')+' '+o('child-count','(2)'));
+  L.push(o('highlight',pad('   modified   modules/custom-buffer-file.el',52)));
+  L.push(o('highlight',pad('   modified   tests/test-custom-buffer-file.el',52)));
+  L.push('');
+  L.push(os(a,'magit-left-margin','▷ ')+o('heading-selection','Staged changes')+' '+o('child-count','(1)')+'   (heading inside an active region)');
+  L.push('   new file   scripts/theme-studio/screenshot-previews.sh');
+  L.push('');
+  L.push(o('secondary-heading','Recent commits'));
+  L.push('   8a93f68c pin retired packages');
+  L.push('   67a609dd screenshot harness');
+  return previewLines(L);}
+function renderRainbowDelimitersPreview(){const a='rainbow-delimiters',L=[];
+  const DEPTH=[null,'rainbow-delimiters-depth-1-face','rainbow-delimiters-depth-2-face',
+    'rainbow-delimiters-depth-3-face','rainbow-delimiters-depth-4-face',
+    'rainbow-delimiters-depth-5-face','rainbow-delimiters-depth-6-face',
+    'rainbow-delimiters-depth-7-face','rainbow-delimiters-depth-8-face',
+    'rainbow-delimiters-depth-9-face'];
+  const d=(n,t)=>os(a,DEPTH[n],t);
+  // Nested elisp colored by depth 1-9, plus the two error faces and the
+  // base faces the depth faces inherit from.
+  L.push(d(1,'(')+'defun demo '+d(2,'(')+'xs'+d(2,')')+'   ; parens colored by nesting depth');
+  L.push('  '+d(2,'(')+'let '+d(3,'(')+d(4,'(')+'acc '+d(5,'(')+'mapcar '+d(6,'(')+'lambda '+d(7,'(')+'x'+d(7,')'));
+  L.push('                      '+d(7,'(')+'round '+d(8,'(')+'+ 1 '+d(9,'(')+'* x '+d(1,'(')+'abs x'+d(1,')')+d(9,')')+d(8,')')+d(7,')')+d(6,')')+d(5,')')+'  ; depth 10 cycles back to depth-1');
+  L.push('                    xs'+d(4,')')+d(3,')'));
+  L.push('    acc'+d(2,')'));
+  L.push(d(1,')'));
+  L.push('');
+  L.push('(car xs'+os(a,'rainbow-delimiters-unmatched-face',')')+')   ; the extra closer is unmatched');
+  L.push('(nth 0 xs'+os(a,'rainbow-delimiters-mismatched-face',']')+'   ; a ] closing a ( is mismatched');
+  L.push('');
+  L.push(os(a,'rainbow-delimiters-base-face','base-face')+' underlies every depth; '
+        +os(a,'rainbow-delimiters-base-error-face','base-error-face')+' underlies both error faces');
+  return previewLines(L);}
 function renderAiTermPreview(){const a='ai-term',L=[];
   // What these faces actually paint: the Claude Code TUI inside an agent
   // terminal. The banner is the fixed accent (every session); each /color
