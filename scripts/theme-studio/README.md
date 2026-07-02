@@ -8,6 +8,17 @@ Reassign colors against the palette, judge legibility with live WCAG-contrast
 readouts, then export a `theme.json` that a build step turns into
 `themes/<name>-*.el`.
 
+## Coverage policy
+
+The studio themes popular packages, not just installed ones. The goal is
+generic themes that cover the wider ecosystem, so a package's face
+definitions stay in the studio even when the package is removed from this
+config (ghostel and all-the-icons are the standing examples). Never drop an
+app because its package is uninstalled; pin its face list instead so it
+survives inventory regeneration. Unloaded packages get marked as such in the
+UI, and their live previews matter *more* than the loaded ones' — the studio
+preview is the only place their theming can be seen at all.
+
 For the color-assignment philosophy behind the tool — how to group syntax roles,
 what to share, where to spend chroma and bold — see
 [`theme-coloring-guide.org`](theme-coloring-guide.org).

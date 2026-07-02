@@ -3499,6 +3499,29 @@ function initApp(){
 }
 initApp();
 addEventListener('resize',()=>{syncPaneHeight('uitable','mockframe');syncPaneHeight('pkgtable','pkgpreview');});
+// #preview=<app-key>[&theme=<json-url>]: select that app on load and hide the
+// topbar + palette so its face table + live preview render from the top of the
+// page (headless screenshots can't scroll reliably). An optional theme URL is
+// fetched and imported first, so shots show a real theme instead of untitled
+// (fresh headless profiles have no localStorage; Chrome needs
+// --allow-file-access-from-files for a file:// fetch). Drives the screenshot
+// harness (screenshot-previews.sh), same hash-URL pattern as the browser gates.
+// The title flip lets the harness confirm the selection landed.
+if(location.hash.startsWith('#preview=')){
+  const q=location.hash.slice(9).split('&theme=');
+  const k=decodeURIComponent(q[0]);
+  const showApp=()=>{
+    if(!APPS[k])return;
+    const s=document.getElementById('viewsel');
+    if(!s)return;
+    s.value=k;onViewChange();document.title='PREVIEW '+k;
+    document.querySelectorAll('.topbar, body > section')
+      .forEach(e=>{e.style.display='none';});};
+  if(q[1])fetch(decodeURIComponent(q[1])).then(r=>r.text())
+    .then(t=>{applyImported(t);showApp();})
+    .catch(()=>{document.title='PREVIEW THEME-LOAD-FAILED';showApp();});
+  else showApp();
+}
 // Shared gate harness. Each call site keeps its literal location.hash==='#NAMEtest'
 // check (run-tests.sh greps it); gate() owns the ok/notes/A setup and the verdict
 // postamble. Note format standardized to ' fails=note1,note2'.
