@@ -859,6 +859,7 @@ class BespokePreviewFaceCoverage(unittest.TestCase):
         "vertico", "marginalia", "consult", "embark", "orderless",
         "emms", "org-roam", "hl-todo", "symbol-overlay",
         "highlight-indent-guides", "yasnippet", "prescient", "flyspell-correct",
+        "tmr", "wttrin", "alert", "org-superstar", "nerd-icons-completion",
     ]
 
     def test_every_face_appears_in_the_renderer(self):

@@ -571,6 +571,8 @@ const PACKAGE_PREVIEWS={
   symboloverlay:renderSymbolOverlayPreview,
   indentguides:renderIndentGuidesPreview,yasnippet:renderYasnippetPreview,
   prescient:renderPrescientPreview,flyspellcorrect:renderFlyspellCorrectPreview,
+  tmr:renderTmrPreview,wttrin:renderWttrinPreview,alert:renderAlertPreview,
+  orgsuperstar:renderOrgSuperstarPreview,nerdiconscompletion:renderNerdIconsCompletionPreview,
   erc:renderErcPreview,orgdrill:renderOrgdrillPreview,orgnoter:renderOrgnoterPreview,signel:renderSignelPreview,
   pearl:renderPearlPreview,slack:renderSlackPreview,telega:renderTelegaPreview,shr:renderShrPreview,
   nerdicons:renderNerdIconsPreview

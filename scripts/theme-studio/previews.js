@@ -849,6 +849,57 @@ function renderFlyspellCorrectPreview(){const a='flyspell-correct',L=[];
   L.push('');
   L.push('  1 the   2 tech   3 ten   [s]ave [a]ccept s[k]ip');
   return previewLines(L);}
+function renderTmrPreview(){const a='tmr',L=[],o=(f,t)=>os(a,'tmr-'+f,t);
+  // The echo/list presentation plus tmr-tabulated-view's column faces.
+  L.push('M-x tmr-view — active timers:');
+  L.push('  '+o('start-time','10:00')+' → '+o('end-time','10:25')+'  '+o('duration','25m')+'  '+o('description','Tea steeping'));
+  L.push('  '+o('start-time','09:30')+' → '+o('end-time','09:55')+'  '+o('duration','25m')+'  '+o('finished','Pomodoro — finished'));
+  L.push('  '+o('must-be-acknowledged','Backup verify — must acknowledge'));
+  L.push('  '+o('is-acknowledged','✔ acknowledged'));
+  L.push('');
+  L.push('tmr-tabulated-view — same timers as a table:');
+  L.push('  Start  End    Remaining  Description   Ack');
+  L.push('  '+o('tabulated-start-time','10:00')+'  '+o('tabulated-end-time','10:25')+'  '+o('tabulated-remaining-time','12m')+'        '+o('tabulated-description','Tea steeping')+'  ');
+  L.push('  '+o('tabulated-start-time','09:30')+'  '+o('tabulated-end-time','09:55')+'  '+o('tabulated-remaining-time','done')+'       '+o('tabulated-description','Pomodoro')+'      '+o('tabulated-acknowledgement','✔'));
+  return previewLines(L);}
+function renderWttrinPreview(){const a='wttrin',L=[],o=(f,t)=>os(a,'wttrin-'+f,t);
+  L.push('*wttrin* — Austin, Texas:');
+  L.push('');
+  L.push('  '+o('staleness-header','⚠ fetched 42 minutes ago — press g to refresh'));
+  L.push('  Weather report: Austin, Texas');
+  L.push('    ☀  +33°C, wind ↗ 11 km/h, humidity 58%');
+  L.push('');
+  L.push('  '+o('instructions','Press ')+o('key','g')+o('instructions',' to refresh, ')+o('key','c')+o('instructions',' to change city, ')+o('key','q')+o('instructions',' to quit'));
+  L.push('');
+  L.push('the modeline lighter once the data goes stale:');
+  L.push('  '+o('mode-line-stale','[wttr: 33° stale]'));
+  return previewLines(L);}
+function renderAlertPreview(){const a='alert',L=[],o=(f,t)=>os(a,'alert-'+f,t);
+  L.push('alert.el notifications, one per severity:');
+  L.push('');
+  L.push('  '+o('urgent-face','build broken on main — fix before anything else'));
+  L.push('  '+o('high-face','battery at 5%, plug in now'));
+  L.push('  '+o('moderate-face','meeting with Nerses in 10 minutes'));
+  L.push('  '+o('normal-face','tmr: Tea steeping finished'));
+  L.push('  '+o('low-face','emms: now playing Waltz for Debby'));
+  L.push('  '+o('trivial-face','package refresh finished, 3 upgrades'));
+  return previewLines(L);}
+function renderOrgSuperstarPreview(){const a='org-superstar',L=[],o=(f,t)=>os(a,'org-superstar-'+f,t);
+  L.push(';; org-superstar swaps *s for pretty bullets:');
+  L.push('');
+  L.push(o('first','◉')+' Theme work   · org-superstar-first, level 1');
+  L.push(o('leading','·')+o('header-bullet','○')+' Studio previews   · leading + header-bullet');
+  L.push(o('leading','··')+o('header-bullet','✸')+' Minibuffer stack scene');
+  L.push('  '+o('item','‣')+' a plain list item gets org-superstar-item');
+  return previewLines(L);}
+function renderNerdIconsCompletionPreview(){const a='nerd-icons-completion',L=[];
+  L.push('C-x C-f — completion candidates get a leading icon;');
+  L.push('directories draw theirs with the dir face:');
+  L.push('');
+  L.push('  '+os(a,'nerd-icons-completion-dir-face','')+' scripts/');
+  L.push('  '+os(a,'nerd-icons-completion-dir-face','')+' modules/');
+  L.push('   app.js   · file icons keep their own nerd-icons faces');
+  return previewLines(L);}
 function renderAiTermPreview(){const a='ai-term',L=[];
   // What these faces actually paint: the Claude Code TUI inside an agent
   // terminal. The banner is the fixed accent (every session); each /color

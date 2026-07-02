@@ -40,6 +40,11 @@ PREVIEW_KEYS = {
     "yasnippet": "yasnippet",
     "prescient": "prescient",
     "flyspell-correct": "flyspellcorrect",
+    "tmr": "tmr",
+    "wttrin": "wttrin",
+    "alert": "alert",
+    "org-superstar": "orgsuperstar",
+    "nerd-icons-completion": "nerdiconscompletion",
 }
 
 # Custom display labels for inventory apps whose package name is an acronym
