@@ -375,11 +375,13 @@ Prompts user for the action when executing."
   (setq shr-width 72)                ; Set width for HTML rendering
   (setq shr-bullet "• ")             ; Nice bullet points
 
-  ;; Block remote images by default (privacy/security)
-  (with-suppressed-warnings ((obsolete mu4e-view-show-images mu4e-view-image-max-width)
-                             (free-vars mu4e-view-show-images mu4e-view-image-max-width))
-    (setq mu4e-view-show-images t)
-    (setq mu4e-view-image-max-width 800))
+  ;; Image policy: remote HTTP images are blocked by default (tracking
+  ;; pixels) via `gnus-blocked-images' "http" above; embedded/attached
+  ;; images render inline via `mu4e-show-images'; sizing is governed by
+  ;; `shr-max-image-proportion'. The per-message override is
+  ;; `cj/mu4e-toggle-remote-images' below. (The old mu4e-view-show-images /
+  ;; mu4e-view-image-max-width pair was dropped: obsolete since mu4e 1.7,
+  ;; ignored by the shr-based view.)
 
   ;; ------------------------------- View Actions ------------------------------
   ;; define view and article menus
@@ -392,14 +394,18 @@ Prompts user for the action when executing."
 
   ;; Custom function to toggle remote content and bind it in view mode
   (defun cj/mu4e-toggle-remote-images ()
-	"Toggle display of remote images in current message."
+	"Toggle display of remote images in the current message.
+Buffer-local, so the override lasts only for this message view.
+Echoes the effective state so there's no guessing what a refresh did."
 	(interactive)
 	(require 'mu4e-view)
 	(setq-local gnus-blocked-images
 				(if (equal gnus-blocked-images "http")
 					nil
 				  "http"))
-	(mu4e-view-refresh))
+	(mu4e-view-refresh)
+	(message "Remote images: %s (this message only)"
+			 (if (equal gnus-blocked-images "http") "blocked" "shown")))
 
   ;; first letter is the keybinding
   (setq mu4e-headers-actions
