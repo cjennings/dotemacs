@@ -45,6 +45,8 @@ PREVIEW_KEYS = {
     "alert": "alert",
     "org-superstar": "orgsuperstar",
     "nerd-icons-completion": "nerdiconscompletion",
+    "ghostel": "ghostel",
+    "all-the-icons": "alltheicons",
 }
 
 # Custom display labels for inventory apps whose package name is an acronym

@@ -900,6 +900,72 @@ function renderNerdIconsCompletionPreview(){const a='nerd-icons-completion',L=[]
   L.push('  '+os(a,'nerd-icons-completion-dir-face','')+' modules/');
   L.push('   app.js   · file icons keep their own nerd-icons faces');
   return previewLines(L);}
+function renderGhostelPreview(){const a='ghostel',L=[],d=t=>os(a,'ghostel-default',t);
+  // Literal face names (the coverage gate matches verbatim, not constructed):
+  const COLOR={black:'ghostel-color-black',red:'ghostel-color-red',green:'ghostel-color-green',
+    yellow:'ghostel-color-yellow',blue:'ghostel-color-blue',magenta:'ghostel-color-magenta',
+    cyan:'ghostel-color-cyan',white:'ghostel-color-white','bright-black':'ghostel-color-bright-black',
+    'bright-red':'ghostel-color-bright-red','bright-green':'ghostel-color-bright-green',
+    'bright-yellow':'ghostel-color-bright-yellow','bright-blue':'ghostel-color-bright-blue',
+    'bright-magenta':'ghostel-color-bright-magenta','bright-cyan':'ghostel-color-bright-cyan',
+    'bright-white':'ghostel-color-bright-white'};
+  const c=(f,t)=>os(a,COLOR[f],t);
+  // ghostel is the terminal emulator behind the agent buffers: its 16 ANSI
+  // color faces plus the default surface and the two fake-cursor faces (drawn
+  // when the window loses focus). Modeled on the eat scene — same dircolors /
+  // git / test blocks, colored through ghostel's own faces.
+  const cur=t=>os(a,'ghostel-fake-cursor',t),curbox=t=>os(a,'ghostel-fake-cursor-box',t);
+  L.push(d('~/projects/app $ eza -la --color'));
+  L.push(d('drwxr-xr-x     - 14:02  ')+c('blue','.git/'));
+  L.push(d('.rw-r--r--   120 09:11  .gitignore'));
+  L.push(d('drwxr-xr-x     - 14:02  ')+c('blue','src/'));
+  L.push(d('.rwxr-xr-x  2.1k 14:00  ')+c('bright-green','run.sh'));
+  L.push(d('lrwxr-xr-x     - 14:01  ')+c('cyan','latest')+d(' -> ')+c('blue','v2.1/'));
+  L.push(d('.rw-r--r--  4.5M 22:30  ')+c('red','backup.tar.gz'));
+  L.push(d('.rw-r--r--   88k 18:05  ')+c('magenta','logo.png'));
+  L.push('');
+  L.push(d('~/projects/app $ git status -sb'));
+  L.push(c('bright-cyan','## main...origin/main [ahead 2]'));
+  L.push(c('green','A  src/ghostel-preview.js')+d('   ')+c('green','M  README.md'));
+  L.push(c('red',' M init.el')+d('   ')+c('red','?? scratch.txt'));
+  L.push('');
+  L.push(d('~/projects/app $ make test'));
+  L.push(c('green','✔ PASS')+d('  term-toggle      (19 tests)'));
+  L.push(c('yellow','⚠ SKIP')+d('  network-sync     (offline)'));
+  L.push(c('red','✘ FAIL')+d('  org-roam-refile  (1 test)'));
+  L.push('');
+  L.push(d('normal ')+c('black','■')+c('red','■')+c('green','■')+c('yellow','■')+c('blue','■')+c('magenta','■')+c('cyan','■')+c('white','■'));
+  L.push(d('bright ')+c('bright-black','■')+c('bright-red','■')+c('bright-green','■')+c('bright-yellow','■')+c('bright-blue','■')+c('bright-magenta','■')+c('bright-cyan','■')+c('bright-white','■'));
+  L.push('');
+  L.push(d('unfocused window — the block cursor becomes a hollow fake:'));
+  L.push(d('~/projects/app $ ')+curbox('e')+d('cho hi   · ghostel-fake-cursor-box (this window)'));
+  L.push(d('other agent $ ')+cur('▮')+d('   · ghostel-fake-cursor (another buffer)'));
+  return previewLines(L);}
+function renderAllTheIconsPreview(){const a='all-the-icons',L=[];
+  const o=(f,t)=>os(a,'all-the-icons-'+f,t);
+  // dired-with-icons: the icon glyphs live in all-the-icons' own fonts (not
+  // the embedded nerd font), so they'd render as tofu here — instead each
+  // file's leading ● marker is drawn in that file's color face, which is what
+  // the theme actually sets. Covers the 8 base hues, their light (l*) and
+  // dark (d*) variants, and the -alt accents. NOT the nerd-icons gallery.
+  L.push('dired with all-the-icons — the ● marks each file icon\'s color face:');
+  L.push('');
+  L.push('  '+o('blue','●')+' config.json      '+o('blue-alt','●')+' settings.toml');
+  L.push('  '+o('yellow','●')+' notes.js         '+o('dyellow','●')+' bundle.min.js');
+  L.push('  '+o('green','●')+' report.md        '+o('lgreen','●')+' CHANGELOG.md');
+  L.push('  '+o('red','●')+' index.html       '+o('red-alt','●')+' template.vue');
+  L.push('  '+o('orange','●')+' style.css        '+o('lorange','●')+' theme.scss');
+  L.push('  '+o('purple','●')+' script.py        '+o('purple-alt','●')+' notebook.ipynb');
+  L.push('  '+o('cyan','●')+' main.c           '+o('cyan-alt','●')+' worker.rs');
+  L.push('  '+o('lcyan','●')+' header.h         '+o('dcyan','●')+' vendor.min.c');
+  L.push('  '+o('maroon','●')+' app.rb           '+o('lmaroon','●')+' Gemfile');
+  L.push('  '+o('pink','●')+' data.sql         '+o('lpink','●')+' schema.prisma');
+  L.push('  '+o('silver','●')+' LICENSE          '+o('lsilver','●')+' .gitignore');
+  L.push('');
+  L.push('  dark variants (dim / muted file kinds):');
+  L.push('  '+o('dblue','●')+o('dcyan','●')+o('dgreen','●')+o('dyellow','●')+o('dorange','●')+o('dred','●')+o('dpurple','●')+o('dpink','●')+o('dmaroon','●')+o('dsilver','●')+'  · d-prefixed hues');
+  L.push('  light variants:  '+o('lblue','●')+o('lred','●')+o('lyellow','●')+o('lpurple','●')+'  · l-prefixed hues');
+  return previewLines(L);}
 function renderAiTermPreview(){const a='ai-term',L=[];
   // What these faces actually paint: the Claude Code TUI inside an agent
   // terminal. The banner is the fixed accent (every session); each /color
