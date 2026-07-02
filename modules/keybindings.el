@@ -147,6 +147,12 @@ Errors if VAR is unbound, not a non-empty string, or the file does not exist."
 ;; ---------------------------- General Keybindings ----------------------------
 
 ;; Avoid hostile bindings
+;; two-column mode (2C-command): a grazed F2 + a stray 2/s/b replaces the
+;; buffer's mode-line-format with 2C's own retro layout and spawns a 2C/
+;; companion buffer.  eat semi-char buffers don't forward F2, so the trap
+;; is armed everywhere.  cj/modeline-reset repairs a hijacked buffer.
+(keymap-global-unset  "<f2>")      ;; 2C-command prefix
+(keymap-global-unset  "C-x 6")     ;; 2C-command prefix (same map)
 (keymap-global-unset  "C-x C-f")   ;; find-file-read-only
 (keymap-global-set  "C-x C-f" #'find-file)
 (keymap-global-set  "C-z" (make-sparse-keymap)) ;; replace suspend-frame with prefix map
