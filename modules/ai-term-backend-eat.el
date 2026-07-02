@@ -30,7 +30,7 @@
 (defvar eat-buffer-name)
 (defvar eat-semi-char-mode-map)
 (defvar eat-terminal)
-(defvar cj/ai-term-accent-color-indices)
+(defvar cj/ai-term-palette-faces)
 
 (defun cj/--ai-term-send-string (buffer string)
   "Send STRING to BUFFER's terminal process (the agent's shell).
@@ -40,20 +40,20 @@ Sends to the pty directly so the launch command reaches the shell EAT runs."
       (process-send-string proc string))))
 
 (defun cj/--ai-term-apply-accent (buffer)
-  "Point BUFFER's terminal accent palette entries at `cj/ai-term-accent'.
-Repaints each index in `cj/ai-term-accent-color-indices' in this
-terminal's own 256-color palette (eat keeps one per terminal), so the
-agent's accent -- Claude Code's rose banner, borders, spinner -- renders
-in the accent face's color while every other eat terminal keeps the true
-palette.  A no-op when BUFFER has no live eat terminal.  Takes effect on
-the terminal's next redraw; text already on screen keeps its old color
-until the program repaints it (Claude Code's TUI repaints continuously)."
+  "Point BUFFER's terminal palette entries at their dupre faces.
+Repaints each (INDEX . FACE) in `cj/ai-term-palette-faces' in this
+terminal's own 256-color palette (eat keeps one per terminal), so Claude
+Code's accents -- the bypass banner and every /color session color --
+render in dupre hues while other eat terminals keep the true palette.
+A no-op when BUFFER has no live eat terminal.  Takes effect on the
+terminal's next redraw; text already on screen keeps its old color until
+the program repaints it (Claude Code's TUI repaints continuously)."
   (with-current-buffer buffer
     (when (bound-and-true-p eat-terminal)
-      (dolist (index cj/ai-term-accent-color-indices)
+      (dolist (entry cj/ai-term-palette-faces)
         (eat-term-set-parameter eat-terminal
-                                (intern (format "color-%d-face" index))
-                                'cj/ai-term-accent)))))
+                                (intern (format "color-%d-face" (car entry)))
+                                (cdr entry))))))
 
 (defun cj/--ai-term-show-or-create (dir name)
   "Show or create the AI-term buffer for project DIR with buffer NAME.

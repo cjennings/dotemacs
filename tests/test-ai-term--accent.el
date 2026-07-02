@@ -1,10 +1,11 @@
-;;; test-ai-term--accent.el --- Tests for the agent-terminal accent color -*- lexical-binding: t; -*-
+;;; test-ai-term--accent.el --- Tests for the agent-terminal accent colors -*- lexical-binding: t; -*-
 
 ;;; Commentary:
-;; Tests the per-terminal accent recolor: the accent face's dupre-blue default,
-;; the palette-index list, the apply helper that points a terminal's 256-color
-;; palette entries at the accent face, and the show-or-create wiring.  eat and
-;; its terminal API are stubbed -- no process spawning, no eat load in batch.
+;; Tests the per-terminal palette recolor: the dupre faces for Claude Code's
+;; session colors, the palette-index-to-face alist, the apply helper that
+;; points a terminal's 256-color palette entries at those faces, and the
+;; show-or-create wiring.  eat and its terminal API are stubbed -- no process
+;; spawning, no eat load in batch.
 
 ;;; Code:
 
@@ -17,7 +18,7 @@
 (declare-function cj/--ai-term-apply-accent "ai-term-backend-eat" (buffer))
 (declare-function cj/--ai-term-show-or-create "ai-term-backend-eat" (dir name))
 
-(defvar cj/ai-term-accent-color-indices)
+(defvar cj/ai-term-palette-faces)
 (defvar cj/--ai-term-mru)
 (defvar eat-buffer-name)
 (defvar eat-terminal)
@@ -28,23 +29,62 @@
 (unless (fboundp 'eat-term-set-parameter)
   (defun eat-term-set-parameter (_terminal _parameter _value) nil))
 
-;;; ------------------------------ accent face ---------------------------------
+;;; ------------------------------ accent faces --------------------------------
 
 (ert-deftest test-ai-term-accent-face-defaults-to-dupre-blue ()
-  "Normal: the accent face exists and defaults to dupre blue (#67809c)."
+  "Normal: the default accent face exists and is dupre blue (#67809c)."
   (should (facep 'cj/ai-term-accent))
   (should (string-equal-ignore-case
            (face-attribute 'cj/ai-term-accent :foreground nil t)
            "#67809c")))
 
-(ert-deftest test-ai-term-accent-indices-default ()
-  "Normal: the remapped palette indices default to Claude Code's accent (211)."
-  (should (equal cj/ai-term-accent-color-indices '(211))))
+(ert-deftest test-ai-term-session-color-faces-carry-dupre-hues ()
+  "Normal: each of Claude Code's session colors has a face with its dupre hue."
+  (dolist (pair '((cj/ai-term-color-red    . "#d47c59")
+                  (cj/ai-term-color-blue   . "#67809c")
+                  (cj/ai-term-color-green  . "#a4ac64")
+                  (cj/ai-term-color-yellow . "#d7af5f")
+                  (cj/ai-term-color-purple . "#b294bb")
+                  (cj/ai-term-color-orange . "#edb08f")
+                  (cj/ai-term-color-pink   . "#c397d8")
+                  (cj/ai-term-color-cyan   . "#8a9496")))
+    (should (facep (car pair)))
+    (should (string-equal-ignore-case
+             (face-attribute (car pair) :foreground nil t)
+             (cdr pair)))))
+
+(ert-deftest test-ai-term-palette-faces-cover-banner-and-session-colors ()
+  "Normal: the alist pins the bypass banner (211) and all 8 session-color indices."
+  (should (eq (alist-get 211 cj/ai-term-palette-faces) 'cj/ai-term-accent))
+  (dolist (pair '((167 . cj/ai-term-color-red)
+                  (110 . cj/ai-term-color-blue)
+                  (35  . cj/ai-term-color-green)
+                  (178 . cj/ai-term-color-yellow)
+                  (140 . cj/ai-term-color-purple)
+                  (174 . cj/ai-term-color-orange)
+                  (175 . cj/ai-term-color-pink)
+                  (37  . cj/ai-term-color-cyan)))
+    (should (eq (alist-get (car pair) cj/ai-term-palette-faces) (cdr pair)))))
 
 ;;; --------------------------- cj/--ai-term-apply-accent ----------------------
 
 (ert-deftest test-ai-term-apply-accent-sets-palette-entries ()
-  "Normal: every configured index is pointed at the accent face via the eat API."
+  "Normal: every alist entry is pointed at its face via the eat API."
+  (let ((set-params nil)
+        (cj/ai-term-palette-faces '((211 . cj/ai-term-accent)
+                                    (110 . cj/ai-term-color-blue))))
+    (cl-letf (((symbol-function 'eat-term-set-parameter)
+               (lambda (_terminal parameter value)
+                 (push (cons parameter value) set-params))))
+      (with-temp-buffer
+        (setq-local eat-terminal 'dummy-terminal)
+        (cj/--ai-term-apply-accent (current-buffer))))
+    (should (equal (nreverse set-params)
+                   '((color-211-face . cj/ai-term-accent)
+                     (color-110-face . cj/ai-term-color-blue))))))
+
+(ert-deftest test-ai-term-apply-accent-full-alist-count ()
+  "Boundary: the default alist yields one palette call per entry (9 total)."
   (let ((set-params nil))
     (cl-letf (((symbol-function 'eat-term-set-parameter)
                (lambda (_terminal parameter value)
@@ -52,20 +92,7 @@
       (with-temp-buffer
         (setq-local eat-terminal 'dummy-terminal)
         (cj/--ai-term-apply-accent (current-buffer))))
-    (should (equal set-params '((color-211-face . cj/ai-term-accent))))))
-
-(ert-deftest test-ai-term-apply-accent-multiple-indices ()
-  "Boundary: several indices each get their own palette-entry call."
-  (let ((set-params nil)
-        (cj/ai-term-accent-color-indices '(211 174)))
-    (cl-letf (((symbol-function 'eat-term-set-parameter)
-               (lambda (_terminal parameter value)
-                 (push (cons parameter value) set-params))))
-      (with-temp-buffer
-        (setq-local eat-terminal 'dummy-terminal)
-        (cj/--ai-term-apply-accent (current-buffer))))
-    (should (equal (sort (mapcar #'car set-params) #'string<)
-                   '(color-174-face color-211-face)))))
+    (should (= (length set-params) (length cj/ai-term-palette-faces)))))
 
 (ert-deftest test-ai-term-apply-accent-no-terminal-is-noop ()
   "Error: a buffer without a live eat terminal is left alone, no API call, no error."
@@ -80,7 +107,7 @@
 ;;; ------------------------- show-or-create wiring ----------------------------
 
 (ert-deftest test-ai-term-show-or-create-applies-accent-on-create ()
-  "Normal: creating a fresh agent terminal applies the accent to its buffer."
+  "Normal: creating a fresh agent terminal applies the palette to its buffer."
   (let ((name "agent [accent-wire-test]")
         (cj/--ai-term-mru nil)
         (applied nil))

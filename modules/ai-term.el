@@ -117,22 +117,61 @@ fallback when `cj/--ai-term-last-size' is nil."
 
 (defface cj/ai-term-accent
   '((t :foreground "#67809c"))
-  "Accent color for agent terminals, defaulting to dupre blue.
-Claude Code draws its accent (the bypass-permissions banner, borders,
-spinner) with xterm-256 palette colors; agent terminals point those
-palette entries at this face (see `cj/ai-term-accent-color-indices'),
-so the accent renders in this face's foreground instead of the stock
-rose red.  Per-project colors later land as per-buffer overrides of
-the same palette entries."
+  "Default accent for agent terminals: dupre blue.
+Carries the elements Claude Code colors regardless of the session color
+-- the bypass-permissions banner (xterm palette index 211, stock rose).
+The /color session accents get their own faces below."
   :group 'ai-term)
 
-(defvar cj/ai-term-accent-color-indices '(211)
-  "The xterm-256 palette indices agent terminals repaint with the accent.
-211 (#ff87af, a rose pink) is Claude Code's accent as rendered through
-the 256-color palette -- confirmed empirically on the bypass-permissions
-banner.  Add indices here if other accent elements surface in a
-different palette slot.  Applied per terminal by
-`cj/--ai-term-apply-accent'; other eat terminals keep the true palette.")
+;; One face per Claude Code /color session color, each pinned to its dupre
+;; counterpart.  Claude Code emits a fixed xterm-256 index per color name
+;; (probed empirically against v2.1.198); `cj/ai-term-palette-faces' maps
+;; those indices to these faces, and agent terminals render them instead of
+;; the stock xterm hues.  dupre has no orange or pink, so orange borrows
+;; bright red (peach) and pink borrows bright magenta.
+(defface cj/ai-term-color-red '((t :foreground "#d47c59"))
+  "Agent terminal rendering of Claude Code's red session color (dupre red)."
+  :group 'ai-term)
+(defface cj/ai-term-color-blue '((t :foreground "#67809c"))
+  "Agent terminal rendering of Claude Code's blue session color (dupre blue)."
+  :group 'ai-term)
+(defface cj/ai-term-color-green '((t :foreground "#a4ac64"))
+  "Agent terminal rendering of Claude Code's green session color (dupre green)."
+  :group 'ai-term)
+(defface cj/ai-term-color-yellow '((t :foreground "#d7af5f"))
+  "Agent terminal rendering of Claude Code's yellow session color (dupre yellow)."
+  :group 'ai-term)
+(defface cj/ai-term-color-purple '((t :foreground "#b294bb"))
+  "Agent terminal rendering of Claude Code's purple session color (dupre magenta)."
+  :group 'ai-term)
+(defface cj/ai-term-color-orange '((t :foreground "#edb08f"))
+  "Agent terminal rendering of Claude Code's orange session color (dupre red+1)."
+  :group 'ai-term)
+(defface cj/ai-term-color-pink '((t :foreground "#c397d8"))
+  "Agent terminal rendering of Claude Code's pink session color (dupre magenta+1)."
+  :group 'ai-term)
+(defface cj/ai-term-color-cyan '((t :foreground "#8a9496"))
+  "Agent terminal rendering of Claude Code's cyan session color (dupre steel)."
+  :group 'ai-term)
+
+(defvar cj/ai-term-palette-faces
+  '((211 . cj/ai-term-accent)        ; bypass banner (fixed, not a /color)
+    (167 . cj/ai-term-color-red)
+    (110 . cj/ai-term-color-blue)
+    (35  . cj/ai-term-color-green)
+    (178 . cj/ai-term-color-yellow)
+    (140 . cj/ai-term-color-purple)
+    (174 . cj/ai-term-color-orange)
+    (175 . cj/ai-term-color-pink)
+    (37  . cj/ai-term-color-cyan))
+  "Alist of (XTERM-256-INDEX . FACE) repainted in agent terminals.
+The indices are what Claude Code v2.1.198 emits: 211 for the fixed
+bypass-permissions banner, the rest one per /color session color
+\(probed by cycling /color in a scratch session and reading the SGR
+codes).  Applied per terminal by `cj/--ai-term-apply-accent', so other
+eat terminals keep the true xterm palette.  If a Claude Code update
+moves an accent to a new index, the visible symptom is the stock xterm
+hue coming back -- re-probe and update the index here.")
 
 ;; Agent buffers ("agent [<project>]") are buried, not killed, by the
 ;; kill-all sweep (F1 / `cj/dashboard-only').  Register the family pattern so
