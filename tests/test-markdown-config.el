@@ -18,6 +18,14 @@
 (require 'org)
 (require 'markdown-config)
 
+;; simple-httpd (elpa) is absent under `make test'; stand in for it so
+;; the preview path's (require 'simple-httpd) stays a no-op.  Tests mock
+;; httpd-running-p explicitly, so the stub bodies never matter.
+(unless (featurep 'simple-httpd)
+  (defun httpd-running-p () nil)
+  (defun httpd-start () nil)
+  (provide 'simple-httpd))
+
 (ert-deftest test-markdown-config-registers-markdown-org-src-lang ()
   "Normal: `markdown' shows up in `org-src-lang-modes' mapped to
 `markdown' so org-lint stops warning on `#+begin_src markdown' and
@@ -70,14 +78,28 @@ plain HTTP."
           (should (string-match-p "<xmp" (buffer-string))))
       (kill-buffer src))))
 
-;;; cj/markdown-preview (guard: refuse when the httpd listener is down)
+;;; cj/markdown-preview (autostart: bring the httpd listener up when down)
 
-(ert-deftest test-markdown-preview-errors-when-server-down ()
-  "Error: `cj/markdown-preview' signals a user-error when the simple-httpd
-listener is not running, rather than opening a preview against a dead server.
-Also pins the rename off the bare `markdown-preview' that markdown-mode shadows."
-  (cl-letf (((symbol-function 'httpd-running-p) (lambda () nil)))
-    (should-error (cj/markdown-preview) :type 'user-error)))
+(defvar imp-user-filter)
+(defvar imp-last-state)
+
+(ert-deftest test-markdown-preview-starts-server-when-down ()
+  "Normal: `cj/markdown-preview' starts the httpd listener when it's down
+\(the 2026-07-01 autostart decision replaced the old user-error guard).
+Also pins the rename off the bare `markdown-preview' that markdown-mode
+shadows.  Everything downstream is mocked so no listener or browser runs."
+  (let ((started nil)
+        (imp-user-filter nil)
+        (imp-last-state 0))
+    (cl-letf (((symbol-function 'httpd-running-p) (lambda () nil))
+              ((symbol-function 'cj/markdown-preview-server-start)
+               (lambda () (setq started t)))
+              ((symbol-function 'impatient-mode) (lambda (&rest _) nil))
+              ((symbol-function 'imp--notify-clients) (lambda (&rest _) nil))
+              ((symbol-function 'browse-url) (lambda (&rest _) nil)))
+      (with-temp-buffer
+        (cj/markdown-preview))
+      (should started))))
 
 (provide 'test-markdown-config)
 ;;; test-markdown-config.el ends here

@@ -40,6 +40,8 @@
 ;;;; --------------------- WIP: Markdown-Preview ---------------------
 
 (declare-function imp--notify-clients "impatient-mode")
+(declare-function httpd-running-p "simple-httpd")
+(declare-function httpd-start "simple-httpd")
 
 (defun cj/markdown-preview-server-start ()
   "Start the simple-httpd listener that serves the live markdown preview.
@@ -49,16 +51,20 @@ Idempotent: re-running while the server is already up is a no-op."
   (httpd-start)
   (message "markdown preview server running on http://localhost:8080/imp"))
 
+(defun cj/--markdown-preview-ensure-server ()
+  "Start the markdown preview server unless it's already running."
+  (require 'simple-httpd)
+  (unless (httpd-running-p)
+    (cj/markdown-preview-server-start)))
+
 ;; the filter to apply to markdown before impatient-mode pushes it to the server
 (defun cj/markdown-preview ()
   "Open the current buffer as a live HTML preview at http://localhost:8080/imp.
-The simple-httpd listener must already be running -- see
-`cj/markdown-preview-server-start'.  Starting a network listener as a
-side effect of opening a preview is surprising, so the server start
-lives in a separate command."
+Starts the simple-httpd listener itself when it isn't already running
+\(per the 2026-07-01 decision; the earlier separate-start design
+signaled a `user-error' instead)."
   (interactive)
-  (unless (httpd-running-p)
-    (user-error "markdown preview server not running; run `M-x cj/markdown-preview-server-start' first"))
+  (cj/--markdown-preview-ensure-server)
   (impatient-mode 1)
   (setq imp-user-filter #'cj/markdown-html)
   (cl-incf imp-last-state)
