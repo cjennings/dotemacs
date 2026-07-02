@@ -112,11 +112,19 @@ not recognize (which would later trip (cl-assert charset) on write)."
 
 ;; ------------------------------- eat package ---------------------------------
 
+(defun cj/--eat-clear-mode-line-process ()
+  "Drop eat's buffer-local [mode]:status `mode-line-process'.
+The modeline's own eat segment (cj/--modeline-eat-state in
+modeline-config.el) renders the input mode and process state as icons
+on the left, so eat's text form would be a duplicate."
+  (setq mode-line-process nil))
+
 (use-package eat
   :ensure t
   :commands (eat)
   :hook ((eat-mode . cj/turn-off-chrome-for-term)
-         (eat-mode . cj/--eat-tame-scroll))
+         (eat-mode . cj/--eat-tame-scroll)
+         (eat-mode . cj/--eat-clear-mode-line-process))
   :custom
   ;; Close the EAT buffer when its shell exits.
   (eat-kill-buffer-on-exit t)

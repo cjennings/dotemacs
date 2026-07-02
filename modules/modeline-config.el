@@ -16,22 +16,30 @@
 ;; Simple, minimal modeline built on Emacs 30's own right-alignment.
 ;; Segments are pure helpers wired in with thin :eval forms.
 ;;
-;; Left side:
+;; Layout principle: the LEFT side is Emacs information -- everything
+;; about this buffer and this Emacs (identity, state, position, VC,
+;; process).  The RIGHT side is a systray for package indicators
+;; (recording, flycheck counts, the misc-info icons).
+;;
+;; Left side, in order:
 ;; - Padding space (optional taller bar via `cj/modeline-height-factor')
 ;; - Major-mode icon (nerd-icons; falls back to the mode name in
 ;;   terminal frames or when nerd-icons is absent)
+;; - eat terminal state: input-mode + process icons with hover text
+;;   (replaces eat's own [semi-char]:run mode-line-process)
 ;; - Modified dot / read-only lock
 ;; - Buffer name (click to cycle buffers)
 ;; - Remote @host tag for TRAMP buffers
 ;; - Narrow tag when the buffer is narrowed (click to widen)
+;; - VC branch colored by state (click for diffs)
 ;; - Line/column and percentage; selection info while the region is active
 ;; - MACRO tag while a keyboard macro is recording
+;; - Process state for non-eat buffers (comint/compilation via
+;;   `mode-line-process'; eat buffers get theirs cleared in eat-config)
 ;;
-;; Right side:
+;; Right side (the systray):
 ;; - Recording indicator (video-audio-recording capture)
 ;; - Flycheck error/warning counts (click to list errors)
-;; - Process state (eat/comint/compilation via `mode-line-process')
-;; - VC branch colored by state (click for diffs)
 ;; - Misc info (chime notifications, weather, etc.)
 ;;
 ;; Glyphs are nerd-icons private-use codepoints or plain unicode shapes
@@ -234,6 +242,75 @@ characters selected)."
                         'face 'error
                         'help-echo "Recording keyboard macro\nF4 or C-x ) to stop"))))
 
+;; ----------------------------- Eat State Segment ------------------------------
+
+(defconst cj/--modeline-eat-mode-help
+  '((semi-char . "most keys go to the terminal; Emacs keeps C-x, M-x, and the F-keys")
+    (char . "raw: nearly every key goes to the terminal")
+    (line . "line editing in Emacs; RET sends the line")
+    (emacs . "all keys are Emacs; terminal output is read-only"))
+  "Hover-text description per eat input mode.")
+
+(defun cj/--modeline-eat-input-mode ()
+  "Return the current eat input mode as a symbol."
+  (cond ((bound-and-true-p eat--semi-char-mode) 'semi-char)
+        ((bound-and-true-p eat--char-mode) 'char)
+        ((bound-and-true-p eat--line-mode) 'line)
+        (t 'emacs)))
+
+(defun cj/--modeline-eat-switch-map (mode)
+  "Return a mode-line keymap switching away from eat input MODE.
+Mirrors eat's own mouse-1/2/3 assignments for each mode."
+  (let ((map (make-sparse-keymap))
+        (targets (pcase mode
+                   ('semi-char '(eat-char-mode eat-line-mode eat-emacs-mode))
+                   ('char '(eat-semi-char-mode eat-line-mode eat-emacs-mode))
+                   ('line '(eat-semi-char-mode eat-emacs-mode eat-char-mode))
+                   (_ '(eat-semi-char-mode eat-line-mode eat-char-mode)))))
+    (define-key map [mode-line down-mouse-1] (nth 0 targets))
+    (define-key map [mode-line down-mouse-2] (nth 1 targets))
+    (define-key map [mode-line down-mouse-3] (nth 2 targets))
+    map))
+
+(defun cj/--modeline-eat-state ()
+  "Input-mode + process icons for eat terminal buffers, or nil elsewhere.
+Replaces eat's own [semi-char]:run `mode-line-process' text (cleared in
+eat-config): a keyboard glyph colored quiet for semi-char and warning
+for the other modes, then a running/exited indicator.  Hover text
+explains each; the keyboard glyph clicks through eat's mode switches."
+  (when (derived-mode-p 'eat-mode)
+    (let* ((mode (cj/--modeline-eat-input-mode))
+           (mode-face (if (eq mode 'semi-char) 'shadow 'warning))
+           (icons-p (and (display-graphic-p) (fboundp 'nerd-icons-faicon)))
+           (mode-glyph (or (and icons-p
+                                (ignore-errors
+                                  (nerd-icons-faicon "nf-fa-keyboard_o" :face mode-face)))
+                           (propertize (upcase (substring (symbol-name mode) 0 1))
+                                       'face mode-face)))
+           (proc (get-buffer-process (current-buffer)))
+           (live (and proc (process-live-p proc)))
+           (proc-glyph (if live
+                           (or (and icons-p
+                                    (ignore-errors
+                                      (nerd-icons-faicon "nf-fa-play" :face 'success)))
+                               (propertize "run" 'face 'success))
+                         (or (and icons-p
+                                  (ignore-errors
+                                    (nerd-icons-faicon "nf-fa-power_off" :face 'error)))
+                             (propertize "exit" 'face 'error)))))
+      (concat "  "
+              (propertize mode-glyph
+                          'mouse-face 'mode-line-highlight
+                          'help-echo (format "Input mode: %s -- %s\nmouse-1/2/3: switch input modes"
+                                             mode
+                                             (alist-get mode cj/--modeline-eat-mode-help))
+                          'local-map (cj/--modeline-eat-switch-map mode))
+              " "
+              (propertize proc-glyph
+                          'help-echo (if live
+                                         "Terminal process: running"
+                                       "Terminal process exited"))))))
+
 ;; ------------------------------ Flycheck Segment ------------------------------
 
 (defvar cj/--modeline-flycheck-glyphs nil
@@ -409,18 +486,23 @@ Shows only in active window.")
 
 (setq-default mode-line-format
   '("%e"  ; Error message if out of memory
-    ;; LEFT SIDE
+    ;; LEFT SIDE -- Emacs information: identity, state, position, VC, process
     (:eval (cj/--modeline-padding))
     (:eval (cj/--modeline-mode-icon))
+    (:eval (cj/--modeline-eat-state))
     "  "
     (:eval (cj/--modeline-buffer-status))
     cj/modeline-buffer-name
     (:eval (cj/--modeline-remote-host))
     (:eval (cj/--modeline-narrow-indicator))
     "  "
+    cj/modeline-vc-branch
+    "  "
     (:eval (cj/--modeline-position-info))
     (:eval (cj/--modeline-macro-indicator))
-    ;; RIGHT SIDE (using Emacs 30 built-in right-align)
+    " "
+    mode-line-process
+    ;; RIGHT SIDE -- the package systray (using Emacs 30 built-in right-align)
     ;; Order: leftmost to rightmost as they appear in the list
     mode-line-format-right-align
     (:eval (when (fboundp 'cj/recording-modeline-indicator)
@@ -431,10 +513,6 @@ Shows only in active window.")
     (:eval (when (and (mode-line-window-selected-p)
                       (bound-and-true-p flycheck-mode))
              (cj/--modeline-flycheck-status)))
-    "  "
-    mode-line-process
-    " "
-    cj/modeline-vc-branch
     "  "
     cj/modeline-misc-info
     "  "))
