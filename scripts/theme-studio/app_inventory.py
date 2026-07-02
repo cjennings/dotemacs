@@ -32,6 +32,10 @@ PREVIEW_KEYS = {
     "consult": "consult",
     "embark": "embark",
     "orderless": "orderless",
+    "emms": "emms",
+    "org-roam": "orgroam",
+    "hl-todo": "hltodo",
+    "symbol-overlay": "symboloverlay",
 }
 
 # Custom display labels for inventory apps whose package name is an acronym

@@ -857,6 +857,7 @@ class BespokePreviewFaceCoverage(unittest.TestCase):
         "company", "company-box", "transient", "magit-section",
         "rainbow-delimiters", "web-mode",
         "vertico", "marginalia", "consult", "embark", "orderless",
+        "emms", "org-roam", "hl-todo", "symbol-overlay",
     ]
 
     def test_every_face_appears_in_the_renderer(self):

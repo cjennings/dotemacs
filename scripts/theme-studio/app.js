@@ -567,6 +567,8 @@ const PACKAGE_PREVIEWS={
   webmode:renderWebModePreview,
   vertico:renderVerticoPreview,marginalia:renderMarginaliaPreview,consult:renderConsultPreview,
   embark:renderEmbarkPreview,orderless:renderOrderlessPreview,
+  emms:renderEmmsPreview,orgroam:renderOrgRoamPreview,hltodo:renderHlTodoPreview,
+  symboloverlay:renderSymbolOverlayPreview,
   erc:renderErcPreview,orgdrill:renderOrgdrillPreview,orgnoter:renderOrgnoterPreview,signel:renderSignelPreview,
   pearl:renderPearlPreview,slack:renderSlackPreview,telega:renderTelegaPreview,shr:renderShrPreview,
   nerdicons:renderNerdIconsPreview

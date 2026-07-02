@@ -740,6 +740,69 @@ function renderOrderlessPreview(){const L=mbStackScene();
   L.push('  component 1 '+om(0,'the')+' · component 2 '+om(1,'stu')+' · component 3 '+om(2,'ap')+' · component 4 '+om(3,'js'));
   L.push('  a fifth component cycles back to '+om(0,'match-face-0'));
   return previewLines(L);}
+function renderEmmsPreview(){const a='emms',L=[],o=(f,t)=>os(a,f,t);
+  // The three EMMS UIs: browser tree, active playlist, metaplaylist list.
+  L.push('M-x emms-browser — the library, by artist:');
+  L.push('  '+o('emms-browser-artist-face','Bill Evans'));
+  L.push('    '+o('emms-browser-year/genre-face','1959')+' '+o('emms-browser-album-face','Portrait in Jazz'));
+  L.push('      '+o('emms-browser-track-face','01. Come Rain or Come Shine'));
+  L.push('  '+o('emms-browser-albumartist-face','Various — Jazz Piano'));
+  L.push('    '+o('emms-browser-composer-face','Cole Porter (composer)'));
+  L.push('    '+o('emms-browser-performer-face','Oscar Peterson (performer)'));
+  L.push('');
+  L.push('*EMMS Playlist*:');
+  L.push('  '+o('emms-playlist-track-face','Peace Piece'));
+  L.push('  '+o('emms-playlist-selected-face','▶ Waltz for Debby')+'   · playing now');
+  L.push('  '+o('emms-playlist-track-face','Blue in Green'));
+  L.push('');
+  L.push('M-x emms-metaplaylist-mode — every playlist buffer:');
+  L.push('  '+o('emms-metaplaylist-mode-current-face','*EMMS Playlist*')+'   · the active one');
+  L.push('  '+o('emms-metaplaylist-mode-face','jazz-standards'));
+  return previewLines(L);}
+function renderOrgRoamPreview(){const a='org-roam',L=[],o=(f,t)=>os(a,f,t);
+  // The org-roam backlinks buffer plus the dailies calendar mark.
+  L.push(o('org-roam-header-line','org-roam buffer, node: Theme Design'));
+  L.push('');
+  L.push(o('org-roam-title','Theme Design'));
+  L.push('Backlinks (3):');
+  L.push('  '+o('org-roam-olp','Dupre Palette › Colors › Accent')+'  · outline path');
+  L.push('  '+o('org-roam-preview-heading','* Accent selection'));
+  L.push('    '+o('org-roam-preview-region','Picked dupre blue #67809c as the default agent'));
+  L.push('    '+o('org-roam-preview-region','accent; /color names remap to dupre hues.'));
+  L.push('  '+o('org-roam-preview-heading-highlight','* Banner recolor')+'  · heading under the mouse');
+  L.push('  '+o('org-roam-preview-heading-selection','* Palette research')+'  · selected heading');
+  L.push('  '+o('org-roam-dim','12 links from 3 nodes')+'  · dimmed chrome');
+  L.push('');
+  L.push('org-roam-dailies — calendar days that carry a note:');
+  L.push('  Jun 28 29 30  Jul 1 '+o('org-roam-dailies-calendar-note','2')+' 3   · the 2nd has a daily');
+  return previewLines(L);}
+function renderHlTodoPreview(){const a='hl-todo',L=[],o=(f,t)=>os(a,f,t);
+  L.push(';; hl-todo highlights keywords inside comments:');
+  L.push('(defun cj/next-track ()');
+  L.push('  ;; '+o('hl-todo','TODO')+': handle the empty-playlist case');
+  L.push('  ;; '+o('hl-todo','FIXME')+' the shuffle seed is constant');
+  L.push('  (emms-next))');
+  L.push('');
+  L.push('flymake integration — the keyword becomes a diagnostic:');
+  L.push('  12:5 '+o('hl-todo-flymake-type','TODO')+' handle the empty-playlist case (hl-todo)');
+  return previewLines(L);}
+function renderSymbolOverlayPreview(){const a='symbol-overlay',L=[];
+  const F=['symbol-overlay-face-1','symbol-overlay-face-2','symbol-overlay-face-3',
+           'symbol-overlay-face-4','symbol-overlay-face-5','symbol-overlay-face-6',
+           'symbol-overlay-face-7','symbol-overlay-face-8'];
+  const s=(n,t)=>os(a,F[n-1],t);
+  // Pinned symbols cycle through the eight overlay faces; the default face
+  // is the transient at-point highlight.
+  L.push(';; symbol-overlay-put pins a face per symbol:');
+  L.push('(defun '+s(1,'play-track')+' ('+s(2,'file')+' '+s(3,'playlist')+')');
+  L.push('  (let (('+s(4,'track')+' (probe '+s(2,'file')+')))');
+  L.push('    (push '+s(4,'track')+' '+s(3,'playlist')+')');
+  L.push('    ('+s(5,'emit')+' :'+s(6,'event')+' '+s(7,'level')+' '+s(8,'origin')+')');
+  L.push('    ('+s(1,'play-track')+'-start '+s(4,'track')+')))');
+  L.push('');
+  L.push('transient highlight at point (no pin):');
+  L.push('  (setq '+os(a,'symbol-overlay-default-face','current-symbol')+' 42)');
+  return previewLines(L);}
 function renderAiTermPreview(){const a='ai-term',L=[];
   // What these faces actually paint: the Claude Code TUI inside an agent
   // terminal. The banner is the fixed accent (every session); each /color
