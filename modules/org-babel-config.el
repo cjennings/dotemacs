@@ -35,7 +35,7 @@
   ;; The block stays a src block (the cj: grep marker is unchanged); org markup
   ;; is highlighted and editable, though links are followed from the C-c ' buffer.
   (add-to-list 'org-src-lang-modes '("cj:" . org))
-  (setq org-confirm-babel-evaluate t)                                   ;; confirm before running babel; toggle with C-; k
+  (setq org-confirm-babel-evaluate t)                                   ;; confirm before running babel; toggle with C-; O b
   (setq org-babel-default-header-args
         (cons '(:tangle . "yes")
               (assq-delete-all :tangle org-babel-default-header-args)))) ;; default header args for babel
@@ -54,7 +54,17 @@ session when working in trusted files, and back on when done."
   (message "Babel evaluation confirmation %s"
            (if org-confirm-babel-evaluate "ON" "OFF")))
 
-(keymap-global-set "C-; k" #'cj/org-babel-toggle-confirm)
+;; Bound on the org menu (C-; O) rather than the global C-; map — the toggle
+;; is an org-babel concern.  cj/org-map is defined in org-config, which init
+;; loads before this module; the after-load guard keeps a standalone load of
+;; this module from erroring when org-config is absent.
+(defvar cj/org-map)
+(with-eval-after-load 'org-config
+  (keymap-set cj/org-map "b" #'cj/org-babel-toggle-confirm))
+
+(with-eval-after-load 'which-key
+  (which-key-add-key-based-replacements
+    "C-; O b" "toggle babel confirm"))
 
 
 ;; ---------------------------- Org Babel Languages ----------------------------
