@@ -415,6 +415,34 @@ BESPOKE_APP_SPECS=[
  ("shr","simple html renderer (shr)","shr",SHR_FACES,"shr-",SHR_SEED),
 ]
 
+# Ecosystem coverage pins (see README.md "Coverage policy"). The studio themes
+# popular packages even when this config no longer installs them, so a theme
+# built here still covers the wider ecosystem. package-inventory.json is
+# regenerated from the running Emacs and silently drops anything uninstalled;
+# every package listed here survives that. When a pinned package IS in the live
+# inventory, the live face list wins (it may have grown); when absent, the app
+# is built from this pin and marked "not loaded" in the UI. When retiring a
+# package from the config, add its inventory face list here first.
+PINNED_PACKAGE_FACES={
+ "ghostel":[
+  "ghostel-color-black","ghostel-color-blue","ghostel-color-bright-black",
+  "ghostel-color-bright-blue","ghostel-color-bright-cyan","ghostel-color-bright-green",
+  "ghostel-color-bright-magenta","ghostel-color-bright-red","ghostel-color-bright-white",
+  "ghostel-color-bright-yellow","ghostel-color-cyan","ghostel-color-green",
+  "ghostel-color-magenta","ghostel-color-red","ghostel-color-white",
+  "ghostel-color-yellow","ghostel-default","ghostel-fake-cursor","ghostel-fake-cursor-box"],
+ "all-the-icons":[
+  "all-the-icons-blue","all-the-icons-blue-alt","all-the-icons-cyan","all-the-icons-cyan-alt",
+  "all-the-icons-dblue","all-the-icons-dcyan","all-the-icons-dgreen","all-the-icons-dmaroon",
+  "all-the-icons-dorange","all-the-icons-dpink","all-the-icons-dpurple","all-the-icons-dred",
+  "all-the-icons-dsilver","all-the-icons-dyellow","all-the-icons-green","all-the-icons-lblue",
+  "all-the-icons-lcyan","all-the-icons-lgreen","all-the-icons-lmaroon","all-the-icons-lorange",
+  "all-the-icons-lpink","all-the-icons-lpurple","all-the-icons-lred","all-the-icons-lsilver",
+  "all-the-icons-lyellow","all-the-icons-maroon","all-the-icons-orange","all-the-icons-pink",
+  "all-the-icons-purple","all-the-icons-purple-alt","all-the-icons-red","all-the-icons-red-alt",
+  "all-the-icons-silver","all-the-icons-yellow"],
+}
+
 # Hover text for foundational/reused apps: names what consumes these faces, so
 # the app label can stay clean and the "who reuses this" context rides the app
 # dropdown's tooltip instead.  Apps not listed here get no hover.

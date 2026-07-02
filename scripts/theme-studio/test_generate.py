@@ -798,5 +798,55 @@ class NerdIconsGallery(unittest.TestCase):
         self.assertIn("nerd-icons-blue", faces)
 
 
+class PinnedPackages(unittest.TestCase):
+    """The ecosystem coverage policy's mechanism: PINNED_PACKAGE_FACES is the
+    curated record of packages retired from this config. A pinned package is
+    always marked not loaded (pinning happens exactly at retirement), and it
+    survives inventory regeneration even when uninstalled. Its face list stays
+    fresh from the live inventory when present (a still-installed dependency
+    may grow faces); the pin is the fallback when the inventory drops it."""
+
+    def _apps_with_inventory(self, inventory):
+        import app_inventory
+        with tempfile.NamedTemporaryFile("w", suffix=".json", delete=False) as f:
+            json.dump(inventory, f)
+            path = f.name
+        try:
+            return app_inventory.add_inventory_apps({}, path)
+        finally:
+            os.unlink(path)
+
+    def test_pinned_package_absent_from_inventory_is_added_unloaded(self):
+        apps = self._apps_with_inventory({"someother": ["someother-face"]})
+        self.assertIn("ghostel", apps)
+        self.assertTrue(apps["ghostel"]["unloaded"])
+        self.assertIn("not loaded", apps["ghostel"]["label"])
+        faces = {row[0] for row in apps["ghostel"]["faces"]}
+        self.assertIn("ghostel-default", faces)
+
+    def test_pinned_package_in_inventory_keeps_live_faces_still_flagged (self):
+        apps = self._apps_with_inventory({"ghostel": ["ghostel-default", "ghostel-brand-new"]})
+        self.assertTrue(apps["ghostel"]["unloaded"])
+        self.assertIn("not loaded", apps["ghostel"]["label"])
+        faces = {row[0] for row in apps["ghostel"]["faces"]}
+        self.assertIn("ghostel-brand-new", faces)
+
+    def test_unpinned_inventory_package_is_not_flagged(self):
+        apps = self._apps_with_inventory({"someother": ["someother-face"]})
+        self.assertFalse(apps["someother"].get("unloaded"))
+        self.assertNotIn("not loaded", apps["someother"]["label"])
+
+    def test_pinned_apps_carry_an_explanatory_hover(self):
+        apps = self._apps_with_inventory({})
+        self.assertIn("pinned", apps["ghostel"].get("hover", ""))
+
+    def test_all_the_icons_is_pinned(self):
+        apps = self._apps_with_inventory({})
+        self.assertIn("all-the-icons", apps)
+        self.assertTrue(apps["all-the-icons"]["unloaded"])
+        faces = {row[0] for row in apps["all-the-icons"]["faces"]}
+        self.assertIn("all-the-icons-blue", faces)
+
+
 if __name__ == "__main__":
     unittest.main()
