@@ -683,8 +683,56 @@
    "inherit": null,
    "height": null
   },
+  "rxgb": {
+   "fg": "#000000",
+   "bg": null,
+   "distant-fg": null,
+   "family": null,
+   "weight": null,
+   "slant": null,
+   "underline": null,
+   "strike": null,
+   "overline": null,
+   "box": null,
+   "inverse": false,
+   "extend": false,
+   "inherit": null,
+   "height": null
+  },
+  "rxgc": {
+   "fg": "#000000",
+   "bg": null,
+   "distant-fg": null,
+   "family": null,
+   "weight": null,
+   "slant": null,
+   "underline": null,
+   "strike": null,
+   "overline": null,
+   "box": null,
+   "inverse": false,
+   "extend": false,
+   "inherit": null,
+   "height": null
+  },
   "doc": {
    "fg": "#bfc4d0",
+   "bg": null,
+   "distant-fg": null,
+   "family": null,
+   "weight": null,
+   "slant": null,
+   "underline": null,
+   "strike": null,
+   "overline": null,
+   "box": null,
+   "inverse": false,
+   "extend": false,
+   "inherit": null,
+   "height": null
+  },
+  "dmark": {
+   "fg": "#d3d3d3",
    "bg": null,
    "distant-fg": null,
    "family": null,
@@ -763,8 +811,40 @@
    "inherit": null,
    "height": null
   },
+  "neg": {
+   "fg": "#000000",
+   "bg": null,
+   "distant-fg": null,
+   "family": null,
+   "weight": null,
+   "slant": null,
+   "underline": null,
+   "strike": null,
+   "overline": null,
+   "box": null,
+   "inverse": false,
+   "extend": false,
+   "inherit": null,
+   "height": null
+  },
   "punc": {
    "fg": "#dce0e3",
+   "bg": null,
+   "distant-fg": null,
+   "family": null,
+   "weight": null,
+   "slant": null,
+   "underline": null,
+   "strike": null,
+   "overline": null,
+   "box": null,
+   "inverse": false,
+   "extend": false,
+   "inherit": null,
+   "height": null
+  },
+  "warn": {
+   "fg": "#cb6b4d",
    "bg": null,
    "distant-fg": null,
    "family": null,
@@ -1305,10 +1385,8 @@
   "pkg:company:company-tooltip-quick-access",
   "pkg:company:company-tooltip-quick-access-selection",
   "pkg:company:company-tooltip-scrollbar-thumb",
-  "pkg:company:company-tooltip-selection",
   "pkg:company:company-echo",
   "pkg:company:company-preview",
-  "pkg:company:company-tooltip",
   "pkg:company:company-tooltip-deprecated",
   "pkg:company:company-tooltip-mouse",
   "pkg:company:company-tooltip-scrollbar-track",
@@ -1446,18 +1524,6 @@
   "pkg:shr:shr-selected-link",
   "pkg:shr:shr-strike-through",
   "pkg:vertico:vertico-current",
-  "pkg:dired:dired-header",
-  "pkg:dired:dired-directory",
-  "pkg:dired:dired-symlink",
-  "pkg:dired:dired-broken-symlink",
-  "pkg:dired:dired-special",
-  "pkg:dired:dired-set-id",
-  "pkg:dired:dired-perm-write",
-  "pkg:dired:dired-mark",
-  "pkg:dired:dired-marked",
-  "pkg:dired:dired-flagged",
-  "pkg:dired:dired-ignored",
-  "pkg:dired:dired-warning",
   "pkg:eat:eat-term-color-white",
   "pkg:eat:eat-term-color-green",
   "pkg:eat:eat-shell-prompt-annotation-failure",
@@ -1534,10 +1600,49 @@
   "ui:vertical-border",
   "ui:region",
   "pkg:dirvish:dirvish-free-space",
-  "pkg:dirvish:dirvish-hl-line",
-  "pkg:dirvish:dirvish-hl-line-inactive",
   "pkg:dirvish:dirvish-inactive",
   "pkg:dirvish:dirvish-file-modes",
+  "warn",
+  "pkg:nerd-icons-completion:nerd-icons-completion-dir-face",
+  "pkg:nov-reading:cj/nov-reading-sepia",
+  "pkg:nov-reading:cj/nov-reading-dark",
+  "pkg:nov-reading:cj/nov-reading-light",
+  "pkg:nov-reading:cj/nov-reading-sepia-heading",
+  "pkg:nov-reading:cj/nov-reading-sepia-link",
+  "pkg:nov-reading:cj/nov-reading-dark-heading",
+  "pkg:nov-reading:cj/nov-reading-dark-link",
+  "pkg:nov-reading:cj/nov-reading-light-heading",
+  "pkg:nov-reading:cj/nov-reading-light-link",
+  "pkg:ai-term:cj/ai-term-accent",
+  "pkg:ai-term:cj/ai-term-color-red",
+  "pkg:ai-term:cj/ai-term-color-blue",
+  "pkg:ai-term:cj/ai-term-color-green",
+  "pkg:ai-term:cj/ai-term-color-yellow",
+  "pkg:ai-term:cj/ai-term-color-purple",
+  "pkg:ai-term:cj/ai-term-color-orange",
+  "pkg:ai-term:cj/ai-term-color-pink",
+  "pkg:ai-term:cj/ai-term-color-cyan",
+  "pkg:dirvish:dirvish-file-user-id",
+  "pkg:dirvish:dirvish-file-group-id",
+  "pkg:dirvish:dirvish-file-link-number",
+  "pkg:dirvish:dirvish-proc-finished",
+  "pkg:dirvish:dirvish-proc-failed",
+  "pkg:dirvish:dirvish-proc-running",
+  "pkg:dirvish:dirvish-subtree-guide",
+  "pkg:dirvish:dirvish-subtree-state",
+  "pkg:dirvish:dirvish-collapse-empty-dir-face",
+  "pkg:dired:dired-header",
+  "pkg:dired:dired-directory",
+  "pkg:dired:dired-set-id",
+  "pkg:dired:dired-flagged",
+  "pkg:dired:dired-warning",
+  "pkg:dired:dired-symlink",
+  "pkg:dired:dired-broken-symlink",
+  "pkg:dired:dired-special",
+  "pkg:dired:dired-perm-write",
+  "pkg:dired:dired-mark",
+  "pkg:dired:dired-marked",
+  "pkg:dired:dired-ignored",
   "pkg:nerd-icons:nerd-icons-blue",
   "pkg:nerd-icons:nerd-icons-blue-alt",
   "pkg:nerd-icons:nerd-icons-cyan",
@@ -1572,15 +1677,29 @@
   "pkg:nerd-icons:nerd-icons-red-alt",
   "pkg:nerd-icons:nerd-icons-silver",
   "pkg:nerd-icons:nerd-icons-yellow",
-  "pkg:nov-reading:cj/nov-reading-light",
-  "pkg:nov-reading:cj/nov-reading-dark",
-  "pkg:nov-reading:cj/nov-reading-sepia",
-  "pkg:nov-reading:cj/nov-reading-sepia-heading",
-  "pkg:nov-reading:cj/nov-reading-sepia-link",
-  "pkg:nov-reading:cj/nov-reading-dark-heading",
-  "pkg:nov-reading:cj/nov-reading-dark-link",
-  "pkg:nov-reading:cj/nov-reading-light-heading",
-  "pkg:nov-reading:cj/nov-reading-light-link"
+  "pkg:flyspell-correct:flyspell-correct-highlight-face",
+  "pkg:flycheck:flycheck-delimited-error",
+  "pkg:flycheck:flycheck-error-delimiter",
+  "pkg:flycheck:flycheck-fringe-error",
+  "pkg:flycheck:flycheck-fringe-warning",
+  "pkg:flycheck:flycheck-fringe-info",
+  "pkg:flycheck:flycheck-error",
+  "pkg:flycheck:flycheck-warning",
+  "pkg:flycheck:flycheck-info",
+  "pkg:flycheck:flycheck-error-list-error",
+  "pkg:flycheck:flycheck-error-list-warning",
+  "pkg:flycheck:flycheck-error-list-info",
+  "pkg:flycheck:flycheck-verify-select-checker",
+  "pkg:flycheck:flycheck-error-list-filename",
+  "pkg:flycheck:flycheck-error-list-id",
+  "pkg:flycheck:flycheck-error-list-checker-name",
+  "pkg:flycheck:flycheck-error-list-error-message",
+  "pkg:flycheck:flycheck-error-list-line-number",
+  "pkg:flycheck:flycheck-error-list-column-number",
+  "pkg:flycheck:flycheck-error-list-highlight",
+  "pkg:flycheck:flycheck-error-list-id-with-explainer",
+  "pkg:company:company-tooltip",
+  "pkg:company:company-tooltip-selection"
  ],
  "packages": {
   "org-mode": {
@@ -3901,10 +4020,10 @@
     "source": "default"
    },
    "flycheck-info": {
-    "fg": "#e4eaf8",
+    "fg": "#809c50",
     "bg": null,
     "inherit": null,
-    "source": "default"
+    "source": "user"
    },
    "flycheck-fringe-error": {
     "fg": "#cb6b4d",
@@ -3919,10 +4038,10 @@
     "source": "default"
    },
    "flycheck-fringe-info": {
-    "fg": "#e4eaf8",
+    "fg": "#809c50",
     "bg": null,
     "inherit": null,
-    "source": "default"
+    "source": "user"
    },
    "flycheck-delimited-error": {
     "fg": "#cb6b4d",
@@ -3949,65 +4068,64 @@
     "source": "default"
    },
    "flycheck-error-list-info": {
-    "fg": "#e4eaf8",
+    "fg": "#809c50",
     "bg": null,
     "inherit": null,
-    "source": "default"
+    "source": "user"
    },
    "flycheck-error-list-error-message": {
-    "fg": "#cdced1",
+    "fg": "#a9b2bb",
     "bg": null,
     "inherit": null,
-    "source": "default"
+    "source": "user"
    },
    "flycheck-error-list-checker-name": {
-    "fg": "#838d97",
+    "fg": "#809c50",
     "bg": null,
     "inherit": null,
-    "source": "default"
+    "source": "user"
    },
    "flycheck-error-list-column-number": {
-    "fg": "#5e6770",
+    "fg": "#a9b2bb",
     "bg": null,
     "inherit": null,
-    "source": "default"
+    "source": "user"
    },
    "flycheck-error-list-line-number": {
-    "fg": "#5e6770",
+    "fg": "#a9b2bb",
     "bg": null,
     "inherit": null,
-    "source": "default"
+    "source": "user"
    },
    "flycheck-error-list-filename": {
-    "fg": "#e4eaf8",
+    "fg": "#a9b2bb",
     "bg": null,
     "inherit": null,
-    "source": "default"
+    "source": "user"
    },
    "flycheck-error-list-id": {
-    "fg": "#838d97",
+    "fg": "#a9b2bb",
     "bg": null,
     "inherit": null,
-    "source": "default"
+    "source": "user"
    },
    "flycheck-error-list-id-with-explainer": {
-    "fg": "#838d97",
+    "fg": "#a9b2bb",
     "bg": null,
-    "weight": "bold",
     "inherit": null,
-    "source": "default"
+    "source": "user"
    },
    "flycheck-error-list-highlight": {
     "fg": null,
-    "bg": "#2f343a",
+    "bg": "#363638",
     "inherit": null,
-    "source": "default"
+    "source": "user"
    },
    "flycheck-verify-select-checker": {
-    "fg": "#dab53d",
+    "fg": "#bac1c8",
     "bg": null,
     "inherit": null,
-    "source": "default"
+    "source": "user"
    }
   },
   "dired": {
@@ -4019,7 +4137,7 @@
     "source": "user"
    },
    "dired-directory": {
-    "fg": "#aac9ea",
+    "fg": "#788da6",
     "bg": null,
     "weight": "bold",
     "slant": "italic",
@@ -4027,15 +4145,14 @@
     "source": "user"
    },
    "dired-symlink": {
-    "fg": "#809c50",
+    "fg": "#777980",
     "bg": null,
     "inherit": null,
     "source": "user"
    },
    "dired-broken-symlink": {
-    "fg": "#cb7b64",
+    "fg": "#cb6b4d",
     "bg": null,
-    "weight": "bold",
     "inherit": null,
     "source": "user"
    },
@@ -4054,7 +4171,7 @@
     "source": "user"
    },
    "dired-perm-write": {
-    "fg": "#cb7b64",
+    "fg": "#627b2c",
     "bg": null,
     "weight": "bold",
     "slant": "italic",
@@ -4062,17 +4179,16 @@
     "source": "user"
    },
    "dired-mark": {
-    "fg": "#dab53d",
-    "bg": null,
+    "fg": "#e6ce88",
+    "bg": "#4a4b4f",
     "inherit": null,
-    "source": "default"
+    "source": "user"
    },
    "dired-marked": {
-    "fg": "#dab53d",
-    "bg": null,
-    "weight": "bold",
+    "fg": "#e6ce88",
+    "bg": "#4a4b4f",
     "inherit": null,
-    "source": "default"
+    "source": "user"
    },
    "dired-flagged": {
     "fg": "#cb6b4d",
@@ -4082,17 +4198,17 @@
     "source": "user"
    },
    "dired-ignored": {
-    "fg": "#777980",
+    "fg": "#606267",
     "bg": null,
     "inherit": null,
     "source": "user"
    },
    "dired-warning": {
-    "fg": "#dab53d",
+    "fg": "#cb7b64",
     "bg": null,
     "weight": "bold",
     "inherit": null,
-    "source": "default"
+    "source": "user"
    }
   },
   "dirvish": {
@@ -4109,7 +4225,7 @@
     "source": "user"
    },
    "dirvish-hl-line": {
-    "fg": "#a9b2bb",
+    "fg": "#edeff1",
     "bg": "#4a4b4f",
     "inherit": null,
     "source": "user"
@@ -4127,22 +4243,22 @@
     "source": "user"
    },
    "dirvish-file-link-number": {
-    "fg": "#5e6770",
+    "fg": "#777980",
     "bg": null,
     "inherit": null,
-    "source": "default"
+    "source": "user"
    },
    "dirvish-file-user-id": {
-    "fg": "#e4eaf8",
+    "fg": "#777980",
     "bg": null,
     "inherit": null,
-    "source": "default"
+    "source": "user"
    },
    "dirvish-file-group-id": {
-    "fg": "#838d97",
+    "fg": "#777980",
     "bg": null,
     "inherit": null,
-    "source": "default"
+    "source": "user"
    },
    "dirvish-file-size": {
     "fg": "#5d9b86",
@@ -4169,16 +4285,16 @@
     "source": "default"
    },
    "dirvish-subtree-guide": {
-    "fg": "#5e6770",
+    "fg": "#8e919a",
     "bg": null,
     "inherit": null,
-    "source": "default"
+    "source": "user"
    },
    "dirvish-subtree-state": {
-    "fg": "#838d97",
+    "fg": "#8e919a",
     "bg": null,
     "inherit": null,
-    "source": "default"
+    "source": "user"
    },
    "dirvish-collapse-dir-face": {
     "fg": "#e4eaf8",
@@ -4187,10 +4303,10 @@
     "source": "default"
    },
    "dirvish-collapse-empty-dir-face": {
-    "fg": "#5e6770",
+    "fg": "#777980",
     "bg": null,
     "inherit": null,
-    "source": "default"
+    "source": "user"
    },
    "dirvish-collapse-file-face": {
     "fg": "#a9b2bb",
@@ -4213,10 +4329,10 @@
     "source": "default"
    },
    "dirvish-media-info-property-key": {
-    "fg": "#838d97",
+    "fg": "#8e919a",
     "bg": null,
     "inherit": null,
-    "source": "default"
+    "source": "user"
    },
    "dirvish-narrow-match-face-0": {
     "fg": "#dab53d",
@@ -4253,16 +4369,16 @@
     "source": "default"
    },
    "dirvish-proc-running": {
-    "fg": "#dab53d",
+    "fg": "#e0c266",
     "bg": null,
     "inherit": null,
-    "source": "default"
+    "source": "user"
    },
    "dirvish-proc-finished": {
-    "fg": "#5d9b86",
+    "fg": "#8ca46c",
     "bg": null,
     "inherit": null,
-    "source": "default"
+    "source": "user"
    },
    "dirvish-proc-failed": {
     "fg": "#cb6b4d",
@@ -4327,10 +4443,10 @@
     "source": "default"
    },
    "dirvish-vc-unregistered-face": {
-    "fg": "#5e6770",
+    "fg": "#7c838a",
     "bg": null,
     "inherit": null,
-    "source": "default"
+    "source": "user"
    }
   },
   "calibredb": {
@@ -4514,8 +4630,8 @@
   },
   "nov-reading": {
    "cj/nov-reading-sepia": {
-    "fg": "#ab8d2e",
-    "bg": null,
+    "fg": "#dab53d",
+    "bg": "#2d2306",
     "inherit": null,
     "source": "user"
    },
@@ -4527,12 +4643,12 @@
    },
    "cj/nov-reading-light": {
     "fg": "#100f0f",
-    "bg": "#7c838a",
+    "bg": "#a9b2bb",
     "inherit": null,
     "source": "user"
    },
    "cj/nov-reading-sepia-heading": {
-    "fg": "#54677d",
+    "fg": "#67809c",
     "bg": null,
     "inherit": "cj/nov-reading-sepia",
     "height": 1.2,
@@ -4549,10 +4665,10 @@
     "source": "user"
    },
    "cj/nov-reading-dark-heading": {
-    "fg": null,
+    "fg": "#dab53d",
     "bg": null,
     "inherit": null,
-    "source": "default"
+    "source": "user"
    },
    "cj/nov-reading-dark-link": {
     "fg": "#5178db",
@@ -4565,18 +4681,74 @@
     "source": "user"
    },
    "cj/nov-reading-light-heading": {
-    "fg": null,
+    "fg": "#222223",
     "bg": null,
     "inherit": null,
-    "source": "default"
+    "source": "user"
    },
    "cj/nov-reading-light-link": {
-    "fg": "#5178db",
+    "fg": "#100f0f",
     "bg": null,
     "underline": {
      "color": null,
      "style": "line"
     },
+    "inherit": null,
+    "source": "user"
+   }
+  },
+  "ai-term": {
+   "cj/ai-term-accent": {
+    "fg": "#67809c",
+    "bg": null,
+    "inherit": null,
+    "source": "user"
+   },
+   "cj/ai-term-color-red": {
+    "fg": "#cb6b4d",
+    "bg": null,
+    "inherit": null,
+    "source": "user"
+   },
+   "cj/ai-term-color-blue": {
+    "fg": "#7ba1c5",
+    "bg": null,
+    "inherit": null,
+    "source": "user"
+   },
+   "cj/ai-term-color-green": {
+    "fg": "#74932f",
+    "bg": null,
+    "inherit": null,
+    "source": "user"
+   },
+   "cj/ai-term-color-yellow": {
+    "fg": "#e6ce88",
+    "bg": null,
+    "inherit": null,
+    "source": "user"
+   },
+   "cj/ai-term-color-purple": {
+    "fg": "#9f80c9",
+    "bg": null,
+    "inherit": null,
+    "source": "user"
+   },
+   "cj/ai-term-color-orange": {
+    "fg": "#ab8d2e",
+    "bg": null,
+    "inherit": null,
+    "source": "user"
+   },
+   "cj/ai-term-color-pink": {
+    "fg": "#c7a8a5",
+    "bg": null,
+    "inherit": null,
+    "source": "user"
+   },
+   "cj/ai-term-color-cyan": {
+    "fg": "#88b2c3",
+    "bg": null,
     "inherit": null,
     "source": "user"
    }
@@ -5956,205 +6128,205 @@
   },
   "nerd-icons": {
    "nerd-icons-blue": {
-    "fg": "#a9b2bb",
+    "fg": "#bac1c8",
     "bg": null,
     "inherit": null,
     "source": "user"
    },
    "nerd-icons-blue-alt": {
-    "fg": "#a9b2bb",
+    "fg": "#bac1c8",
     "bg": null,
     "inherit": null,
     "source": "user"
    },
    "nerd-icons-cyan": {
-    "fg": "#a9b2bb",
+    "fg": "#bac1c8",
     "bg": null,
     "inherit": null,
     "source": "user"
    },
    "nerd-icons-cyan-alt": {
-    "fg": "#a9b2bb",
+    "fg": "#bac1c8",
     "bg": null,
     "inherit": null,
     "source": "user"
    },
    "nerd-icons-dblue": {
-    "fg": "#a9b2bb",
+    "fg": "#cbd0d6",
     "bg": null,
     "inherit": null,
     "source": "user"
    },
    "nerd-icons-dcyan": {
-    "fg": "#a9b2bb",
+    "fg": "#bac1c8",
     "bg": null,
     "inherit": null,
     "source": "user"
    },
    "nerd-icons-dgreen": {
-    "fg": "#a9b2bb",
+    "fg": "#bac1c8",
     "bg": null,
     "inherit": null,
     "source": "user"
    },
    "nerd-icons-dmaroon": {
-    "fg": "#a9b2bb",
+    "fg": "#bac1c8",
     "bg": null,
     "inherit": null,
     "source": "user"
    },
    "nerd-icons-dorange": {
-    "fg": "#a9b2bb",
+    "fg": "#bac1c8",
     "bg": null,
     "inherit": null,
     "source": "user"
    },
    "nerd-icons-dpink": {
-    "fg": "#a9b2bb",
+    "fg": "#bac1c8",
     "bg": null,
     "inherit": null,
     "source": "user"
    },
    "nerd-icons-dpurple": {
-    "fg": "#a9b2bb",
+    "fg": "#bac1c8",
     "bg": null,
     "inherit": null,
     "source": "user"
    },
    "nerd-icons-dred": {
-    "fg": "#a9b2bb",
+    "fg": "#bac1c8",
     "bg": null,
     "inherit": null,
     "source": "user"
    },
    "nerd-icons-dsilver": {
-    "fg": "#a9b2bb",
+    "fg": "#bac1c8",
     "bg": null,
     "inherit": null,
     "source": "user"
    },
    "nerd-icons-dyellow": {
-    "fg": "#a9b2bb",
+    "fg": "#bac1c8",
     "bg": null,
     "inherit": null,
     "source": "user"
    },
    "nerd-icons-green": {
-    "fg": "#a9b2bb",
+    "fg": "#bac1c8",
     "bg": null,
     "inherit": null,
     "source": "user"
    },
    "nerd-icons-lblue": {
-    "fg": "#a9b2bb",
+    "fg": "#bac1c8",
     "bg": null,
     "inherit": null,
     "source": "user"
    },
    "nerd-icons-lcyan": {
-    "fg": "#a9b2bb",
+    "fg": "#bac1c8",
     "bg": null,
     "inherit": null,
     "source": "user"
    },
    "nerd-icons-lgreen": {
-    "fg": "#a9b2bb",
+    "fg": "#bac1c8",
     "bg": null,
     "inherit": null,
     "source": "user"
    },
    "nerd-icons-lmaroon": {
-    "fg": "#a9b2bb",
+    "fg": "#bac1c8",
     "bg": null,
     "inherit": null,
     "source": "user"
    },
    "nerd-icons-lorange": {
-    "fg": "#a9b2bb",
+    "fg": "#bac1c8",
     "bg": null,
     "inherit": null,
     "source": "user"
    },
    "nerd-icons-lpink": {
-    "fg": "#a9b2bb",
+    "fg": "#bac1c8",
     "bg": null,
     "inherit": null,
     "source": "user"
    },
    "nerd-icons-lpurple": {
-    "fg": "#a9b2bb",
+    "fg": "#bac1c8",
     "bg": null,
     "inherit": null,
     "source": "user"
    },
    "nerd-icons-lred": {
-    "fg": "#a9b2bb",
+    "fg": "#bac1c8",
     "bg": null,
     "inherit": null,
     "source": "user"
    },
    "nerd-icons-lsilver": {
-    "fg": "#a9b2bb",
+    "fg": "#bac1c8",
     "bg": null,
     "inherit": null,
     "source": "user"
    },
    "nerd-icons-lyellow": {
-    "fg": "#a9b2bb",
+    "fg": "#bac1c8",
     "bg": null,
     "inherit": null,
     "source": "user"
    },
    "nerd-icons-maroon": {
-    "fg": "#a9b2bb",
+    "fg": "#bac1c8",
     "bg": null,
     "inherit": null,
     "source": "user"
    },
    "nerd-icons-orange": {
-    "fg": "#a9b2bb",
+    "fg": "#bac1c8",
     "bg": null,
     "inherit": null,
     "source": "user"
    },
    "nerd-icons-pink": {
-    "fg": "#a9b2bb",
+    "fg": "#bac1c8",
     "bg": null,
     "inherit": null,
     "source": "user"
    },
    "nerd-icons-purple": {
-    "fg": "#a9b2bb",
+    "fg": "#bac1c8",
     "bg": null,
     "inherit": null,
     "source": "user"
    },
    "nerd-icons-purple-alt": {
-    "fg": "#a9b2bb",
+    "fg": "#bac1c8",
     "bg": null,
     "inherit": null,
     "source": "user"
    },
    "nerd-icons-red": {
-    "fg": "#a9b2bb",
+    "fg": "#bac1c8",
     "bg": null,
     "inherit": null,
     "source": "user"
    },
    "nerd-icons-red-alt": {
-    "fg": "#a9b2bb",
+    "fg": "#bac1c8",
     "bg": null,
     "inherit": null,
     "source": "user"
    },
    "nerd-icons-silver": {
-    "fg": "#a9b2bb",
+    "fg": "#bac1c8",
     "bg": null,
     "inherit": null,
     "source": "user"
    },
    "nerd-icons-yellow": {
-    "fg": "#a9b2bb",
+    "fg": "#bac1c8",
     "bg": null,
     "inherit": null,
     "source": "user"
@@ -6511,8 +6683,8 @@
     "source": "user"
    },
    "company-tooltip": {
-    "fg": "#100f0f",
-    "bg": "#bfc4d0",
+    "fg": "#bac1c8",
+    "bg": "#54677d",
     "weight": "bold",
     "inherit": null,
     "source": "user"
@@ -6594,8 +6766,8 @@
     "source": "user"
    },
    "company-tooltip-selection": {
-    "fg": "#100f0f",
-    "bg": "#67809c",
+    "fg": "#e6ce88",
+    "bg": "#54677d",
     "weight": "bold",
     "inherit": null,
     "source": "user"
@@ -6913,7 +7085,7 @@
   },
   "flyspell-correct": {
    "flyspell-correct-highlight-face": {
-    "fg": null,
+    "fg": "#e6ce88",
     "bg": "#363638",
     "inherit": "isearch",
     "source": "user"
