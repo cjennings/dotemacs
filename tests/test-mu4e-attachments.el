@@ -108,8 +108,10 @@ so this fails the same way whether or not mu4e's MIME support is loadable."
               ((symbol-function 'read-directory-name)
                (lambda (&rest _) "/downloads/"))
               ((symbol-function 'completing-read)
-               (lambda (_prompt candidates &rest _)
-                 (should (equal (mapcar #'car candidates)
+               ;; the collection is an annotated function table now, so
+               ;; query it instead of car-mapping an alist
+               (lambda (_prompt collection &rest _)
+                 (should (equal (all-completions "" collection)
                                 '("a.pdf" "b.pdf")))
                  "b.pdf"))
               ((symbol-function 'cj/mu4e--save-attachment-part)
@@ -251,6 +253,51 @@ so this fails the same way whether or not mu4e's MIME support is loadable."
           (should-error (cj/mu4e--attachment-selection-entry-at-point)
                         :type 'user-error))
       (kill-buffer buffer))))
+
+;; ------------------------- Picker Annotations --------------------------------
+
+(ert-deftest test-mu4e-attachments-annotator-shows-mime-and-size ()
+  "Normal: the annotator yields MIME type and human-readable size."
+  (let* ((part (plist-put (test-mu4e-attachments--part "invoice.pdf" 1)
+                          :decoded-size-approx 2048))
+         (candidates (list (cons "invoice.pdf" part)))
+         (annotate (cj/mu4e--attachment-annotator candidates))
+         (suffix (funcall annotate "invoice.pdf")))
+    (should (stringp suffix))
+    (should (string-match-p "application/pdf" suffix))
+    (should (string-match-p "2k" suffix))))
+
+(ert-deftest test-mu4e-attachments-annotator-no-size ()
+  "Boundary: a part without a decoded size still annotates the MIME type."
+  (let* ((candidates (list (cons "invoice.pdf"
+                                 (test-mu4e-attachments--part "invoice.pdf" 1))))
+         (annotate (cj/mu4e--attachment-annotator candidates))
+         (suffix (funcall annotate "invoice.pdf")))
+    (should (stringp suffix))
+    (should (string-match-p "application/pdf" suffix))))
+
+(ert-deftest test-mu4e-attachments-annotator-unknown-candidate-nil ()
+  "Error: an unknown candidate annotates as nil (marginalia shows nothing)."
+  (let ((annotate (cj/mu4e--attachment-annotator nil)))
+    (should-not (funcall annotate "nope.txt"))))
+
+(ert-deftest test-mu4e-attachments-picker-uses-annotated-category ()
+  "Normal: the save-here picker's collection carries category + annotator."
+  (let ((captured-collection nil))
+    (cl-letf (((symbol-function 'cj/mu4e--attachment-parts)
+               (lambda (&rest _) (list (test-mu4e-attachments--part "a.pdf" 1))))
+              ((symbol-function 'cj/mu4e--read-attachment-directory)
+               (lambda (&rest _) "/tmp/x/"))
+              ((symbol-function 'cj/mu4e--save-attachment-part)
+               (lambda (&rest _) "/tmp/x/a.pdf"))
+              ((symbol-function 'completing-read)
+               (lambda (_prompt collection &rest _)
+                 (setq captured-collection collection)
+                 "a.pdf")))
+      (cj/mu4e-save-attachment-here)
+      (let ((md (funcall captured-collection "" nil 'metadata)))
+        (should (eq (alist-get 'category (cdr md)) 'mu4e-attachment))
+        (should (functionp (alist-get 'annotation-function (cdr md))))))))
 
 (provide 'test-mu4e-attachments)
 ;;; test-mu4e-attachments.el ends here

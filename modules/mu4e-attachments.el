@@ -15,6 +15,7 @@
 ;;; Code:
 
 (require 'seq)
+(require 'system-lib)  ;; cj/completion-table-annotated
 
 (defvar mu4e-uniquify-save-file-name-function)
 (defvar-local cj/mu4e-attachment-selection-directory nil
@@ -66,6 +67,19 @@ The result is an alist of display labels to MIME part plists."
     (mapcar (lambda (part)
               (cons (cj/mu4e--attachment-label part duplicates) part))
             parts)))
+
+(defun cj/mu4e--attachment-annotator (candidates)
+  "Return an annotation function over attachment CANDIDATES.
+CANDIDATES is the label->part alist from `cj/mu4e--attachment-candidates'.
+The annotation shows the part's MIME type and human-readable decoded
+size; an unknown candidate annotates as nil so marginalia shows nothing."
+  (lambda (cand)
+    (when-let* ((part (cdr (assoc cand candidates))))
+      (let ((mime (or (plist-get part :mime-type) ""))
+            (size (if-let* ((bytes (plist-get part :decoded-size-approx)))
+                      (file-size-human-readable bytes)
+                    "")))
+        (format "  %-24s %s" mime size)))))
 
 (defun cj/mu4e--attachment-default-directory (parts)
   "Return a sensible default save directory for attachment PARTS."
@@ -126,7 +140,13 @@ The result is an alist of display labels to MIME part plists."
       (user-error "No attachments for this message"))
     (let* ((directory (cj/mu4e--read-attachment-directory parts))
            (candidates (cj/mu4e--attachment-candidates parts))
-           (choice (completing-read "Save attachment: " candidates nil t))
+           (choice (completing-read
+                    "Save attachment: "
+                    (cj/completion-table-annotated
+                     'mu4e-attachment
+                     (cj/mu4e--attachment-annotator candidates)
+                     candidates)
+                    nil t))
            (part (cdr (assoc choice candidates)))
            (path (cj/mu4e--save-attachment-part part directory)))
       (message "Saved attachment to %s" path)
