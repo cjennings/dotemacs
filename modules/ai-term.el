@@ -1007,7 +1007,8 @@ its terminal, which reattaches the session).  When an agent window is on
 screen, swap it to the next agent (wrapping after the last) and select it.
 When no agent is displayed but agents exist, show the first.  When none
 are open, open the project picker to launch the first agent rather than
-erroring.
+erroring.  When the sole agent is already focused, echo that there are
+no other ai-terms to switch to instead of swapping to itself.
 
 Bound to M-SPC.  Unlike C-; a a (toggle the most-recent agent on/off), this
 is the \"switch among existing agents\" surface; C-; a s opens the project
@@ -1021,10 +1022,20 @@ picker and C-; a k closes an agent."
                                        (equal (cj/--ai-term-buffer-name d) current-name))
                                      dirs)))
          (next-dir (cj/--ai-term-next-agent-dir current-dir dirs)))
-    (if (not next-dir)
-        ;; No agents open: launch the first via the project picker instead of
-        ;; erroring, so the swap key doubles as a "start an agent" key.
-        (cj/ai-term-pick-project)
+    (cond
+     ((not next-dir)
+      ;; No agents open: launch the first via the project picker instead of
+      ;; erroring, so the swap key doubles as a "start an agent" key.
+      (cj/ai-term-pick-project))
+     ;; Sole agent, already focused: the rotation wraps back to the same
+     ;; agent, so a swap would be a no-op with a misleading "Agent:" echo.
+     ;; Say there's nowhere to go instead.  A sole agent that is displayed
+     ;; but not selected still falls through and gets selected.
+     ((and current-dir
+           (equal next-dir current-dir)
+           (eq win (selected-window)))
+      (message "No other ai-terms to switch to"))
+     (t
       (let* ((name (cj/--ai-term-buffer-name next-dir))
              (existing (get-buffer name)))
         ;; Live agent and an agent window is up: swap it into that window in
@@ -1035,7 +1046,7 @@ picker and C-; a k closes an agent."
           (cj/--ai-term-show-or-create next-dir name)
           (let ((w (get-buffer-window name)))
             (when w (select-window w))))
-        (message "Agent: %s" name)))))
+        (message "Agent: %s" name))))))
 
 ;; ai-term lives under the C-; a prefix (vacated when gptel was archived).
 ;; The frequent "swap to the next agent" also gets M-SPC for a fast chord.
