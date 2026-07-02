@@ -97,7 +97,10 @@
       (kill-buffer buf))))
 
 (ert-deftest test-ai-term-next-two-agents-still-swaps ()
-  "Normal: two agents, one focused -> swaps to the other, no no-others message."
+  "Normal: two agents, one focused -> swaps silently to the other.
+The modeline announces the agent (buffer name + eat state), so the swap
+emits no echo-area message (2026-07-02: the \"Agent: <name>\" echo was
+dropped as clutter duplicating the modeline)."
   (let ((buf-a (get-buffer-create "agent-buf-a"))
         (buf-b (get-buffer-create "agent-buf-b"))
         (captured nil))
@@ -117,7 +120,7 @@
                        (when fmt (setq captured (apply #'format fmt args))))))
             (cj/ai-term-next)
             (should (eq (window-buffer (selected-window)) buf-b))
-            (should (equal captured "Agent: agent-buf-b"))))
+            (should-not captured)))
       (kill-buffer buf-a)
       (kill-buffer buf-b))))
 

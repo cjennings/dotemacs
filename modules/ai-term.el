@@ -299,9 +299,9 @@ picker and C-; a k closes an agent."
       ;; erroring, so the swap key doubles as a "start an agent" key.
       (cj/ai-term-pick-project))
      ;; Sole agent, already focused: the rotation wraps back to the same
-     ;; agent, so a swap would be a no-op with a misleading "Agent:" echo.
-     ;; Say there's nowhere to go instead.  A sole agent that is displayed
-     ;; but not selected still falls through and gets selected.
+     ;; agent, so a swap would be a silent no-op.  Say there's nowhere to
+     ;; go instead.  A sole agent that is displayed but not selected still
+     ;; falls through and gets selected.
      ((and current-dir
            (equal next-dir current-dir)
            (eq win (selected-window)))
@@ -312,12 +312,14 @@ picker and C-; a k closes an agent."
         ;; Live agent and an agent window is up: swap it into that window in
         ;; place (faithful to the prior buffer-only behavior).  Detached, or no
         ;; window yet: show-or-create attaches the tmux session / displays it.
+        ;; No "Agent: <name>" echo after the swap: the modeline already
+        ;; announces the agent (buffer name + eat state), and the duplicate
+        ;; message was echo-area clutter (roam inbox, 2026-07-02).
         (if (and win existing (cj/--ai-term-process-live-p existing))
             (progn (set-window-buffer win existing) (select-window win))
           (cj/--ai-term-show-or-create next-dir name)
           (let ((w (get-buffer-window name)))
-            (when w (select-window w))))
-        (message "Agent: %s" name))))))
+            (when w (select-window w)))))))))
 
 ;; ai-term lives under the C-; a prefix (vacated when gptel was archived).
 ;; The frequent "swap to the next agent" also gets M-SPC for a fast chord.
