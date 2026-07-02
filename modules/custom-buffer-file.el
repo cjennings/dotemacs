@@ -26,6 +26,12 @@
 ;; The PostScript printing auto-detects the system print spooler (lpr or lp)
 ;; and prints with face/syntax highlighting.
 ;;
+;; Destructive-operation policy (2026-07-01): delete file (D) always
+;; confirms, naming the file.  Erase (x), clear to top/bottom (t/b), and
+;; revert (g) confirm only when a file-visiting buffer has unsaved edits;
+;; unmodified and non-file buffers stay fast.  See
+;; cj/--destructive-op-allowed-p.
+;;
 ;; Keybindings under ~C-; b~:
 ;; - ~C-; b k~ kill buffer and window (delete window, kill/bury buffer)
 ;; - ~C-; b K~ kill the other window's buffer, keeping that window/split
@@ -204,9 +210,9 @@ When called interactively, prompts for confirmation if target file exists."
      ;; Handle buffer-already-exists and other errors
      (message "%s" (error-message-string err)))))
 
-(defun cj/delete-buffer-and-file ()
-  "Kill the current buffer and delete the file it visits."
-  (interactive)
+(defun cj/--delete-buffer-and-file ()
+  "Kill the current buffer and delete the file it visits.
+The unconfirmed workhorse behind `cj/delete-buffer-and-file'."
   (let ((filename (buffer-file-name)))
     (when filename
       (if (vc-backend filename)
@@ -215,6 +221,19 @@ When called interactively, prompts for confirmation if target file exists."
           (delete-file filename t)
           (message "Deleted file %s" filename)
           (kill-buffer))))))
+
+(defun cj/delete-buffer-and-file ()
+  "Kill the current buffer and delete the file it visits.
+Always confirms, naming the file -- deleting a file is the highest
+blast-radius operation on this map.  The VC path is not double-prompted:
+`vc-delete-file' asks on its own."
+  (interactive)
+  (let ((filename (buffer-file-name)))
+    (when filename
+      (if (vc-backend filename)
+          (cj/--delete-buffer-and-file)
+        (when (yes-or-no-p (format "Delete file %s? " filename))
+          (cj/--delete-buffer-and-file))))))
 
 (defun cj/copy-link-to-buffer-file ()
   "Copy the full file:// path of the current buffer's source file to the kill ring."
@@ -319,19 +338,56 @@ is created.  A message is displayed when done."
     (kill-new contents)
     (message "Copied from beginning of buffer to point")))
 
+;; Confirmation policy for the destructive C-; b operations (erase, clear
+;; to top/bottom, revert): confirm only when a file-visiting buffer has
+;; unsaved edits -- destroying unsaved work is the hazard; an unmodified
+;; buffer rereads from disk and a non-file buffer has nothing at stake
+;; that undo can't restore.  Delete-file (D) always confirms.
+
+(defun cj/--destructive-op-allowed-p (operation)
+  "Return non-nil when the destructive OPERATION may proceed.
+Prompts via `yes-or-no-p' only when the current buffer visits a file
+and carries unsaved edits; otherwise allows silently.  OPERATION is a
+short verb phrase for the prompt (e.g. \"erase it\")."
+  (or (not (and buffer-file-name (buffer-modified-p)))
+      (yes-or-no-p (format "Buffer %s has unsaved edits; %s anyway? "
+                           (buffer-name) operation))))
+
 (defun cj/clear-to-bottom-of-buffer ()
   "Delete all text from point to the end of the current buffer.
-This does not save the deleted text in the kill ring."
+This does not save the deleted text in the kill ring.  Confirms first
+when the buffer has unsaved edits."
   (interactive)
-  (delete-region (point) (point-max))
-  (message "Buffer contents removed to the end of the buffer."))
+  (when (cj/--destructive-op-allowed-p "clear to the end")
+    (delete-region (point) (point-max))
+    (message "Buffer contents removed to the end of the buffer.")))
 
 (defun cj/clear-to-top-of-buffer ()
   "Delete all text from point to the beginning of the current buffer.
-Do not save the deleted text in the kill ring."
+Do not save the deleted text in the kill ring.  Confirms first when
+the buffer has unsaved edits."
   (interactive)
-  (delete-region (point) (point-min))
-  (message "Buffer contents removed to the beginning of the buffer."))
+  (when (cj/--destructive-op-allowed-p "clear to the beginning")
+    (delete-region (point) (point-min))
+    (message "Buffer contents removed to the beginning of the buffer.")))
+
+(defun cj/erase-buffer ()
+  "Erase the whole buffer, confirming first when it has unsaved edits."
+  (interactive)
+  (when (cj/--destructive-op-allowed-p "erase it")
+    (erase-buffer)
+    (message "Buffer erased.")))
+
+(defun cj/revert-buffer ()
+  "Revert the buffer from disk, confirming only when edits would be lost.
+An unmodified buffer rereads silently (no data at risk), replacing the
+stock `revert-buffer' prompt-every-time behavior on this map."
+  (interactive)
+  (unless buffer-file-name
+    (user-error "Buffer %s is not visiting a file" (buffer-name)))
+  (when (cj/--destructive-op-allowed-p "discard them and revert")
+    (revert-buffer :ignore-auto :noconfirm)
+    (message "Reverted %s" (buffer-name))))
 
 (defun cj/copy-buffer-name ()
   "Copy current buffer name to kill ring."
@@ -788,10 +844,10 @@ Signals an error if:
   "P" #'cj/print-buffer-ps
   "t" #'cj/clear-to-top-of-buffer
   "b" #'cj/clear-to-bottom-of-buffer
-  "x" #'erase-buffer
+  "x" #'cj/erase-buffer
   "s" #'mark-whole-buffer
   "S" #'write-file ;; save as
-  "g" #'revert-buffer
+  "g" #'cj/revert-buffer
   "e" #'eval-buffer
   "w" #'cj/view-buffer-in-eww
   "E" #'cj/view-email-in-buffer

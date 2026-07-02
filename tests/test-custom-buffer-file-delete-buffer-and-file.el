@@ -1,7 +1,11 @@
-;;; test-custom-buffer-file-delete-buffer-and-file.el --- Tests for cj/delete-buffer-and-file -*- lexical-binding: t; -*-
+;;; test-custom-buffer-file-delete-buffer-and-file.el --- Tests for cj/--delete-buffer-and-file -*- lexical-binding: t; -*-
 
 ;;; Commentary:
-;; Tests for the cj/delete-buffer-and-file function from custom-buffer-file.el
+;; Tests for the cj/--delete-buffer-and-file function from custom-buffer-file.el
+;;
+;; These tests target the unconfirmed internal (cj/--delete-buffer-and-file);
+;; the always-confirm interactive wrapper is covered in
+;; test-custom-buffer-file--destructive-confirms.el.
 ;;
 ;; This function deletes both the current buffer and the file it visits.
 ;; It uses vc-delete-file for version-controlled files and delete-file
@@ -75,7 +79,7 @@
         (let ((buf (current-buffer)))
           ;; Mock vc-backend to return nil (non-VC file)
           (cl-letf (((symbol-function 'vc-backend) (lambda (&rest _) nil)))
-            (cj/delete-buffer-and-file)
+            (cj/--delete-buffer-and-file)
             (should-not (file-exists-p test-file))
             (should-not (buffer-live-p buf)))))
     (test-delete-buffer-and-file-teardown)))
@@ -90,7 +94,7 @@
           (insert "content"))
         (find-file test-file)
         (cl-letf (((symbol-function 'vc-backend) (lambda (&rest _) nil)))
-          (cj/delete-buffer-and-file)
+          (cj/--delete-buffer-and-file)
           (should-not (file-exists-p test-file))))
     (test-delete-buffer-and-file-teardown)))
 
@@ -105,7 +109,7 @@
         (find-file test-file)
         (let ((buf (current-buffer)))
           (cl-letf (((symbol-function 'vc-backend) (lambda (&rest _) nil)))
-            (cj/delete-buffer-and-file)
+            (cj/--delete-buffer-and-file)
             (should-not (buffer-live-p buf)))))
     (test-delete-buffer-and-file-teardown)))
 
@@ -123,7 +127,7 @@
                   ((symbol-function 'delete-file)
                    (lambda (file trash)
                      (setq delete-file-args (list file trash)))))
-          (cj/delete-buffer-and-file)
+          (cj/--delete-buffer-and-file)
           (should (equal delete-file-args (list test-file t)))))
     (test-delete-buffer-and-file-teardown)))
 
@@ -141,7 +145,7 @@
                   ((symbol-function 'message)
                    (lambda (fmt &rest args)
                      (setq message-output (apply #'format fmt args)))))
-          (cj/delete-buffer-and-file)
+          (cj/--delete-buffer-and-file)
           (should (string-match-p "Deleted file.*test.txt" message-output))))
     (test-delete-buffer-and-file-teardown)))
 
@@ -164,7 +168,7 @@
                        (kill-buffer (get-file-buffer file)))
                      ;; Actually delete the file for test cleanup
                      (delete-file file t))))
-          (cj/delete-buffer-and-file)
+          (cj/--delete-buffer-and-file)
           (should (string= vc-delete-called test-file))))
     (test-delete-buffer-and-file-teardown)))
 
@@ -182,7 +186,7 @@
                   ((symbol-function 'delete-file)
                    (lambda (file trash)
                      (setq delete-file-called file))))
-          (cj/delete-buffer-and-file)
+          (cj/--delete-buffer-and-file)
           (should (string= delete-file-called test-file))))
     (test-delete-buffer-and-file-teardown)))
 
@@ -196,7 +200,7 @@
           (insert "content"))
         (find-file test-file)
         (cl-letf (((symbol-function 'vc-backend) (lambda (&rest _) nil)))
-          (let ((result (cj/delete-buffer-and-file)))
+          (let ((result (cj/--delete-buffer-and-file)))
             ;; kill-buffer returns t, so result should be t
             (should (eq result t)))))
     (test-delete-buffer-and-file-teardown)))
@@ -212,7 +216,7 @@
         (with-temp-file test-file)
         (find-file test-file)
         (cl-letf (((symbol-function 'vc-backend) (lambda (&rest _) nil)))
-          (cj/delete-buffer-and-file)
+          (cj/--delete-buffer-and-file)
           (should-not (file-exists-p test-file))))
     (test-delete-buffer-and-file-teardown)))
 
@@ -227,7 +231,7 @@
           (insert large-content))
         (find-file test-file)
         (cl-letf (((symbol-function 'vc-backend) (lambda (&rest _) nil)))
-          (cj/delete-buffer-and-file)
+          (cj/--delete-buffer-and-file)
           (should-not (file-exists-p test-file))))
     (test-delete-buffer-and-file-teardown)))
 
@@ -243,7 +247,7 @@
           (insert binary-content))
         (find-file test-file)
         (cl-letf (((symbol-function 'vc-backend) (lambda (&rest _) nil)))
-          (cj/delete-buffer-and-file)
+          (cj/--delete-buffer-and-file)
           (should-not (file-exists-p test-file))))
     (test-delete-buffer-and-file-teardown)))
 
@@ -258,7 +262,7 @@
           (insert content))
         (find-file test-file)
         (cl-letf (((symbol-function 'vc-backend) (lambda (&rest _) nil)))
-          (cj/delete-buffer-and-file)
+          (cj/--delete-buffer-and-file)
           (should-not (file-exists-p test-file))))
     (test-delete-buffer-and-file-teardown)))
 
@@ -274,7 +278,7 @@
           (insert "content"))
         (find-file test-file)
         (cl-letf (((symbol-function 'vc-backend) (lambda (&rest _) nil)))
-          (cj/delete-buffer-and-file)
+          (cj/--delete-buffer-and-file)
           (should-not (file-exists-p test-file))))
     (test-delete-buffer-and-file-teardown)))
 
@@ -288,7 +292,7 @@
           (insert "content"))
         (find-file test-file)
         (cl-letf (((symbol-function 'vc-backend) (lambda (&rest _) nil)))
-          (cj/delete-buffer-and-file)
+          (cj/--delete-buffer-and-file)
           (should-not (file-exists-p test-file))))
     (test-delete-buffer-and-file-teardown)))
 
@@ -302,7 +306,7 @@
           (insert "content"))
         (find-file test-file)
         (cl-letf (((symbol-function 'vc-backend) (lambda (&rest _) nil)))
-          (cj/delete-buffer-and-file)
+          (cj/--delete-buffer-and-file)
           (should-not (file-exists-p test-file))))
     (test-delete-buffer-and-file-teardown)))
 
@@ -316,7 +320,7 @@
           (insert "content"))
         (find-file test-file)
         (cl-letf (((symbol-function 'vc-backend) (lambda (&rest _) nil)))
-          (cj/delete-buffer-and-file)
+          (cj/--delete-buffer-and-file)
           (should-not (file-exists-p test-file))))
     (test-delete-buffer-and-file-teardown)))
 
@@ -330,7 +334,7 @@
           (insert "content"))
         (find-file test-file)
         (cl-letf (((symbol-function 'vc-backend) (lambda (&rest _) nil)))
-          (cj/delete-buffer-and-file)
+          (cj/--delete-buffer-and-file)
           (should-not (file-exists-p test-file))))
     (test-delete-buffer-and-file-teardown)))
 
@@ -345,7 +349,7 @@
           (insert "content"))
         (find-file test-file)
         (cl-letf (((symbol-function 'vc-backend) (lambda (&rest _) nil)))
-          (cj/delete-buffer-and-file)
+          (cj/--delete-buffer-and-file)
           (should-not (file-exists-p test-file))))
     (test-delete-buffer-and-file-teardown)))
 
@@ -364,7 +368,7 @@
         (should (buffer-modified-p))
         (let ((buf (current-buffer)))
           (cl-letf (((symbol-function 'vc-backend) (lambda (&rest _) nil)))
-            (cj/delete-buffer-and-file)
+            (cj/--delete-buffer-and-file)
             (should-not (file-exists-p test-file))
             (should-not (buffer-live-p buf)))))
     (test-delete-buffer-and-file-teardown)))
@@ -381,7 +385,7 @@
         (read-only-mode 1)
         (let ((buf (current-buffer)))
           (cl-letf (((symbol-function 'vc-backend) (lambda (&rest _) nil)))
-            (cj/delete-buffer-and-file)
+            (cj/--delete-buffer-and-file)
             (should-not (file-exists-p test-file))
             (should-not (buffer-live-p buf)))))
     (test-delete-buffer-and-file-teardown)))
@@ -401,7 +405,7 @@
         (switch-to-buffer (get-file-buffer test-file))
         (let ((buf (current-buffer)))
           (cl-letf (((symbol-function 'vc-backend) (lambda (&rest _) nil)))
-            (cj/delete-buffer-and-file)
+            (cj/--delete-buffer-and-file)
             (should-not (file-exists-p test-file))
             (should-not (buffer-live-p buf))))
         (delete-other-windows))
@@ -422,7 +426,7 @@
         (find-file file2)
         ;; Current buffer is file2
         (cl-letf (((symbol-function 'vc-backend) (lambda (&rest _) nil)))
-          (cj/delete-buffer-and-file)
+          (cj/--delete-buffer-and-file)
           ;; file2 should be deleted, file1 should still exist
           (should-not (file-exists-p file2))
           (should (file-exists-p file1)))
@@ -443,7 +447,7 @@
         (narrow-to-region (point) (line-end-position))
         (let ((buf (current-buffer)))
           (cl-letf (((symbol-function 'vc-backend) (lambda (&rest _) nil)))
-            (cj/delete-buffer-and-file)
+            (cj/--delete-buffer-and-file)
             (should-not (file-exists-p test-file))
             (should-not (buffer-live-p buf)))))
     (test-delete-buffer-and-file-teardown)))
@@ -457,7 +461,7 @@
       (with-temp-buffer
         (rename-buffer "non-file-buffer" t)
         (let ((buf (current-buffer)))
-          (cj/delete-buffer-and-file)
+          (cj/--delete-buffer-and-file)
           ;; Buffer should still be alive
           (should (buffer-live-p buf))))
     (test-delete-buffer-and-file-teardown)))
@@ -467,7 +471,7 @@
   (test-delete-buffer-and-file-setup)
   (unwind-protect
       (with-current-buffer "*scratch*"
-        (cj/delete-buffer-and-file)
+        (cj/--delete-buffer-and-file)
         ;; Scratch buffer should still exist
         (should (get-buffer "*scratch*")))
     (test-delete-buffer-and-file-teardown)))
@@ -485,7 +489,7 @@
         (kill-buffer buf)
         (should-error
          (with-current-buffer buf
-           (cj/delete-buffer-and-file))))
+           (cj/--delete-buffer-and-file))))
     (test-delete-buffer-and-file-teardown)))
 
 ;;; Error Cases - File Issues
@@ -504,7 +508,7 @@
                    (lambda (file &optional _trash)
                      (signal 'file-missing (list "Removing old name" "No such file or directory" file)))))
           ;; Should propagate error from delete-file
-          (should-error (cj/delete-buffer-and-file) :type 'file-missing)))
+          (should-error (cj/--delete-buffer-and-file) :type 'file-missing)))
     (test-delete-buffer-and-file-teardown)))
 
 (ert-deftest test-delete-buffer-and-file-no-delete-permission ()
@@ -521,7 +525,7 @@
                    (lambda (file &optional _trash)
                      (signal 'file-error (list "Removing old name" "Permission denied" file)))))
           ;; Should propagate error from delete-file
-          (should-error (cj/delete-buffer-and-file) :type 'file-error)))
+          (should-error (cj/--delete-buffer-and-file) :type 'file-error)))
     (test-delete-buffer-and-file-teardown)))
 
 (ert-deftest test-delete-buffer-and-file-no-write-permission-directory ()
@@ -535,7 +539,7 @@
         (find-file test-file)
         (set-file-modes test-dir #o555)
         (cl-letf (((symbol-function 'vc-backend) (lambda (&rest _) nil)))
-          (should-error (cj/delete-buffer-and-file))
+          (should-error (cj/--delete-buffer-and-file))
           (set-file-modes test-dir #o755)))
     (test-delete-buffer-and-file-teardown)))
 
@@ -554,7 +558,7 @@
             ;; Both buffers visiting same file
             (should (eq buf1 buf2))
             (cl-letf (((symbol-function 'vc-backend) (lambda (&rest _) nil)))
-              (cj/delete-buffer-and-file)
+              (cj/--delete-buffer-and-file)
               (should-not (file-exists-p test-file))
               (should-not (buffer-live-p buf1))))))
     (test-delete-buffer-and-file-teardown)))
@@ -571,7 +575,7 @@
         (make-symbolic-link real-file symlink)
         (find-file symlink)
         (cl-letf (((symbol-function 'vc-backend) (lambda (&rest _) nil)))
-          (cj/delete-buffer-and-file)
+          (cj/--delete-buffer-and-file)
           ;; Symlink should be deleted, real file should remain
           (should-not (file-exists-p symlink))
           (should (file-exists-p real-file))))
@@ -590,7 +594,7 @@
         (let ((file-via-link (expand-file-name "test.txt" link-dir)))
           (find-file file-via-link)
           (cl-letf (((symbol-function 'vc-backend) (lambda (&rest _) nil)))
-            (cj/delete-buffer-and-file)
+            (cj/--delete-buffer-and-file)
             ;; File should be deleted
             (should-not (file-exists-p test-file)))))
     (test-delete-buffer-and-file-teardown)))
@@ -614,7 +618,7 @@
                      (when (get-file-buffer file)
                        (kill-buffer (get-file-buffer file)))
                      (delete-file file t))))
-          (cj/delete-buffer-and-file)
+          (cj/--delete-buffer-and-file)
           (should vc-delete-called)))
     (test-delete-buffer-and-file-teardown)))
 
@@ -629,7 +633,7 @@
         (find-file test-file)
         ;; vc-backend returns nil for untracked files
         (cl-letf (((symbol-function 'vc-backend) (lambda (&rest _) nil)))
-          (cj/delete-buffer-and-file)
+          (cj/--delete-buffer-and-file)
           (should-not (file-exists-p test-file))))
     (test-delete-buffer-and-file-teardown)))
 
@@ -647,7 +651,7 @@
                    (lambda (file)
                      (setq backend-checked file)
                      nil)))
-          (cj/delete-buffer-and-file)
+          (cj/--delete-buffer-and-file)
           (should (string= backend-checked test-file))))
     (test-delete-buffer-and-file-teardown)))
 
@@ -664,7 +668,7 @@
                   ((symbol-function 'vc-delete-file)
                    (lambda (file)
                      (error "VC operation failed"))))
-          (should-error (cj/delete-buffer-and-file))))
+          (should-error (cj/--delete-buffer-and-file))))
     (test-delete-buffer-and-file-teardown)))
 
 (provide 'test-custom-buffer-file-delete-buffer-and-file)
