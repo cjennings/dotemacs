@@ -115,6 +115,25 @@ fallback when `cj/--ai-term-last-size' is nil."
   :type 'number
   :group 'ai-term)
 
+(defface cj/ai-term-accent
+  '((t :foreground "#67809c"))
+  "Accent color for agent terminals, defaulting to dupre blue.
+Claude Code draws its accent (the bypass-permissions banner, borders,
+spinner) with xterm-256 palette colors; agent terminals point those
+palette entries at this face (see `cj/ai-term-accent-color-indices'),
+so the accent renders in this face's foreground instead of the stock
+rose red.  Per-project colors later land as per-buffer overrides of
+the same palette entries."
+  :group 'ai-term)
+
+(defvar cj/ai-term-accent-color-indices '(211)
+  "The xterm-256 palette indices agent terminals repaint with the accent.
+211 (#ff87af, a rose pink) is Claude Code's accent as rendered through
+the 256-color palette -- confirmed empirically on the bypass-permissions
+banner.  Add indices here if other accent elements surface in a
+different palette slot.  Applied per terminal by
+`cj/--ai-term-apply-accent'; other eat terminals keep the true palette.")
+
 ;; Agent buffers ("agent [<project>]") are buried, not killed, by the
 ;; kill-all sweep (F1 / `cj/dashboard-only').  Register the family pattern so
 ;; every agent -- however and whenever created -- survives with its session.

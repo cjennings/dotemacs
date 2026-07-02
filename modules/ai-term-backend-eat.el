@@ -25,9 +25,12 @@
 (require 'ai-term-sessions)
 
 (declare-function eat "eat" (&optional program arg))
+(declare-function eat-term-set-parameter "eat" (terminal parameter value))
 (declare-function cj/ai-term-next "ai-term" ())
 (defvar eat-buffer-name)
 (defvar eat-semi-char-mode-map)
+(defvar eat-terminal)
+(defvar cj/ai-term-accent-color-indices)
 
 (defun cj/--ai-term-send-string (buffer string)
   "Send STRING to BUFFER's terminal process (the agent's shell).
@@ -35,6 +38,22 @@ Sends to the pty directly so the launch command reaches the shell EAT runs."
   (let ((proc (get-buffer-process buffer)))
     (when (process-live-p proc)
       (process-send-string proc string))))
+
+(defun cj/--ai-term-apply-accent (buffer)
+  "Point BUFFER's terminal accent palette entries at `cj/ai-term-accent'.
+Repaints each index in `cj/ai-term-accent-color-indices' in this
+terminal's own 256-color palette (eat keeps one per terminal), so the
+agent's accent -- Claude Code's rose banner, borders, spinner -- renders
+in the accent face's color while every other eat terminal keeps the true
+palette.  A no-op when BUFFER has no live eat terminal.  Takes effect on
+the terminal's next redraw; text already on screen keeps its old color
+until the program repaints it (Claude Code's TUI repaints continuously)."
+  (with-current-buffer buffer
+    (when (bound-and-true-p eat-terminal)
+      (dolist (index cj/ai-term-accent-color-indices)
+        (eat-term-set-parameter eat-terminal
+                                (intern (format "color-%d-face" index))
+                                'cj/ai-term-accent)))))
 
 (defun cj/--ai-term-show-or-create (dir name)
   "Show or create the AI-term buffer for project DIR with buffer NAME.
@@ -76,6 +95,7 @@ buffer."
           (eat)))
       (let ((buf (get-buffer name)))
         (with-current-buffer buf
+          (cj/--ai-term-apply-accent buf)
           (cj/--ai-term-send-string
            buf (concat (cj/--ai-term-launch-command dir) "\n")))
         (display-buffer buf)
