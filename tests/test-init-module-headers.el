@@ -97,6 +97,9 @@
     "hugo-config"
     ;; Batch 8 — Domain / integration / optional modules (Layer 2-4)
     "ai-term"
+    "ai-term-sessions"
+    "ai-term-display"
+    "ai-term-backend-eat"
     "browser-config"
     "calendar-sync"
     "calendar-sync-ics"
