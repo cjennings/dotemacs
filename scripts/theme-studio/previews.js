@@ -639,6 +639,107 @@ function renderWebModePreview(){const a='web-mode',L=[],o=(f,t)=>os(a,'web-mode-
   L.push(B('</')+o('html-tag-face','script')+B('>'));
   L.push(B('</')+o('html-tag-face','html')+B('>'));
   return previewLines(L);}
+// -- The minibuffer stack: vertico / marginalia / consult / embark / orderless --
+// ONE shared scene (a single C-x b consult-buffer session) that all five
+// packages draw together; each renderer shows that same session with its own
+// faces at work, then extends it with the states only it owns. Cross-package
+// spans are the point: hovering any run shows which package paints it.
+function mbStackScene(){
+  const v=(f,t)=>os('vertico',f,t),m=(f,t)=>os('marginalia',f,t),c=(f,t)=>os('consult',f,t);
+  const OM=['orderless-match-face-0','orderless-match-face-1',
+            'orderless-match-face-2','orderless-match-face-3'];
+  const om=(n,t)=>os('orderless',OM[n],t);
+  const L=[];
+  L.push('One C-x b session — the whole stack draws it:');
+  L.push('');
+  L.push('Switch to buffer ('+c('consult-narrow-indicator','[b]')+'): the stu▌');
+  L.push(v('vertico-group-title','Buffer')+' '+v('vertico-group-separator','────────────────────────────────────────'));
+  L.push(v('vertico-current','  '+c('consult-buffer',om(0,'the')+'me-'+om(1,'stu')+'dio/app.js')+'        '+m('marginalia-mode','js-mode')+'  '+m('marginalia-size','48k')));
+  L.push('  '+c('consult-buffer',om(0,'the')+'me-'+om(1,'stu')+'dio/previews.js')+'   '+m('marginalia-mode','js-mode')+'  '+m('marginalia-size','36k'));
+  L.push(v('vertico-group-title','File')+' '+v('vertico-group-separator','──────────────────────────────────────────'));
+  L.push('  '+c('consult-file',om(0,'the')+'me-notes/'+om(1,'stu')+'dio-plan.org'));
+  L.push(v('vertico-group-title','Bookmark')+' '+v('vertico-group-separator','──────────────────────────────────────'));
+  L.push('  '+c('consult-bookmark',om(0,'the')+'me-'+om(1,'stu')+'dio gallery'));
+  return L;}
+function renderVerticoPreview(){const a='vertico',L=mbStackScene();
+  L.push('');
+  L.push('vertico owns the frame: '+os(a,'vertico-current','the highlighted candidate row')+', the');
+  L.push(os(a,'vertico-group-title','group titles')+' and '+os(a,'vertico-group-separator','──── separators')+' above.');
+  L.push('');
+  L.push('M-y (yank-pop) — a two-line kill folds onto one row,');
+  L.push('its newline drawn via vertico-multiline:');
+  L.push('  (setq cj/theme \'dupre)'+os(a,'vertico-multiline','\\n')+'(load-theme cj/theme t)');
+  return previewLines(L);}
+function renderMarginaliaPreview(){const a='marginalia',L=mbStackScene(),m=(f,t)=>os(a,f,t);
+  L.push('');
+  L.push('marginalia annotates every command in the stack:');
+  L.push('');
+  L.push('C-x b     app.js          '+m('marginalia-file-name','~/…/theme-studio/app.js'));
+  L.push('M-x       consult-line    '+m('marginalia-key','M-s l')+'  '+m('marginalia-documentation','Search for a matching line.'));
+  L.push('C-h f     cj/switch-theme '+m('marginalia-function','(&amp;optional THEME)')+'  '+m('marginalia-documentation','Load THEME.'));
+  L.push('C-h v     fill-column     '+m('marginalia-type','integer')+'  '+m('marginalia-number','72'));
+  L.push('          user-full-name  '+m('marginalia-type','string')+'   '+m('marginalia-string','"Craig Jennings"'));
+  L.push('          debug-on-error  '+m('marginalia-type','boolean')+'  '+m('marginalia-true','t')+' / '+m('marginalia-null','nil'));
+  L.push('          major-mode      '+m('marginalia-type','symbol')+'   '+m('marginalia-symbol','js-mode'));
+  L.push('          load-path       '+m('marginalia-type','list')+'     '+m('marginalia-list','("~/.emacs.d/modules" ...)'));
+  L.push('          enabled-themes  '+m('marginalia-type','value')+'    '+m('marginalia-value','(dupre)'));
+  L.push('C-x C-f   app.js        '+m('marginalia-file-priv-no','-')+m('marginalia-file-priv-read','r')+m('marginalia-file-priv-write','w')+m('marginalia-file-priv-no','-')+m('marginalia-file-priv-read','r')+m('marginalia-file-priv-no','--r--')+'  '+m('marginalia-file-owner','craig:users')+'  '+m('marginalia-size','48k')+'  '+m('marginalia-date','2026-07-02')+' '+m('marginalia-modified','*'));
+  L.push('          theme-studio/ '+m('marginalia-file-priv-dir','d')+m('marginalia-file-priv-read','r')+m('marginalia-file-priv-write','w')+m('marginalia-file-priv-exec','x')+m('marginalia-file-priv-read','r')+m('marginalia-file-priv-rare','s')+m('marginalia-file-priv-no','----')+'  '+m('marginalia-file-owner','craig:users')+'  '+m('marginalia-size','4.0k')+'  '+m('marginalia-date','2026-06-28'));
+  L.push('          current.js '+m('marginalia-file-priv-other','→')+' app.js  '+m('marginalia-file-priv-link','l')+m('marginalia-file-priv-read','r')+m('marginalia-file-priv-write','w')+m('marginalia-file-priv-exec','x')+m('marginalia-file-priv-no','------')+'  '+m('marginalia-date','2026-07-01'));
+  L.push('C-h P     vertico        '+m('marginalia-version','1.9')+'  '+m('marginalia-archive','gnu')+'  '+m('marginalia-installed','installed'));
+  L.push('minor     which-key-mode  '+m('marginalia-on','on')+'   lighter '+m('marginalia-lighter','" WK"'));
+  L.push('modes     flymake-mode    '+m('marginalia-off','off'));
+  L.push('C-x 8 RET BULLET  •  '+m('marginalia-char','#x2022'));
+  return previewLines(L);}
+function renderConsultPreview(){const a='consult',L=mbStackScene(),c=(f,t)=>os(a,f,t);
+  L.push('');
+  L.push('consult owns the '+c('consult-buffer','buffer')+' / '+c('consult-file','file')+' / '+c('consult-bookmark','bookmark')+' candidates');
+  L.push('above, and the '+c('consult-narrow-indicator','[b]')+' narrow indicator.');
+  L.push('Narrow help (?): '+c('consult-key','b')+' '+c('consult-help','Buffer')+'   '+c('consult-key','f')+' '+c('consult-help','File')+'   '+c('consult-key','m')+' '+c('consult-help','Bookmark'));
+  L.push('');
+  L.push('M-s l (consult-line) — the same window, searched:');
+  L.push('  '+c('consult-line-number-prefix','  12 ')+'(load-theme \''+c('consult-highlight-match','dupre')+' t)');
+  L.push('  '+c('consult-line-number-prefix',' 118 ')+'(setq '+c('consult-highlight-match','dupre')+'-accent "#67809c")');
+  L.push('  '+c('consult-line-number-wrapped',' 340 ')+'(provide \'dupre-theme)  · wrapped past point');
+  L.push('  jump lands at line '+c('consult-line-number','12')+'; the preview gives the target');
+  L.push('  '+c('consult-preview-line','a preview-line band')+' with the match '+c('consult-preview-match','dupre')+', mark '+c('consult-highlight-mark','▮')+';');
+  L.push('  consult-yank previews the insertion '+c('consult-preview-insertion','(load-theme ...)'));
+  L.push('');
+  L.push('M-s r (consult-ripgrep) — async input splits at '+c('consult-async-split','#')+'dupre'+c('consult-async-split','#'));
+  L.push('  '+c('consult-async-running','●')+' running   '+c('consult-async-finished','✓')+' finished   '+c('consult-async-failed','✗')+' failed: rg exited 2');
+  L.push('  '+c('consult-grep-context','app.js:10-  // registry of bespoke renderers'));
+  L.push('  app.js:12: registered the dupre palette');
+  L.push('  '+c('consult-grep-context','app.js:14-  // gallery wiring below'));
+  L.push('  '+c('consult-separator','│')+' separator between async input and candidates');
+  return previewLines(L);}
+function renderEmbarkPreview(){const a='embark',L=mbStackScene(),e=(f,t)=>os(a,f,t);
+  L.push('');
+  L.push('C-. on the current candidate — embark-act:');
+  L.push('  '+e('embark-verbose-indicator-title','Act on buffer theme-studio/app.js'));
+  L.push('  target: '+e('embark-target','theme-studio/app.js'));
+  L.push('  '+e('embark-keybinding','k')+'  kill-buffer     '+e('embark-verbose-indicator-documentation','Kill it, offering to save.'));
+  L.push('  '+e('embark-keybinding','r')+'  rename-buffer   '+e('embark-verbose-indicator-documentation','Change the buffer name.'));
+  L.push('  '+e('embark-keybinding-repeat','n')+'  next-buffer     · repeat key: act stays live');
+  L.push('  '+e('embark-keybinding','C-h')+'  '+e('embark-keymap','embark-buffer-map')+'  · a bound sub-keymap');
+  L.push('  '+e('embark-verbose-indicator-shadowed','s  save-buffer — shadowed by a later binding'));
+  L.push('');
+  L.push('S-SPC marks, E exports — embark-collect:');
+  L.push('  '+e('embark-collect-group-title','Buffer')+' '+e('embark-collect-group-separator','────────────────────────────────────'));
+  L.push('  '+e('embark-collect-candidate','theme-studio/app.js')+'        '+e('embark-collect-annotation','js-mode  48k'));
+  L.push('  '+e('embark-selected','theme-studio/previews.js')+'   '+e('embark-collect-annotation','36k')+'  · selected');
+  return previewLines(L);}
+function renderOrderlessPreview(){const L=mbStackScene();
+  const OM=['orderless-match-face-0','orderless-match-face-1',
+            'orderless-match-face-2','orderless-match-face-3'];
+  const om=(n,t)=>os('orderless',OM[n],t);
+  L.push('');
+  L.push('orderless splits the input on spaces; component N highlights its matches');
+  L.push('with match-face-N, cycling every four:');
+  L.push('');
+  L.push('  input: the stu ap js   →   '+om(0,'the')+'me-'+om(1,'stu')+'dio/'+om(2,'ap')+'p.'+om(3,'js'));
+  L.push('  component 1 '+om(0,'the')+' · component 2 '+om(1,'stu')+' · component 3 '+om(2,'ap')+' · component 4 '+om(3,'js'));
+  L.push('  a fifth component cycles back to '+om(0,'match-face-0'));
+  return previewLines(L);}
 function renderAiTermPreview(){const a='ai-term',L=[];
   // What these faces actually paint: the Claude Code TUI inside an agent
   // terminal. The banner is the fixed accent (every session); each /color

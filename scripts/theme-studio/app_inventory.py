@@ -27,6 +27,11 @@ PREVIEW_KEYS = {
     "magit-section": "magitsection",
     "rainbow-delimiters": "rainbowdelims",
     "web-mode": "webmode",
+    "vertico": "vertico",
+    "marginalia": "marginalia",
+    "consult": "consult",
+    "embark": "embark",
+    "orderless": "orderless",
 }
 
 # Custom display labels for inventory apps whose package name is an acronym
