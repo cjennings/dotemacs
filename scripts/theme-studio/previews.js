@@ -500,6 +500,19 @@ function renderNovReadingPreview(){
   let h='<div style="padding:14px 16px;display:flex;flex-direction:column;gap:18px;align-items:center">';
   for(const row of base)h+=novReadingPage(a,row[0],row[1]);
   return h+'</div>';}
+function renderAiTermPreview(){const a='ai-term',L=[];
+  // What these faces actually paint: the Claude Code TUI inside an agent
+  // terminal. The banner is the fixed accent (every session); each /color
+  // session color draws the input-box rules and prompt.
+  L.push(os(a,'cj/ai-term-accent','⏵⏵ bypass permissions on (shift+tab to cycle)')+'   · the fixed banner, every agent');
+  const names=['red','blue','green','yellow','purple','orange','pink','cyan'];
+  for(const n of names){
+    L.push('');
+    L.push(os(a,'cj/ai-term-color-'+n,'──────────────────────────────────────────')+'  /color '+n);
+    L.push(os(a,'cj/ai-term-color-'+n,'❯')+' implement the feature, then run the tests');
+    L.push(os(a,'cj/ai-term-color-'+n,'──────────────────────────────────────────'));
+  }
+  return previewLines(L);}
 function renderSlackPreview(){const a='slack',L=[];
   L.push(os(a,'slack-room-info-title-room-name-face','#general')+'  '+os(a,'slack-room-info-title-face','Acme Workspace'));
   L.push(os(a,'slack-room-info-section-title-face','Topic')+'  '+os(a,'slack-room-info-section-label-face','daily standup')+'   '+os(a,'slack-room-unread-face','3 unread'));

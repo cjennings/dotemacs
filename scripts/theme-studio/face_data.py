@@ -361,6 +361,27 @@ NOV_READING_SEED={
  "cj/nov-reading-light-heading":{"fg":"#5a3d28"},
  "cj/nov-reading-light-link":{"fg":"#8a5a2a","underline":True}}
 
+# ai-term: the dupre renderings of Claude Code's session colors inside agent
+# terminals (config faces, not a package). The accent face carries the fixed
+# bypass-permissions banner; the eight color faces carry the /color session
+# accents. ai-term points each terminal's xterm-256 palette entries at these
+# (cj/ai-term-palette-faces), so tuning one here recolors live agents on their
+# next redraw. Seeded with the deffaces' dupre hexes.
+AI_TERM_FACES=("cj/ai-term-accent "
+ "cj/ai-term-color-red cj/ai-term-color-blue cj/ai-term-color-green "
+ "cj/ai-term-color-yellow cj/ai-term-color-purple cj/ai-term-color-orange "
+ "cj/ai-term-color-pink cj/ai-term-color-cyan").split()
+AI_TERM_SEED={
+ "cj/ai-term-accent":{"fg":"#67809c"},
+ "cj/ai-term-color-red":{"fg":"#d47c59"},
+ "cj/ai-term-color-blue":{"fg":"#67809c"},
+ "cj/ai-term-color-green":{"fg":"#a4ac64"},
+ "cj/ai-term-color-yellow":{"fg":"#d7af5f"},
+ "cj/ai-term-color-purple":{"fg":"#b294bb"},
+ "cj/ai-term-color-orange":{"fg":"#edb08f"},
+ "cj/ai-term-color-pink":{"fg":"#c397d8"},
+ "cj/ai-term-color-cyan":{"fg":"#8a9496"}}
+
 # The bespoke package apps, single-sourced here. Each row is
 # (key, label, preview, FACES, prefix, SEED); add an app by adding one row.
 # generate.py builds APPS from this, and app_inventory derives the set of
@@ -383,6 +404,7 @@ BESPOKE_APP_SPECS=[
  ("dirvish","dirvish","dirvish",DIRVISH_FACES,"dirvish-",DIRVISH_SEED),
  ("calibredb","calibredb","calibredb",CALIBREDB_FACES,"calibredb-",CALIBREDB_SEED),
  ("nov-reading","nov reading view","novreading",NOV_READING_FACES,"cj/nov-reading-",NOV_READING_SEED),
+ ("ai-term","ai-term agent colors","aiterm",AI_TERM_FACES,"cj/ai-term-",AI_TERM_SEED),
  ("erc","erc","erc",ERC_FACES,"erc-",ERC_SEED),
  ("org-drill","org-drill","orgdrill",ORGDRILL_FACES,"org-drill-",ORGDRILL_SEED),
  ("org-noter","org-noter","orgnoter",ORGNOTER_FACES,"org-noter-",ORGNOTER_SEED),
@@ -401,4 +423,5 @@ APP_HOVERS={
  "shr":"Simple HTML Renderer. Reused by eww, nov (epub reading), and mu4e / message for HTML mail.",
  "gnus":"Article-view faces, reused by mu4e's article view.",
  "dired":"Directory-listing faces, reused by dirvish (a dired frontend).",
+ "ai-term":"Claude Code accents in agent terminals: the fixed bypass banner (accent) plus one face per /color session color. ai-term repaints each agent's xterm-256 palette entries with these, so a tune here recolors live agents on their next redraw.",
 }
