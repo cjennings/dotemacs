@@ -40,7 +40,13 @@
 
 (with-eval-after-load 'comp-run
   (setopt native-comp-async-jobs-number 8) ; parallel compile workers
-  (setopt native-comp-speed 3)             ; highest optimization level
+  ;; Speed 2, not 3: at speed 3 the native compiler emits direct calls for
+  ;; functions in the same compilation unit, bypassing the function cell.
+  ;; cl-letf mocks of a module's own helpers then silently run the real
+  ;; code — on 2026-07-01 `make test' launched real wf-recorder screen
+  ;; recordings this way. Speed 2 is the highest semantics-preserving
+  ;; level. Guarded by tests/test-meta-native-comp-speed.el.
+  (setopt native-comp-speed 2)
   (setopt native-comp-always-compile t))   ; always native-compile
 
 ;; -------------------------- Log Native Comp Warnings -------------------------
