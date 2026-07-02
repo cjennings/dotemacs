@@ -93,6 +93,7 @@
     "org-refile-config"
     "org-reveal-config"
     "org-roam-config"
+    "org-spec-links"
     "org-webclipper"
     "hugo-config"
     ;; Batch 8 — Domain / integration / optional modules (Layer 2-4)

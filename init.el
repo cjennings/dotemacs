@@ -140,6 +140,7 @@
 
 (require 'org-refile-config)     ;; refile org-branches
 (require 'org-roam-config)       ;; personal knowledge management in org mode
+(require 'org-spec-links)        ;; resolve [[id:]] links into project docs/specs
 (require 'org-webclipper)        ;; "instapaper" to org-roam workflow
 (require 'org-noter-config)
 
