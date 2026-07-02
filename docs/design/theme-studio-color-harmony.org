@@ -5,7 +5,7 @@
 
 Color harmony in a theme palette is mostly calculable. Work in OKLCH, borrow the hue from a semantic accent, fix lightness and chroma across a tier, and let three hard constraints bound the free dials: contrast (WCAG, with APCA as a diagnostic), ΔE separation between palette entries, and the sRGB gamut. What remains for taste is small and deliberate: which hues carry which semantic roles, and how warm or cool the whole page should sit.
 
-This document captures the method worked out on 2026-06-09. The ramp generator and background-contrast safety shipped in theme-studio implement the first two applications (see [[file:../theme-studio-palette-ramps-spec.org][the palette-ramps spec]]); harmonic fill remains a future feature.
+This document captures the method worked out on 2026-06-09. The ramp generator and background-contrast safety shipped in theme-studio implement the first two applications (see [[file:../specs/theme-studio-palette-ramps-spec.org][the palette-ramps spec]]); harmonic fill remains a future feature.
 
 * Why OKLCH
 
@@ -60,7 +60,7 @@ A background-over-text effect (region, hl-line, highlight, lazy-highlight, isear
 
 The right question: define the face's foreground set (the distinct syntax hexes plus the default fg), and rate the background by its floor, the minimum contrast over that set. The limiting foreground (the argmin) names which color caps you. From the floor follows L_max: at a chosen hue and chroma, the lightest background whose floor still clears the target. The usable background lightness is capped by the darkest or nearest foreground in the set, not by the average.
 
-This shipped in theme-studio: the five covered overlay faces show the worst-case floor and name the limiting foreground, and the OKLCH picker shades the lightness band that is too light for the selected face (the lMax ceiling). Contracts and defaults live in the [[file:../theme-studio-palette-ramps-spec.org][ramps spec]].
+This shipped in theme-studio: the five covered overlay faces show the worst-case floor and name the limiting foreground, and the OKLCH picker shades the lightness band that is too light for the selected face (the lMax ceiling). Contracts and defaults live in the [[file:../specs/theme-studio-palette-ramps-spec.org][ramps spec]].
 
 * Ramp generation (shipped)
 

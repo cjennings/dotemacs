@@ -1,12 +1,20 @@
 #+TITLE: theme-studio Palette Ramps & Background-Contrast Safety — Spec
 #+AUTHOR: Craig Jennings
 #+DATE: 2026-06-09
+#+TODO: TODO | DONE
+#+TODO: DRAFT READY DOING | IMPLEMENTED SUPERSEDED CANCELLED
+
+* DRAFT theme-studio Palette Ramps & Background-Contrast Safety — Spec
+:PROPERTIES:
+:ID:       9b92166f-9e16-41e0-a8ad-e9be529ff951
+:END:
+- 2026-07-02 Thu @ 01:01:46 -0400 — retrofitted by spec-sort; status set to DRAFT (evidence-based, human-confirmed)
 
 * Metadata
-| Status   | draft — review incorporated (Codex, 2026-06-09)                     |
+| Status   | draft                                                               |
 | Owner    | Craig                                                               |
 | Reviewer | Codex                                                               |
-| Related  | [[file:../todo.org][todo.org: theme-studio color-harmony explainer + ramp/fill features]]  |
+| Related  | [[file:../../todo.org][todo.org: theme-studio color-harmony explainer + ramp/fill features]]  |
 
 * Summary
 

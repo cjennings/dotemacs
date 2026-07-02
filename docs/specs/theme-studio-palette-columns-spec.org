@@ -1,11 +1,19 @@
 #+TITLE: Theme-Studio Spec: Declared Palette Columns
 #+DATE: 2026-06-10
+#+TODO: TODO | DONE
+#+TODO: DRAFT READY DOING | IMPLEMENTED SUPERSEDED CANCELLED
+
+* DRAFT Theme-Studio Spec: Declared Palette Columns
+:PROPERTIES:
+:ID:       c1befaf0-9da2-4d7f-8b00-005409e441a0
+:END:
+- 2026-07-02 Thu @ 01:01:46 -0400 — retrofitted by spec-sort; status set to DRAFT (evidence-based, human-confirmed)
 
 * Metadata
 
 - Status: Draft (Ready after Craig's read)
 - Source: design discussion 2026-06-10 (Craig + session), folding in the shipped ramps v1 and color-families work it supersedes
-- Related: [[file:theme-studio-palette-ramps-spec.org][palette-ramps spec]] (ramp math, floor/L_max safety — still in force), [[file:theme-studio-color-families-spec.org][color-families spec]] (superseded in its grouping half), [[file:design/theme-studio-color-harmony.org][color-harmony explainer]]
+- Related: [[file:theme-studio-palette-ramps-spec.org][palette-ramps spec]] (ramp math, floor/L_max safety — still in force), [[file:theme-studio-color-families-spec.org][color-families spec]] (superseded in its grouping half), [[file:../design/theme-studio-color-harmony.org][color-harmony explainer]]
 
 * Summary
 
