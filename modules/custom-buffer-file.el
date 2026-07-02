@@ -397,34 +397,64 @@ stock `revert-buffer' prompt-every-time behavior on this map."
 
 (declare-function ansi-color-apply-on-region "ansi-color")
 
+(defvar cj/diff-context-lines 1
+  "Lines of unchanged context shown around each change in buffer/file diffs.
+Passed to difftastic's --context and diff's -U, so the diff view shows what
+differs rather than pages of identical text.")
+
+(defun cj/--difft-args (file1 file2 context width)
+  "Build the difftastic argument list for FILE1 vs FILE2.
+CONTEXT is the number of unchanged lines shown around each change; WIDTH is the
+column budget for the side-by-side layout (difftastic cannot detect a terminal
+when run as a subprocess and would otherwise wrap at 80)."
+  (list "--color" "always"
+        "--display" "side-by-side-show-both"
+        "--context" (number-to-string context)
+        "--width" (number-to-string width)
+        file1 file2))
+
+(defun cj/--unified-diff-args (file1 file2 context)
+  "Build the diff(1) argument list for a unified diff of FILE1 vs FILE2.
+CONTEXT is the number of unchanged lines shown around each change (-U)."
+  (list (format "-U%d" context) file1 file2))
+
 (defun cj/--diff-with-difftastic (file1 file2 buffer)
   "Run difftastic on FILE1 and FILE2, output to BUFFER.
-Applies ANSI color and sets up special-mode for navigation."
+Applies ANSI color, sets up special-mode for navigation, and leaves point on
+the first hunk's content (past this header and difftastic's file header) so the
+window opens on the first difference."
   (with-current-buffer buffer
     (let ((inhibit-read-only t))
       (erase-buffer)
       (insert (format "Difftastic diff: %s (saved) vs buffer (modified)\n\n"
                       (file-name-nondirectory file1)))
-      (call-process "difft" nil t nil
-                    "--color" "always"
-                    "--display" "side-by-side-show-both"
-                    file1 file2)
+      (apply #'call-process "difft" nil t nil
+             (cj/--difft-args file1 file2 cj/diff-context-lines (frame-width)))
       (require 'ansi-color)
       (ansi-color-apply-on-region (point-min) (point-max))
       (special-mode)
-      (goto-char (point-min)))))
+      (goto-char (point-min))
+      (forward-line 2)                       ; past this function's header
+      (when (looking-at-p ".* --- ")         ; difftastic's own file header
+        (forward-line 1))
+      (while (and (eolp) (not (eobp)))       ; any blank separator lines
+        (forward-line 1)))))
 
 (defun cj/--diff-with-regular-diff (file1 file2 buffer)
   "Run regular unified diff on FILE1 and FILE2, output to BUFFER.
-Sets up diff-mode for navigation."
+Sets up diff-mode for navigation and leaves point on the first @@ hunk so the
+window opens on the first difference."
   (with-current-buffer buffer
     (let ((inhibit-read-only t))
       (erase-buffer)
       (insert (format "Unified diff: %s (saved) vs buffer (modified)\n\n"
                       (file-name-nondirectory file1)))
-      (call-process "diff" nil t nil "-u" file1 file2)
+      (apply #'call-process "diff" nil t nil
+             (cj/--unified-diff-args file1 file2 cj/diff-context-lines))
       (diff-mode)
-      (goto-char (point-min)))))
+      (goto-char (point-min))
+      (when (re-search-forward "^@@" nil t)
+        (goto-char (match-beginning 0))))))
 
 (defun cj/--diff-buffer-renderer (ws-only difft-available)
   "Choose the diff renderer symbol from WS-ONLY and DIFFT-AVAILABLE.
@@ -454,11 +484,13 @@ the question so the reader knows the difference is whitespace before choosing."
   "Return the terse `read-multiple-choice' menu for the disk-changed save prompt.
 Inline names are single words so the menu fits at a glance; the full meaning is
 in each description (the ? help).  s overwrites the file with the buffer; r
-discards the buffer's edits and rereads from disk."
+discards the buffer's edits and rereads from disk; m resolves the two versions
+side-by-side in ediff."
   '((?s "save"   "overwrite the file with this buffer")
-    (?d "diff"   "show what changed, then ask again")
+    (?d "diff"   "review the diff; navigate and act from there")
     (?w "clean"  "clean whitespace and save")
     (?r "revert" "discard edits and reread from disk")
+    (?m "merge"  "resolve side-by-side in ediff, then save from there")
     (?c "cancel" "leave the buffer as is")))
 
 (defun cj/--buffer-changed-on-disk-p (buffer)
@@ -475,43 +507,143 @@ underneath has moved, so a plain save would silently overwrite the disk version.
 (defun cj/--buffer-differs-action (key)
   "Map a disk-changed-prompt KEY to an action symbol, or nil when unmapped.
 `save' overwrites the file, `clean-save' cleans whitespace then saves, `revert'
-rereads from disk, `cancel' does nothing, and `diff' peeks (the caller re-prompts)."
+rereads from disk, `merge' resolves in ediff, `cancel' does nothing, and `diff'
+peeks (the caller re-prompts)."
   (pcase key
     (?s 'save)
     (?w 'clean-save)
     (?r 'revert)
+    (?m 'merge)
     (?d 'diff)
     (?c 'cancel)))
+
+(declare-function ediff-current-file "ediff")
 
 (defun cj/--buffer-differs-dispatch (buffer action)
   "Carry out ACTION for BUFFER after a disk-changed prompt.
 `save' overwrites the file with the buffer; `clean-save' strips trailing
 whitespace first; `revert' discards the buffer's edits and rereads the disk;
-`cancel' leaves the buffer untouched.  Save updates the recorded modtime first so
-the stock `save-buffer' does not re-ask its own \"changed on disk\" question."
+`merge' launches `ediff-current-file' to resolve the buffer against the disk
+version hunk-by-hunk (the file's modtime is deliberately NOT marked as seen, so
+the save after merging re-asks once -- an abandoned merge can never silently
+overwrite the disk); `cancel' leaves the buffer untouched.  Save updates the
+recorded modtime first so the stock `save-buffer' does not re-ask its own
+\"changed on disk\" question."
   (with-current-buffer buffer
     (pcase action
       ('save (set-visited-file-modtime) (save-buffer))
       ('clean-save (delete-trailing-whitespace) (set-visited-file-modtime) (save-buffer))
       ('revert (revert-buffer t t))
+      ('merge (ediff-current-file)
+              (message "Merge in ediff, quit it, then C-x C-s and choose save"))
       ('cancel (message "Save cancelled; buffer left as is"))
       (_ nil))))
 
+(defvar cj/--diff-review-choice nil
+  "Key chosen inside the diff review, or nil when the review went back to the menu.")
+
+(declare-function diff-hunk-next "diff-mode")
+(declare-function diff-hunk-prev "diff-mode")
+
+(defun cj/--diff-section-next ()
+  "Move to the next hunk in the diff buffer.
+Uses diff-mode's hunk motion when available; otherwise the next
+blank-line-separated section (difftastic output)."
+  (interactive)
+  (if (derived-mode-p 'diff-mode)
+      (diff-hunk-next)
+    (forward-paragraph)
+    (skip-chars-forward "\n")))
+
+(defun cj/--diff-section-prev ()
+  "Move to the previous hunk in the diff buffer.
+Uses diff-mode's hunk motion when available; otherwise the previous
+blank-line-separated section (difftastic output)."
+  (interactive)
+  (if (derived-mode-p 'diff-mode)
+      (diff-hunk-prev)
+    (skip-chars-backward "\n")
+    (backward-paragraph)
+    (skip-chars-forward "\n")))
+
+(defun cj/--diff-review-choose (key)
+  "Record KEY as the review's choice and exit the review."
+  (setq cj/--diff-review-choice key)
+  (exit-recursive-edit))
+
+(defun cj/--diff-review-back ()
+  "Leave the diff review without a choice; the menu prompt returns."
+  (interactive)
+  (exit-recursive-edit))
+
+(defun cj/--diff-review-keymap (choices)
+  "Build the diff-review keymap from CHOICES (a `read-multiple-choice' list).
+Every menu key except d acts directly from the review.  TAB / S-TAB (and n / p
+when the menu doesn't claim them) move between hunks.  ESC always goes back to
+the menu prompt; q does too unless the menu claims q (the save-some loop)."
+  (let ((map (make-sparse-keymap)))
+    (dolist (entry choices)
+      (let ((key (car entry)))
+        (unless (eq key ?d)
+          (define-key map (vector key)
+                      (lambda () (interactive) (cj/--diff-review-choose key))))))
+    (unless (assq ?q choices)
+      (define-key map "q" #'cj/--diff-review-back))
+    (unless (assq ?n choices)
+      (define-key map "n" #'cj/--diff-section-next))
+    (unless (assq ?p choices)
+      (define-key map "p" #'cj/--diff-section-prev))
+    (define-key map (kbd "<escape>") #'cj/--diff-review-back)
+    (define-key map (kbd "TAB") #'cj/--diff-section-next)
+    (define-key map (kbd "<backtab>") #'cj/--diff-section-prev)
+    map))
+
+(defun cj/--diff-review-hint (choices)
+  "One-line echo hint for the review built from CHOICES: actions, motion, exit."
+  (concat
+   (mapconcat (lambda (e) (format "%c:%s" (car e) (nth 1 e)))
+              (seq-remove (lambda (e) (eq (car e) ?d)) choices)
+              "  ")
+   "  TAB:hunks"
+   (if (assq ?q choices) "  ESC:menu" "  q:menu")))
+
+(defun cj/--diff-review (diff-buffer choices)
+  "Modal review of DIFF-BUFFER: navigate the diff, act with the menu keys.
+Selects DIFF-BUFFER's window and enters a recursive edit with the keymap from
+CHOICES layered on top, so point motion (arrows, scrolling, search) works while
+every menu key acts immediately.  Returns the chosen key, or nil when the user
+went back to the menu (q, ESC, or an aborted recursive edit).  Returns nil
+untouched when the buffer has no window to review in."
+  (let ((win (and (buffer-live-p diff-buffer) (get-buffer-window diff-buffer))))
+    (when win
+      (setq cj/--diff-review-choice nil)
+      (with-selected-window win
+        (let ((exit-fn (set-transient-map (cj/--diff-review-keymap choices)
+                                          (lambda () t))))
+          (unwind-protect
+              (progn
+                (message "%s" (cj/--diff-review-hint choices))
+                (condition-case nil (recursive-edit) (quit nil)))
+            (funcall exit-fn))))
+      cj/--diff-review-choice)))
+
 (defun cj/--read-choice-with-diff (prompt choices show-diff-fn)
-  "Read a `read-multiple-choice' key for PROMPT and CHOICES; d toggles a diff.
-SHOW-DIFF-FN displays the buffer/file diff and returns its buffer.  The d key
-shows the diff, or hides it when it is already shown (a toggle).  Any other key
--- a terminating choice -- closes a still-open diff window before returning that
-key, so the diff never lingers after the decision is made."
+  "Read a `read-multiple-choice' key for PROMPT and CHOICES; d reviews the diff.
+SHOW-DIFF-FN displays the buffer/file diff and returns its buffer.  d shows the
+diff and enters a navigable review (`cj/--diff-review') where every other menu
+key acts directly; leaving the review (q, ESC) returns to this prompt.  A
+terminating choice -- made at the prompt or inside the review -- closes a
+still-open diff window before it is returned, so the diff never lingers after
+the decision is made."
   (let ((key nil) (diff-buf nil))
     (while (not key)
       (let ((k (car (read-multiple-choice prompt choices))))
-        (if (eq k ?d)
-            (let ((win (and (buffer-live-p diff-buf) (get-buffer-window diff-buf))))
-              (if win
-                  (progn (quit-window nil win) (setq diff-buf nil))
-                (setq diff-buf (funcall show-diff-fn))))
-          (setq key k))))
+        (if (not (eq k ?d))
+            (setq key k)
+          (unless (and (buffer-live-p diff-buf) (get-buffer-window diff-buf))
+            (setq diff-buf (funcall show-diff-fn)))
+          (when diff-buf
+            (setq key (cj/--diff-review diff-buf choices))))))
     (let ((win (and (buffer-live-p diff-buf) (get-buffer-window diff-buf))))
       (when win (quit-window nil win)))
     key))
@@ -519,7 +651,8 @@ key, so the diff never lingers after the decision is made."
 (defun cj/--buffer-differs-read-key (buffer ws-only)
   "Read a disk-changed-prompt key for BUFFER via `read-multiple-choice'.
 WS-ONLY non-nil folds a terse \"(whitespace only)\" note into the prompt.  d
-toggles the buffer/file diff; a terminating choice closes a still-open diff."
+opens the buffer/file diff in a navigable review where the menu keys act
+directly; a terminating choice closes a still-open diff."
   (cj/--read-choice-with-diff
    (cj/--buffer-differs-prompt-string (buffer-name buffer) ws-only)
    (cj/--buffer-differs-choices)
@@ -530,8 +663,10 @@ toggles the buffer/file diff; a terminating choice closes a still-open diff."
 A normal save falls straight through to `save-buffer' (ARG, the prefix argument,
 is passed along so \\[universal-argument] \\[save-buffer] still marks for backup).
 When the buffer has unsaved edits AND the file changed on disk since it was
-visited, offer a terse labeled menu -- save / diff / clean / revert / cancel --
-instead of the stock yes/no \"Save anyway?\" prompt.  Bound to \\`C-x C-s'."
+visited, offer a terse labeled menu -- save / diff / clean / revert / merge /
+cancel -- instead of the stock yes/no \"Save anyway?\" prompt.  d opens a
+navigable diff review (arrows and TAB move, the menu keys act from inside); m
+resolves the two versions in ediff.  Bound to \\`C-x C-s'."
   (interactive "P")
   (if (not (cj/--buffer-changed-on-disk-p (current-buffer)))
       (save-buffer arg)
@@ -562,7 +697,7 @@ in each description (the ? help)."
   '((?y "save"   "save this buffer")
     (?n "skip"   "do not save this buffer")
     (?w "clean"  "clean whitespace and save this buffer")
-    (?d "diff"   "show what changed, then ask again")
+    (?d "diff"   "review the diff; navigate and act from there")
     (?! "all"    "save this and all remaining buffers")
     (?. "only"   "save this buffer, then skip the rest")
     (?q "none"   "stop; save no more buffers")))
@@ -607,7 +742,8 @@ skip the rest).  KEY-FN is not consulted once a buffer triggers save-rest or sto
 (defun cj/--save-some-buffers-read-key (buffer ws-only)
   "Read a save-loop key for BUFFER via `read-multiple-choice'.
 WS-ONLY non-nil folds a terse \"(whitespace only)\" note into the prompt.  d
-toggles the buffer/file diff; a terminating choice closes a still-open diff."
+opens the buffer/file diff in a navigable review where the menu keys act
+directly; a terminating choice closes a still-open diff."
   (cj/--read-choice-with-diff
    (format "Save %s%s"
            (if (buffer-file-name buffer)
