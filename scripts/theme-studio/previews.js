@@ -592,6 +592,53 @@ function renderRainbowDelimitersPreview(){const a='rainbow-delimiters',L=[];
   L.push(os(a,'rainbow-delimiters-base-face','base-face')+' underlies every depth; '
         +os(a,'rainbow-delimiters-base-error-face','base-error-face')+' underlies both error faces');
   return previewLines(L);}
+function renderWebModePreview(){const a='web-mode',L=[],o=(f,t)=>os(a,'web-mode-'+f,t);
+  // One mixed HTML document exercising all 81 faces: markup, an inline CSS
+  // part, a JS part with a JSON island / JSX / template literals / SQL-in-a-
+  // string, a generic {{...}}/{%...%} template block (engine-agnostic on
+  // purpose), and a JSDoc-style annotation comment.
+  const B=(t)=>o('html-tag-bracket-face',t);
+  L.push(o('doctype-face','<!doctype html>'));
+  L.push(o('comment-face','<!-- storefront page ')+o('comment-keyword-face','TODO')+o('comment-face',': hydrate lazily -->'));
+  L.push(B('<')+o('html-tag-face','html')+' '+o('html-attr-name-face','lang')+o('html-attr-equal-face','=')+o('html-attr-value-face','"en"')+B('>'));
+  L.push('');
+  L.push(B('<')+o('html-tag-face','style')+B('>')+o('style-face','  /* the css part rides web-mode-style-face */'));
+  L.push('  '+o('css-comment-face','/* layout */'));
+  L.push('  '+o('css-at-rule-face','@media')+' (min-width: 40rem) {');
+  L.push('    '+o('css-selector-tag-face','body')+' '+o('css-selector-face','#page')+' '+o('css-selector-class-face','.card')+o('css-pseudo-class-face',':hover')+' {');
+  L.push('      '+o('css-property-name-face','color')+': '+o('css-color-face','#67809c')+' '+o('css-priority-face','!important')+';');
+  L.push('      '+o('css-property-name-face','width')+': '+o('css-function-face','calc')+'(100% - '+o('css-variable-face','--gutter')+');');
+  L.push('      '+o('css-property-name-face','font-family')+': '+o('css-string-face','"Berkeley Mono"')+'; } }');
+  L.push(B('</')+o('html-tag-face','style')+B('>'));
+  L.push('');
+  L.push(B('<')+o('html-tag-face','body')+' '+o('html-attr-custom-face','data-theme')+o('html-attr-equal-face','=')+o('html-attr-value-face','"dupre"')+B('>'));
+  L.push('  '+o('current-element-highlight-face',B('<')+o('html-tag-face','main')+B('>'))+'   '+o('comment-face','<!-- current element highlighted -->'));
+  L.push('  '+B('<')+o('html-tag-custom-face','cart-widget')+' '+o('html-attr-engine-face',':items')+o('html-attr-equal-face','=')+o('html-attr-value-face','"cart.lines"')+B('/>'));
+  L.push('  '+B('<')+o('html-tag-namespaced-face','svg:rect')+' '+o('html-attr-name-face','width')+o('html-attr-equal-face','=')+o('html-attr-value-face','"12"')+B('/>'));
+  L.push('  '+B('<')+o('html-tag-face','p')+B('>')+'Fish '+o('html-entity-face','&amp;')+' chips '+B('<')+o('html-tag-face','b')+B('>')+o('bold-face','bold')+B('</')+o('html-tag-face','b')+B('>')+' '+B('<')+o('html-tag-face','i')+B('>')+o('italic-face','italic')+B('</')+o('html-tag-face','i')+B('>')+' '+B('<')+o('html-tag-face','u')+B('>')+o('underline-face','underlined')+B('</')+o('html-tag-face','u')+B('>')+B('</')+o('html-tag-face','p')+B('>'));
+  L.push('  '+B('<')+o('html-tag-unclosed-face','li')+B('>')+'this li never closes   '+o('error-face','</wrong>')+' '+o('warning-face','duplicate id')+' '+o('whitespace-face','···')+' '+o('folded-face','[details folded…]')+' '+o('inlay-face',' 3 items ')+' '+o('current-column-highlight-face','│'));
+  L.push('');
+  L.push('  '+o('block-delimiter-face','{%')+' '+o('block-control-face','if')+' '+o('variable-name-face','user')+o('block-face','.signed_in')+' '+o('block-delimiter-face','%}')+'   '+o('block-comment-face','{# template block, any engine #}'));
+  L.push('    '+o('block-delimiter-face','{{')+' '+o('variable-name-face','user')+o('block-face','.name')+' '+o('filter-face','| capitalize')+' '+o('block-delimiter-face','}}'));
+  L.push('    '+o('block-delimiter-face','{%')+' '+o('block-control-face','include')+' '+o('block-string-face','"badge.html"')+' '+o('block-attr-name-face','with')+' '+o('block-attr-value-face','tier=gold')+' '+o('block-delimiter-face','%}'));
+  L.push('  '+o('block-delimiter-face','{%')+' '+o('block-control-face','endif')+' '+o('block-delimiter-face','%}'));
+  L.push('');
+  L.push(B('<')+o('html-tag-face','script')+B('>')+o('script-face','  // the js part rides web-mode-script-face')+o('part-face',' (embedded parts share web-mode-part-face)'));
+  L.push('  '+o('comment-face','/**'));
+  L.push('  '+o('annotation-face',' * Render one cart row.'));
+  L.push('  '+o('annotation-face',' * ')+o('annotation-tag-face','@param')+' '+o('annotation-type-face','{Line}')+' '+o('annotation-value-face','line')+' '+o('annotation-face','the row, e.g. ')+o('annotation-html-face','<code>line.sku</code>'));
+  L.push('  '+o('annotation-face',' */'));
+  L.push('  '+o('keyword-face','const')+' '+o('constant-face','VAT')+' = '+o('variable-name-face','rate')+' ?? 0.21;   '+o('javascript-comment-face','// js comment')+' '+o('part-comment-face','/* part comment */'));
+  L.push('  '+o('keyword-face','function')+' '+o('function-name-face','renderLine')+'('+o('param-name-face','line')+', '+o('param-name-face','fmt')+') {');
+  L.push('    '+o('keyword-face','const')+' '+o('type-face','Money')+' '+o('variable-name-face','total')+' = '+o('function-call-face','round')+'('+o('variable-name-face','line')+'.'+o('symbol-face','qty')+' * '+o('builtin-face','Number')+'('+o('variable-name-face','line')+'.price));');
+  L.push('    '+o('keyword-face','return')+' '+o('javascript-string-face','`')+o('interpolate-color1-face','${')+o('interpolate-color2-face','fmt(')+o('interpolate-color3-face','${')+o('interpolate-color4-face','total')+o('interpolate-color3-face','}')+o('interpolate-color2-face',')')+o('interpolate-color1-face','}')+o('javascript-string-face',' EUR`')+';  }');
+  L.push('  '+o('keyword-face','const')+' '+o('variable-name-face','q')+' = '+o('part-string-face','"')+o('sql-keyword-face','SELECT')+o('part-string-face',' sku ')+o('sql-keyword-face','FROM')+o('part-string-face',' lines ')+o('sql-keyword-face','WHERE')+o('part-string-face',' qty > 0"')+';');
+  L.push('  '+o('keyword-face','const')+' '+o('variable-name-face','cfg')+' = '+o('json-context-face','{ ')+o('json-key-face','"currency"')+': '+o('json-string-face','"EUR"')+o('json-context-face',', ')+o('json-comment-face','/* json island */')+o('json-context-face',' }')+';');
+  L.push('  '+o('keyword-face','return')+' ('+o('jsx-depth-1-face','<Cart>')+o('jsx-depth-2-face','<Row>')+o('jsx-depth-3-face','<Cell>')+o('jsx-depth-4-face','<Qty>')+o('jsx-depth-5-face','{n}')+o('jsx-depth-4-face','</Qty>')+o('jsx-depth-3-face','</Cell>')+o('jsx-depth-2-face','</Row>')+o('jsx-depth-1-face','</Cart>')+');');
+  L.push('  '+o('preprocessor-face','<?php')+' '+o('function-call-face','render')+'('+o('string-face','"footer"')+'); '+o('preprocessor-face','?>'));
+  L.push(B('</')+o('html-tag-face','script')+B('>'));
+  L.push(B('</')+o('html-tag-face','html')+B('>'));
+  return previewLines(L);}
 function renderAiTermPreview(){const a='ai-term',L=[];
   // What these faces actually paint: the Claude Code TUI inside an agent
   // terminal. The banner is the fixed accent (every session); each /color

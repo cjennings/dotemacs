@@ -168,7 +168,7 @@ ns={}
 src=read_text('samples.py')
 exec(src[:src.index('# THEME_STUDIO_DATA_END')], ns)
 SAMPLES={"Elisp":ns['ELS'],"Go":ns['GOS'],"Python":ns['PYS'],"TypeScript":ns['TSS'],"Java":ns['JAS'],"C":ns['CS'],"C++":ns['CPS'],"Rust":ns['RUSTS'],"Zig":ns['ZIGS'],"Shell":ns['SHS'],
- "Racket":ns['RACKETS'],"Scheme":ns['SCHEMES'],"Haskell":ns['HASKELLS'],"OCaml":ns['OCAMLS'],"Scala":ns['SCALAS'],"Kotlin":ns['KOTLINS'],"Swift":ns['SWIFTS'],"Lua":ns['LUAS'],"Ruby":ns['RUBYS'],"Perl":ns['PERLS'],"R":ns['RLANGS'],"Erlang":ns['ERLANGS'],"SQL":ns['SQLS'],"PHP":ns['PHPS'],"Ada":ns['ADAS'],"Fortran":ns['FORTRANS'],"MATLAB":ns['MATLABS'],"Assembly":ns['ASMS']}
+ "Racket":ns['RACKETS'],"Scheme":ns['SCHEMES'],"Haskell":ns['HASKELLS'],"OCaml":ns['OCAMLS'],"Scala":ns['SCALAS'],"Kotlin":ns['KOTLINS'],"Swift":ns['SWIFTS'],"Lua":ns['LUAS'],"Ruby":ns['RUBYS'],"Perl":ns['PERLS'],"R":ns['RLANGS'],"Erlang":ns['ERLANGS'],"SQL":ns['SQLS'],"PHP":ns['PHPS'],"Ada":ns['ADAS'],"Fortran":ns['FORTRANS'],"MATLAB":ns['MATLABS'],"Assembly":ns['ASMS'],"HTML":ns['HTMLS']}
 COLS=ns['COLS']
 DEFAULT_FACES_PATH=os.path.join(HERE,'emacs-default-faces.json')
 

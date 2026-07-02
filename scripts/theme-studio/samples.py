@@ -704,6 +704,24 @@ ASMS=[
  [('p','    '),('kw','xor'),('p','     '),('var','rdi'),('punc',','),('p',' '),('var','rdi'),('p','        '),('cmd',';'),('cm',' status 0')],
  [('p','    '),('kw','syscall')],
 ]
+HTMLS=[
+ [('cm','<!doctype html>')],
+ [('cm','<!-- storefront page -->')],
+ [('punc','<'),('fnd','html'),('p',' '),('var','lang'),('op','='),('str','"en"'),('punc','>')],
+ [('punc','<'),('fnd','head'),('punc','>')],
+ [('p','  '),('punc','<'),('fnd','style'),('punc','>')],
+ [('p','    '),('pp','@media'),('p',' '),('punc','('),('prop','min-width'),('op',':'),('p',' '),('num','40rem'),('punc',')'),('p',' '),('punc','{')],
+ [('p','      '),('ty','body'),('p',' '),('fnc','.card'),('kw',':hover'),('p',' '),('punc','{'),('p',' '),('prop','color'),('op',':'),('p',' '),('con','#67809c'),('punc',';'),('p',' '),('punc','}}')],
+ [('p','  '),('punc','</'),('fnd','style'),('punc','>')],
+ [('punc','</'),('fnd','head'),('punc','>')],
+ [('punc','<'),('fnd','body'),('p',' '),('var','data-theme'),('op','='),('str','"dupre"'),('punc','>')],
+ [('p','  '),('punc','<'),('fnd','h1'),('punc','>'),('p','Fish '),('esc','&amp;'),('p',' Chips'),('punc','</'),('fnd','h1'),('punc','>')],
+ [('p','  '),('punc','<'),('fnd','script'),('punc','>')],
+ [('p','    '),('kw','const'),('p',' '),('var','total'),('p',' '),('op','='),('p',' '),('fnc','round'),('punc','('),('var','qty'),('p',' '),('op','*'),('p',' '),('var','price'),('punc',');'),('p',' '),('cmd','//'),('cm',' inline js')],
+ [('p','  '),('punc','</'),('fnd','script'),('punc','>')],
+ [('punc','</'),('fnd','body'),('punc','>')],
+ [('punc','</'),('fnd','html'),('punc','>')],
+]
 
 # THEME_STUDIO_DATA_END: generate.py execs only the lines above this marker (the
 # code samples and COLS). Everything below is the standalone /tmp/dupre-canon.html

@@ -855,7 +855,7 @@ class BespokePreviewFaceCoverage(unittest.TestCase):
 
     FULL_COVERAGE_APPS = [
         "company", "company-box", "transient", "magit-section",
-        "rainbow-delimiters",
+        "rainbow-delimiters", "web-mode",
     ]
 
     def test_every_face_appears_in_the_renderer(self):

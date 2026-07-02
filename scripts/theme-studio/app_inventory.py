@@ -26,6 +26,7 @@ PREVIEW_KEYS = {
     "transient": "transient",
     "magit-section": "magitsection",
     "rainbow-delimiters": "rainbowdelims",
+    "web-mode": "webmode",
 }
 
 # Custom display labels for inventory apps whose package name is an acronym

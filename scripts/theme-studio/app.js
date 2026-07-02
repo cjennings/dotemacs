@@ -564,6 +564,7 @@ const PACKAGE_PREVIEWS={
   novreading:renderNovReadingPreview,aiterm:renderAiTermPreview,
   company:renderCompanyPreview,companybox:renderCompanyBoxPreview,transient:renderTransientPreview,
   magitsection:renderMagitSectionPreview,rainbowdelims:renderRainbowDelimitersPreview,
+  webmode:renderWebModePreview,
   erc:renderErcPreview,orgdrill:renderOrgdrillPreview,orgnoter:renderOrgnoterPreview,signel:renderSignelPreview,
   pearl:renderPearlPreview,slack:renderSlackPreview,telega:renderTelegaPreview,shr:renderShrPreview,
   nerdicons:renderNerdIconsPreview
