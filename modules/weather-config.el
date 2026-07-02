@@ -52,6 +52,9 @@
   ;; at :config time; the later defcustom won't clobber an already-set value.
   (setq wttrin-geolocation-command "/home/cjennings/.local/bin/whereami --json")
   (setopt wttrin-mode-line-refresh-interval (* 30 60)) ;; thirty minutes
+  ;; Tooltip forecast: remainder of today, tomorrow, and the next day (the
+  ;; j1 feed's maximum), rendered under the current conditions on hover.
+  (setopt wttrin-mode-line-tooltip-forecast-days 3)
   (setq wttrin-default-locations '(
                                    "New Orleans, LA"
                                    "Berkeley, CA"
