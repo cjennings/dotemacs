@@ -154,6 +154,33 @@ The /color session accents get their own faces below."
   "Agent terminal rendering of Claude Code's cyan session color (dupre steel)."
   :group 'ai-term)
 
+(defvar cj/--ai-term-color-names
+  '("red" "blue" "green" "yellow" "purple" "orange" "pink" "cyan")
+  "Claude Code's /color session-color names (v2.1.198's eb array).
+The hash fallback in `cj/--ai-term-project-color' indexes into this
+list, so its order changes which project lands on which color --
+append rather than reorder if Claude Code grows new names.")
+
+(defcustom cj/ai-term-project-colors nil
+  "Alist of (PROJECT-BASENAME . COLOR-NAME) overriding the hashed color.
+BASENAME is the project directory's basename as shown in the agent
+picker (e.g. \".emacs.d\"); COLOR-NAME is one of
+`cj/--ai-term-color-names'.  Projects not listed get a deterministic
+color hashed from their basename, so every project always comes up in
+the same color either way."
+  :type '(alist :key-type string :value-type string)
+  :group 'ai-term)
+
+(defun cj/--ai-term-project-color (dir)
+  "Return the /color name for project DIR: alist override, else hash.
+The fallback sums the basename's characters mod the color count, so the
+same project maps to the same color on every machine and session."
+  (let ((basename (file-name-nondirectory (directory-file-name dir))))
+    (or (cdr (assoc-string basename cj/ai-term-project-colors))
+        (nth (mod (apply #'+ (string-to-list basename))
+                  (length cj/--ai-term-color-names))
+             cj/--ai-term-color-names))))
+
 (defvar cj/ai-term-palette-faces
   '((211 . cj/ai-term-accent)        ; bypass banner (fixed, not a /color)
     (167 . cj/ai-term-color-red)

@@ -44,7 +44,13 @@ mirroring the real entry point."
                       (push (buffer-name b) ,calls)
                       b)))
                  ((symbol-function 'cj/--ai-term-send-string)
-                  (lambda (_buf s) (push s ,strings))))
+                  (lambda (_buf s) (push s ,strings)))
+                 ;; Keep the create path hermetic: no tmux subprocess for the
+                 ;; fresh-session check, no real /color poll timer.
+                 ((symbol-function 'cj/--ai-term-live-tmux-sessions)
+                  (lambda () nil))
+                 ((symbol-function 'cj/--ai-term-schedule-color)
+                  (lambda (_buffer _color) nil)))
          ,@body))))
 
 (defun test-ai-term--cleanup (name)

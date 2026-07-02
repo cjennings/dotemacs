@@ -27,6 +27,7 @@
 (declare-function eat "eat" (&optional program arg))
 (declare-function eat-term-set-parameter "eat" (terminal parameter value))
 (declare-function cj/ai-term-next "ai-term" ())
+(declare-function cj/--ai-term-project-color "ai-term" (dir))
 (defvar eat-buffer-name)
 (defvar eat-semi-char-mode-map)
 (defvar eat-terminal)
@@ -55,6 +56,50 @@ the program repaints it (Claude Code's TUI repaints continuously)."
                                 (intern (format "color-%d-face" (car entry)))
                                 (cdr entry))))))
 
+(defun cj/--ai-term-color-ready-p (buffer)
+  "Return non-nil when BUFFER's Claude TUI is ready for a /color injection.
+Ready means the bypass-permissions banner is on screen (the TUI booted;
+a plain shell never shows it, so this fails safe) AND the input prompt
+line is still empty (the user hasn't started typing -- injecting into a
+half-typed prompt would corrupt their input)."
+  (when (buffer-live-p buffer)
+    (with-current-buffer buffer
+      (save-excursion
+        (goto-char (point-min))
+        (and (search-forward "⏵⏵" nil t)
+             (progn (goto-char (point-min))
+                    (re-search-forward "^❯ *$" nil t))
+             t)))))
+
+(defun cj/--ai-term-send-color (buffer color)
+  "Type \"/color COLOR\" into BUFFER's TUI, then Enter a beat later.
+The Enter is deferred because the slash-command menu pops up while the
+text arrives; a CR in the same write can select a menu entry instead of
+running the typed command (the same race the color probe dodged)."
+  (cj/--ai-term-send-string buffer (concat "/color " color))
+  (run-at-time 1 nil #'cj/--ai-term-send-string buffer "\r"))
+
+(defun cj/--ai-term-schedule-color (buffer color)
+  "Poll BUFFER until its Claude TUI is ready, then send /color COLOR.
+Polls every 2 seconds and gives up after 45 tries (90s) or when the
+buffer dies -- covering a Claude that never launches, so nothing is ever
+typed into a bare shell.  Returns the poll timer."
+  (let ((tries 0) (timer nil))
+    (setq timer
+          (run-at-time
+           2 2
+           (lambda ()
+             (setq tries (1+ tries))
+             (cond
+              ((not (buffer-live-p buffer))
+               (cancel-timer timer))
+              ((cj/--ai-term-color-ready-p buffer)
+               (cancel-timer timer)
+               (cj/--ai-term-send-color buffer color))
+              ((>= tries 45)
+               (cancel-timer timer))))))
+    timer))
+
 (defun cj/--ai-term-show-or-create (dir name)
   "Show or create the AI-term buffer for project DIR with buffer NAME.
 
@@ -81,25 +126,33 @@ buffer."
      (t
       (when existing
         (kill-buffer existing))
-      ;; `eat' switches to its buffer in the selected window before our
-      ;; display-buffer-alist rule can route it; `save-window-excursion'
-      ;; reverts that, and the explicit display-buffer below routes the buffer
-      ;; through the alist into the agent slot.  `eat-buffer-name' is bound to
-      ;; NAME so the terminal is created under the agent name; EAT (unlike
-      ;; ghostel) does not rename the buffer from the terminal's OSC title, so
-      ;; the "agent [" prefix that buffer detection and the display rule key on
-      ;; stays put.
-      (save-window-excursion
-        (let ((default-directory dir)
-              (eat-buffer-name name))
-          (eat)))
-      (let ((buf (get-buffer name)))
-        (with-current-buffer buf
-          (cj/--ai-term-apply-accent buf)
-          (cj/--ai-term-send-string
-           buf (concat (cj/--ai-term-launch-command dir) "\n")))
-        (display-buffer buf)
-        buf)))))
+      ;; Fresh vs reattach is decided BEFORE the launch command runs (the
+      ;; `tmux new-session -A' it sends creates the session).  Only a fresh
+      ;; session gets the project /color injected below; a reattach carries
+      ;; whatever color the running Claude already has.
+      (let ((fresh (not (cj/--ai-term-session-active-p
+                         dir (cj/--ai-term-live-tmux-sessions)))))
+        ;; `eat' switches to its buffer in the selected window before our
+        ;; display-buffer-alist rule can route it; `save-window-excursion'
+        ;; reverts that, and the explicit display-buffer below routes the buffer
+        ;; through the alist into the agent slot.  `eat-buffer-name' is bound to
+        ;; NAME so the terminal is created under the agent name; EAT (unlike
+        ;; ghostel) does not rename the buffer from the terminal's OSC title, so
+        ;; the "agent [" prefix that buffer detection and the display rule key on
+        ;; stays put.
+        (save-window-excursion
+          (let ((default-directory dir)
+                (eat-buffer-name name))
+            (eat)))
+        (let ((buf (get-buffer name)))
+          (with-current-buffer buf
+            (cj/--ai-term-apply-accent buf)
+            (cj/--ai-term-send-string
+             buf (concat (cj/--ai-term-launch-command dir) "\n")))
+          (when fresh
+            (cj/--ai-term-schedule-color buf (cj/--ai-term-project-color dir)))
+          (display-buffer buf)
+          buf))))))
 
 ;; In EAT's semi-char mode, keys not bound in `eat-semi-char-mode-map' are
 ;; forwarded to the pty.  M-SPC (swap to the next agent) must reach Emacs from
