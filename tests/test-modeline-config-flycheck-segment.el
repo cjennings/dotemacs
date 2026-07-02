@@ -2,7 +2,7 @@
 
 ;;; Commentary:
 ;; Smoke test that the custom modeline's `mode-line-format' includes
-;; a guarded reference to `flycheck-mode-line-status-text', and that
+;; a guarded reference to `cj/--modeline-flycheck-status', and that
 ;; the guard requires both `mode-line-window-selected-p' and
 ;; `bound-and-true-p flycheck-mode'.  See
 ;; docs/specs/flycheck-modeline-customization-spec-implemented.org for the design.
@@ -16,9 +16,9 @@
 (require 'modeline-config)
 
 (ert-deftest test-modeline-config-flycheck-segment-present ()
-  "`mode-line-format' contains an :eval form invoking flycheck-mode-line-status-text."
+  "`mode-line-format' contains an :eval form invoking cj/--modeline-flycheck-status."
   (let ((printed (format "%S" (default-value 'mode-line-format))))
-    (should (string-match-p "flycheck-mode-line-status-text" printed))))
+    (should (string-match-p "cj/--modeline-flycheck-status" printed))))
 
 (ert-deftest test-modeline-config-flycheck-segment-guarded-by-active-window ()
   "Flycheck segment gates on `mode-line-window-selected-p'."

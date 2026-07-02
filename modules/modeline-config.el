@@ -8,23 +8,39 @@
 ;; Load shape: eager.
 ;; Eager reason: the modeline is visible in the first frame.
 ;; Top-level side effects: two add-hook (VC cache lifecycle).
-;; Runtime requires: user-constants.
+;; Runtime requires: none (nerd-icons and flycheck are used opportunistically
+;;   behind fboundp guards, so the modeline renders with plain-text fallbacks
+;;   when either is absent).
 ;; Direct test load: yes.
 ;;
-;; Simple, minimal modeline using only built-in Emacs functionality.
-;; No external packages = no buffer issues, no native-comp errors.
-
-;; Features:
-;; - Buffer name
-;; - Major mode
-;; - Version control status
-;; - Line and column position
-;; - Buffer percentage
+;; Simple, minimal modeline built on Emacs 30's own right-alignment.
+;; Segments are pure helpers wired in with thin :eval forms.
+;;
+;; Left side:
+;; - Padding space (optional taller bar via `cj/modeline-height-factor')
+;; - Major-mode icon (nerd-icons; falls back to the mode name in
+;;   terminal frames or when nerd-icons is absent)
+;; - Modified dot / read-only lock
+;; - Buffer name (click to cycle buffers)
+;; - Remote @host tag for TRAMP buffers
+;; - Narrow tag when the buffer is narrowed (click to widen)
+;; - Line/column and percentage; selection info while the region is active
+;; - MACRO tag while a keyboard macro is recording
+;;
+;; Right side:
+;; - Recording indicator (video-audio-recording capture)
+;; - Flycheck error/warning counts (click to list errors)
+;; - Process state (eat/comint/compilation via `mode-line-process')
+;; - VC branch colored by state (click for diffs)
+;; - Misc info (chime notifications, weather, etc.)
+;;
+;; Glyphs are nerd-icons private-use codepoints or plain unicode shapes
+;; (U+25CF dot), never emoji codepoints — emojify rewrites those.
+;;
+;; `cj/modeline-reset' repairs a buffer whose mode-line-format was
+;; hijacked buffer-locally (two-column mode, ediff, calc).
 
 ;;; Code:
-
-;; Use buffer status colors from user-constants
-(require 'user-constants)
 
 ;; -------------------------- Modeline Configuration --------------------------
 
@@ -47,6 +63,13 @@
 (defcustom cj/modeline-vc-show-remote nil
   "When non-nil, show VC branch and state for remote files."
   :type 'boolean
+  :group 'modeline)
+
+(defcustom cj/modeline-height-factor 1.15
+  "Height multiplier for the modeline's padding space.
+Values above 1.0 make the modeline slightly taller than the text it
+holds.  1.0 (or nil) renders a plain space with no height change."
+  :type '(choice (const :tag "No extra height" nil) number)
   :group 'modeline)
 
 ;; -------------------------- Helper Functions ---------------------------------
@@ -81,7 +104,75 @@ runs it too.  Shared builder for the clickable modeline segments."
       (define-key map [mode-line mouse-3] mouse-3))
     map))
 
+(defun cj/modeline-reset ()
+  "Restore the default modeline in the current buffer.
+Some packages (two-column mode, ediff, calc) replace `mode-line-format'
+buffer-locally with their own layout and can leave it behind.  This
+kills the buffer-local value so the default format returns."
+  (interactive)
+  (kill-local-variable 'mode-line-format)
+  (force-mode-line-update)
+  (message "Modeline restored to default in %s" (buffer-name)))
+
 ;; -------------------------- Modeline Segments --------------------------------
+
+(defun cj/--modeline-padding ()
+  "Return the leading modeline space, taller per `cj/modeline-height-factor'.
+A display height property on a single space pads the whole modeline
+vertically without touching the mode-line faces the theme owns."
+  (if (and cj/modeline-height-factor
+           (/= cj/modeline-height-factor 1.0))
+      (propertize " " 'display `(height ,cj/modeline-height-factor))
+    " "))
+
+(defvar-local cj/--modeline-mode-icon-cache nil
+  "Cons of (MAJOR-MODE . GRAPHIC-P) paired with the rendered mode segment.
+Avoids a nerd-icons lookup on every redisplay.")
+
+(defun cj/--modeline-mode-icon-compute ()
+  "Build the major-mode segment: a nerd-icons glyph, or the mode name.
+Graphical frames with nerd-icons available get the mode's colored icon;
+terminal frames and icon-less setups get the plain mode name.  Either
+way the segment carries the full mode name in its help-echo and clicks
+through to `describe-mode'."
+  (let* ((name (format-mode-line mode-name))
+         (icon (and (display-graphic-p)
+                    (fboundp 'nerd-icons-icon-for-mode)
+                    (let ((i (ignore-errors (nerd-icons-icon-for-mode major-mode))))
+                      (and (stringp i) i))))
+         (help (if-let* ((parent (get major-mode 'derived-mode-parent)))
+                   (format "Major mode: %s (%s)\nDerived from: %s\nmouse-1: describe-mode"
+                           name major-mode parent)
+                 (format "Major mode: %s (%s)\nmouse-1: describe-mode"
+                         name major-mode))))
+    (propertize (or icon name)
+                'mouse-face 'mode-line-highlight
+                'help-echo help
+                'local-map (cj/--modeline-click-map 'describe-mode))))
+
+(defun cj/--modeline-mode-icon ()
+  "Return the cached major-mode segment for the current buffer."
+  (let ((key (cons major-mode (display-graphic-p))))
+    (unless (equal (car-safe cj/--modeline-mode-icon-cache) key)
+      (setq cj/--modeline-mode-icon-cache
+            (cons key (cj/--modeline-mode-icon-compute))))
+    (cdr cj/--modeline-mode-icon-cache)))
+
+(defun cj/--modeline-buffer-status ()
+  "Return the modified/read-only indicator, or nil when neither applies.
+Read-only shows a lock and wins over modified.  The modified dot shows
+only for file-visiting buffers -- special buffers are perpetually
+modified and would be noise.  Clean file buffers show nothing."
+  (cond
+   (buffer-read-only
+    (concat (or (and (fboundp 'nerd-icons-faicon)
+                     (ignore-errors (nerd-icons-faicon "nf-fa-lock" :face 'shadow)))
+                (propertize "RO" 'face 'shadow))
+            " "))
+   ((and (buffer-modified-p) buffer-file-name)
+    (concat (propertize "●" 'face 'warning
+                        'help-echo "Buffer has unsaved changes")
+            " "))))
 
 (defvar-local cj/modeline-buffer-name
   '(:eval (let* ((name (buffer-name))
@@ -96,10 +187,104 @@ runs it too.  Shared builder for the clickable modeline segments."
   "Buffer name in the mode line.
 Truncates in narrow windows.  Click to switch buffers.")
 
-(defvar-local cj/modeline-position
-  '("L:" (:eval (format-mode-line "%l")) " C:" (:eval (format-mode-line "%c")))
-  "Line and column position as L:line C:col.
-Uses built-in cached values for performance.")
+(defun cj/--modeline-remote-host ()
+  "Return an @host tag when the buffer's directory is remote, else nil."
+  (when-let* ((host (file-remote-p default-directory 'host)))
+    (concat " "
+            (propertize (concat "@" host)
+                        'face 'warning
+                        'help-echo (format "Remote: %s" default-directory)))))
+
+(defun cj/--modeline-narrow-indicator ()
+  "Return the Narrow tag when the buffer is narrowed, else nil.
+Click to widen."
+  (when (buffer-narrowed-p)
+    (concat " "
+            (propertize "Narrow"
+                        'face 'warning
+                        'mouse-face 'mode-line-highlight
+                        'help-echo "Buffer is narrowed\nmouse-1: widen"
+                        'local-map (cj/--modeline-click-map 'widen)))))
+
+(defun cj/--modeline-position-info ()
+  "Return position info: L:line C:col and percentage through the buffer.
+While the region is active, return selection info instead (lines and
+characters selected)."
+  (if (use-region-p)
+      (let* ((lines (count-lines (region-beginning) (region-end)))
+             (chars (- (region-end) (region-beginning))))
+        (format "%d line%s, %d char%s"
+                lines (if (= lines 1) "" "s")
+                chars (if (= chars 1) "" "s")))
+    ;; Percent is computed from point rather than %p: it answers "how far
+    ;; is point" instead of "where is the window", and it stays correct in
+    ;; batch/undisplayed buffers.  %% survives the mode-line's %-construct
+    ;; pass over :eval results as a literal percent sign.
+    (format "L:%s C:%s %d%%%%"
+            (format-mode-line "%l")
+            (format-mode-line "%c")
+            (floor (* 100.0 (- (point) (point-min)))
+                   (max 1 (- (point-max) (point-min)))))))
+
+(defun cj/--modeline-macro-indicator ()
+  "Return the MACRO tag while a keyboard macro is recording, else nil."
+  (when defining-kbd-macro
+    (concat "  "
+            (propertize "MACRO"
+                        'face 'error
+                        'help-echo "Recording keyboard macro\nF4 or C-x ) to stop"))))
+
+;; ------------------------------ Flycheck Segment ------------------------------
+
+(defvar cj/--modeline-flycheck-glyphs nil
+  "Cached (ERROR-GLYPH . WARNING-GLYPH) for the flycheck segment.
+nerd-icons private-use glyphs (emojify never rewrites those).  Only a
+successful lookup is cached, so a load before nerd-icons doesn't poison
+the cache with nils.")
+
+(defun cj/--modeline-flycheck-glyphs ()
+  "Return the flycheck glyph pair, or nil when icons aren't usable.
+Text fallbacks apply on non-graphic frames (PUA glyphs don't render in
+a terminal) and whenever nerd-icons is absent."
+  (when (display-graphic-p)
+    (or cj/--modeline-flycheck-glyphs
+        (when (fboundp 'nerd-icons-faicon)
+          (let ((pair (cons (ignore-errors (nerd-icons-faicon "nf-fa-times_circle" :face 'error))
+                            (ignore-errors (nerd-icons-faicon "nf-fa-warning" :face 'warning)))))
+            (when (and (car pair) (cdr pair))
+              (setq cj/--modeline-flycheck-glyphs pair)))))))
+
+(defun cj/--modeline-flycheck-render (counts)
+  "Render flycheck COUNTS alist ((error . N) (warning . M) ...) or nil.
+Errors carry the error face, warnings the warning face; zero-count
+severities are omitted; all-clean renders nothing.  The segment clicks
+through to `flycheck-list-errors'."
+  (let* ((errors (or (alist-get 'error counts) 0))
+         (warnings (or (alist-get 'warning counts) 0))
+         (glyphs (cj/--modeline-flycheck-glyphs))
+         (parts nil))
+    (when (> warnings 0)
+      (push (concat (or (cdr glyphs) (propertize "W" 'face 'warning)) " "
+                    (propertize (number-to-string warnings) 'face 'warning))
+            parts))
+    (when (> errors 0)
+      (push (concat (or (car glyphs) (propertize "E" 'face 'error)) " "
+                    (propertize (number-to-string errors) 'face 'error))
+            parts))
+    (when parts
+      (propertize (mapconcat #'identity parts "  ")
+                  'mouse-face 'mode-line-highlight
+                  'help-echo "Flycheck\nmouse-1: list errors"
+                  'local-map (cj/--modeline-click-map 'flycheck-list-errors)))))
+
+(defun cj/--modeline-flycheck-status ()
+  "Return the rendered flycheck counts for the current buffer, or nil."
+  (when (and (fboundp 'flycheck-count-errors)
+             (boundp 'flycheck-current-errors))
+    (cj/--modeline-flycheck-render
+     (flycheck-count-errors flycheck-current-errors))))
+
+;; -------------------------------- VC Segment ----------------------------------
 
 (defvar cj/modeline-vc-faces
   '((added . vc-locally-added-state)
@@ -134,7 +319,7 @@ Uses built-in cached values for performance.")
         cj/modeline-vc-cache-value nil
         cj/modeline-vc-cache-set-p nil))
 
-(defun cj/modeline-vc-cache-key (file)
+(defun cj/--modeline-vc-cache-key (file)
   "Return the cache key for FILE: the file path and `cj/modeline-vc-show-remote'.
 `file-truename' is deliberately omitted -- the mode-line rebuilds this key on
 every render to check cache validity, so a stat here would run per redisplay.
@@ -180,7 +365,7 @@ break it.  Caching nil degrades to \"no VC info\" instead."
   (when-let* ((file (cj/modeline-vc-file)))
     (unless (and (file-remote-p file) (not cj/modeline-vc-show-remote))
       (let* ((now (float-time))
-             (key (cj/modeline-vc-cache-key file)))
+             (key (cj/--modeline-vc-cache-key file)))
         (if (cj/modeline-vc-cache-valid-p key now)
             cj/modeline-vc-cache-value
           (setq cj/modeline-vc-cache-key key
@@ -211,18 +396,6 @@ break it.  Caching nil degrades to \"no VC info\" instead."
 Shows only in active window.  Truncates in narrow windows.
 Click to show diffs with `vc-diff' or `vc-root-diff'.")
 
-(defvar-local cj/modeline-major-mode
-  '(:eval (let ((mode-str (format-mode-line mode-name))  ; Convert to string
-                (mode-sym major-mode))
-            (propertize mode-str
-                        'mouse-face 'mode-line-highlight
-                        'help-echo (if-let* ((parent (get mode-sym 'derived-mode-parent)))
-                                       (format "Major mode: %s\nDerived from: %s\nmouse-1: describe-mode" mode-sym parent)
-                                     (format "Major mode: %s\nmouse-1: describe-mode" mode-sym))
-                        'local-map (cj/--modeline-click-map 'describe-mode))))
-  "Major mode name only (no minor modes).
-Click to show help with `describe-mode'.")
-
 (defvar-local cj/modeline-misc-info
   '(:eval (when (mode-line-window-selected-p)
             mode-line-misc-info))
@@ -237,24 +410,30 @@ Shows only in active window.")
 (setq-default mode-line-format
   '("%e"  ; Error message if out of memory
     ;; LEFT SIDE
-    " "
-    cj/modeline-major-mode
+    (:eval (cj/--modeline-padding))
+    (:eval (cj/--modeline-mode-icon))
     "  "
+    (:eval (cj/--modeline-buffer-status))
     cj/modeline-buffer-name
+    (:eval (cj/--modeline-remote-host))
+    (:eval (cj/--modeline-narrow-indicator))
     "  "
-    cj/modeline-position
+    (:eval (cj/--modeline-position-info))
+    (:eval (cj/--modeline-macro-indicator))
     ;; RIGHT SIDE (using Emacs 30 built-in right-align)
     ;; Order: leftmost to rightmost as they appear in the list
     mode-line-format-right-align
     (:eval (when (fboundp 'cj/recording-modeline-indicator)
              (cj/recording-modeline-indicator)))
-    ;; Flycheck status: prefix + counts (or success indicator).  Gated
-    ;; to the active window, and to buffers where flycheck has loaded
-    ;; and turned on, so the call is safe even before flycheck loads.
+    ;; Flycheck status: error/warning counts.  Gated to the active
+    ;; window, and to buffers where flycheck has loaded and turned on,
+    ;; so the call is safe even before flycheck loads.
     (:eval (when (and (mode-line-window-selected-p)
                       (bound-and-true-p flycheck-mode))
-             (flycheck-mode-line-status-text)))
+             (cj/--modeline-flycheck-status)))
     "  "
+    mode-line-process
+    " "
     cj/modeline-vc-branch
     "  "
     cj/modeline-misc-info
@@ -262,10 +441,7 @@ Shows only in active window.")
 
 ;; Mark all segments as risky-local-variable (required for :eval forms)
 (dolist (construct '(cj/modeline-buffer-name
-                     cj/modeline-position
                      cj/modeline-vc-branch
-                     cj/modeline-vc-faces
-                     cj/modeline-major-mode
                      cj/modeline-misc-info))
   (put construct 'risky-local-variable t))
 
