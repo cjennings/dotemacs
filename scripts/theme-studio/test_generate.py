@@ -860,7 +860,7 @@ class BespokePreviewFaceCoverage(unittest.TestCase):
         "emms", "org-roam", "hl-todo", "symbol-overlay",
         "highlight-indent-guides", "yasnippet", "prescient", "flyspell-correct",
         "tmr", "wttrin", "alert", "org-superstar", "nerd-icons-completion",
-        "ghostel", "all-the-icons",
+        "ghostel", "all-the-icons", "ansi-color",
     ]
 
     def test_every_face_appears_in_the_renderer(self):

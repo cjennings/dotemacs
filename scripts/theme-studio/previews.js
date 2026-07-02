@@ -900,6 +900,35 @@ function renderNerdIconsCompletionPreview(){const a='nerd-icons-completion',L=[]
   L.push('  '+os(a,'nerd-icons-completion-dir-face','')+' modules/');
   L.push('   app.js   · file icons keep their own nerd-icons faces');
   return previewLines(L);}
+function renderAnsiColorPreview(){const a='ansi-color',L=[];
+  // ansi-color.el applies the 16 SGR palette faces to any buffer holding raw
+  // escape codes (compilation, comint, shell, eshell output). eat/vterm's
+  // color faces :inherit these, so theming ansi-color-* is what drives the
+  // terminal palette across the whole config. Literal names for the gate.
+  const C={black:'ansi-color-black',red:'ansi-color-red',green:'ansi-color-green',
+    yellow:'ansi-color-yellow',blue:'ansi-color-blue',magenta:'ansi-color-magenta',
+    cyan:'ansi-color-cyan',white:'ansi-color-white','bright-black':'ansi-color-bright-black',
+    'bright-red':'ansi-color-bright-red','bright-green':'ansi-color-bright-green',
+    'bright-yellow':'ansi-color-bright-yellow','bright-blue':'ansi-color-bright-blue',
+    'bright-magenta':'ansi-color-bright-magenta','bright-cyan':'ansi-color-bright-cyan',
+    'bright-white':'ansi-color-bright-white'};
+  const c=(f,t)=>os(a,C[f],t);
+  L.push('*compilation* — ansi-color renders the SGR codes make emits:');
+  L.push(c('bright-blue','make')+'['+c('yellow','1')+']: Entering directory');
+  L.push(c('green','✔')+' compiling modules/ai-term.el');
+  L.push(c('green','✔')+' compiling modules/calendar-sync.el');
+  L.push(c('yellow','⚠')+' warning: unused lexical variable '+c('cyan','x'));
+  L.push(c('red','✘')+' error: void-function '+c('bright-red','cj/frob'));
+  L.push('');
+  L.push('M-x shell — ls --color and a git log pipe theme the same way:');
+  L.push(c('blue','src/')+'  '+c('bright-green','run.sh')+'  '+c('cyan','latest')+' -> '+c('blue','v2.1/')+'  '+c('red','backup.tar.gz'));
+  L.push(c('yellow','a1b2c3d')+' '+c('bright-cyan','(HEAD -> ')+c('bright-green','main')+c('bright-cyan',')')+' land the ansi-color scene');
+  L.push(c('bright-black','· dim context line drawn in bright-black (ANSI 8)'));
+  L.push('');
+  L.push('the 16 SGR slots ansi-color paints:');
+  L.push('normal '+c('black','■')+c('red','■')+c('green','■')+c('yellow','■')+c('blue','■')+c('magenta','■')+c('cyan','■')+c('white','■'));
+  L.push('bright '+c('bright-black','■')+c('bright-red','■')+c('bright-green','■')+c('bright-yellow','■')+c('bright-blue','■')+c('bright-magenta','■')+c('bright-cyan','■')+c('bright-white','■'));
+  return previewLines(L);}
 function renderGhostelPreview(){const a='ghostel',L=[],d=t=>os(a,'ghostel-default',t);
   // Literal face names (the coverage gate matches verbatim, not constructed):
   const COLOR={black:'ghostel-color-black',red:'ghostel-color-red',green:'ghostel-color-green',
