@@ -253,9 +253,26 @@ early-init.el.")
 ;;(require 'use-package-ensure)  ; Needed for :ensure to work
 (setq use-package-always-ensure t)  ; Auto-install packages
 
-;; Package signature checking
-(setq package-check-signature nil)
-;; (setq package-check-signature t)
+;; Keep the GNU ELPA signing keys current so signature verification doesn't
+;; start failing when the archive key expires (the usual reason verification
+;; gets turned off). Failure is non-fatal so a clean-machine bootstrap or an
+;; offline start still comes up.
+(unless (package-installed-p 'gnu-elpa-keyring-update)
+  (condition-case err
+      (progn
+        (unless package-archive-contents
+          (package-refresh-contents))
+        (package-install 'gnu-elpa-keyring-update))
+    (error (message "Failed to install gnu-elpa-keyring-update: %s"
+                    (error-message-string err)))))
+
+;; Package signature checking: verify signatures when an archive provides
+;; them, but allow unsigned packages. The checked-in .localrepo and the local
+;; ELPA mirrors serve unsigned packages, so t would reject them, and nil
+;; skipped verification everywhere. If an expired archive key still wedges an
+;; install, temporarily set this to nil (see the commented toggle near the
+;; top of this file), install the keyring update, and restore.
+(setq package-check-signature 'allow-unsigned)
 
 ;; Optional but recommended for better error messages during config loading
 ;;(setq use-package-expand-minimally nil)  ; Better error reporting
