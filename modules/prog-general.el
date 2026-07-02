@@ -115,11 +115,14 @@ REGEXP must be a string or an rx form."
 ;; incremental language syntax parser
 ;; Using Emacs 29+ built-in treesit with treesit-auto for grammar management
 
-;; installs tree-sitter grammars if they're absent
+;; Manages tree-sitter grammars.  Install is 'prompt, never t: with t,
+;; merely opening a file could trigger a network download and a compiler
+;; build mid-edit.  Batch/test runs never load treesit-auto (no package
+;; init), so they can never install.  Fresh-machine bootstrap is the
+;; explicit `cj/install-treesit-grammars' command below.
 (use-package treesit-auto
   :custom
-  (treesit-auto-install t)
-  ;;  (treesit-auto-install 'prompt) ;; optional prompt instead of auto-install
+  (treesit-auto-install 'prompt)
   :config
   (require 'cl-lib)
   ;; Pin Go grammar to v0.19.1 for compatibility with Emacs 30.2 font-lock queries
@@ -133,6 +136,14 @@ REGEXP must be a string or an rx form."
 
   (treesit-auto-add-to-auto-mode-alist 'all)
   (global-treesit-auto-mode))
+
+(defun cj/install-treesit-grammars ()
+  "Install every tree-sitter grammar treesit-auto knows about.
+The deliberate bootstrap for a fresh machine, replacing the old
+silent install-on-file-open (`treesit-auto-install' t)."
+  (interactive)
+  (require 'treesit-auto)
+  (treesit-auto-install-all))
 
 ;; -------------------------------- Code Folding -------------------------------
 
