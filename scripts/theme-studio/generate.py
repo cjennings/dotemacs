@@ -218,19 +218,29 @@ def apply_builtin_fallback_styles(uimap):
     for face in ("mode-line","mode-line-inactive"):
         uimap[face]["box"]={"style":"released","width":1,"color":None}
 
-def apply_modeline_height_default(uimap):
-    """Seed an absolute height on mode-line so it never tracks the buffer default.
+# The chrome faces that carry their own absolute height pin. header-line and
+# mode-line-inactive are deliberately absent: both inherit mode-line, so the
+# pin reaches them through the chain and a seed of their own would duplicate
+# state. The line-number pair is seeded individually because the generated
+# theme's explicit specs leave their :inherit unspecified at runtime.
+CHROME_HEIGHT_SEEDS = ("mode-line", "tab-bar", "tab-line",
+                       "line-number", "line-number-current-line")
 
-    mode-line's :height is unspecified in stock Emacs, so it inherits the
-    buffer's default face height -- a buffer that remaps default larger (the
-    nov-reading view) inflates its modeline with it. A fixed 1/10pt integer
-    pins the bar. 130 matches the configured laptop default-height; editable
-    once the height control ships (theme-studio-editable-height-spec).
-    mode-line-inactive inherits mode-line, so it gets no seed of its own."""
-    face = uimap.get("mode-line")
-    if face and face.get("height") is None:
-        face["height"] = 130
-        face["heightMode"] = "abs"
+
+def apply_chrome_height_defaults(uimap):
+    """Seed absolute heights on the chrome so it never tracks the buffer default.
+
+    Chrome :height is unspecified in stock Emacs, so it follows the buffer's
+    default face height -- a buffer that remaps default larger (the
+    nov-reading view) inflates its modeline and gutters with it. A fixed
+    1/10pt integer pins each bar. 130 matches the configured laptop
+    default-height; every seed is editable in the studio's size column
+    (theme-studio-editable-height-spec)."""
+    for name in CHROME_HEIGHT_SEEDS:
+        face = uimap.get(name)
+        if face and face.get("height") is None:
+            face["height"] = 130
+            face["heightMode"] = "abs"
 
 def apply_hover_box_default(uimap):
     """Seed the mode-line hover face's box.
@@ -252,7 +262,7 @@ def build_uimap(ui_faces,defaults):
         uimap={face[0]:ui_face_spec() for face in ui_faces}
         apply_builtin_fallback_styles(uimap)
     apply_hover_box_default(uimap)
-    apply_modeline_height_default(uimap)
+    apply_chrome_height_defaults(uimap)
     return uimap
 
 def build_syntax(cols,map_,bold,italic,defaults):
@@ -338,6 +348,9 @@ UI_FACES=[["cursor","cursor","Aa|"],["region","region (selection)","selected tex
  ["mode-line","mode-line","status active"],
  ["mode-line-highlight","mode-line-highlight (hover)","git:main"],
  ["mode-line-inactive","mode-line-inactive","status idle"],
+ ["header-line","header-line","breadcrumb / doc info"],
+ ["tab-bar","tab-bar","tabs"],
+ ["tab-line","tab-line","buffer tabs"],
  ["fringe","fringe","| |"],["line-number","line-number","  42"],
  ["line-number-current-line","line-number-current-line","> 42"],["minibuffer-prompt","minibuffer-prompt","M-x "],
  ["isearch","isearch (match)","match"],["lazy-highlight","lazy-highlight","other match"],

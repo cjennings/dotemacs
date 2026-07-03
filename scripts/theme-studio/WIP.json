@@ -1012,7 +1012,8 @@
    "inverse": false,
    "extend": false,
    "inherit": null,
-   "height": null
+   "height": 130,
+   "heightMode": "abs"
   },
   "line-number-current-line": {
    "fg": "#e6ce88",
@@ -1028,7 +1029,8 @@
    "inverse": false,
    "extend": false,
    "inherit": null,
-   "height": null
+   "height": 130,
+   "heightMode": "abs"
   },
   "minibuffer-prompt": {
    "fg": "#899bb1",
@@ -1208,6 +1210,40 @@
    "extend": false,
    "inherit": null,
    "height": null
+  },
+  "tab-bar": {
+   "fg": null,
+   "bg": null,
+   "distant-fg": null,
+   "family": null,
+   "weight": null,
+   "slant": null,
+   "underline": null,
+   "strike": null,
+   "overline": null,
+   "box": null,
+   "inverse": false,
+   "extend": false,
+   "inherit": null,
+   "height": 130,
+   "heightMode": "abs"
+  },
+  "tab-line": {
+   "fg": null,
+   "bg": null,
+   "distant-fg": null,
+   "family": null,
+   "weight": null,
+   "slant": null,
+   "underline": null,
+   "strike": null,
+   "overline": null,
+   "box": null,
+   "inverse": false,
+   "extend": false,
+   "inherit": null,
+   "height": 130,
+   "heightMode": "abs"
   }
  },
  "locks": [

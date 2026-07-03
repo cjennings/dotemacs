@@ -187,7 +187,10 @@ if(location.hash==='#mocktest')gate('mocktest',A=>withSavedState(['UIMAP','PKGMA
  UIMAP['link']={fg:'#112233',bg:'#aabbcc',weight:null,slant:null,underline:{style:'line',color:null},strike:null,box:null};buildMockFrame();
  const linkStyled=Q('[data-face="link"]'),linkSt=linkStyled&&linkStyled.getAttribute('style')||'';
  A(linkSt.includes('#112233')&&linkSt.includes('#aabbcc'),'inline UI face preview honors fg and bg: '+linkSt);
- const missing=UI_FACES.map(f=>f[0]).filter(f=>!Q('[data-face="'+f+'"]'));
+ // header-line/tab-bar/tab-line are deliberately not in the mock (editable-
+ // height spec, Decision 4: their row sample suffices), so the sweep skips them
+ const MOCK_EXEMPT=['header-line','tab-bar','tab-line'];
+ const missing=UI_FACES.map(f=>f[0]).filter(f=>!MOCK_EXEMPT.includes(f)&&!Q('[data-face="'+f+'"]'));
  A(missing.length===0,'all UI faces are represented in live buffer preview: '+missing.join(','));
  buildTable();buildUITable();buildPkgTable();
  [['#legbody tr[data-kind="kw"]',5],['#uibody tr[data-face="mode-line"]',5],['#pkgbody tr',5]].forEach(([sel,idx])=>{

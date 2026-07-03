@@ -328,29 +328,35 @@ class GeneratorStateHelpers(unittest.TestCase):
         generate.apply_hover_box_default(uimap)
         self.assertEqual(uimap["mode-line-highlight"]["box"], {"style": "line", "width": 2, "color": "#abcdef"})
 
-    def test_mode_line_defaults_to_absolute_height(self):
-        # mode-line must carry a fixed 1/10pt height so it never tracks a
+    def test_chrome_faces_default_to_absolute_height(self):
+        # The chrome faces carry a fixed 1/10pt height so they never track a
         # buffer's enlarged default face (the nov-reading modeline bug).
         # Both branches: with and without a defaults snapshot.
-        self.assertEqual(generate.UIMAP["mode-line"]["height"], 130)
-        self.assertIsInstance(generate.UIMAP["mode-line"]["height"], int)
         no_snapshot = generate.build_uimap(generate.UI_FACES, DefaultFaces(None))
-        self.assertEqual(no_snapshot["mode-line"]["height"], 130)
+        for face in ("mode-line", "tab-bar", "tab-line",
+                     "line-number", "line-number-current-line"):
+            self.assertEqual(generate.UIMAP[face]["height"], 130, face)
+            self.assertIsInstance(generate.UIMAP[face]["height"], int, face)
+            self.assertEqual(generate.UIMAP[face]["heightMode"], "abs", face)
+            self.assertEqual(no_snapshot[face]["height"], 130, face)
 
-    def test_mode_line_inactive_gets_no_height_seed(self):
-        # mode-line-inactive inherits mode-line's absolute height; seeding its
-        # own value would just duplicate state.
+    def test_inheriting_chrome_gets_no_height_seed(self):
+        # mode-line-inactive and header-line inherit mode-line's absolute
+        # height; seeding their own values would just duplicate state.
         self.assertIsNone(generate.UIMAP["mode-line-inactive"]["height"])
+        self.assertIsNone(generate.UIMAP["header-line"]["height"])
 
-    def test_modeline_height_default_yields_to_existing_height(self):
-        uimap = {"mode-line": ui_face_spec({"height": 142})}
-        generate.apply_modeline_height_default(uimap)
+    def test_chrome_height_default_yields_to_existing_height(self):
+        uimap = {"mode-line": ui_face_spec({"height": 142}),
+                 "tab-bar": ui_face_spec()}
+        generate.apply_chrome_height_defaults(uimap)
         self.assertEqual(uimap["mode-line"]["height"], 142)
+        self.assertEqual(uimap["tab-bar"]["height"], 130)
 
-    def test_modeline_height_seed_carries_abs_kind(self):
-        # the seed is a fixed 1/10pt pin, so its kind is explicit -- never
-        # left for number-type inference (JSON can't carry the distinction)
-        self.assertEqual(generate.UIMAP["mode-line"]["heightMode"], "abs")
+    def test_ui_faces_include_the_full_chrome_set(self):
+        names = [row[0] for row in generate.UI_FACES]
+        for face in ("header-line", "tab-bar", "tab-line"):
+            self.assertIn(face, names)
 
     def test_migrate_legacy_infers_height_kind(self):
         # mirrors app-core.js migrateLegacyFace: integer -> abs, fractional
