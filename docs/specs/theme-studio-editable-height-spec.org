@@ -3,16 +3,17 @@
 #+TODO: TODO | DONE
 #+TODO: DRAFT READY DOING | IMPLEMENTED SUPERSEDED CANCELLED
 
-* DRAFT Theme-Studio Spec: Editable Face Height
+* READY Theme-Studio Spec: Editable Face Height
 :PROPERTIES:
 :ID:       acf7e080-d5ae-4500-b3fd-30dcaa0fb8de
 :END:
+- 2026-07-02 Thu @ 21:52:38 -0400 — READY: spec-review pass (code read + all five Decisions settled by Craig, two review findings folded in); rubric Ready
 - 2026-07-02 Thu @ 17:02:46 -0400 — stubbed from the nov-reading modeline-height bug discussion (Craig + session); DRAFT, needs a full read + decision pass before it is READY
 
 * Metadata
 
-- Status: Draft (stub — Decisions and phases sketched, not settled)
-- Source: 2026-07-02 diagnosis of "nov reading pane's modeline is suddenly huge." Root cause: the modeline height padding (=cj/--modeline-padding=, a =display '(height 1.15)= on a leading space) scales relative to the buffer's =default= face; =mode-line='s own =:height= is unspecified, so it inherits the enlarged reading font nov-reading remaps in. The minimal fix (seed an absolute =:height= on the mode-line faces in =face_data.py=) is being applied separately; this spec covers the *durable* half — making height a first-class editable attribute in the studio so it can be tuned and re-exported without hand-editing the generated theme.
+- Status: ready
+- Source: 2026-07-02 diagnosis of "nov reading pane's modeline is suddenly huge." Root cause: the modeline height padding (=cj/--modeline-padding=, a =display '(height 1.15)= on a leading space) scales relative to the buffer's =default= face; =mode-line='s own =:height= is unspecified, so it inherits the enlarged reading font nov-reading remaps in. The minimal fix (seed an absolute =:height= on the mode-line faces in =face_data.py=) ships separately and does not block this spec — note it had NOT yet shipped as of the 2026-07-02 review (no chrome heights in =face_data.py=; =WIP-theme.el= mode-line still height-free), so it is tracked as immediate follow-on work. This spec covers the *durable* half — making height a first-class editable attribute in the studio so it can be tuned and re-exported without hand-editing the generated theme.
 - Related: [[file:../design/theme-studio-face-rules.org][theme-studio face-rules]] (the "every themeable attribute is a real editable control" principle — this is why the mode-line box became a real =:box=), [[file:theme-studio-palette-columns-spec.org][palette-columns spec]] (adjacent studio attribute-model work)
 
 * Summary
@@ -34,7 +35,7 @@ Today the studio has no height control at all, so the only way to set a modeline
 
 1. A height control in the face editor, at least for the structural chrome faces (=mode-line=, =mode-line-inactive=, =header-line=, =tab-bar=, =tab-line=, =line-number= and its siblings).
 2. Explicit absolute-vs-relative choice in the control, with sane per-face defaults (chrome → absolute, headings → relative).
-3. The export (=build-theme.el=) emits an integer for absolute and a float for relative, unchanged in mechanism (it already writes whatever number is stored) — the studio just has to store the right *kind* of number.
+3. The export (=build-theme.el=) emits an integer for absolute and a float for relative, unchanged in mechanism (it already writes whatever number is stored). The face model must carry the kind *explicitly* (see Decision 1 and Review finding 1) — number type alone cannot survive the JSON round-trip, because =JSON.stringify(2.0)= emits ="2"= and an integral relative multiplier silently collapses to an absolute integer.
 4. The modeline (and other chrome) preview reflects the chosen height so the bar visibly gets taller/shorter.
 5. Round-trips through save/load and re-export without loss (no repeat of the cube-face drop).
 
@@ -44,40 +45,55 @@ Today the studio has no height control at all, so the only way to set a modeline
 - The minimal seed fix for the current bug (absolute =:height= on the two mode-line faces in =face_data.py=). That ships separately and immediately; this spec does not block it.
 - Changing =cj/--modeline-padding= or =cj/modeline-height-factor= in =modeline-config.el= — the padding multiplier is fine once the mode-line face carries an absolute base; that is a config concern, not a studio one.
 
-* Decisions
+* Decisions [5/5]
 
-Open questions to settle before this leaves DRAFT. Each becomes a resolved decision (with rationale) once answered.
+All settled by Craig, 2026-07-02 spec-review pass.
 
-** TODO Decide the control's shape: one field with an abs/rel toggle, or two distinct controls?
-A single numeric field plus an "absolute (pt) / relative (×)" switch is compact but easy to misread; two labeled controls (a pt field for chrome, a × field for headings) are clearer but wider. Lean: one field + toggle, defaulting to the face's natural kind.
+** DONE Control shape: one numeric field with an abs/rel toggle
+One field plus an "absolute (1/10pt) / relative (×)" toggle, defaulting to the face's natural kind (chrome → absolute, headings → relative). Matches the compact per-row pattern =mkBoxControl= already set (=app.js:352=). The toggle is not just UI — it is what makes the kind explicit in the stored face model, which the JSON round-trip requires (Review finding 1).
 
-** TODO Decide which faces expose the control.
-Minimum is the chrome set (mode-line family, header-line, tab-bar/line, line-number). Question: also expose the relative control on the heading faces that already seed a multiplier (org-level-*, shr-h*, org-document-title), so those become editable too, or leave those seed-only for now?
+** DONE Faces exposing the control: chrome set plus every face that already carries a height seed
+Chrome: =mode-line=, =mode-line-inactive=, =header-line=, =tab-bar=, =tab-line=, =line-number= family. Plus the seeded text faces — =face_data.py= already carries relative heights on ~15 faces (=org-level-*=, =org-document-title=, =org-document-info=, =org-agenda-structure=/dates, =shr-h1=/=h2=, =shr-sup= 0.8, =lsp-details-face= 0.8, =dashboard-banner-logo-title=, =embark-verbose-indicator-title=, =calibredb-current-page-button-face=) — those are themed-but-uneditable today, which violates the face-rules "every themeable attribute is a real editable control" principle. Rule: expose the control where a height already exists or the face is chrome; no control on the long tail.
 
-** TODO Decide how absolute height is entered and displayed — raw 1/10pt (128) or points (12.8)?
-Emacs stores 1/10pt; users think in points. A pt field that stores ×10 is friendlier but adds a conversion the export must not double-apply.
+** DONE Absolute entry unit: raw 1/10pt integer, with a computed pt hint
+The field takes what Emacs stores (=128=), with a small computed hint beside it ("= 12.8pt"). Matches what the export writes and what users grep in theme files; eliminates the double-conversion bug class a pt-entry field would create. The hint supplies the friendliness.
 
-** TODO Decide the preview surface for chrome height.
-The modeline is a =@ui= face with a preview; confirm the preview can render a variable-height bar, and whether header-line/tab-bar/line-number get the same treatment or a simpler swatch.
+** DONE Preview surface: face-row sample scales for every exposed face; the mock editor bars additionally reflect chrome height
+Two surfaces, both cheap. (1) The face row's sample text renders the height via font-size for every exposed face — face-rules F2 requires every modeled attribute to actually render. (2) The mock editor preview already draws =mode-line=, =mode-line-inactive=, and =line-number= (=app.js:461=); extend =uiCss= to map height so those bars visibly thicken. =header-line=/=tab-bar= are not in the mock; their row sample suffices.
 
-** TODO Confirm the =mode-line-inactive :height 2= artifact is cleaned up as part of this, not left for the seed fix.
-WIP-theme.el currently carries =:height 2= (0.2pt) on mode-line-inactive — a stray value. Decide whether the seed fix or this spec owns removing it (inactive should inherit mode-line's absolute height).
+** DONE The =mode-line-inactive :height 2= artifact belongs to the seed fix, not this spec
+It is live data in =WIP.json= (=ui.mode-line-inactive.height = 2=, a JSON int — likely an integral-float collapse, see Review finding 1), not a seed problem. The seed fix removes it when it lands: seed absolute heights on the mode-line faces in =face_data.py=, delete the stray =2= from =WIP.json=, regenerate. Phase 4 of this spec then verifies rather than removes.
+
+* Review findings [2/2]
+
+Both recorded and resolved in the 2026-07-02 spec-review pass (fused reviewer + responder, findings folded directly into the spec with Craig's approval).
+
+** DONE Number type cannot carry the abs/rel kind through JSON
+Was blocking. Goal 3 originally assumed storing "the right kind of number" sufficed. It does not: =JSON.stringify(2.0)= emits ="2"=, so an integral relative multiplier collapses to an absolute int on save. Verified live: =WIP.json= carries =ui.mode-line-inactive.height = 2= as a JSON int (0.2pt — the "near-zero inactive modeline"), and =build-theme.el:264= =json-parse-buffer= faithfully reproduces the collapsed type. Resolution: the face model carries an explicit kind (Decision 1's toggle state persists as a field, e.g. =heightMode=); Goal 3 and Phase 1 updated.
+
+** DONE The "minimal seed fix" referenced by Metadata had not shipped
+Non-blocking for this spec (it explicitly doesn't gate on the fix), but the Metadata claimed it "is being applied separately," implying it existed. As of this review =face_data.py= seeds no chrome heights and =WIP-theme.el='s =mode-line= carries no =:height= — the nov modeline bug is still live. Resolution: Metadata corrected; the seed fix is tracked as immediate follow-on work (it also owns the =:height 2= artifact removal per Decision 5).
 
 * Implementation phases
 
-Sketch only — refine when the Decisions above are settled.
-
 ** TODO Phase 1 — attribute model: absolute vs relative height in the face object
-Extend the studio face model so a height value carries its kind (absolute integer vs relative float). Ensure =seedFace=, save/load, and the =build-theme.el= export preserve the kind (integer → absolute =:height=, float → relative). Characterization test on the export for both kinds.
+Extend the studio face model so a height value carries its kind *explicitly* (a stored kind field alongside the number — number type alone cannot survive JSON, per Review finding 1). Ensure =seedFace=, save/load, and the =build-theme.el= export preserve the kind (absolute → integer =:height=, relative → float; the export coerces from the kind field, never infers from the number). Characterization test on the export for both kinds, including the integral-float case (relative 2.0 must export as =2.0=, not =2=).
 
-** TODO Phase 2 — UI control on the face editor for the chrome-face set
-Add the height control (per the Decisions shape) to the face editor rows for the structural chrome faces. Default each face to its natural kind. No control on the long tail.
+** TODO Phase 2 — UI control on the face editor for the exposed-face set
+Add the height control (one field + abs/rel toggle per Decision 1, raw 1/10pt entry with pt hint per Decision 3) to the face editor rows for the exposed set (Decision 2: chrome + already-seeded faces). Default each face to its natural kind. Validate input (positive int for absolute, positive float for relative; reject/clamp garbage). No control on the long tail.
 
 ** TODO Phase 3 — preview reflects height
-Make the modeline (and any other chrome) preview render the chosen height so the change is visible in the studio.
+Face-row sample text scales via font-size for every exposed face; extend =uiCss= so the mock editor's =mode-line= / =mode-line-inactive= / =line-number= bars render the chosen height (Decision 4).
 
 ** TODO Phase 4 — seed the chrome faces and reconcile the current theme
-Seed absolute heights for the chrome faces in =face_data.py=, remove the =mode-line-inactive :height 2= artifact, regenerate, and confirm the round-trip (studio → export → theme) holds and the nov modeline no longer scales.
+Seed absolute heights for the chrome faces in =face_data.py= (the "seed fix" — may land before this spec's phases; see Decision 5 and Review finding 2), with the =:height 2= artifact removed from =WIP.json= as part of it. This phase then verifies: regenerate, confirm the round-trip (studio → export → theme) holds for both kinds, and confirm the nov modeline no longer scales.
 
 ** TODO Phase 5 — gates + docs
 Studio gen/test/check green; a coverage/round-trip test for height kinds; update the face-rules doc to note height as a first-class attribute. Full elisp suite green (theme build is elisp).
+
+* Review and iteration history
+
+** 2026-07-02 Thu @ 21:52:38 -0400 — Claude Code (.emacs.d) — reviewer + responder
+- *What:* Full spec-review pass on the same-day stub. Code read (=build-theme.el= export, =face_data.py= seeds, =app.js= face model + mock editor preview, =WIP.json= live data) produced two findings — the JSON integral-float kind collapse (blocking; verified against live =WIP.json= data) and the not-yet-shipped seed fix. Craig settled all five open Decisions in one pass (control shape, exposed-face set, entry unit, preview surfaces, artifact ownership). Findings folded in, Goal 3 and Phases 1-4 updated, rubric =Ready=, status flipped DRAFT → READY.
+- *Why:* Craig picked the spec's read + decision pass as the session's work; the stub was authored earlier the same day and needed the gate run before spec-response can decompose phases.
+- *Artifacts:* Decisions and Review findings sections above; =WIP.json= =ui.mode-line-inactive.height=2= (int) as the collapse evidence; todo.org task "theme-studio: editable face height (absolute vs relative)" (~line 554).
