@@ -1338,7 +1338,6 @@
   "pkg:org-drill:org-drill-visible-cloze-face",
   "pkg:org-drill:org-drill-visible-cloze-hint-face",
   "pkg:pearl:pearl-preamble-summary",
-  "pkg:dashboard:dashboard-items-face",
   "pkg:dashboard:dashboard-no-items-face",
   "pkg:dashboard:dashboard-footer-face",
   "pkg:dashboard:dashboard-footer-icon-face",
@@ -1605,11 +1604,9 @@
   "warn",
   "pkg:nerd-icons-completion:nerd-icons-completion-dir-face",
   "pkg:nov-reading:cj/nov-reading-sepia",
-  "pkg:nov-reading:cj/nov-reading-dark",
   "pkg:nov-reading:cj/nov-reading-light",
   "pkg:nov-reading:cj/nov-reading-sepia-heading",
   "pkg:nov-reading:cj/nov-reading-sepia-link",
-  "pkg:nov-reading:cj/nov-reading-dark-heading",
   "pkg:nov-reading:cj/nov-reading-dark-link",
   "pkg:nov-reading:cj/nov-reading-light-heading",
   "pkg:nov-reading:cj/nov-reading-light-link",
@@ -1699,7 +1696,25 @@
   "pkg:flycheck:flycheck-error-list-highlight",
   "pkg:flycheck:flycheck-error-list-id-with-explainer",
   "pkg:company:company-tooltip",
-  "pkg:company:company-tooltip-selection"
+  "pkg:company:company-tooltip-selection",
+  "pkg:orderless:orderless-match-face-0",
+  "pkg:orderless:orderless-match-face-1",
+  "pkg:orderless:orderless-match-face-2",
+  "pkg:orderless:orderless-match-face-3",
+  "pkg:marginalia:marginalia-file-name",
+  "pkg:marginalia:marginalia-file-owner",
+  "pkg:marginalia:marginalia-documentation",
+  "pkg:prescient:prescient-primary-highlight",
+  "pkg:prescient:prescient-secondary-highlight",
+  "pkg:org-superstar:org-superstar-first",
+  "pkg:org-superstar:org-superstar-header-bullet",
+  "pkg:org-superstar:org-superstar-item",
+  "pkg:org-superstar:org-superstar-leading",
+  "pkg:dashboard:dashboard-items-face",
+  "pkg:hl-todo:hl-todo",
+  "pkg:hl-todo:hl-todo-flymake-type",
+  "pkg:nov-reading:cj/nov-reading-dark",
+  "pkg:nov-reading:cj/nov-reading-dark-heading"
  ],
  "packages": {
   "org-mode": {
@@ -3850,7 +3865,7 @@
     "source": "user"
    },
    "dashboard-items-face": {
-    "fg": null,
+    "fg": "#a9b2bb",
     "bg": null,
     "inherit": "widget-button",
     "source": "user"
@@ -4636,7 +4651,7 @@
     "source": "user"
    },
    "cj/nov-reading-dark": {
-    "fg": "#7c838a",
+    "fg": "#ab8d2e",
     "bg": null,
     "inherit": null,
     "source": "user"
@@ -4665,7 +4680,7 @@
     "source": "user"
    },
    "cj/nov-reading-dark-heading": {
-    "fg": "#dab53d",
+    "fg": "#67809c",
     "bg": null,
     "inherit": null,
     "source": "user"
@@ -7209,16 +7224,16 @@
   },
   "highlight-indent-guides": {
    "highlight-indent-guides-character-face": {
-    "fg": null,
+    "fg": "#777980",
     "bg": null,
     "inherit": null,
-    "source": "default"
+    "source": "user"
    },
    "highlight-indent-guides-even-face": {
     "fg": null,
     "bg": null,
     "inherit": null,
-    "source": "default"
+    "source": "user"
    },
    "highlight-indent-guides-odd-face": {
     "fg": null,
@@ -7265,16 +7280,18 @@
   },
   "hl-todo": {
    "hl-todo": {
-    "fg": null,
+    "fg": "#cb6b4d",
     "bg": null,
+    "weight": "bold",
     "inherit": null,
-    "source": "default"
+    "source": "user"
    },
    "hl-todo-flymake-type": {
-    "fg": null,
+    "fg": "#a85b42",
     "bg": null,
+    "weight": "bold",
     "inherit": null,
-    "source": "default"
+    "source": "user"
    }
   },
   "json-mode": {
@@ -7418,22 +7435,22 @@
     "source": "default"
    },
    "marginalia-documentation": {
-    "fg": null,
+    "fg": "#627b2c",
     "bg": null,
     "inherit": "completions-annotations",
-    "source": "default"
+    "source": "user"
    },
    "marginalia-file-name": {
-    "fg": null,
+    "fg": "#a9b2bb",
     "bg": null,
     "inherit": "marginalia-documentation",
-    "source": "default"
+    "source": "user"
    },
    "marginalia-file-owner": {
-    "fg": null,
+    "fg": "#627b2c",
     "bg": null,
     "inherit": "font-lock-preprocessor-face",
-    "source": "default"
+    "source": "user"
    },
    "marginalia-file-priv-dir": {
     "fg": null,
@@ -7880,7 +7897,7 @@
   },
   "orderless": {
    "orderless-match-face-0": {
-    "fg": "#e0c266",
+    "fg": "#dab53d",
     "bg": null,
     "weight": "bold",
     "slant": "italic",
@@ -7888,7 +7905,7 @@
     "source": "user"
    },
    "orderless-match-face-1": {
-    "fg": "#809c50",
+    "fg": "#dab53d",
     "bg": null,
     "weight": "bold",
     "slant": "italic",
@@ -7896,7 +7913,7 @@
     "source": "user"
    },
    "orderless-match-face-2": {
-    "fg": "#8255b5",
+    "fg": "#dab53d",
     "bg": null,
     "weight": "bold",
     "slant": "italic",
@@ -7904,7 +7921,7 @@
     "source": "user"
    },
    "orderless-match-face-3": {
-    "fg": "#0096b0",
+    "fg": "#dab53d",
     "bg": null,
     "weight": "bold",
     "slant": "italic",
@@ -7970,42 +7987,42 @@
   },
   "org-superstar": {
    "org-superstar-first": {
-    "fg": null,
+    "fg": "#dab53d",
     "bg": null,
     "inherit": "org-warning",
-    "source": "default"
+    "source": "user"
    },
    "org-superstar-header-bullet": {
-    "fg": null,
+    "fg": "#dab53d",
     "bg": null,
     "inherit": null,
-    "source": "default"
+    "source": "user"
    },
    "org-superstar-item": {
-    "fg": null,
+    "fg": "#dab53d",
     "bg": null,
     "inherit": "default",
-    "source": "default"
+    "source": "user"
    },
    "org-superstar-leading": {
-    "fg": "#bebebe",
+    "fg": "#100f0f",
     "bg": null,
     "inherit": "default",
-    "source": "default"
+    "source": "user"
    }
   },
   "prescient": {
    "prescient-primary-highlight": {
-    "fg": null,
+    "fg": "#dab53d",
     "bg": null,
     "inherit": null,
-    "source": "default"
+    "source": "user"
    },
    "prescient-secondary-highlight": {
-    "fg": null,
+    "fg": "#dab53d",
     "bg": null,
     "inherit": null,
-    "source": "default"
+    "source": "user"
    }
   },
   "rainbow-delimiters": {
