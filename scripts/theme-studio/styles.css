@@ -177,6 +177,11 @@
  .pkgbar{margin:0 0 10px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
  .pkgbar button{background:#252321;color:#e8bd30;border:1px solid #3a3a3a;border-radius:4px;padding:6px 12px;font:10pt monospace;cursor:pointer}
  .hstep{background:#161412;border:1px solid #252321;color:#cdced1;border-radius:4px;padding:3px 4px;font:10pt monospace;width:56px}
+ .heightctl{display:inline-flex;flex-direction:column;align-items:flex-start;gap:2px}
+ .heightctl .hrow{display:inline-flex;align-items:center;gap:3px;white-space:nowrap}
+ .heightctl .hval{width:44px}
+ .heightctl .htog{padding:2px 5px;font:9pt monospace;cursor:pointer}
+ .heightctl .pthint{color:#8a8578;font-size:8.5pt}
  #pkgbody td{padding:3px 8px}
  #codepre{width:100%;box-sizing:border-box}
  .mock{border:1px solid #252321;border-radius:8px;overflow:hidden;font:12pt/1.7 monospace;display:flex;flex-direction:column}

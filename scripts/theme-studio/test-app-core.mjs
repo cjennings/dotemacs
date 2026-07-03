@@ -11,7 +11,7 @@ import {
   clearPalettePlan, deletePaletteColumnPlan, groundColumnMembersFromPalette, areAllLocked, lockToggleLabel, toggleLockSet,
   galleryModel, appViewKeysSorted, faceBoxNonDefaults, overflowNonDefault, stepViewIndex,
   cssWeight, faceDecoration, boxCss, faceCss, composeHoverTitle,
-  clampHeight, HEIGHT_MIN, HEIGHT_MAX,
+  clampHeight, HEIGHT_MIN, HEIGHT_MAX, heightControlKind, parseHeightEntry, ptHint,
 } from './app-core.js';
 import { planPaletteGenerator, entriesForGeneratedColumn } from './palette-generator-core.js';
 import { oklch2hex, deltaE } from './colormath.js';
@@ -1014,12 +1014,89 @@ test('overflowNonDefault: Boundary — matching attrs and in-row attrs do not fl
   assert.equal(overflowNonDefault({ weight: 'bold', slant: 'italic', strike: { color: null } }, {}, false), false);
 });
 
-test('overflowNonDefault: Boundary — inherit/height only count when shown in the expander', () => {
-  // packages keep inherit/height inline (showInheritHeight false) -> not flagged here
+test('overflowNonDefault: Boundary — inherit only counts when shown in the expander', () => {
   assert.equal(overflowNonDefault({ inherit: 'shadow', height: 1.4 }, {}, false), false);
-  // ui/syntax expose them in the expander (showInheritHeight true) -> flagged
+  // ui/syntax expose inherit in the expander (showInherit true) -> flagged
   assert.equal(overflowNonDefault({ inherit: 'shadow' }, {}, true), true);
-  assert.equal(overflowNonDefault({ height: 1.4 }, {}, true), true);
+  // height has its own inline cell now; it never flags the expander toggle
+  assert.equal(overflowNonDefault({ height: 1.4 }, {}, true), false);
+});
+
+// --- height control exposure + entry ----------------------------------------
+
+test('heightControlKind: Normal — chrome faces expose an absolute control', () => {
+  for (const f of ['mode-line', 'mode-line-inactive', 'header-line', 'tab-bar',
+                   'tab-line', 'line-number', 'line-number-current-line']) {
+    assert.equal(heightControlKind(f, {}, {}), 'abs', f);
+  }
+});
+
+test('heightControlKind: Normal — the seeded text faces expose a relative control statically', () => {
+  // the row default comes from the Emacs snapshot (no heights there), so the
+  // seeded set is named, not derived — bare cur/def must still expose
+  for (const f of ['org-level-1', 'org-level-5', 'org-document-title', 'shr-sup',
+                   'lsp-details-face', 'dashboard-banner-logo-title']) {
+    assert.equal(heightControlKind(f, {}, {}), 'rel', f);
+  }
+});
+
+test('heightControlKind: Normal — a face carrying a height exposes a relative control', () => {
+  assert.equal(heightControlKind('org-level-1', { height: 1.3 }, { height: 1.3 }), 'rel');
+  // the seed default alone is enough (the user may have cleared the live value)
+  assert.equal(heightControlKind('shr-h1', { height: 1 }, { height: 1.4 }), 'rel');
+  // a live height alone is enough (user-set on a face with no seed)
+  assert.equal(heightControlKind('embark-verbose-indicator-title', { height: 1.1 }, {}), 'rel');
+});
+
+test('heightControlKind: Normal — an explicit heightMode on the face wins', () => {
+  assert.equal(heightControlKind('mode-line', { heightMode: 'rel' }, {}), 'rel');
+  assert.equal(heightControlKind('org-level-1', { height: 2, heightMode: 'abs' }, {}), 'abs');
+});
+
+test('heightControlKind: Boundary — the long tail gets no control', () => {
+  assert.equal(heightControlKind('region', {}, {}), null);
+  assert.equal(heightControlKind('org-todo', { height: 1 }, { height: 1 }), null);
+  assert.equal(heightControlKind('cursor', null, null), null);
+});
+
+test('parseHeightEntry: Normal — absolute takes a positive integer', () => {
+  assert.equal(parseHeightEntry('abs', '130'), 130);
+  assert.equal(parseHeightEntry('abs', ' 90 '), 90);
+});
+
+test('parseHeightEntry: Error — absolute rejects floats, zero, negatives, garbage', () => {
+  for (const bad of ['1.3', '0', '-5', '13pt', 'big', '1e3']) {
+    assert.equal(parseHeightEntry('abs', bad), undefined, bad);
+  }
+});
+
+test('parseHeightEntry: Normal — relative takes a positive float, clamped into range', () => {
+  assert.equal(parseHeightEntry('rel', '1.2'), 1.2);
+  assert.equal(parseHeightEntry('rel', '5'), HEIGHT_MAX);
+  assert.equal(parseHeightEntry('rel', '0.05'), HEIGHT_MIN);
+  assert.equal(parseHeightEntry('rel', '.8'), 0.8);
+});
+
+test('parseHeightEntry: Error — relative rejects zero, negatives, garbage', () => {
+  for (const bad of ['0', '-1.2', '1.2x', 'big', '1.2.3']) {
+    assert.equal(parseHeightEntry('rel', bad), undefined, bad);
+  }
+});
+
+test('parseHeightEntry: Boundary — blank unsets (null) under either kind', () => {
+  assert.equal(parseHeightEntry('abs', ''), null);
+  assert.equal(parseHeightEntry('rel', '   '), null);
+  assert.equal(parseHeightEntry('rel', null), null);
+});
+
+test('ptHint: Normal — an absolute 1/10pt value renders as a pt hint', () => {
+  assert.equal(ptHint(130), '= 13.0pt');
+  assert.equal(ptHint(85), '= 8.5pt');
+});
+
+test('ptHint: Boundary — no number, no hint', () => {
+  assert.equal(ptHint(null), '');
+  assert.equal(ptHint(undefined), '');
 });
 test('faceBoxNonDefaults: inherit and box differences are flagged', () => {
   assert.equal(faceBoxNonDefaults({ inherit: 'bold' }, { inherit: null }).inherit, true);

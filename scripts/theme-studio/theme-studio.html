@@ -179,6 +179,11 @@
  .pkgbar{margin:0 0 10px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
  .pkgbar button{background:#252321;color:#e8bd30;border:1px solid #3a3a3a;border-radius:4px;padding:6px 12px;font:10pt monospace;cursor:pointer}
  .hstep{background:#161412;border:1px solid #252321;color:#cdced1;border-radius:4px;padding:3px 4px;font:10pt monospace;width:56px}
+ .heightctl{display:inline-flex;flex-direction:column;align-items:flex-start;gap:2px}
+ .heightctl .hrow{display:inline-flex;align-items:center;gap:3px;white-space:nowrap}
+ .heightctl .hval{width:44px}
+ .heightctl .htog{padding:2px 5px;font:9pt monospace;cursor:pointer}
+ .heightctl .pthint{color:#8a8578;font-size:8.5pt}
  #pkgbody td{padding:3px 8px}
  #codepre{width:100%;box-sizing:border-box}
  .mock{border:1px solid #252321;border-radius:8px;overflow:hidden;font:12pt/1.7 monospace;display:flex;flex-direction:column}
@@ -271,7 +276,7 @@
 <div class="cols stretch">
  <section class="pane">
   <div class="legctl"><button id="uilocktoggle" class="fbtn" onclick="toggleAllLocks('ui')" title="lock or unlock every UI face row">lock all</button><button id="uiexpandall" class="fbtn" onclick="toggleAllExpanded('uiexpandall')" title="expand or collapse every row's detail">&#9654; expand all</button><button class="fbtn" onclick="resetUnlockedUI()" title="reset to captured defaults, preserving locked rows">&#8635; reset</button><button class="fbtn" onclick="clearUnlockedUI()" title="erase, preserving locked rows">erase</button></div>
-  <table class="leg" id="uitable"><thead><tr><th title="lock a decided face"></th><th onclick="srtTable('uibody',1)">face &#9651;</th><th onclick="srtTable('uibody',2)" title="foreground">fg &#9651;</th><th onclick="srtTable('uibody',3)" title="background">bg &#9651;</th><th>style</th><th title="face :box (border)">box</th><th onclick="srtTable('uibody',6)" title="WCAG contrast: this face's foreground on its background (or the ground)">contrast &#9651;</th><th>preview</th></tr></thead><tbody id="uibody"></tbody></table>
+  <table class="leg" id="uitable"><thead><tr><th title="lock a decided face"></th><th onclick="srtTable('uibody',1)">face &#9651;</th><th onclick="srtTable('uibody',2)" title="foreground">fg &#9651;</th><th onclick="srtTable('uibody',3)" title="background">bg &#9651;</th><th>style</th><th title="face :box (border)">box</th><th onclick="srtTable('uibody',6)" title="WCAG contrast: this face's foreground on its background (or the ground)">contrast &#9651;</th><th title="face :height — absolute 1/10pt for chrome, relative multiplier for headings; only chrome and seeded faces expose it">size</th><th>preview</th></tr></thead><tbody id="uibody"></tbody></table>
  </section>
  <section class="pane grow" style="display:flex;flex-direction:column">
   <div class="langbar"><label style="color:#b4b1a2">live buffer preview</label></div>
@@ -288,7 +293,7 @@
 </div>
 <div class="cols stretch">
  <section class="pane">
-  <table class="leg" id="pkgtable"><thead><tr><th title="lock a decided face"></th><th onclick="srtTable('pkgbody',1)">face &#9651;</th><th onclick="srtTable('pkgbody',2)">fg &#9651;</th><th onclick="srtTable('pkgbody',3)">bg &#9651;</th><th>style</th><th title="face :box (border)">box</th><th onclick="srtTable('pkgbody',6)">contrast &#9651;</th></tr></thead><tbody id="pkgbody"></tbody></table>
+  <table class="leg" id="pkgtable"><thead><tr><th title="lock a decided face"></th><th onclick="srtTable('pkgbody',1)">face &#9651;</th><th onclick="srtTable('pkgbody',2)">fg &#9651;</th><th onclick="srtTable('pkgbody',3)">bg &#9651;</th><th>style</th><th title="face :box (border)">box</th><th onclick="srtTable('pkgbody',6)">contrast &#9651;</th><th title="face :height — absolute 1/10pt for chrome, relative multiplier for headings; only chrome and seeded faces expose it">size</th></tr></thead><tbody id="pkgbody"></tbody></table>
  </section>
  <section class="pane grow" style="display:flex;flex-direction:column">
   <div class="langbar"><label style="color:#b4b1a2">preview: </label><button id="pkgprevprev" class="viewnav" title="previous size" onclick="stepPreviewPane(-1)">&lsaquo;</button><select id="pkgprevsel" class="chip navsel" style="width:auto;font:bold 10pt monospace"></select><button id="pkgprevnext" class="viewnav" title="next size" onclick="stepPreviewPane(1)">&rsaquo;</button></div>
@@ -1080,15 +1085,14 @@ function faceBoxNonDefaults(cur,def){
 // attributes the expander holds: distant-fg, family, underline, overline,
 // inverse, extend, and (for ui/syntax) inherit + height. The in-row controls
 // (fg/bg/weight/slant/strike/box) have their own cell markers and are excluded.
-function overflowNonDefault(cur,def,showInheritHeight){
+function overflowNonDefault(cur,def,showInherit){
   cur=cur||{}; def=def||{};
   const eq=(a,b)=>JSON.stringify(a??null)===JSON.stringify(b??null);
   if(['distant-fg','family','underline','overline'].some(a=>!eq(cur[a],def[a])))return true;
   if((!!cur.inverse)!==(!!def.inverse))return true;
   if((!!cur.extend)!==(!!def.extend))return true;
-  if(showInheritHeight){
+  if(showInherit){
     if(!eq(cur.inherit,def.inherit))return true;
-    if((cur.height||1)!==(def.height||1))return true;
   }
   return false;
 }
@@ -1110,6 +1114,54 @@ function clampHeight(raw,min=HEIGHT_MIN,max=HEIGHT_MAX){
   if(!isFinite(n))return null;
   return n<min?min:n>max?max:n;
 }
+
+// --- height control (editable-height spec, Phase 2) --------------------------
+// The chrome faces pin a fixed 1/10pt height so they never track a buffer's
+// enlarged default face. Matching is name-based, so chrome faces added to the
+// studio later (header-line, tab-bar, tab-line) expose the control on arrival;
+// the line-number family matches by prefix.
+const HEIGHT_CHROME=['mode-line','mode-line-inactive','header-line','tab-bar','tab-line'];
+function isChromeFace(face){return HEIGHT_CHROME.includes(face)||/^line-number/.test(face);}
+// The seeded text faces (the ~15 carrying a relative height in face_data.py's
+// curated seeds). Named statically because the runtime per-face default comes
+// from the captured Emacs snapshot, which has no heights for these -- the
+// curated seed is not reachable from the row. org-level-* exposes as a family
+// (only 1-4 carry seeds, but a height on level 5 must be editable too).
+const HEIGHT_SEEDED=['org-document-title','org-document-info','org-agenda-structure',
+  'org-agenda-date','org-agenda-date-today','shr-h1','shr-h2','shr-sup',
+  'lsp-details-face','dashboard-banner-logo-title','embark-verbose-indicator-title',
+  'calibredb-current-page-button-face'];
+function isSeededHeightFace(face){return HEIGHT_SEEDED.includes(face)||/^org-level-[1-8]$/.test(face);}
+// Which height control a face row exposes: 'abs' for chrome, 'rel' for the
+// seeded text faces and for any face that already carries a height (live value
+// or row default), null for the long tail (no control). An explicit heightMode
+// on the face wins, so a user's toggle choice survives rebuilds.
+function heightControlKind(face,cur,def){
+  const has=v=>typeof v==='number'&&isFinite(v)&&v!==1;
+  const mode=cur&&cur.heightMode;
+  if(isChromeFace(face))return mode||'abs';
+  if(isSeededHeightFace(face)||has(cur&&cur.height)||has(def&&def.height))return mode||'rel';
+  return null;
+}
+// Validate a typed height for KIND. Absolute takes a positive integer (the raw
+// 1/10pt value Emacs stores); relative takes a positive float, clamped into
+// [HEIGHT_MIN,HEIGHT_MAX] like the old expander field. Blank -> null (unset);
+// anything else -> undefined (rejected; the caller keeps the old value).
+function parseHeightEntry(kind,raw){
+  if(raw==null)return null;
+  const s=(''+raw).trim();
+  if(s==='')return null;
+  if(kind==='abs'){
+    if(!/^\d+$/.test(s))return undefined;
+    const n=parseInt(s,10);
+    return n>0?n:undefined;
+  }
+  if(!/^\d*\.?\d+$/.test(s))return undefined;
+  const n=parseFloat(s);
+  return n>0?clampHeight(n):undefined;
+}
+// The computed hint beside an absolute entry: 130 -> "= 13.0pt".
+function ptHint(height){return typeof height==='number'&&isFinite(height)?('= '+(height/10).toFixed(1)+'pt'):'';}
 
 // Compose an element-hover tooltip: the face's docstring on top, the existing
 // hover text (e.g. the bare face name) below it, separated by a blank line. A
@@ -1877,10 +1929,12 @@ function mkOverlineControl(get,set,opts={}){
   return mkLineStyleControl([['','no overline',''],['on','overline','O']],get,set,Object.assign({styled:false},opts));}
 function mkCheck(get,set){const c=document.createElement('input');c.type='checkbox';c.className='detailcheck';c.checked=!!get();c.onchange=()=>set(c.checked);return c;}
 // The per-row attribute editor revealed by the expander: distant-fg, family,
-// overline, inverse, extend, and (for ui/syntax, where inherit/height have no
-// inline column) inherit + height. Each control mutates FACE and calls onChange.
+// overline, inverse, extend, and (for ui/syntax, where inherit has no inline
+// column) inherit. Height is not an overflow attribute: exposed faces edit it
+// in their row's size cell (mkHeightControl); the long tail has no height
+// control at all. Each control mutates FACE and calls onChange.
 // Returns the element plus the interactive controls so the row's lock cell can
-// disable them. opts.inheritOptions and opts.showInheritHeight gate the last two.
+// disable them. opts.inheritOptions and opts.showInherit gate the inherit select.
 // Hover help for each expander field, so the detail labels explain themselves the
 // way the table-header labels do. Keyed by the label text passed to add().
 const DETAIL_HOVERS={
@@ -1890,8 +1944,7 @@ const DETAIL_HOVERS={
   'overline':'a line drawn above the text (Emacs :overline)',
   'inverse':'swap the foreground and background (Emacs :inverse-video)',
   'extend':'extend the background past the end of the line to the window edge (Emacs :extend)',
-  'inherit':'base face this one inherits unset attributes from (Emacs :inherit)',
-  'height':'text size as a scaling factor of the inherited height, 0.1 to 2.0 (Emacs :height)'
+  'inherit':'base face this one inherits unset attributes from (Emacs :inherit)'
 };
 function mkDetailEditor(face,onChange,opts={}){
   const wrap=document.createElement('div');wrap.className='detailedit';const locks=[];
@@ -1904,13 +1957,63 @@ function mkDetailEditor(face,onChange,opts={}){
   add('overline',mkOverlineControl(()=>face.overline,v=>{face.overline=v;onChange();},opts));
   add('inverse',mkCheck(()=>face.inverse,v=>{face.inverse=v;onChange();}));
   add('extend',mkCheck(()=>face.extend,v=>{face.extend=v;onChange();}));
-  if(opts.showInheritHeight){
+  if(opts.showInherit){
     const isel=document.createElement('select');isel.className='chip detailsel';
     (opts.inheritOptions||['']).forEach(o=>{const op=document.createElement('option');op.value=o;op.textContent=o||'— none —';isel.appendChild(op);});
     isel.value=face.inherit||'';isel.onchange=()=>{face.inherit=isel.value||null;onChange();};add('inherit',isel);
-    const hin=document.createElement('input');hin.type='number';hin.min=''+HEIGHT_MIN;hin.max=''+HEIGHT_MAX;hin.step='0.05';hin.className='hstep';hin.value=face.height||1;hin.onchange=()=>{const raw=hin.value,h=clampHeight(raw);face.height=h;hin.value=h==null?1:h;if(h!=null&&parseFloat(raw)!==h)notify('height clamped to '+h+' (allowed '+HEIGHT_MIN+'–'+HEIGHT_MAX+')',false);onChange();};add('height',hin);
   }
   return {el:wrap,locks};}
+
+// The per-row height control (editable-height spec): one numeric field plus an
+// abs/rel toggle, rendered only on exposed rows (heightControlKind decides).
+// The toggle writes heightMode explicitly -- the stored kind is what survives
+// the JSON round-trip, since the number type can't (2.0 saves as 2). Flipping
+// the kind clears the value: 130 tenth-pts and 1.3x mean different things, so
+// no silent conversion. Absolute entries render a computed pt hint beside the
+// field. Returns the element plus the controls for the row's lock cell.
+function mkHeightControl(face,kindDefault,onChange){
+  const wrap=document.createElement('span');wrap.className='heightctl';
+  const inp=document.createElement('input');inp.type='text';inp.className='hstep hval';
+  const tog=document.createElement('button');tog.className='chip htog';
+  const hint=document.createElement('span');hint.className='pthint';
+  const kind=()=>face.heightMode||kindDefault;
+  const paint=()=>{
+    const k=kind();
+    tog.textContent=k==='abs'?'pt':'x';
+    tog.title=k==='abs'
+      ?'absolute height in 1/10 pt, what Emacs stores (click to switch to a relative multiplier)'
+      :'relative multiplier of the inherited height (click to switch to an absolute 1/10 pt value)';
+    inp.value=(typeof face.height==='number'&&face.height!==1)?(''+face.height):'';
+    // no example placeholder: a dim number in a numeric column reads as a set
+    // value; the toggle chip and the titles carry the unit instead
+    inp.placeholder='';
+    inp.title=k==='abs'?'positive whole number of 1/10 pt (130 = 13pt)':'positive multiplier, '+HEIGHT_MIN+'-'+HEIGHT_MAX;
+    hint.textContent=k==='abs'?ptHint(face.height):'';
+  };
+  inp.onchange=()=>{
+    const v=parseHeightEntry(kind(),inp.value);
+    if(v===undefined){
+      notify(kind()==='abs'?'height must be a positive whole number of 1/10 pt (e.g. 130)':'height must be a positive number (e.g. 1.2)',true);
+      paint();return;
+    }
+    if(v===null){face.height=null;face.heightMode=null;}
+    else{
+      if(kind()==='rel'&&parseFloat(inp.value)!==v)notify('height clamped to '+v+' (allowed '+HEIGHT_MIN+'-'+HEIGHT_MAX+')',false);
+      face.height=v;face.heightMode=kind();
+    }
+    paint();onChange();
+  };
+  tog.onclick=()=>{
+    const next=kind()==='abs'?'rel':'abs';
+    face.heightMode=next;
+    if(face.height!=null&&face.height!==1)face.height=null;
+    paint();onChange();
+  };
+  const row=document.createElement('span');row.className='hrow';row.append(inp,tog);
+  wrap.append(row,hint);
+  paint();
+  return {el:wrap,controls:[inp,tog]};
+}
 // Wire a per-row expander: a toggle button plus a hidden detail row (colspan
 // across the table) holding mkDetailEditor. The caller drops the button into a
 // cell, adds the returned locks to the row's lock cell, and inserts detailRow
@@ -2035,7 +2138,7 @@ function buildTable(){
     const c0=document.createElement('td');c0.appendChild(dd);
     const cB=document.createElement('td');cB.appendChild(bgd);
     const cX=document.createElement('td');const boxCtl=mkBoxControl(()=>syntaxFace(kind).box,b=>{syntaxFace(kind).box=b;styleEx();renderCode();},{compact:true});cX.appendChild(boxCtl);
-    const exp=mkExpander(syntaxFace(kind),tableColCount('legtable'),()=>{styleEx();renderCode();},{expandKey:kind,showInheritHeight:true,inheritOptions:[''].concat(BASE_INHERITS),defaultHex:rowFg(),ndCheck:()=>overflowNonDefault(syntaxFace(kind),DEFAULT_SYNTAX[kind],true)});
+    const exp=mkExpander(syntaxFace(kind),tableColCount('legtable'),()=>{styleEx();renderCode();},{expandKey:kind,showInherit:true,inheritOptions:[''].concat(BASE_INHERITS),defaultHex:rowFg(),ndCheck:()=>overflowNonDefault(syntaxFace(kind),DEFAULT_SYNTAX[kind],true)});
     exp.detail.dataset.detailFor=kind;
     const lkTd=mkLockCell(kind,[dd,bgd,...stCtls,boxCtl,...exp.locks]);
     const c2=document.createElement('td');c2.className='cat';c2.title=composeHoverTitle(SYNTAX_DOCS[kind],c2.title);c2.appendChild(exp.btn);
@@ -2653,7 +2756,7 @@ function buildPkgTable(){
     const nd=faceBoxNonDefaults(
       {fg:nameToHex(f.fg,PALETTE),bg:nameToHex(f.bg,PALETTE),weight:f.weight,slant:f.slant,underline:f.underline,strike:f.strike,inherit:f.inherit,height:f.height,box:f.box},
       {fg:nameToHex(def.fg,PALETTE),bg:nameToHex(def.bg,PALETTE),weight:def.weight,slant:def.slant,underline:def.underline,strike:def.strike,inherit:def.inherit,height:def.height,box:def.box});
-    const exp=mkExpander(f,tableColCount('pkgtable'),()=>{f.source='user';pkgChanged();},{expandKey:face,showInheritHeight:true,inheritOptions:inh,defaultHex:effFg(pkgEffFg(app,face)),ndCheck:()=>overflowNonDefault(f,def,true)});
+    const exp=mkExpander(f,tableColCount('pkgtable'),()=>{f.source='user';pkgChanged();},{expandKey:face,showInherit:true,inheritOptions:inh,defaultHex:effFg(pkgEffFg(app,face)),ndCheck:()=>overflowNonDefault(f,def,true)});
     exp.detail.dataset.detailFor=face;
     const c0=document.createElement('td');c0.className='cat';c0.title=composeHoverTitle(FACE_DOCS[face],face);c0.appendChild(exp.btn);
     const c0lbl=document.createElement('span');c0lbl.textContent=' '+label;c0lbl.style.cursor='pointer';c0lbl.onclick=()=>flashPkgPreview(face);c0.appendChild(c0lbl);
@@ -2666,10 +2769,15 @@ function buildPkgTable(){
     const pkCluster=document.createElement('div');pkCluster.className='stylecluster';pkCtls.forEach(c=>pkCluster.appendChild(c));cw.appendChild(pkCluster);
     const cc=document.createElement('td');cc.style.fontSize='10pt';cc.style.whiteSpace='nowrap';const efg=effFg(pkgEffFg(app,face)),ebg=effBg(pkgEffBg(app,face)),r=contrast(efg,ebg);cc.innerHTML=crHtml(r);
     const cx=document.createElement('td');const boxCtl=mkBoxControl(()=>f.box,b=>{f.box=b;f.source='user';pkgChanged();},{compact:true});cx.appendChild(boxCtl);
-    const cL=mkLockCell('pkg:'+app+':'+face,[fgd,bgd,...pkCtls,boxCtl,...exp.locks]);
+    const cH=document.createElement('td');cH.className='sizecell';
+    const hk=heightControlKind(face,f,def);let hCtl=null;
+    if(hk){hCtl=mkHeightControl(f,hk,()=>{f.source='user';pkgChanged();});cH.appendChild(hCtl.el);
+      if((f.height||1)!==(def.height||1))cH.classList.add('nd');}
+    else{const na=document.createElement('span');na.textContent='\u2014';na.style.opacity='0.4';na.title='no height control: this face inherits its size';cH.appendChild(na);}
+    const cL=mkLockCell('pkg:'+app+':'+face,[fgd,bgd,...pkCtls,boxCtl,...(hCtl?hCtl.controls:[]),...exp.locks]);
     if(nd.fg)cf.classList.add('nd');if(nd.bg)cb.classList.add('nd');if(nd.style)cw.classList.add('nd');
     if(nd.box)cx.classList.add('nd');
-    tr.append(cL,c0,cf,cb,cw,cx,cc);tb.appendChild(tr);tb.appendChild(exp.detail);
+    tr.append(cL,c0,cf,cb,cw,cx,cc,cH);tb.appendChild(tr);tb.appendChild(exp.detail);
   }
   applyTableSort('pkgbody');
   updateLockToggle('pkg');syncExpandAllBtns();
@@ -3967,7 +4075,7 @@ function buildUITable(){
   const tb=document.getElementById('uibody');tb.innerHTML='';
   for(const [face,label,ex] of UI_FACES){
     const tr=document.createElement('tr');tr.dataset.face=face;
-    const exp=mkExpander(UIMAP[face],tableColCount('uitable'),()=>{paintUI(face);buildMockFrame();},{expandKey:face,showInheritHeight:true,inheritOptions:[''].concat(BASE_INHERITS),defaultHex:effFg(UIMAP[face].fg),ndCheck:()=>overflowNonDefault(UIMAP[face],DEFAULT_UIMAP[face],true)});
+    const exp=mkExpander(UIMAP[face],tableColCount('uitable'),()=>{paintUI(face);buildMockFrame();},{expandKey:face,showInherit:true,inheritOptions:[''].concat(BASE_INHERITS),defaultHex:effFg(UIMAP[face].fg),ndCheck:()=>overflowNonDefault(UIMAP[face],DEFAULT_UIMAP[face],true)});
     exp.detail.dataset.detailFor=face;
     const c0=document.createElement('td');c0.className='cat';c0.title=composeHoverTitle(FACE_DOCS[face],c0.title);c0.appendChild(exp.btn);
     const c0lbl=document.createElement('span');c0lbl.textContent=' '+label;c0lbl.style.cursor='pointer';c0lbl.title='flash this face in the live preview';c0lbl.onclick=()=>flashUiPreview(face);c0.appendChild(c0lbl);
@@ -3987,8 +4095,13 @@ function buildUITable(){
     const cP=document.createElement('td');cP.className='ex';cP.id='uiprev-'+face;cP.textContent=ex;cP.style.padding='4px 10px';cP.style.borderRadius='4px';
     const cX=document.createElement('td');const boxCtl=cursorOnly?null:mkBoxControl(()=>UIMAP[face].box,b=>{UIMAP[face].box=b;paintUI(face);buildMockFrame();},{compact:true});
     if(cursorOnly){cX.appendChild(naCell('Emacs ignores the box attribute on the cursor face'));}else{cX.appendChild(boxCtl);}
-    const cL=mkLockCell('ui:'+face,cursorOnly?[fgSel,bgSel,...exp.locks]:[fgSel,bgSel,...stCtls,boxCtl,...exp.locks]);
-    tr.appendChild(cL);tr.appendChild(c0);tr.appendChild(cF);tr.appendChild(cB);tr.appendChild(cS);tr.appendChild(cX);tr.appendChild(cC);tr.appendChild(cP);tb.appendChild(tr);tb.appendChild(exp.detail);paintUI(face);
+    const cH=document.createElement('td');cH.className='sizecell';
+    const hk=heightControlKind(face,UIMAP[face],DEFAULT_UIMAP[face]);let hCtl=null;
+    if(hk){hCtl=mkHeightControl(UIMAP[face],hk,()=>{paintUI(face);buildMockFrame();});cH.appendChild(hCtl.el);
+      if((UIMAP[face].height||1)!==((DEFAULT_UIMAP[face]&&DEFAULT_UIMAP[face].height)||1))cH.classList.add('nd');}
+    else{cH.appendChild(naCell('no height control: this face inherits its size (chrome and seeded heading faces expose one)'));}
+    const cL=mkLockCell('ui:'+face,(cursorOnly?[fgSel,bgSel]:[fgSel,bgSel,...stCtls,boxCtl]).concat(hCtl?hCtl.controls:[],exp.locks));
+    tr.appendChild(cL);tr.appendChild(c0);tr.appendChild(cF);tr.appendChild(cB);tr.appendChild(cS);tr.appendChild(cX);tr.appendChild(cC);tr.appendChild(cH);tr.appendChild(cP);tb.appendChild(tr);tb.appendChild(exp.detail);paintUI(face);
   }
   applyTableSort('uibody');
   updateLockToggle('ui');syncExpandAllBtns();
@@ -4029,7 +4142,7 @@ if(location.hash.startsWith('#preview=')){
   const q=location.hash.slice(9).split('&theme=');
   const k=decodeURIComponent(q[0]);
   const showApp=()=>{
-    if(!APPS[k])return;
+    if(!APPS[k]&&k[0]!=='@')return; // '@ui'/'@code' view keys shoot too
     const s=document.getElementById('viewsel');
     if(!s)return;
     s.value=k;onViewChange();document.title='PREVIEW '+k;
@@ -4808,12 +4921,17 @@ if(location.hash==='#ndtest')gate('ndtest',A=>withSavedState(['PKGMAP','LOCKED']
  A(tr0&&![...tr0.cells].some(c=>c.classList.contains('nd')),'default-face-has-no-marker');
  PKGMAP[app][face].height=1.7;PKGMAP[app][face].source='user';buildPkgTable();
  const tr1=document.querySelector('#pkgbody tr[data-face="'+face+'"]');
- A(tr1.querySelector('.exptoggle').classList.contains('exp-nd'),'nondefault-height-flags-expander');
+ // height moved out of the expander into the inline size cell (editable-height
+ // spec): a non-default height marks that cell, never the expander toggle, and
+ // a face carrying a live height exposes the control dynamically
+ A(tr1.querySelector('.sizecell').classList.contains('nd'),'nondefault-height-marks-the-size-cell');
+ A(!!tr1.querySelector('.sizecell .hval'),'a-live-height-exposes-the-inline-control');
+ A(!tr1.querySelector('.exptoggle').classList.contains('exp-nd'),'height-no-longer-flags-the-expander');
  A(!tr1.cells[4].classList.contains('nd'),'unchanged-style-box-stays-unmarked');
- PKGMAP[app][face].height=(row[2]&&row[2].height)||1;PKGMAP[app][face].weight=seedFace(row[2]||{}).weight==='bold'?null:'bold';buildPkgTable();
+ PKGMAP[app][face].height=(row[2]&&row[2].height)||1;PKGMAP[app][face].heightMode=null;PKGMAP[app][face].weight=seedFace(row[2]||{}).weight==='bold'?null:'bold';buildPkgTable();
  const tr2=document.querySelector('#pkgbody tr[data-face="'+face+'"]');
  A(tr2.cells[4].classList.contains('nd'),'toggled-weight-marks-style-box');
- A(!tr2.querySelector('.exptoggle').classList.contains('exp-nd'),'restored-height-unflags-expander');
+ A(!tr2.querySelector('.sizecell').classList.contains('nd'),'restored-height-unmarks-the-size-cell');
  PKGMAP[app][face]=seedFace(row[2]||{});buildPkgTable();
  }));
 // Contrast-cell gate (open with #crtest): the per-face contrast column shows a
@@ -5047,9 +5165,10 @@ if(location.hash==='#expandtest')gate('expandtest',A=>{
  A(detail&&detail.style.display!=='none','toggle-reveals-detail-row');
  const ed=detail&&detail.querySelector('.detailedit');
  A(ed&&ed.querySelectorAll('.detailfield').length>=6,'detail-editor-has-the-overflow-fields');
- // ui faces also expose inherit + height in the expander
+ // ui faces also expose inherit in the expander; height moved to the row's
+ // size cell (editable-height spec), so the expander must NOT offer it
  A(ed&&ed.querySelector('select.detailsel'),'ui-expander-offers-inherit');
- A(ed&&ed.querySelector('input.hstep'),'ui-expander-offers-height');
+ A(ed&&!ed.querySelector('input.hstep'),'ui-expander-no-longer-offers-height');
  // underline moved into the expander; its wave style writes a styled object
  const uiUnder=ed&&ed.querySelector('.boxctl .boxbtn[data-style="wave"]');
  A(!!uiUnder,'underline-control-in-expander');
@@ -5076,24 +5195,43 @@ if(location.hash==='#expandtest')gate('expandtest',A=>{
  const pdetail=document.querySelector('#pkgbody tr.detailrow[data-detail-for="'+pface+'"]');
  A(pdetail&&pdetail.querySelector('select.detailsel'),'package-expander-offers-inherit');
  });
-// Height-clamp gate (open with #heighttest): the expander height field coerces a
-// typed value into [HEIGHT_MIN,HEIGHT_MAX] and writes the clamped number back, so
-// an out-of-range type/paste can't reach the model. Guards the fact that an
-// <input type=number> min/max only constrain its steppers, never typed text.
+// Height-control gate (open with #heighttest): the inline size cell exposes the
+// kind-aware height control on chrome rows only; absolute entry takes a positive
+// 1/10pt integer with a computed pt hint, the abs/rel toggle flips the stored
+// heightMode (clearing the value -- the units differ), relative entry clamps
+// into [HEIGHT_MIN,HEIGHT_MAX] like the old field, and garbage never reaches the
+// model. Long-tail rows render no control at all.
 if(location.hash==='#heighttest')gate('heighttest',A=>{
- const face=UI_FACES[0][0],save=JSON.parse(JSON.stringify(UIMAP[face]));
+ const face='mode-line',save=JSON.parse(JSON.stringify(UIMAP[face]));
  buildUITable();
- const hin=()=>document.querySelector('#uibody tr.detailrow[data-detail-for="'+face+'"] .hstep');
+ const cell=()=>document.querySelector('#uibody tr[data-face="'+face+'"] .sizecell');
+ const hin=()=>cell().querySelector('.hval');
  const typeHeight=(v)=>{const h=hin();h.value=v;h.dispatchEvent(new Event('change'));};
+ A(!!hin(),'chrome-row-exposes-the-height-control');
+ A(!document.querySelector('#uibody tr[data-face="region"] .sizecell .hval'),'long-tail-row-has-no-height-control');
+ // absolute kind (the chrome default)
+ UIMAP[face].height=null;UIMAP[face].heightMode=null;buildUITable();
+ typeHeight('130');
+ A(UIMAP[face].height===130&&UIMAP[face].heightMode==='abs','absolute-entry-writes-int-and-kind: '+UIMAP[face].height+'/'+UIMAP[face].heightMode);
+ A(cell().querySelector('.pthint').textContent==='= 13.0pt','absolute-entry-shows-the-pt-hint: '+cell().querySelector('.pthint').textContent);
+ typeHeight('1.3');
+ A(UIMAP[face].height===130,'absolute-rejects-a-float-keeping-the-old-value: '+UIMAP[face].height);
+ typeHeight('0');
+ A(UIMAP[face].height===130,'absolute-rejects-zero: '+UIMAP[face].height);
+ // the toggle flips the kind and clears the now-meaningless number
+ cell().querySelector('.htog').click();
+ A(UIMAP[face].heightMode==='rel'&&UIMAP[face].height===null,'toggle-flips-kind-and-clears: '+UIMAP[face].heightMode+'/'+UIMAP[face].height);
+ // relative kind: clamped like the old expander field
  typeHeight('5');
  A(UIMAP[face].height===HEIGHT_MAX,'above-max-clamps-to-ceiling: '+UIMAP[face].height);
- A(hin().value===''+HEIGHT_MAX,'field-shows-the-clamped-ceiling: '+hin().value);
  typeHeight('0.05');
  A(UIMAP[face].height===HEIGHT_MIN,'below-floor-clamps-to-floor: '+UIMAP[face].height);
  typeHeight('1.2');
- A(UIMAP[face].height===1.2,'in-range-value-passes-through: '+UIMAP[face].height);
+ A(UIMAP[face].height===1.2&&UIMAP[face].heightMode==='rel','in-range-value-passes-through: '+UIMAP[face].height);
+ typeHeight('big');
+ A(UIMAP[face].height===1.2,'relative-rejects-garbage-keeping-the-old-value: '+UIMAP[face].height);
  typeHeight('');
- A(UIMAP[face].height===null,'blank-unsets-to-null: '+UIMAP[face].height);
+ A(UIMAP[face].height===null&&UIMAP[face].heightMode===null,'blank-unsets-value-and-kind: '+UIMAP[face].height);
  UIMAP[face]=save;buildUITable();
  });
 // Language-dropdown gate (open with #langtest): the language list is sorted
@@ -5170,9 +5308,9 @@ if(location.hash==='#expandpersisttest')gate('expandpersisttest',A=>withSavedSta
  A(detail()&&detail().style.display==='none','expander starts collapsed');
  row().querySelector('.exptoggle').click();
  A(detail()&&detail().style.display!=='none','expander opens on toggle');
- const hin=detail().querySelector('.hstep');hin.value='1.4';hin.dispatchEvent(new Event('change'));
+ const fam=detail().querySelector('.detailinput');fam.value='Iosevka';fam.dispatchEvent(new Event('change'));
  A(detail()&&detail().style.display!=='none','expander stays open after an in-expander edit rebuilds the row');
- A(PKGMAP[app][face].height===1.4,'the in-expander edit still wrote the model');
+ A(PKGMAP[app][face].family==='Iosevka','the in-expander edit still wrote the model');
  row().querySelector('.exptoggle').click();buildPkgTable();
  A(detail()&&detail().style.display==='none','a collapsed expander stays collapsed across a rebuild');
  EXPANDED.clear();buildPkgTable();

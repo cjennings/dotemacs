@@ -75,7 +75,7 @@ STYLES_CSS</style>
 <div class="cols stretch">
  <section class="pane">
   <div class="legctl"><button id="uilocktoggle" class="fbtn" onclick="toggleAllLocks('ui')" title="lock or unlock every UI face row">lock all</button><button id="uiexpandall" class="fbtn" onclick="toggleAllExpanded('uiexpandall')" title="expand or collapse every row's detail">&#9654; expand all</button><button class="fbtn" onclick="resetUnlockedUI()" title="reset to captured defaults, preserving locked rows">&#8635; reset</button><button class="fbtn" onclick="clearUnlockedUI()" title="erase, preserving locked rows">erase</button></div>
-  <table class="leg" id="uitable"><thead><tr><th title="lock a decided face"></th><th onclick="srtTable('uibody',1)">face &#9651;</th><th onclick="srtTable('uibody',2)" title="foreground">fg &#9651;</th><th onclick="srtTable('uibody',3)" title="background">bg &#9651;</th><th>style</th><th title="face :box (border)">box</th><th onclick="srtTable('uibody',6)" title="WCAG contrast: this face's foreground on its background (or the ground)">contrast &#9651;</th><th>preview</th></tr></thead><tbody id="uibody"></tbody></table>
+  <table class="leg" id="uitable"><thead><tr><th title="lock a decided face"></th><th onclick="srtTable('uibody',1)">face &#9651;</th><th onclick="srtTable('uibody',2)" title="foreground">fg &#9651;</th><th onclick="srtTable('uibody',3)" title="background">bg &#9651;</th><th>style</th><th title="face :box (border)">box</th><th onclick="srtTable('uibody',6)" title="WCAG contrast: this face's foreground on its background (or the ground)">contrast &#9651;</th><th title="face :height — absolute 1/10pt for chrome, relative multiplier for headings; only chrome and seeded faces expose it">size</th><th>preview</th></tr></thead><tbody id="uibody"></tbody></table>
  </section>
  <section class="pane grow" style="display:flex;flex-direction:column">
   <div class="langbar"><label style="color:#b4b1a2">live buffer preview</label></div>
@@ -92,7 +92,7 @@ STYLES_CSS</style>
 </div>
 <div class="cols stretch">
  <section class="pane">
-  <table class="leg" id="pkgtable"><thead><tr><th title="lock a decided face"></th><th onclick="srtTable('pkgbody',1)">face &#9651;</th><th onclick="srtTable('pkgbody',2)">fg &#9651;</th><th onclick="srtTable('pkgbody',3)">bg &#9651;</th><th>style</th><th title="face :box (border)">box</th><th onclick="srtTable('pkgbody',6)">contrast &#9651;</th></tr></thead><tbody id="pkgbody"></tbody></table>
+  <table class="leg" id="pkgtable"><thead><tr><th title="lock a decided face"></th><th onclick="srtTable('pkgbody',1)">face &#9651;</th><th onclick="srtTable('pkgbody',2)">fg &#9651;</th><th onclick="srtTable('pkgbody',3)">bg &#9651;</th><th>style</th><th title="face :box (border)">box</th><th onclick="srtTable('pkgbody',6)">contrast &#9651;</th><th title="face :height — absolute 1/10pt for chrome, relative multiplier for headings; only chrome and seeded faces expose it">size</th></tr></thead><tbody id="pkgbody"></tbody></table>
  </section>
  <section class="pane grow" style="display:flex;flex-direction:column">
   <div class="langbar"><label style="color:#b4b1a2">preview: </label><button id="pkgprevprev" class="viewnav" title="previous size" onclick="stepPreviewPane(-1)">&lsaquo;</button><select id="pkgprevsel" class="chip navsel" style="width:auto;font:bold 10pt monospace"></select><button id="pkgprevnext" class="viewnav" title="next size" onclick="stepPreviewPane(1)">&rsaquo;</button></div>

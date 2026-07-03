@@ -523,15 +523,14 @@ function faceBoxNonDefaults(cur,def){
 // attributes the expander holds: distant-fg, family, underline, overline,
 // inverse, extend, and (for ui/syntax) inherit + height. The in-row controls
 // (fg/bg/weight/slant/strike/box) have their own cell markers and are excluded.
-function overflowNonDefault(cur,def,showInheritHeight){
+function overflowNonDefault(cur,def,showInherit){
   cur=cur||{}; def=def||{};
   const eq=(a,b)=>JSON.stringify(a??null)===JSON.stringify(b??null);
   if(['distant-fg','family','underline','overline'].some(a=>!eq(cur[a],def[a])))return true;
   if((!!cur.inverse)!==(!!def.inverse))return true;
   if((!!cur.extend)!==(!!def.extend))return true;
-  if(showInheritHeight){
+  if(showInherit){
     if(!eq(cur.inherit,def.inherit))return true;
-    if((cur.height||1)!==(def.height||1))return true;
   }
   return false;
 }
@@ -553,6 +552,54 @@ function clampHeight(raw,min=HEIGHT_MIN,max=HEIGHT_MAX){
   if(!isFinite(n))return null;
   return n<min?min:n>max?max:n;
 }
+
+// --- height control (editable-height spec, Phase 2) --------------------------
+// The chrome faces pin a fixed 1/10pt height so they never track a buffer's
+// enlarged default face. Matching is name-based, so chrome faces added to the
+// studio later (header-line, tab-bar, tab-line) expose the control on arrival;
+// the line-number family matches by prefix.
+const HEIGHT_CHROME=['mode-line','mode-line-inactive','header-line','tab-bar','tab-line'];
+function isChromeFace(face){return HEIGHT_CHROME.includes(face)||/^line-number/.test(face);}
+// The seeded text faces (the ~15 carrying a relative height in face_data.py's
+// curated seeds). Named statically because the runtime per-face default comes
+// from the captured Emacs snapshot, which has no heights for these -- the
+// curated seed is not reachable from the row. org-level-* exposes as a family
+// (only 1-4 carry seeds, but a height on level 5 must be editable too).
+const HEIGHT_SEEDED=['org-document-title','org-document-info','org-agenda-structure',
+  'org-agenda-date','org-agenda-date-today','shr-h1','shr-h2','shr-sup',
+  'lsp-details-face','dashboard-banner-logo-title','embark-verbose-indicator-title',
+  'calibredb-current-page-button-face'];
+function isSeededHeightFace(face){return HEIGHT_SEEDED.includes(face)||/^org-level-[1-8]$/.test(face);}
+// Which height control a face row exposes: 'abs' for chrome, 'rel' for the
+// seeded text faces and for any face that already carries a height (live value
+// or row default), null for the long tail (no control). An explicit heightMode
+// on the face wins, so a user's toggle choice survives rebuilds.
+function heightControlKind(face,cur,def){
+  const has=v=>typeof v==='number'&&isFinite(v)&&v!==1;
+  const mode=cur&&cur.heightMode;
+  if(isChromeFace(face))return mode||'abs';
+  if(isSeededHeightFace(face)||has(cur&&cur.height)||has(def&&def.height))return mode||'rel';
+  return null;
+}
+// Validate a typed height for KIND. Absolute takes a positive integer (the raw
+// 1/10pt value Emacs stores); relative takes a positive float, clamped into
+// [HEIGHT_MIN,HEIGHT_MAX] like the old expander field. Blank -> null (unset);
+// anything else -> undefined (rejected; the caller keeps the old value).
+function parseHeightEntry(kind,raw){
+  if(raw==null)return null;
+  const s=(''+raw).trim();
+  if(s==='')return null;
+  if(kind==='abs'){
+    if(!/^\d+$/.test(s))return undefined;
+    const n=parseInt(s,10);
+    return n>0?n:undefined;
+  }
+  if(!/^\d*\.?\d+$/.test(s))return undefined;
+  const n=parseFloat(s);
+  return n>0?clampHeight(n):undefined;
+}
+// The computed hint beside an absolute entry: 130 -> "= 13.0pt".
+function ptHint(height){return typeof height==='number'&&isFinite(height)?('= '+(height/10).toFixed(1)+'pt'):'';}
 
 // Compose an element-hover tooltip: the face's docstring on top, the existing
 // hover text (e.g. the bare face name) below it, separated by a blank line. A
@@ -709,4 +756,4 @@ function formatLocateTitle(meta){
   return parts.concat(locateAttrsList(meta.attrs)).join(', ');
 }
 
-export { nameToHex, migrateLegacyFace, cssWeight, faceDecoration, boxCss, faceCss, composeHoverTitle, normalizePkgFace, buildPkgmap, packagesForExport, mergePackagesInto, effResolve, resolveSyntaxFg, resolveUiAttr, paletteOptionList, galleryModel, appViewKeysSorted, faceBoxNonDefaults, overflowNonDefault, clampHeight, HEIGHT_MIN, HEIGHT_MAX, stepViewIndex, spanNeighborHex, slugify, fgSetFor, floor, lMax, COVERED_FACES, columnsFromPalette, usedPaletteHexes, paletteUsages, regenColumn, rankByLightness, stepRepointPlan, sortColumns, sortColumnMembers, groundRoleOfEntry, groundColumnMembersFromPalette, clearPalettePlan, deletePaletteColumnPlan, areAllLocked, lockToggleLabel, toggleLockSet, buildLocateRegistry, locateFaceMeta, formatLocateTitle, isLocateOnPane };
+export { nameToHex, migrateLegacyFace, cssWeight, faceDecoration, boxCss, faceCss, composeHoverTitle, normalizePkgFace, buildPkgmap, packagesForExport, mergePackagesInto, effResolve, resolveSyntaxFg, resolveUiAttr, paletteOptionList, galleryModel, appViewKeysSorted, faceBoxNonDefaults, overflowNonDefault, clampHeight, HEIGHT_MIN, HEIGHT_MAX, isChromeFace, heightControlKind, parseHeightEntry, ptHint, stepViewIndex, spanNeighborHex, slugify, fgSetFor, floor, lMax, COVERED_FACES, columnsFromPalette, usedPaletteHexes, paletteUsages, regenColumn, rankByLightness, stepRepointPlan, sortColumns, sortColumnMembers, groundRoleOfEntry, groundColumnMembersFromPalette, clearPalettePlan, deletePaletteColumnPlan, areAllLocked, lockToggleLabel, toggleLockSet, buildLocateRegistry, locateFaceMeta, formatLocateTitle, isLocateOnPane };

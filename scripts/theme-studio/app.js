@@ -165,7 +165,7 @@ function buildTable(){
     const c0=document.createElement('td');c0.appendChild(dd);
     const cB=document.createElement('td');cB.appendChild(bgd);
     const cX=document.createElement('td');const boxCtl=mkBoxControl(()=>syntaxFace(kind).box,b=>{syntaxFace(kind).box=b;styleEx();renderCode();},{compact:true});cX.appendChild(boxCtl);
-    const exp=mkExpander(syntaxFace(kind),tableColCount('legtable'),()=>{styleEx();renderCode();},{expandKey:kind,showInheritHeight:true,inheritOptions:[''].concat(BASE_INHERITS),defaultHex:rowFg(),ndCheck:()=>overflowNonDefault(syntaxFace(kind),DEFAULT_SYNTAX[kind],true)});
+    const exp=mkExpander(syntaxFace(kind),tableColCount('legtable'),()=>{styleEx();renderCode();},{expandKey:kind,showInherit:true,inheritOptions:[''].concat(BASE_INHERITS),defaultHex:rowFg(),ndCheck:()=>overflowNonDefault(syntaxFace(kind),DEFAULT_SYNTAX[kind],true)});
     exp.detail.dataset.detailFor=kind;
     const lkTd=mkLockCell(kind,[dd,bgd,...stCtls,boxCtl,...exp.locks]);
     const c2=document.createElement('td');c2.className='cat';c2.title=composeHoverTitle(SYNTAX_DOCS[kind],c2.title);c2.appendChild(exp.btn);
@@ -532,7 +532,7 @@ function buildPkgTable(){
     const nd=faceBoxNonDefaults(
       {fg:nameToHex(f.fg,PALETTE),bg:nameToHex(f.bg,PALETTE),weight:f.weight,slant:f.slant,underline:f.underline,strike:f.strike,inherit:f.inherit,height:f.height,box:f.box},
       {fg:nameToHex(def.fg,PALETTE),bg:nameToHex(def.bg,PALETTE),weight:def.weight,slant:def.slant,underline:def.underline,strike:def.strike,inherit:def.inherit,height:def.height,box:def.box});
-    const exp=mkExpander(f,tableColCount('pkgtable'),()=>{f.source='user';pkgChanged();},{expandKey:face,showInheritHeight:true,inheritOptions:inh,defaultHex:effFg(pkgEffFg(app,face)),ndCheck:()=>overflowNonDefault(f,def,true)});
+    const exp=mkExpander(f,tableColCount('pkgtable'),()=>{f.source='user';pkgChanged();},{expandKey:face,showInherit:true,inheritOptions:inh,defaultHex:effFg(pkgEffFg(app,face)),ndCheck:()=>overflowNonDefault(f,def,true)});
     exp.detail.dataset.detailFor=face;
     const c0=document.createElement('td');c0.className='cat';c0.title=composeHoverTitle(FACE_DOCS[face],face);c0.appendChild(exp.btn);
     const c0lbl=document.createElement('span');c0lbl.textContent=' '+label;c0lbl.style.cursor='pointer';c0lbl.onclick=()=>flashPkgPreview(face);c0.appendChild(c0lbl);
@@ -545,10 +545,15 @@ function buildPkgTable(){
     const pkCluster=document.createElement('div');pkCluster.className='stylecluster';pkCtls.forEach(c=>pkCluster.appendChild(c));cw.appendChild(pkCluster);
     const cc=document.createElement('td');cc.style.fontSize='10pt';cc.style.whiteSpace='nowrap';const efg=effFg(pkgEffFg(app,face)),ebg=effBg(pkgEffBg(app,face)),r=contrast(efg,ebg);cc.innerHTML=crHtml(r);
     const cx=document.createElement('td');const boxCtl=mkBoxControl(()=>f.box,b=>{f.box=b;f.source='user';pkgChanged();},{compact:true});cx.appendChild(boxCtl);
-    const cL=mkLockCell('pkg:'+app+':'+face,[fgd,bgd,...pkCtls,boxCtl,...exp.locks]);
+    const cH=document.createElement('td');cH.className='sizecell';
+    const hk=heightControlKind(face,f,def);let hCtl=null;
+    if(hk){hCtl=mkHeightControl(f,hk,()=>{f.source='user';pkgChanged();});cH.appendChild(hCtl.el);
+      if((f.height||1)!==(def.height||1))cH.classList.add('nd');}
+    else{const na=document.createElement('span');na.textContent='\u2014';na.style.opacity='0.4';na.title='no height control: this face inherits its size';cH.appendChild(na);}
+    const cL=mkLockCell('pkg:'+app+':'+face,[fgd,bgd,...pkCtls,boxCtl,...(hCtl?hCtl.controls:[]),...exp.locks]);
     if(nd.fg)cf.classList.add('nd');if(nd.bg)cb.classList.add('nd');if(nd.style)cw.classList.add('nd');
     if(nd.box)cx.classList.add('nd');
-    tr.append(cL,c0,cf,cb,cw,cx,cc);tb.appendChild(tr);tb.appendChild(exp.detail);
+    tr.append(cL,c0,cf,cb,cw,cx,cc,cH);tb.appendChild(tr);tb.appendChild(exp.detail);
   }
   applyTableSort('pkgbody');
   updateLockToggle('pkg');syncExpandAllBtns();
@@ -690,7 +695,7 @@ function buildUITable(){
   const tb=document.getElementById('uibody');tb.innerHTML='';
   for(const [face,label,ex] of UI_FACES){
     const tr=document.createElement('tr');tr.dataset.face=face;
-    const exp=mkExpander(UIMAP[face],tableColCount('uitable'),()=>{paintUI(face);buildMockFrame();},{expandKey:face,showInheritHeight:true,inheritOptions:[''].concat(BASE_INHERITS),defaultHex:effFg(UIMAP[face].fg),ndCheck:()=>overflowNonDefault(UIMAP[face],DEFAULT_UIMAP[face],true)});
+    const exp=mkExpander(UIMAP[face],tableColCount('uitable'),()=>{paintUI(face);buildMockFrame();},{expandKey:face,showInherit:true,inheritOptions:[''].concat(BASE_INHERITS),defaultHex:effFg(UIMAP[face].fg),ndCheck:()=>overflowNonDefault(UIMAP[face],DEFAULT_UIMAP[face],true)});
     exp.detail.dataset.detailFor=face;
     const c0=document.createElement('td');c0.className='cat';c0.title=composeHoverTitle(FACE_DOCS[face],c0.title);c0.appendChild(exp.btn);
     const c0lbl=document.createElement('span');c0lbl.textContent=' '+label;c0lbl.style.cursor='pointer';c0lbl.title='flash this face in the live preview';c0lbl.onclick=()=>flashUiPreview(face);c0.appendChild(c0lbl);
@@ -710,8 +715,13 @@ function buildUITable(){
     const cP=document.createElement('td');cP.className='ex';cP.id='uiprev-'+face;cP.textContent=ex;cP.style.padding='4px 10px';cP.style.borderRadius='4px';
     const cX=document.createElement('td');const boxCtl=cursorOnly?null:mkBoxControl(()=>UIMAP[face].box,b=>{UIMAP[face].box=b;paintUI(face);buildMockFrame();},{compact:true});
     if(cursorOnly){cX.appendChild(naCell('Emacs ignores the box attribute on the cursor face'));}else{cX.appendChild(boxCtl);}
-    const cL=mkLockCell('ui:'+face,cursorOnly?[fgSel,bgSel,...exp.locks]:[fgSel,bgSel,...stCtls,boxCtl,...exp.locks]);
-    tr.appendChild(cL);tr.appendChild(c0);tr.appendChild(cF);tr.appendChild(cB);tr.appendChild(cS);tr.appendChild(cX);tr.appendChild(cC);tr.appendChild(cP);tb.appendChild(tr);tb.appendChild(exp.detail);paintUI(face);
+    const cH=document.createElement('td');cH.className='sizecell';
+    const hk=heightControlKind(face,UIMAP[face],DEFAULT_UIMAP[face]);let hCtl=null;
+    if(hk){hCtl=mkHeightControl(UIMAP[face],hk,()=>{paintUI(face);buildMockFrame();});cH.appendChild(hCtl.el);
+      if((UIMAP[face].height||1)!==((DEFAULT_UIMAP[face]&&DEFAULT_UIMAP[face].height)||1))cH.classList.add('nd');}
+    else{cH.appendChild(naCell('no height control: this face inherits its size (chrome and seeded heading faces expose one)'));}
+    const cL=mkLockCell('ui:'+face,(cursorOnly?[fgSel,bgSel]:[fgSel,bgSel,...stCtls,boxCtl]).concat(hCtl?hCtl.controls:[],exp.locks));
+    tr.appendChild(cL);tr.appendChild(c0);tr.appendChild(cF);tr.appendChild(cB);tr.appendChild(cS);tr.appendChild(cX);tr.appendChild(cC);tr.appendChild(cH);tr.appendChild(cP);tb.appendChild(tr);tb.appendChild(exp.detail);paintUI(face);
   }
   applyTableSort('uibody');
   updateLockToggle('ui');syncExpandAllBtns();
@@ -752,7 +762,7 @@ if(location.hash.startsWith('#preview=')){
   const q=location.hash.slice(9).split('&theme=');
   const k=decodeURIComponent(q[0]);
   const showApp=()=>{
-    if(!APPS[k])return;
+    if(!APPS[k]&&k[0]!=='@')return; // '@ui'/'@code' view keys shoot too
     const s=document.getElementById('viewsel');
     if(!s)return;
     s.value=k;onViewChange();document.title='PREVIEW '+k;

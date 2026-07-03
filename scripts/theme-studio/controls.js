@@ -146,10 +146,12 @@ function mkOverlineControl(get,set,opts={}){
   return mkLineStyleControl([['','no overline',''],['on','overline','O']],get,set,Object.assign({styled:false},opts));}
 function mkCheck(get,set){const c=document.createElement('input');c.type='checkbox';c.className='detailcheck';c.checked=!!get();c.onchange=()=>set(c.checked);return c;}
 // The per-row attribute editor revealed by the expander: distant-fg, family,
-// overline, inverse, extend, and (for ui/syntax, where inherit/height have no
-// inline column) inherit + height. Each control mutates FACE and calls onChange.
+// overline, inverse, extend, and (for ui/syntax, where inherit has no inline
+// column) inherit. Height is not an overflow attribute: exposed faces edit it
+// in their row's size cell (mkHeightControl); the long tail has no height
+// control at all. Each control mutates FACE and calls onChange.
 // Returns the element plus the interactive controls so the row's lock cell can
-// disable them. opts.inheritOptions and opts.showInheritHeight gate the last two.
+// disable them. opts.inheritOptions and opts.showInherit gate the inherit select.
 // Hover help for each expander field, so the detail labels explain themselves the
 // way the table-header labels do. Keyed by the label text passed to add().
 const DETAIL_HOVERS={
@@ -159,8 +161,7 @@ const DETAIL_HOVERS={
   'overline':'a line drawn above the text (Emacs :overline)',
   'inverse':'swap the foreground and background (Emacs :inverse-video)',
   'extend':'extend the background past the end of the line to the window edge (Emacs :extend)',
-  'inherit':'base face this one inherits unset attributes from (Emacs :inherit)',
-  'height':'text size as a scaling factor of the inherited height, 0.1 to 2.0 (Emacs :height)'
+  'inherit':'base face this one inherits unset attributes from (Emacs :inherit)'
 };
 function mkDetailEditor(face,onChange,opts={}){
   const wrap=document.createElement('div');wrap.className='detailedit';const locks=[];
@@ -173,13 +174,63 @@ function mkDetailEditor(face,onChange,opts={}){
   add('overline',mkOverlineControl(()=>face.overline,v=>{face.overline=v;onChange();},opts));
   add('inverse',mkCheck(()=>face.inverse,v=>{face.inverse=v;onChange();}));
   add('extend',mkCheck(()=>face.extend,v=>{face.extend=v;onChange();}));
-  if(opts.showInheritHeight){
+  if(opts.showInherit){
     const isel=document.createElement('select');isel.className='chip detailsel';
     (opts.inheritOptions||['']).forEach(o=>{const op=document.createElement('option');op.value=o;op.textContent=o||'— none —';isel.appendChild(op);});
     isel.value=face.inherit||'';isel.onchange=()=>{face.inherit=isel.value||null;onChange();};add('inherit',isel);
-    const hin=document.createElement('input');hin.type='number';hin.min=''+HEIGHT_MIN;hin.max=''+HEIGHT_MAX;hin.step='0.05';hin.className='hstep';hin.value=face.height||1;hin.onchange=()=>{const raw=hin.value,h=clampHeight(raw);face.height=h;hin.value=h==null?1:h;if(h!=null&&parseFloat(raw)!==h)notify('height clamped to '+h+' (allowed '+HEIGHT_MIN+'–'+HEIGHT_MAX+')',false);onChange();};add('height',hin);
   }
   return {el:wrap,locks};}
+
+// The per-row height control (editable-height spec): one numeric field plus an
+// abs/rel toggle, rendered only on exposed rows (heightControlKind decides).
+// The toggle writes heightMode explicitly -- the stored kind is what survives
+// the JSON round-trip, since the number type can't (2.0 saves as 2). Flipping
+// the kind clears the value: 130 tenth-pts and 1.3x mean different things, so
+// no silent conversion. Absolute entries render a computed pt hint beside the
+// field. Returns the element plus the controls for the row's lock cell.
+function mkHeightControl(face,kindDefault,onChange){
+  const wrap=document.createElement('span');wrap.className='heightctl';
+  const inp=document.createElement('input');inp.type='text';inp.className='hstep hval';
+  const tog=document.createElement('button');tog.className='chip htog';
+  const hint=document.createElement('span');hint.className='pthint';
+  const kind=()=>face.heightMode||kindDefault;
+  const paint=()=>{
+    const k=kind();
+    tog.textContent=k==='abs'?'pt':'x';
+    tog.title=k==='abs'
+      ?'absolute height in 1/10 pt, what Emacs stores (click to switch to a relative multiplier)'
+      :'relative multiplier of the inherited height (click to switch to an absolute 1/10 pt value)';
+    inp.value=(typeof face.height==='number'&&face.height!==1)?(''+face.height):'';
+    // no example placeholder: a dim number in a numeric column reads as a set
+    // value; the toggle chip and the titles carry the unit instead
+    inp.placeholder='';
+    inp.title=k==='abs'?'positive whole number of 1/10 pt (130 = 13pt)':'positive multiplier, '+HEIGHT_MIN+'-'+HEIGHT_MAX;
+    hint.textContent=k==='abs'?ptHint(face.height):'';
+  };
+  inp.onchange=()=>{
+    const v=parseHeightEntry(kind(),inp.value);
+    if(v===undefined){
+      notify(kind()==='abs'?'height must be a positive whole number of 1/10 pt (e.g. 130)':'height must be a positive number (e.g. 1.2)',true);
+      paint();return;
+    }
+    if(v===null){face.height=null;face.heightMode=null;}
+    else{
+      if(kind()==='rel'&&parseFloat(inp.value)!==v)notify('height clamped to '+v+' (allowed '+HEIGHT_MIN+'-'+HEIGHT_MAX+')',false);
+      face.height=v;face.heightMode=kind();
+    }
+    paint();onChange();
+  };
+  tog.onclick=()=>{
+    const next=kind()==='abs'?'rel':'abs';
+    face.heightMode=next;
+    if(face.height!=null&&face.height!==1)face.height=null;
+    paint();onChange();
+  };
+  const row=document.createElement('span');row.className='hrow';row.append(inp,tog);
+  wrap.append(row,hint);
+  paint();
+  return {el:wrap,controls:[inp,tog]};
+}
 // Wire a per-row expander: a toggle button plus a hidden detail row (colspan
 // across the table) holding mkDetailEditor. The caller drops the button into a
 // cell, adds the returned locks to the row's lock cell, and inserts detailRow

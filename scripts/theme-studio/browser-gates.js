@@ -766,12 +766,17 @@ if(location.hash==='#ndtest')gate('ndtest',A=>withSavedState(['PKGMAP','LOCKED']
  A(tr0&&![...tr0.cells].some(c=>c.classList.contains('nd')),'default-face-has-no-marker');
  PKGMAP[app][face].height=1.7;PKGMAP[app][face].source='user';buildPkgTable();
  const tr1=document.querySelector('#pkgbody tr[data-face="'+face+'"]');
- A(tr1.querySelector('.exptoggle').classList.contains('exp-nd'),'nondefault-height-flags-expander');
+ // height moved out of the expander into the inline size cell (editable-height
+ // spec): a non-default height marks that cell, never the expander toggle, and
+ // a face carrying a live height exposes the control dynamically
+ A(tr1.querySelector('.sizecell').classList.contains('nd'),'nondefault-height-marks-the-size-cell');
+ A(!!tr1.querySelector('.sizecell .hval'),'a-live-height-exposes-the-inline-control');
+ A(!tr1.querySelector('.exptoggle').classList.contains('exp-nd'),'height-no-longer-flags-the-expander');
  A(!tr1.cells[4].classList.contains('nd'),'unchanged-style-box-stays-unmarked');
- PKGMAP[app][face].height=(row[2]&&row[2].height)||1;PKGMAP[app][face].weight=seedFace(row[2]||{}).weight==='bold'?null:'bold';buildPkgTable();
+ PKGMAP[app][face].height=(row[2]&&row[2].height)||1;PKGMAP[app][face].heightMode=null;PKGMAP[app][face].weight=seedFace(row[2]||{}).weight==='bold'?null:'bold';buildPkgTable();
  const tr2=document.querySelector('#pkgbody tr[data-face="'+face+'"]');
  A(tr2.cells[4].classList.contains('nd'),'toggled-weight-marks-style-box');
- A(!tr2.querySelector('.exptoggle').classList.contains('exp-nd'),'restored-height-unflags-expander');
+ A(!tr2.querySelector('.sizecell').classList.contains('nd'),'restored-height-unmarks-the-size-cell');
  PKGMAP[app][face]=seedFace(row[2]||{});buildPkgTable();
  }));
 // Contrast-cell gate (open with #crtest): the per-face contrast column shows a
@@ -1005,9 +1010,10 @@ if(location.hash==='#expandtest')gate('expandtest',A=>{
  A(detail&&detail.style.display!=='none','toggle-reveals-detail-row');
  const ed=detail&&detail.querySelector('.detailedit');
  A(ed&&ed.querySelectorAll('.detailfield').length>=6,'detail-editor-has-the-overflow-fields');
- // ui faces also expose inherit + height in the expander
+ // ui faces also expose inherit in the expander; height moved to the row's
+ // size cell (editable-height spec), so the expander must NOT offer it
  A(ed&&ed.querySelector('select.detailsel'),'ui-expander-offers-inherit');
- A(ed&&ed.querySelector('input.hstep'),'ui-expander-offers-height');
+ A(ed&&!ed.querySelector('input.hstep'),'ui-expander-no-longer-offers-height');
  // underline moved into the expander; its wave style writes a styled object
  const uiUnder=ed&&ed.querySelector('.boxctl .boxbtn[data-style="wave"]');
  A(!!uiUnder,'underline-control-in-expander');
@@ -1034,24 +1040,43 @@ if(location.hash==='#expandtest')gate('expandtest',A=>{
  const pdetail=document.querySelector('#pkgbody tr.detailrow[data-detail-for="'+pface+'"]');
  A(pdetail&&pdetail.querySelector('select.detailsel'),'package-expander-offers-inherit');
  });
-// Height-clamp gate (open with #heighttest): the expander height field coerces a
-// typed value into [HEIGHT_MIN,HEIGHT_MAX] and writes the clamped number back, so
-// an out-of-range type/paste can't reach the model. Guards the fact that an
-// <input type=number> min/max only constrain its steppers, never typed text.
+// Height-control gate (open with #heighttest): the inline size cell exposes the
+// kind-aware height control on chrome rows only; absolute entry takes a positive
+// 1/10pt integer with a computed pt hint, the abs/rel toggle flips the stored
+// heightMode (clearing the value -- the units differ), relative entry clamps
+// into [HEIGHT_MIN,HEIGHT_MAX] like the old field, and garbage never reaches the
+// model. Long-tail rows render no control at all.
 if(location.hash==='#heighttest')gate('heighttest',A=>{
- const face=UI_FACES[0][0],save=JSON.parse(JSON.stringify(UIMAP[face]));
+ const face='mode-line',save=JSON.parse(JSON.stringify(UIMAP[face]));
  buildUITable();
- const hin=()=>document.querySelector('#uibody tr.detailrow[data-detail-for="'+face+'"] .hstep');
+ const cell=()=>document.querySelector('#uibody tr[data-face="'+face+'"] .sizecell');
+ const hin=()=>cell().querySelector('.hval');
  const typeHeight=(v)=>{const h=hin();h.value=v;h.dispatchEvent(new Event('change'));};
+ A(!!hin(),'chrome-row-exposes-the-height-control');
+ A(!document.querySelector('#uibody tr[data-face="region"] .sizecell .hval'),'long-tail-row-has-no-height-control');
+ // absolute kind (the chrome default)
+ UIMAP[face].height=null;UIMAP[face].heightMode=null;buildUITable();
+ typeHeight('130');
+ A(UIMAP[face].height===130&&UIMAP[face].heightMode==='abs','absolute-entry-writes-int-and-kind: '+UIMAP[face].height+'/'+UIMAP[face].heightMode);
+ A(cell().querySelector('.pthint').textContent==='= 13.0pt','absolute-entry-shows-the-pt-hint: '+cell().querySelector('.pthint').textContent);
+ typeHeight('1.3');
+ A(UIMAP[face].height===130,'absolute-rejects-a-float-keeping-the-old-value: '+UIMAP[face].height);
+ typeHeight('0');
+ A(UIMAP[face].height===130,'absolute-rejects-zero: '+UIMAP[face].height);
+ // the toggle flips the kind and clears the now-meaningless number
+ cell().querySelector('.htog').click();
+ A(UIMAP[face].heightMode==='rel'&&UIMAP[face].height===null,'toggle-flips-kind-and-clears: '+UIMAP[face].heightMode+'/'+UIMAP[face].height);
+ // relative kind: clamped like the old expander field
  typeHeight('5');
  A(UIMAP[face].height===HEIGHT_MAX,'above-max-clamps-to-ceiling: '+UIMAP[face].height);
- A(hin().value===''+HEIGHT_MAX,'field-shows-the-clamped-ceiling: '+hin().value);
  typeHeight('0.05');
  A(UIMAP[face].height===HEIGHT_MIN,'below-floor-clamps-to-floor: '+UIMAP[face].height);
  typeHeight('1.2');
- A(UIMAP[face].height===1.2,'in-range-value-passes-through: '+UIMAP[face].height);
+ A(UIMAP[face].height===1.2&&UIMAP[face].heightMode==='rel','in-range-value-passes-through: '+UIMAP[face].height);
+ typeHeight('big');
+ A(UIMAP[face].height===1.2,'relative-rejects-garbage-keeping-the-old-value: '+UIMAP[face].height);
  typeHeight('');
- A(UIMAP[face].height===null,'blank-unsets-to-null: '+UIMAP[face].height);
+ A(UIMAP[face].height===null&&UIMAP[face].heightMode===null,'blank-unsets-value-and-kind: '+UIMAP[face].height);
  UIMAP[face]=save;buildUITable();
  });
 // Language-dropdown gate (open with #langtest): the language list is sorted
@@ -1128,9 +1153,9 @@ if(location.hash==='#expandpersisttest')gate('expandpersisttest',A=>withSavedSta
  A(detail()&&detail().style.display==='none','expander starts collapsed');
  row().querySelector('.exptoggle').click();
  A(detail()&&detail().style.display!=='none','expander opens on toggle');
- const hin=detail().querySelector('.hstep');hin.value='1.4';hin.dispatchEvent(new Event('change'));
+ const fam=detail().querySelector('.detailinput');fam.value='Iosevka';fam.dispatchEvent(new Event('change'));
  A(detail()&&detail().style.display!=='none','expander stays open after an in-expander edit rebuilds the row');
- A(PKGMAP[app][face].height===1.4,'the in-expander edit still wrote the model');
+ A(PKGMAP[app][face].family==='Iosevka','the in-expander edit still wrote the model');
  row().querySelector('.exptoggle').click();buildPkgTable();
  A(detail()&&detail().style.display==='none','a collapsed expander stays collapsed across a rebuild');
  EXPANDED.clear();buildPkgTable();
