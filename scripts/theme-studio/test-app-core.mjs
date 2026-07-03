@@ -634,7 +634,7 @@ test('normalizePkgFace: Normal — fills every package face field', () => {
   assert.deepEqual(normalizePkgFace({ fg: 'blue', bold: true, inherit: 'base' }, 'default', PAL), {
     fg: '#67809c', bg: null, 'distant-fg': null, family: null, weight: 'bold',
     slant: null, underline: null, strike: null, overline: null,
-    inherit: 'base', height: 1, box: null, inverse: false, extend: false,
+    inherit: 'base', height: 1, heightMode: null, box: null, inverse: false, extend: false,
     source: 'default',
   });
 });
@@ -687,7 +687,7 @@ test('buildPkgmap: Boundary — a face with no default dict still seeds blank', 
   assert.deepEqual(m.a.f, {
     fg: null, bg: null, 'distant-fg': null, family: null, weight: null,
     slant: null, underline: null, strike: null, overline: null,
-    inherit: null, height: 1, box: null, inverse: false, extend: false,
+    inherit: null, height: 1, heightMode: null, box: null, inverse: false, extend: false,
     source: 'default',
   });
 });
@@ -773,13 +773,62 @@ test('packagesForExport: Boundary — unset additive attrs are omitted', () => {
   }
 });
 
+// --- height kind (explicit absolute vs relative) -----------------------------
+
+test('migrateLegacyFace: Normal — infers heightMode from the number on load', () => {
+  assert.equal(migrateLegacyFace({ height: 130 }).heightMode, 'abs');
+  assert.equal(migrateLegacyFace({ height: 1.2 }).heightMode, 'rel');
+});
+
+test('migrateLegacyFace: Normal — an explicit heightMode wins over inference', () => {
+  // the integral-float case: JSON collapsed 2.0 to 2, but the stored kind rules
+  assert.equal(migrateLegacyFace({ height: 2, heightMode: 'rel' }).heightMode, 'rel');
+  assert.equal(migrateLegacyFace({ height: 1.5, heightMode: 'abs' }).heightMode, 'abs');
+});
+
+test('migrateLegacyFace: Boundary — no height, identity, or non-number infers no kind', () => {
+  assert.ok(!('heightMode' in migrateLegacyFace({})));
+  assert.ok(!('heightMode' in migrateLegacyFace({ height: null })));
+  assert.ok(!('heightMode' in migrateLegacyFace({ height: 1 })));
+  assert.ok(!('heightMode' in migrateLegacyFace({ height: 'big' })));
+});
+
+test('normalizePkgFace: Normal — heightMode survives normalization', () => {
+  const f = normalizePkgFace({ height: 2, heightMode: 'rel' }, 'user');
+  assert.equal(f.height, 2);
+  assert.equal(f.heightMode, 'rel');
+});
+
+test('normalizePkgFace: Boundary — unset height leaves heightMode null', () => {
+  assert.equal(normalizePkgFace({}, 'user').heightMode, null);
+});
+
+test('packagesForExport: Normal — heightMode rides along with a non-default height', () => {
+  const m = { a: { f: normalizePkgFace({ fg: '#67809c', height: 130, heightMode: 'abs' }, 'user') } };
+  const o = packagesForExport(m).a.f;
+  assert.equal(o.height, 130);
+  assert.equal(o.heightMode, 'abs');
+});
+
+test('packagesForExport: Boundary — no heightMode when height is the default 1', () => {
+  const m = { a: { f: normalizePkgFace({ fg: '#67809c' }, 'user') } };
+  assert.ok(!('heightMode' in packagesForExport(m).a.f));
+});
+
+test('packagesForExport: Normal — integral rel multiplier keeps its kind through JSON (round-trip)', () => {
+  const m = { a: { f: normalizePkgFace({ fg: 'blue', height: 2, heightMode: 'rel' }, 'user', PAL) } };
+  const back = normalizePkgFace(JSON.parse(JSON.stringify(packagesForExport(m))).a.f, 'user');
+  assert.equal(back.height, 2);
+  assert.equal(back.heightMode, 'rel');
+});
+
 test('mergePackagesInto: Normal — fills missing fields with defaults', () => {
   const m = {};
   mergePackagesInto(m, { a: { f: { fg: '#112233' } } });
   assert.deepEqual(m.a.f, {
     fg: '#112233', bg: null, 'distant-fg': null, family: null, weight: null,
     slant: null, underline: null, strike: null, overline: null,
-    inherit: null, height: 1, box: null, inverse: false, extend: false,
+    inherit: null, height: 1, heightMode: null, box: null, inverse: false, extend: false,
     source: 'user',
   });
 });

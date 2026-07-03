@@ -34,6 +34,7 @@ FACE_ATTRS: list[dict[str, Any]] = [
     {"model": "extend",     "default": False, "capture": ":extend",             "snapshot": "extend",            "kind": "bool"},
     {"model": "inherit",    "default": None,  "capture": ":inherit",            "snapshot": "inherit",           "kind": "scalar"},
     {"model": "height",     "default": None,  "capture": ":height",             "snapshot": "height",            "kind": "height"},
+    {"model": "heightMode", "default": None,  "capture": None,                  "snapshot": None,                "kind": None},
 ]
 
 # model key -> default, derived from the spec above (order preserved).
@@ -74,6 +75,18 @@ def migrate_legacy(spec: dict[str, Any]) -> dict[str, Any]:
             out["strike"] = {"color": None}
         elif strike is False:
             out["strike"] = None
+    # Height-kind migration: a spec saved before heightMode existed carries
+    # only the number, so infer the kind once -- int -> absolute 1/10pt,
+    # float -> relative multiplier. Unlike JS (where JSON collapses 2.0 to 2
+    # and only integrality is left to test), Python keeps the authored number
+    # type, so a float 2.0 seed correctly infers relative. An explicit
+    # heightMode always wins. The identity 1 and non-numbers infer nothing.
+    height = out.get("height")
+    if (out.get("heightMode") is None
+            and isinstance(height, (int, float))
+            and not isinstance(height, bool)
+            and height != 1):
+        out["heightMode"] = "abs" if isinstance(height, int) else "rel"
     return out
 
 

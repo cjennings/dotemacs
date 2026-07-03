@@ -58,14 +58,14 @@ function assertPreviewFaces(A, html, faces, minCount, name, required){
 // Phase-1 self-test (open with #selftest): seed -> export -> import -> compare.
 function pkgSelftest(){
   const seeded=seedPkgmap();
-  seeded['org-mode']['org-level-2']={fg:'#e8bd30',bg:null,weight:null,slant:null,inherit:'org-level-1',height:1.2,source:'user'};
+  seeded['org-mode']['org-level-2']={fg:'#e8bd30',bg:null,weight:null,slant:null,inherit:'org-level-1',height:1.2,heightMode:'rel',source:'user'};
   const exp=packagesForExport(seeded);
   const round=seedPkgmap();mergePackagesInto(round,exp);
   const roundtrip=JSON.stringify(exp)===JSON.stringify(packagesForExport(round));
   let oldjson=true;try{const m=seedPkgmap();mergePackagesInto(m,undefined);oldjson=!!(m['org-mode']&&m['org-mode']['org-todo'].source==='default');}catch(e){oldjson=false;}
   const l2=exp['org-mode']['org-level-2'];
   const inherited=l2.inherit==='org-level-1'&&l2.source==='user';
-  const height=l2.height===1.2 && !('height' in (exp['org-mode']['org-todo']));
+  const height=l2.height===1.2 && l2.heightMode==='rel' && !('height' in (exp['org-mode']['org-todo'])) && !('heightMode' in (exp['org-mode']['org-todo']));
   const sc=seedPkgmap();sc['org-mode']['org-todo']={fg:null,bg:null,weight:null,slant:null,inherit:null,height:1,source:'cleared'};
   const cleared='org-todo' in packagesForExport(sc)['org-mode'];
   const su=seedPkgmap();mergePackagesInto(su,{'zzz-pkg':{'zzz-face':{fg:'#112233',source:'user'}}});

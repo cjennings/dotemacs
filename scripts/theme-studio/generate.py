@@ -230,6 +230,7 @@ def apply_modeline_height_default(uimap):
     face = uimap.get("mode-line")
     if face and face.get("height") is None:
         face["height"] = 130
+        face["heightMode"] = "abs"
 
 def apply_hover_box_default(uimap):
     """Seed the mode-line hover face's box.

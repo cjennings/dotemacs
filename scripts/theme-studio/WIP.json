@@ -943,7 +943,8 @@
    "inverse": false,
    "extend": false,
    "inherit": null,
-   "height": 130
+   "height": 130,
+   "heightMode": "abs"
   },
   "mode-line-highlight": {
    "fg": "#e6ce88",
@@ -1724,14 +1725,16 @@
     "weight": "bold",
     "inherit": null,
     "height": 1.2,
-    "source": "user"
+    "source": "user",
+    "heightMode": "rel"
    },
    "org-document-info": {
     "fg": "#ab8d2e",
     "bg": "#100f0f",
     "inherit": null,
     "height": 1.15,
-    "source": "user"
+    "source": "user",
+    "heightMode": "rel"
    },
    "org-document-info-keyword": {
     "fg": "#7c838a",
@@ -3848,7 +3851,8 @@
     "slant": "italic",
     "inherit": "default",
     "height": 1.25,
-    "source": "user"
+    "source": "user",
+    "heightMode": "rel"
    },
    "dashboard-text-banner": {
     "fg": "#dab53d",
@@ -4667,7 +4671,8 @@
     "bg": null,
     "inherit": "cj/nov-reading-sepia",
     "height": 1.2,
-    "source": "user"
+    "source": "user",
+    "heightMode": "rel"
    },
    "cj/nov-reading-sepia-link": {
     "fg": "#5178db",
@@ -6035,7 +6040,8 @@
     "weight": "bold",
     "inherit": null,
     "height": 1.4,
-    "source": "default"
+    "source": "default",
+    "heightMode": "rel"
    },
    "shr-h2": {
     "fg": "#bfc4d0",
@@ -6043,7 +6049,8 @@
     "weight": "bold",
     "inherit": null,
     "height": 1.2,
-    "source": "user"
+    "source": "user",
+    "heightMode": "rel"
    },
    "shr-h3": {
     "fg": "#a6aab4",
@@ -7026,7 +7033,8 @@
     "weight": "bold",
     "inherit": null,
     "height": 1.1,
-    "source": "default"
+    "source": "default",
+    "heightMode": "rel"
    }
   },
   "emms": {

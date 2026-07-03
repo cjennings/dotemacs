@@ -130,6 +130,50 @@ drift the way Craig's downloaded exports under scripts/theme-studio/ can.")
   (should (equal (build-theme/--attrs '((fg . "#cdced1") (height . 1))) '(:foreground "#cdced1")))
   (should (equal (build-theme/--attrs '((height . 1.2))) '(:height 1.2))))
 
+;; --- Height kind (explicit absolute vs relative) ---
+
+(ert-deftest test-build-theme-attrs-height-kind-abs-exports-integer ()
+  "Normal: heightMode abs coerces :height to an integer 1/10pt value."
+  (should (equal (build-theme/--attrs '((height . 130) (heightMode . "abs")))
+                 '(:height 130)))
+  (should (equal (build-theme/--attrs '((height . 130.0) (heightMode . "abs")))
+                 '(:height 130))))
+
+(ert-deftest test-build-theme-attrs-height-kind-rel-exports-float ()
+  "Normal: heightMode rel coerces :height to a float, even when integral."
+  (let ((attrs (build-theme/--attrs '((height . 2) (heightMode . "rel")))))
+    (should (equal attrs '(:height 2.0)))
+    (should (floatp (plist-get attrs :height))))
+  (should (equal (build-theme/--attrs '((height . 1.3) (heightMode . "rel")))
+                 '(:height 1.3))))
+
+(ert-deftest test-build-theme-attrs-height-kind-identity-omitted ()
+  "Boundary: the identity height 1/1.0 is omitted under either kind."
+  (should-not (build-theme/--attrs '((height . 1) (heightMode . "abs"))))
+  (should-not (build-theme/--attrs '((height . 1.0) (heightMode . "rel")))))
+
+(ert-deftest test-build-theme-attrs-height-no-kind-passthrough ()
+  "Boundary: a spec without heightMode keeps the number as parsed (legacy)."
+  (should (equal (build-theme/--attrs '((height . 130))) '(:height 130)))
+  (should (equal (build-theme/--attrs '((height . 1.2))) '(:height 1.2))))
+
+(ert-deftest test-build-theme-attrs-height-kind-garbage-ignored ()
+  "Error: an unrecognized heightMode falls back to the legacy passthrough."
+  (should (equal (build-theme/--attrs '((height . 1.2) (heightMode . "huge")))
+                 '(:height 1.2)))
+  (should-not (build-theme/--attrs '((height . "big") (heightMode . "abs")))))
+
+(ert-deftest test-build-theme-attrs-height-kind-json-roundtrip ()
+  "Normal: an integral relative multiplier renders as a float in the theme.
+JSON collapses 2.0 to 2 on save; the explicit kind restores the float so the
+rendered spec reads :height 2.0, never :height 2."
+  (let* ((obj (json-parse-string "{\"height\":2,\"heightMode\":\"rel\"}"
+                                 :object-type 'alist :array-type 'list
+                                 :null-object nil :false-object nil))
+         (attrs (build-theme/--attrs obj)))
+    (should (equal attrs '(:height 2.0)))
+    (should (string-match-p ":height 2\\.0" (prin1-to-string attrs)))))
+
 ;; --- New attributes ---
 
 (ert-deftest test-build-theme-attrs-family ()

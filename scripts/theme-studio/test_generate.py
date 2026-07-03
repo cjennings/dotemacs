@@ -254,6 +254,7 @@ class FaceSpecDefaults(unittest.TestCase):
             "extend": False,
             "inherit": None,
             "height": None,
+            "heightMode": None,
         })
 
     def test_ui_face_spec_carries_inherit_and_height(self):
@@ -286,6 +287,7 @@ class FaceSpecDefaults(unittest.TestCase):
             "extend": False,
             "inherit": "base",
             "height": 1.2,
+            "heightMode": "rel",
         })
 
     def test_generated_color_names_are_base_columns_when_legacy(self):
@@ -344,6 +346,30 @@ class GeneratorStateHelpers(unittest.TestCase):
         uimap = {"mode-line": ui_face_spec({"height": 142})}
         generate.apply_modeline_height_default(uimap)
         self.assertEqual(uimap["mode-line"]["height"], 142)
+
+    def test_modeline_height_seed_carries_abs_kind(self):
+        # the seed is a fixed 1/10pt pin, so its kind is explicit -- never
+        # left for number-type inference (JSON can't carry the distinction)
+        self.assertEqual(generate.UIMAP["mode-line"]["heightMode"], "abs")
+
+    def test_migrate_legacy_infers_height_kind(self):
+        # mirrors app-core.js migrateLegacyFace: integer -> abs, fractional
+        # -> rel, explicit kind wins, identity/absent/non-number infer none
+        from face_specs import migrate_legacy
+        self.assertEqual(migrate_legacy({"height": 130})["heightMode"], "abs")
+        self.assertEqual(migrate_legacy({"height": 1.2})["heightMode"], "rel")
+        # python keeps the authored type: an integral float is still relative
+        self.assertEqual(migrate_legacy({"height": 2.0})["heightMode"], "rel")
+        self.assertEqual(
+            migrate_legacy({"height": 2, "heightMode": "rel"})["heightMode"], "rel")
+        self.assertNotIn("heightMode", migrate_legacy({}))
+        self.assertNotIn("heightMode", migrate_legacy({"height": 1}))
+        self.assertNotIn("heightMode", migrate_legacy({"height": None}))
+
+    def test_face_spec_defaults_include_height_kind(self):
+        # the model row exists with a null default in both spec shapes
+        self.assertIsNone(ui_face_spec()["heightMode"])
+        self.assertIsNone(package_face_spec()["heightMode"])
 
     def test_build_syntax_uses_map_and_style_fallbacks_without_defaults_snapshot(self):
         syntax = generate.build_syntax(

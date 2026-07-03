@@ -25,6 +25,14 @@ function migrateLegacyFace(d){
   if('italic' in out){const i=out.italic;delete out.italic;if(i&&out.slant==null)out.slant='italic';}
   if('underline' in out){if(out.underline===true)out.underline={style:'line',color:null};else if(out.underline===false)out.underline=null;}
   if('strike' in out){if(out.strike===true)out.strike={color:null};else if(out.strike===false)out.strike=null;}
+  // Height-kind migration: a face saved before heightMode existed carries only
+  // the number, so infer the kind once on load -- integer -> absolute 1/10pt,
+  // fractional -> relative multiplier. An explicit heightMode always wins (the
+  // number type can't be trusted: JSON collapses 2.0 to 2). The identity 1 and
+  // non-numbers infer nothing.
+  if(out.heightMode==null&&typeof out.height==='number'&&isFinite(out.height)&&out.height!==1){
+    out.heightMode=Number.isInteger(out.height)?'abs':'rel';
+  }
   return out;
 }
 
@@ -71,7 +79,8 @@ function faceCss(face,fg,bg,opts){
 //   def     : value when unset
 //   resolve : fg/bg/distant-fg run through the palette name->hex resolver
 //   coerce  : 'bool' -> !!v ; 'height' -> v||1 ; default -> v ?? def
-//   emit    : export rule -- 'always' | 'truthy' | 'non-one' | 'bool'
+//   emit    : export rule -- 'always' | 'truthy' | 'non-one' | 'bool' |
+//             'with-height' (only alongside a non-default height)
 // A hoisted function rather than a const: the inlined page calls normalizePkgFace
 // at top level (seedPkgmap) before this point in source order, and a const would
 // be in its temporal dead zone there; a function declaration is hoisted.
@@ -87,6 +96,7 @@ function faceAttrs(){return [
   {k:'overline',   def:null,                emit:'truthy'},
   {k:'inherit',    def:null,                emit:'always'},
   {k:'height',     def:1,     coerce:'height', emit:'non-one'},
+  {k:'heightMode', def:null,                emit:'with-height'},
   {k:'box',        def:null,                emit:'truthy'},
   {k:'inverse',    def:false, coerce:'bool',   emit:'bool'},
   {k:'extend',     def:false, coerce:'bool',   emit:'bool'},
@@ -110,7 +120,7 @@ function buildPkgmap(apps,palette){const m={};for(const app in apps){m[app]={};f
 
 // The package faces worth exporting (anything seeded or user-touched), trimmed.
 // Driven by FACE_ATTRS: each attribute's `emit` rule decides whether it lands.
-function packagesForExport(map){const out={};for(const app in map){const faces={};for(const face in map[app]){const f=map[app][face];if(f.source==='default'||f.source==='user'||f.source==='cleared'){const o={};for(const a of faceAttrs()){const v=f[a.k];if(a.emit==='always')o[a.k]=v;else if(a.emit==='truthy'){if(v)o[a.k]=v;}else if(a.emit==='non-one'){if(v&&v!==1)o[a.k]=v;}else if(a.emit==='bool'){if(v)o[a.k]=true;}}o.source=f.source;faces[face]=o;}}if(Object.keys(faces).length)out[app]=faces;}return out;}
+function packagesForExport(map){const out={};for(const app in map){const faces={};for(const face in map[app]){const f=map[app][face];if(f.source==='default'||f.source==='user'||f.source==='cleared'){const o={};for(const a of faceAttrs()){const v=f[a.k];if(a.emit==='always')o[a.k]=v;else if(a.emit==='truthy'){if(v)o[a.k]=v;}else if(a.emit==='non-one'){if(v&&v!==1)o[a.k]=v;}else if(a.emit==='with-height'){if(v&&f.height&&f.height!==1)o[a.k]=v;}else if(a.emit==='bool'){if(v)o[a.k]=true;}}o.source=f.source;faces[face]=o;}}if(Object.keys(faces).length)out[app]=faces;}return out;}
 
 // Merge an imported package block into a face map, filling missing fields.
 function mergePackagesInto(map,pkgs){if(!pkgs)return;for(const app in pkgs){if(!map[app])map[app]={};for(const face in pkgs[app]){const f=pkgs[app][face]||{};map[app][face]=normalizePkgFace(f,f.source||'user');}}}

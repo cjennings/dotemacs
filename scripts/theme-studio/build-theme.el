@@ -137,14 +137,27 @@ yields a (:color C :style S) plist.  Tolerates the legacy boolean form."
                    (t                t))))
           (t t))))
 
+(defun build-theme/--height (obj)
+  "Coerce OBJ's height from its explicit kind field, or nil when unset.
+heightMode \"abs\" yields an integer :height (fixed 1/10pt); \"rel\" yields a
+float multiplier -- even when the number arrives integral, because JSON
+collapses 2.0 to 2 on save, so the number type can never carry the kind.  A
+spec without a recognized heightMode keeps the number as parsed (legacy).
+The identity height 1/1.0 emits nothing under every kind."
+  (let ((height (build-theme/--obj-get obj 'height))
+        (kind (build-theme/--obj-get obj 'heightMode)))
+    (when (and (numberp height) (/= height 1.0))
+      (cond ((equal kind "abs") (truncate height))
+            ((equal kind "rel") (float height))
+            (t height)))))
+
 (defun build-theme/--attrs (obj)
   "Build a face-attribute plist from face-spec alist OBJ, in canonical order.
 Reads the full attribute model -- inherit, family, fg/bg, distant-foreground,
 weight, slant, height, underline, overline, strike-through, box, inverse-video,
 extend -- and tolerates the older boolean bold/italic/underline/strike fields.
 Only attributes that are set appear, so a blank face yields nil."
-  (let* ((height (build-theme/--obj-get obj 'height))
-         (family (build-theme/--obj-get obj 'family))
+  (let* ((family (build-theme/--obj-get obj 'family))
          (pairs
           (list
            (cons :inherit            (build-theme/--inherit-symbol (build-theme/--obj-get obj 'inherit)))
@@ -154,7 +167,7 @@ Only attributes that are set appear, so a blank face yields nil."
            (cons :distant-foreground (build-theme/--obj-get obj 'distant-fg))
            (cons :weight             (build-theme/--weight obj))
            (cons :slant              (build-theme/--slant obj))
-           (cons :height             (and (numberp height) (/= height 1.0) height))
+           (cons :height             (build-theme/--height obj))
            (cons :underline          (build-theme/--underline obj))
            (cons :overline           (build-theme/--line-attr (build-theme/--obj-get obj 'overline)))
            (cons :strike-through     (build-theme/--line-attr (build-theme/--obj-get obj 'strike)))
