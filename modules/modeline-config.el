@@ -126,12 +126,19 @@ kills the buffer-local value so the default format returns."
 
 (defun cj/--modeline-padding ()
   "Return the leading modeline space, taller per `cj/modeline-height-factor'.
-A display height property on a single space pads the whole modeline
-vertically without touching the mode-line faces the theme owns."
-  (if (and cj/modeline-height-factor
-           (/= cj/modeline-height-factor 1.0))
-      (propertize " " 'display `(height ,cj/modeline-height-factor))
-    " "))
+An absolute :height face on a single space pads the whole modeline
+vertically.  The height is anchored to the frame's default face rather
+than the current buffer's, so a buffer that remaps `default' larger —
+nov-mode's reading view, `text-scale-mode' — no longer inflates the bar.
+A `display (height FACTOR)' property would scale with the buffer's default
+face and blow the modeline up in those buffers."
+  (let ((base (face-attribute 'default :height nil t)))
+    (if (and cj/modeline-height-factor
+             (/= cj/modeline-height-factor 1.0)
+             (integerp base))
+        (propertize " " 'face
+                    (list :height (round (* cj/modeline-height-factor base))))
+      " ")))
 
 (defvar-local cj/--modeline-mode-icon-cache nil
   "Cons of (MAJOR-MODE . GRAPHIC-P) paired with the rendered mode segment.

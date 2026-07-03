@@ -104,19 +104,27 @@
 
 ;; ------------------------------- Padding --------------------------------------
 
-(ert-deftest test-modeline-config-padding-carries-height-display ()
-  "Normal: padding space carries a display height property."
+(ert-deftest test-modeline-config-padding-absolute-height-face ()
+  "Normal: padding space carries a face with an absolute integer :height.
+The height is anchored to the frame default (not the current buffer's
+`default'), so a buffer that remaps `default' larger — nov's reading view,
+`text-scale-mode' — no longer inflates the modeline."
   (let ((cj/modeline-height-factor 1.2))
-    (let ((s (cj/--modeline-padding)))
+    (let* ((s (cj/--modeline-padding))
+           (face (get-text-property 0 'face s))
+           (h (plist-get face :height)))
       (should (stringp s))
-      (should (get-text-property 0 'display s)))))
+      (should (integerp h))
+      (should (= h (round (* 1.2 (face-attribute 'default :height nil t))))))))
 
 (ert-deftest test-modeline-config-padding-plain-at-factor-one ()
-  "Boundary: factor 1.0 (or nil) yields a plain space, no display prop."
-  (let ((cj/modeline-height-factor 1.0))
-    (let ((s (cj/--modeline-padding)))
-      (should (stringp s))
-      (should-not (get-text-property 0 'display s)))))
+  "Boundary: factor 1.0 (or nil) yields a plain space, no height styling."
+  (dolist (factor (list 1.0 nil))
+    (let ((cj/modeline-height-factor factor))
+      (let ((s (cj/--modeline-padding)))
+        (should (stringp s))
+        (should-not (get-text-property 0 'display s))
+        (should-not (get-text-property 0 'face s))))))
 
 (provide 'test-modeline-config-segments)
 ;;; test-modeline-config-segments.el ends here
