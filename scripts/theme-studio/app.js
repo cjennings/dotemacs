@@ -388,7 +388,7 @@ function flashUiPreview(f){const sp=document.querySelectorAll(`#mockframe [data-
 function flashPkg(f){flashRow(document.querySelector(`#pkgbody tr[data-face="${f}"]`));}
 function flashPkgPreview(f){const sp=document.querySelectorAll(`#pkgpreview [data-face="${f}"]`);if(sp.length){flashEls(sp);return;}const row=document.querySelector(`#pkgbody tr[data-face="${f}"]`);if(row)flashEl(row.querySelector('.cat'));}
 function mockSpan(k,t){return `<span data-k="${k}" style="${syntaxStyle(k)}">${esc(t)}</span>`;}
-function uiCss(o,fgv,bgv,opts={}){const fg=fgv===undefined?effFg(o.fg):fgv,bg=bgv===undefined?o.bg:bgv;return faceCss(o,fg,bg,{noBg:opts.noBg,boxBg:bg||MAP['bg']});}
+function uiCss(o,fgv,bgv,opts={}){const fg=fgv===undefined?effFg(o.fg):fgv,bg=bgv===undefined?o.bg:bgv;return faceCss(o,fg,bg,{noBg:opts.noBg,fontSize:heightCssValue(o),boxBg:bg||MAP['bg']});}
 // Size a preview pane to its faces table, minus the label bar above it. Shared by
 // the UI mock and the package preview, which differ only in their element IDs.
 function syncPaneHeight(tableId,paneId){const t=document.getElementById(tableId),m=document.getElementById(paneId);if(!t||!m)return;const lb=m.previousElementSibling,lbh=lb?lb.getBoundingClientRect().height+10:30;m.style.height=Math.max(t.getBoundingClientRect().height-lbh,220)+'px';}
@@ -687,7 +687,7 @@ function worstCellHtml(face){
 // Repaint every covered overlay face (their floors depend on the syntax palette,
 // so a syntax-color edit has to refresh them even though it doesn't rebuild the table).
 function repaintCovered(){COVERED_FACES.forEach(f=>{if(UIMAP[f]&&document.getElementById('uicr-'+f))paintUI(f);});}
-function paintUI(face){const pv=document.getElementById('uiprev-'+face);if(!pv)return;const o=UIMAP[face];pv.style.color=effFg(o.fg);pv.style.background=effBg(o.bg);pv.style.fontWeight=cssWeight(o.weight);pv.style.fontStyle=o.slant||'normal';pv.style.textDecoration=(o.underline?'underline ':'')+(o.strike?'line-through':'')||'none';pv.style.boxShadow=boxCss(o.box,effBg(o.bg));
+function paintUI(face){const pv=document.getElementById('uiprev-'+face);if(!pv)return;const o=UIMAP[face];pv.style.color=effFg(o.fg);pv.style.background=effBg(o.bg);pv.style.fontWeight=cssWeight(o.weight);pv.style.fontStyle=o.slant||'normal';pv.style.fontSize=heightCssValue(o)||'';pv.style.textDecoration=(o.underline?'underline ':'')+(o.strike?'line-through':'')||'none';pv.style.boxShadow=boxCss(o.box,effBg(o.bg));
   const report=coveredContrastReport(face);
   pv.title='';
   const cr=document.getElementById('uicr-'+face);if(cr){cr.title='';const wc=worstCellHtml(face);if(wc!==null){cr.title=report.empty?'this overlay has no syntax foreground set yet':(failureTitle(report)||'all covered text clears '+WORST_TARGET.toFixed(1));cr.innerHTML=wc;}else{const efg=effFg(o.fg),ebg=effBg(o.bg),r=contrast(efg,ebg);cr.innerHTML=crHtml(r);}}}

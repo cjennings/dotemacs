@@ -66,7 +66,7 @@ function faceCss(face,fg,bg,opts){
   parts.push('font-weight:'+cssWeight(face.weight),
              'font-style:'+(face.slant||'normal'),
              'text-decoration:'+faceDecoration(face));
-  if(opts.fontSize!=null)parts.push('font-size:'+opts.fontSize+'em');
+  if(opts.fontSize!=null)parts.push('font-size:'+opts.fontSize+(typeof opts.fontSize==='number'?'em':''));
   const bx=boxCss(face.box,opts.boxBg);
   if(bx)parts.push('box-shadow:'+bx);
   return parts.join(';');
@@ -600,6 +600,15 @@ function parseHeightEntry(kind,raw){
 }
 // The computed hint beside an absolute entry: 130 -> "= 13.0pt".
 function ptHint(height){return typeof height==='number'&&isFinite(height)?('= '+(height/10).toFixed(1)+'pt'):'';}
+// CSS font-size for a face's height: a relative multiplier renders as em, an
+// absolute 1/10pt value as true pt (the preview shows real size), unset or the
+// identity 1 as null (inherit). The stored heightMode rules; a legacy object
+// without one falls back to integer/fractional inference, same as the loader.
+function heightCssValue(f){
+  if(!f||typeof f.height!=='number'||!isFinite(f.height)||f.height===1)return null;
+  const kind=f.heightMode||(Number.isInteger(f.height)?'abs':'rel');
+  return kind==='abs'?(f.height/10)+'pt':f.height+'em';
+}
 
 // Compose an element-hover tooltip: the face's docstring on top, the existing
 // hover text (e.g. the bare face name) below it, separated by a blank line. A
@@ -756,4 +765,4 @@ function formatLocateTitle(meta){
   return parts.concat(locateAttrsList(meta.attrs)).join(', ');
 }
 
-export { nameToHex, migrateLegacyFace, cssWeight, faceDecoration, boxCss, faceCss, composeHoverTitle, normalizePkgFace, buildPkgmap, packagesForExport, mergePackagesInto, effResolve, resolveSyntaxFg, resolveUiAttr, paletteOptionList, galleryModel, appViewKeysSorted, faceBoxNonDefaults, overflowNonDefault, clampHeight, HEIGHT_MIN, HEIGHT_MAX, isChromeFace, heightControlKind, parseHeightEntry, ptHint, stepViewIndex, spanNeighborHex, slugify, fgSetFor, floor, lMax, COVERED_FACES, columnsFromPalette, usedPaletteHexes, paletteUsages, regenColumn, rankByLightness, stepRepointPlan, sortColumns, sortColumnMembers, groundRoleOfEntry, groundColumnMembersFromPalette, clearPalettePlan, deletePaletteColumnPlan, areAllLocked, lockToggleLabel, toggleLockSet, buildLocateRegistry, locateFaceMeta, formatLocateTitle, isLocateOnPane };
+export { nameToHex, migrateLegacyFace, cssWeight, faceDecoration, boxCss, faceCss, composeHoverTitle, normalizePkgFace, buildPkgmap, packagesForExport, mergePackagesInto, effResolve, resolveSyntaxFg, resolveUiAttr, paletteOptionList, galleryModel, appViewKeysSorted, faceBoxNonDefaults, overflowNonDefault, clampHeight, HEIGHT_MIN, HEIGHT_MAX, isChromeFace, heightControlKind, parseHeightEntry, ptHint, heightCssValue, stepViewIndex, spanNeighborHex, slugify, fgSetFor, floor, lMax, COVERED_FACES, columnsFromPalette, usedPaletteHexes, paletteUsages, regenColumn, rankByLightness, stepRepointPlan, sortColumns, sortColumnMembers, groundRoleOfEntry, groundColumnMembersFromPalette, clearPalettePlan, deletePaletteColumnPlan, areAllLocked, lockToggleLabel, toggleLockSet, buildLocateRegistry, locateFaceMeta, formatLocateTitle, isLocateOnPane };

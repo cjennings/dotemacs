@@ -2,7 +2,7 @@
 // app.js. Pure preview HTML builders (ofs/os/previewLines + renderXxxPreview);
 // they reference shared globals (PKGMAP, MAP, faceCss, effFg, ...) and are
 // inlined into the page's single script element via the PREVIEWS_J token in app.js.
-function ofs(app,face){const f=PKGMAP[app][face]||{},fg=effFg(pkgEffFg(app,face)),bg=pkgEffBg(app,face);return faceCss(f,fg,bg,{fontSize:(f.height||1),boxBg:bg||MAP['bg']});}
+function ofs(app,face){const f=PKGMAP[app][face]||{},fg=effFg(pkgEffFg(app,face)),bg=pkgEffBg(app,face);return faceCss(f,fg,bg,{fontSize:heightCssValue(f),boxBg:bg||MAP['bg']});}
 // The CSS for a UI-owned face rendered off any preview surface: effective fg
 // (floored to the default fg) and bg, following the built-in UI inherit chain so
 // the rendered color matches what the registry reports. The @ui counterpart to ofs.

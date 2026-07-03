@@ -11,7 +11,7 @@ import {
   clearPalettePlan, deletePaletteColumnPlan, groundColumnMembersFromPalette, areAllLocked, lockToggleLabel, toggleLockSet,
   galleryModel, appViewKeysSorted, faceBoxNonDefaults, overflowNonDefault, stepViewIndex,
   cssWeight, faceDecoration, boxCss, faceCss, composeHoverTitle,
-  clampHeight, HEIGHT_MIN, HEIGHT_MAX, heightControlKind, parseHeightEntry, ptHint,
+  clampHeight, HEIGHT_MIN, HEIGHT_MAX, heightControlKind, parseHeightEntry, ptHint, heightCssValue,
 } from './app-core.js';
 import { planPaletteGenerator, entriesForGeneratedColumn } from './palette-generator-core.js';
 import { oklch2hex, deltaE } from './colormath.js';
@@ -1097,6 +1097,30 @@ test('ptHint: Normal — an absolute 1/10pt value renders as a pt hint', () => {
 test('ptHint: Boundary — no number, no hint', () => {
   assert.equal(ptHint(null), '');
   assert.equal(ptHint(undefined), '');
+});
+
+test('heightCssValue: Normal — relative renders as em, absolute as true pt', () => {
+  assert.equal(heightCssValue({ height: 1.3, heightMode: 'rel' }), '1.3em');
+  assert.equal(heightCssValue({ height: 130, heightMode: 'abs' }), '13pt');
+  // the integral-float case: the stored kind rules, not the number type
+  assert.equal(heightCssValue({ height: 2, heightMode: 'rel' }), '2em');
+});
+
+test('heightCssValue: Normal — a legacy object without a kind infers from the number', () => {
+  assert.equal(heightCssValue({ height: 1.4 }), '1.4em');
+  assert.equal(heightCssValue({ height: 130 }), '13pt');
+});
+
+test('heightCssValue: Boundary — unset, identity, or non-number yields null', () => {
+  assert.equal(heightCssValue({ height: null }), null);
+  assert.equal(heightCssValue({ height: 1 }), null);
+  assert.equal(heightCssValue({}), null);
+  assert.equal(heightCssValue(null), null);
+});
+
+test('faceCss: Normal — a string fontSize lands verbatim, a number stays em', () => {
+  assert.ok(faceCss({}, '#111', null, { fontSize: '13pt' }).includes('font-size:13pt'));
+  assert.ok(faceCss({}, '#111', null, { fontSize: 1.15 }).includes('font-size:1.15em'));
 });
 test('faceBoxNonDefaults: inherit and box differences are flagged', () => {
   assert.equal(faceBoxNonDefaults({ inherit: 'bold' }, { inherit: null }).inherit, true);
