@@ -36,6 +36,9 @@
   ("M-S-w" . wttrin)  ;; was M-W, overrides kill-ring-save
   :config
   (setopt wttrin-unit-system "u")
+  ;; Keep runtime state in data/ with the other per-machine state files;
+  ;; the default (locate-user-emacs-file) drops it at the repo root.
+  (setopt wttrin-state-file (expand-file-name "data/wttrin-state.el" user-emacs-directory))
   ;; Drop the "Follow @igor_chubin for wttr.in updates" footer. "F" is the
   ;; wttr.in flag for "no Follow line"; everything else (forecast, header,
   ;; colors) is unchanged.
