@@ -218,6 +218,19 @@ def apply_builtin_fallback_styles(uimap):
     for face in ("mode-line","mode-line-inactive"):
         uimap[face]["box"]={"style":"released","width":1,"color":None}
 
+def apply_modeline_height_default(uimap):
+    """Seed an absolute height on mode-line so it never tracks the buffer default.
+
+    mode-line's :height is unspecified in stock Emacs, so it inherits the
+    buffer's default face height -- a buffer that remaps default larger (the
+    nov-reading view) inflates its modeline with it. A fixed 1/10pt integer
+    pins the bar. 130 matches the configured laptop default-height; editable
+    once the height control ships (theme-studio-editable-height-spec).
+    mode-line-inactive inherits mode-line, so it gets no seed of its own."""
+    face = uimap.get("mode-line")
+    if face and face.get("height") is None:
+        face["height"] = 130
+
 def apply_hover_box_default(uimap):
     """Seed the mode-line hover face's box.
 
@@ -238,6 +251,7 @@ def build_uimap(ui_faces,defaults):
         uimap={face[0]:ui_face_spec() for face in ui_faces}
         apply_builtin_fallback_styles(uimap)
     apply_hover_box_default(uimap)
+    apply_modeline_height_default(uimap)
     return uimap
 
 def build_syntax(cols,map_,bold,italic,defaults):

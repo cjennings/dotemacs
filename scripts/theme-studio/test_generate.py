@@ -326,6 +326,25 @@ class GeneratorStateHelpers(unittest.TestCase):
         generate.apply_hover_box_default(uimap)
         self.assertEqual(uimap["mode-line-highlight"]["box"], {"style": "line", "width": 2, "color": "#abcdef"})
 
+    def test_mode_line_defaults_to_absolute_height(self):
+        # mode-line must carry a fixed 1/10pt height so it never tracks a
+        # buffer's enlarged default face (the nov-reading modeline bug).
+        # Both branches: with and without a defaults snapshot.
+        self.assertEqual(generate.UIMAP["mode-line"]["height"], 130)
+        self.assertIsInstance(generate.UIMAP["mode-line"]["height"], int)
+        no_snapshot = generate.build_uimap(generate.UI_FACES, DefaultFaces(None))
+        self.assertEqual(no_snapshot["mode-line"]["height"], 130)
+
+    def test_mode_line_inactive_gets_no_height_seed(self):
+        # mode-line-inactive inherits mode-line's absolute height; seeding its
+        # own value would just duplicate state.
+        self.assertIsNone(generate.UIMAP["mode-line-inactive"]["height"])
+
+    def test_modeline_height_default_yields_to_existing_height(self):
+        uimap = {"mode-line": ui_face_spec({"height": 142})}
+        generate.apply_modeline_height_default(uimap)
+        self.assertEqual(uimap["mode-line"]["height"], 142)
+
     def test_build_syntax_uses_map_and_style_fallbacks_without_defaults_snapshot(self):
         syntax = generate.build_syntax(
             {"kw": [None, True]},

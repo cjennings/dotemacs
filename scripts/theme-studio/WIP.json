@@ -943,7 +943,7 @@
    "inverse": false,
    "extend": false,
    "inherit": null,
-   "height": null
+   "height": 130
   },
   "mode-line-highlight": {
    "fg": "#e6ce88",
@@ -979,7 +979,7 @@
    "inverse": false,
    "extend": false,
    "inherit": "mode-line",
-   "height": 2
+   "height": null
   },
   "fringe": {
    "fg": "#f3e7c5",
