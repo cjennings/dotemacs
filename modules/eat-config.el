@@ -560,7 +560,12 @@ pty; without tmux, moves point up in EAT's emacs-mode buffer."
   ;; (point jumped back on the next keystroke).  Window arrows (S-, C-M-) keep
   ;; reaching Emacs for windmove / buffer-move.
   (dolist (key '("C-<left>" "C-<right>" "M-<left>" "M-<right>"))
-    (keymap-set eat-semi-char-mode-map key #'eat-self-input)))
+    (keymap-set eat-semi-char-mode-map key #'eat-self-input))
+  ;; C-z is prohibited.  Forwarded to the pty it sends SIGTSTP to the foreground
+  ;; job, backgrounding the agent; with eat-over-tmux, `fg' does not reliably
+  ;; bring it back.  Swallowing it here (a no-op that reaches Emacs, not the pty)
+  ;; keeps a stray C-z from stopping the agent.
+  (keymap-set eat-semi-char-mode-map "C-z" #'ignore))
 
 (provide 'eat-config)
 ;;; eat-config.el ends here
