@@ -1,11 +1,15 @@
-:PROPERTIES:
-:ID:       76979608-956e-474f-90a8-8d0c958101a0
-:STATUS:   implemented
-:END:
 #+TITLE: Design: Flycheck modeline customization
 #+AUTHOR: Craig Jennings
 #+DATE: 2026-05-15
 #+OPTIONS: toc:nil num:nil
+#+TODO: TODO | DONE
+#+TODO: DRAFT READY DOING | IMPLEMENTED SUPERSEDED CANCELLED
+
+* IMPLEMENTED Design: Flycheck modeline customization
+:PROPERTIES:
+:ID:       76979608-956e-474f-90a8-8d0c958101a0
+:END:
+- 2026-07-04 Sat @ 15:30:41 -0500 — retrofitted to status-heading convention; keyword IMPLEMENTED from existing :STATUS: implemented + -implemented filename (Craig's prior determination)
 
 * Status
 

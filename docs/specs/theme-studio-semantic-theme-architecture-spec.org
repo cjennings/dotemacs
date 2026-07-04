@@ -1,11 +1,14 @@
-:PROPERTIES:
-:ID:       fe980b12-451a-4d8b-a550-d99f9ec49f45
-:STATUS:   not-started
-:END:
 #+TITLE: Theme Studio Semantic Theme Architecture -- Spec
 #+AUTHOR: Craig Jennings
 #+DATE: 2026-06-14
-#+TODO: TODO | DONE SUPERSEDED CANCELLED
+#+TODO: TODO | DONE
+#+TODO: DRAFT READY DOING | IMPLEMENTED SUPERSEDED CANCELLED
+
+* DRAFT Theme Studio Semantic Theme Architecture -- Spec
+:PROPERTIES:
+:ID:       fe980b12-451a-4d8b-a550-d99f9ec49f45
+:END:
+- 2026-07-04 Sat @ 15:30:41 -0500 — retrofitted to status-heading convention; keyword DRAFT from existing :STATUS: not-started
 
 * Metadata
 | Status   | not-started |
@@ -257,7 +260,7 @@ Rollout should keep the current flat output path as the default and add a separa
 - Modus Themes source: [[https://github.com/protesilaos/modus-themes][github.com/protesilaos/modus-themes]]
 - Current converter: [[file:../scripts/theme-studio/build-theme.el][scripts/theme-studio/build-theme.el]]
 - Current Theme Studio README: [[file:../scripts/theme-studio/README.md][scripts/theme-studio/README.md]]
-- Package-face model spec: [[id:8f37a1fd-cfd3-4b25-92e5-772468092bdc][theme-studio-package-faces-spec-doing.org]]
+- Package-face model spec: [[id:8f37a1fd-cfd3-4b25-92e5-772468092bdc][theme-studio-package-faces-spec.org]]
 
 * Review and iteration history
 ** 2026-06-14 Sunday @ 14:37:00 -0500 -- Craig -- author

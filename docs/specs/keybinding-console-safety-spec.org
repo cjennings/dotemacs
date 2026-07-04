@@ -1,10 +1,14 @@
-:PROPERTIES:
-:ID:       540bf06b-16b8-46c6-b459-c40d1b9c795d
-:STATUS:   doing
-:END:
 #+TITLE: Keymap Consolidation — Spec
 #+AUTHOR: Craig Jennings
 #+DATE: 2026-06-12
+#+TODO: TODO | DONE
+#+TODO: DRAFT READY DOING | IMPLEMENTED SUPERSEDED CANCELLED
+
+* DOING Keymap Consolidation — Spec
+:PROPERTIES:
+:ID:       540bf06b-16b8-46c6-b459-c40d1b9c795d
+:END:
+- 2026-07-04 Sat @ 15:30:41 -0500 — retrofitted to status-heading convention; keyword DOING from existing :STATUS: doing
 
 * Metadata
 | Status   | doing                                                              |
@@ -894,7 +898,7 @@ translation block being retired). =C-l= appears only minibuffer-local in
 - Why: a touched key family broke in GUI and is dead in console; the fix path is
   cross-cutting (18 keys, a translation layer to retire, a console-safety
   architecture) with real trade-offs, so it clears the spec bar.
-- Artifacts: docs/specs/keybinding-console-safety-spec-doing.org; supersedes the
+- Artifacts: docs/specs/keybinding-console-safety-spec.org; supersedes the
   pre-template draft docs/design/keybinding-console-safety.org.
 ** 2026-06-12 Fri @ 18:30:30 -0500 — Craig Jennings — review response
 - What: processed Craig's four review comments. Recorded his first-choice

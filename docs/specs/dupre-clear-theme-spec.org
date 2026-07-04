@@ -1,10 +1,14 @@
-:PROPERTIES:
-:ID:       20df7f50-4759-47ba-9782-8dd25a2e173e
-:STATUS:   not-started
-:END:
 #+TITLE: dupre-clear — a contrast-first AAA sibling theme
 #+AUTHOR: Craig Jennings
 #+DATE: 2026-06-07
+#+TODO: TODO | DONE
+#+TODO: DRAFT READY DOING | IMPLEMENTED SUPERSEDED CANCELLED
+
+* DRAFT dupre-clear — a contrast-first AAA sibling theme
+:PROPERTIES:
+:ID:       20df7f50-4759-47ba-9782-8dd25a2e173e
+:END:
+- 2026-07-04 Sat @ 15:30:41 -0500 — retrofitted to status-heading convention; keyword DRAFT from existing :STATUS: not-started
 
 * Status
 

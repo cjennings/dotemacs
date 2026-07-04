@@ -1,11 +1,14 @@
-:PROPERTIES:
-:ID:       4bfc2011-8ffc-4765-8886-91df12141171
-:STATUS:   not-started
-:END:
 #+TITLE: Messenger Unification — Shared Window Placement and Key Conventions
 #+AUTHOR: Craig Jennings & Claude
 #+DATE: 2026-06-11
-#+STATUS: Draft — decisions 1-9 settled (Craig, 2026-06-11/12); held open for further ideas before Ready
+#+TODO: TODO | DONE
+#+TODO: DRAFT READY DOING | IMPLEMENTED SUPERSEDED CANCELLED
+
+* DRAFT Messenger Unification — Shared Window Placement and Key Conventions
+:PROPERTIES:
+:ID:       4bfc2011-8ffc-4765-8886-91df12141171
+:END:
+- 2026-07-04 Sat @ 15:30:41 -0500 — retrofitted to status-heading convention; keyword DRAFT from existing :STATUS: not-started (held open for more ideas)
 
 * Problem
 

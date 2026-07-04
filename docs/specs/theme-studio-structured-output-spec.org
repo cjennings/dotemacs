@@ -1,11 +1,14 @@
-:PROPERTIES:
-:ID:       eaac7707-ed05-43df-9e51-b17c1d672531
-:STATUS:   not-started
-:END:
 #+TITLE: Theme-Studio Structured Theme Output — Spec
 #+AUTHOR: Craig Jennings
 #+DATE: 2026-06-15
-#+TODO: TODO | DONE SUPERSEDED CANCELLED
+#+TODO: TODO | DONE
+#+TODO: DRAFT READY DOING | IMPLEMENTED SUPERSEDED CANCELLED
+
+* DRAFT Theme-Studio Structured Theme Output — Spec
+:PROPERTIES:
+:ID:       eaac7707-ed05-43df-9e51-b17c1d672531
+:END:
+- 2026-07-04 Sat @ 15:30:41 -0500 — retrofitted to status-heading convention; keyword DRAFT from existing :STATUS: not-started
 
 * Metadata
 | Status   | not-started                                                          |

@@ -1,11 +1,15 @@
-:PROPERTIES:
-:ID:       3abd0270-e87c-42b7-9b3a-ef60300db99d
-:STATUS:   superseded
-:END:
 #+TITLE: Design: ai-vterm — in-Emacs Claude launcher
 #+AUTHOR: Craig Jennings
 #+DATE: 2026-05-07
 #+OPTIONS: toc:nil num:nil
+#+TODO: TODO | DONE
+#+TODO: DRAFT READY DOING | IMPLEMENTED SUPERSEDED CANCELLED
+
+* SUPERSEDED Design: ai-vterm — in-Emacs Claude launcher
+:PROPERTIES:
+:ID:       3abd0270-e87c-42b7-9b3a-ef60300db99d
+:END:
+- 2026-07-04 Sat @ 15:30:41 -0500 — retrofitted to status-heading convention; keyword SUPERSEDED from existing :STATUS: superseded + -superseded filename (Craig's prior determination)
 
 * Status
 

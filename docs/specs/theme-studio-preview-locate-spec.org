@@ -1,11 +1,14 @@
-:PROPERTIES:
-:ID:       fbcf0e20-1328-42b4-aa36-3401509e7816
-:STATUS:   ready-pending-go
-:END:
 #+TITLE: Theme Studio Preview Element Locate — Spec
 #+AUTHOR: Craig Jennings
 #+DATE: 2026-06-15
-#+TODO: TODO | DONE SUPERSEDED CANCELLED
+#+TODO: TODO | DONE
+#+TODO: DRAFT READY DOING | IMPLEMENTED SUPERSEDED CANCELLED
+
+* READY Theme Studio Preview Element Locate — Spec
+:PROPERTIES:
+:ID:       fbcf0e20-1328-42b4-aa36-3401509e7816
+:END:
+- 2026-07-04 Sat @ 15:30:41 -0500 — retrofitted to status-heading convention; keyword READY from existing :STATUS: ready-pending-go
 
 * Metadata
 | Status   | Ready pending Craig's go — four reviews incorporated (Codex, 2026-06-23) |

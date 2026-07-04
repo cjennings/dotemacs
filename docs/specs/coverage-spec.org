@@ -1,10 +1,14 @@
-:PROPERTIES:
-:ID:       7d7f4486-fad7-4f0a-bd9a-775bd4cd8f7e
-:STATUS:   implemented
-:END:
 #+TITLE: Design: Coverage Reporting
 #+AUTHOR: Craig Jennings
 #+DATE: 2026-04-22
+#+TODO: TODO | DONE
+#+TODO: DRAFT READY DOING | IMPLEMENTED SUPERSEDED CANCELLED
+
+* IMPLEMENTED Design: Coverage Reporting
+:PROPERTIES:
+:ID:       7d7f4486-fad7-4f0a-bd9a-775bd4cd8f7e
+:END:
+- 2026-07-04 Sat @ 15:30:41 -0500 — retrofitted to status-heading convention; keyword IMPLEMENTED from existing :STATUS: implemented + -implemented filename (Craig's prior determination)
 
 * Status
 

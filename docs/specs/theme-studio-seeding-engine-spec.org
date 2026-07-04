@@ -1,10 +1,14 @@
-:PROPERTIES:
-:ID:       b70b37f2-37df-4c8e-ac2f-1f20d12e33dd
-:STATUS:   doing
-:END:
 #+TITLE: theme-studio — seeding engine (role table to guide-correct defaults)
 #+AUTHOR: Craig Jennings
 #+DATE: 2026-06-08
+#+TODO: TODO | DONE
+#+TODO: DRAFT READY DOING | IMPLEMENTED SUPERSEDED CANCELLED
+
+* DOING theme-studio — seeding engine (role table to guide-correct defaults)
+:PROPERTIES:
+:ID:       b70b37f2-37df-4c8e-ac2f-1f20d12e33dd
+:END:
+- 2026-07-04 Sat @ 15:30:41 -0500 — retrofitted to status-heading convention; keyword DOING from existing :STATUS: doing
 
 * Status
 
@@ -317,7 +321,7 @@ response resolved; everything else was woven into the body as written.
   budget this engine executes.
 - =scripts/theme-studio/generate.py= — =CATS=, =UI_FACES=/=UIMAP=, =APPS= /
   =seedPkgmap=, =exportObj= (the target shape).
-- =docs/specs/theme-studio-perceptual-color-metrics-spec-implemented.org= — the
+- =docs/specs/theme-studio-perceptual-color-metrics-spec.org= — the
   =colormath.js= core that v1 OKLCH shade generation uses.
 
 * Review and iteration history

@@ -1,14 +1,18 @@
-:PROPERTIES:
-:ID:       647c5101-21c2-47bb-aaa7-72c757f45fb7
-:STATUS:   implemented
-:END:
 #+TITLE: Cache Helper Design Addendum
 #+AUTHOR: Craig Jennings
 #+DATE: 2026-05-10
+#+TODO: TODO | DONE
+#+TODO: DRAFT READY DOING | IMPLEMENTED SUPERSEDED CANCELLED
+
+* IMPLEMENTED Cache Helper Design Addendum
+:PROPERTIES:
+:ID:       647c5101-21c2-47bb-aaa7-72c757f45fb7
+:END:
+- 2026-07-04 Sat @ 15:30:41 -0500 — retrofitted to status-heading convention; keyword IMPLEMENTED from existing :STATUS: implemented + -implemented filename (Craig's prior determination)
 
 * Status
 
-Phase 5 design addendum to [[id:fc2e3926-b4a1-4b45-92eb-20841e13f655][utility-consolidation-spec-doing.org]]. Specifies the cache API to extract before any code moves.
+Phase 5 design addendum to [[id:fc2e3926-b4a1-4b45-92eb-20841e13f655][utility-consolidation-spec.org]]. Specifies the cache API to extract before any code moves.
 
 * Problem
 

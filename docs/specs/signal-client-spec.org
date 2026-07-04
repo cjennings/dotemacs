@@ -1,10 +1,13 @@
-:PROPERTIES:
-:ID:       0cabd6ee-c458-47b5-a8af-3ee054b25821
-:STATUS:   doing
-:END:
 #+TITLE: Design: Signal client in Emacs (forked signel)
 #+DATE: 2026-05-26
-#+STATUS: Draft
+#+TODO: TODO | DONE
+#+TODO: DRAFT READY DOING | IMPLEMENTED SUPERSEDED CANCELLED
+
+* DOING Design: Signal client in Emacs (forked signel)
+:PROPERTIES:
+:ID:       0cabd6ee-c458-47b5-a8af-3ee054b25821
+:END:
+- 2026-07-04 Sat @ 15:30:41 -0500 — retrofitted to status-heading convention; keyword DOING from existing :STATUS: doing
 
 * Problem
 I want a Signal chat client inside Emacs: link it as a secondary device to my phone, pick a contact from my contact list, hold a text 1:1 conversation (read and send), and get a desktop notification on incoming messages, with an optional sound. Signal has no official API, so this is built on =signal-cli=, the mature headless CLI, driven over JSON-RPC.

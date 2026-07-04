@@ -1,7 +1,14 @@
 #+TITLE: Theme-driven nerd-icons colors + theme-studio filetype legend — Spec
 #+AUTHOR: Craig Jennings & Claude
 #+DATE: 2026-06-23
-#+TODO: TODO | DONE SUPERSEDED CANCELLED
+#+TODO: TODO | DONE
+#+TODO: DRAFT READY DOING | IMPLEMENTED SUPERSEDED CANCELLED
+
+* READY Theme-driven nerd-icons colors + theme-studio filetype legend — Spec
+:PROPERTIES:
+:ID:       6df4e8a3-1fca-452a-9416-3fa0647b8dff
+:END:
+- 2026-07-04 Sat @ 15:30:41 -0500 — retrofitted to status-heading convention; keyword READY from Metadata Status: Ready pending Craig's go
 
 * Metadata
 | Status   | Ready pending Craig's go — Codex review rounds 1-3 incorporated |

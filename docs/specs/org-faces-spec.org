@@ -1,11 +1,14 @@
-:PROPERTIES:
-:ID:       35578114-8c29-43af-97a2-fdfea01a802e
-:STATUS:   implemented
-:END:
 #+TITLE: Org Header-Row Faces — Spec
 #+AUTHOR: Craig Jennings
 #+DATE: 2026-06-15
-#+TODO: TODO | DONE SUPERSEDED CANCELLED
+#+TODO: TODO | DONE
+#+TODO: DRAFT READY DOING | IMPLEMENTED SUPERSEDED CANCELLED
+
+* IMPLEMENTED Org Header-Row Faces — Spec
+:PROPERTIES:
+:ID:       35578114-8c29-43af-97a2-fdfea01a802e
+:END:
+- 2026-07-04 Sat @ 15:30:41 -0500 — retrofitted to status-heading convention; keyword IMPLEMENTED from existing :STATUS: implemented + -implemented filename (Craig's prior determination)
 
 * Metadata
 | Status   | implemented                                                          |

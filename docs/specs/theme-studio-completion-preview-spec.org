@@ -1,7 +1,14 @@
 #+TITLE: Theme Studio Minibuffer-Completion Preview — Spec
 #+AUTHOR: Craig Jennings
 #+DATE: 2026-06-23
-#+TODO: TODO | DONE SUPERSEDED CANCELLED
+#+TODO: TODO | DONE
+#+TODO: DRAFT READY DOING | IMPLEMENTED SUPERSEDED CANCELLED
+
+* DRAFT Theme Studio Minibuffer-Completion Preview — Spec
+:PROPERTIES:
+:ID:       2462f067-4c8d-4c33-a5be-54c0abc2eb1d
+:END:
+- 2026-07-04 Sat @ 15:30:41 -0500 — retrofitted to status-heading convention; keyword DRAFT from Metadata Status: Not ready, review found blockers
 
 * Metadata
 | Status   | Not ready — first Codex review found implementation-readiness blockers (2026-06-23) |
@@ -195,7 +202,7 @@ Add the caption naming minibuffer-prompt + highlight as living in UI Faces. When
 - Manual: open theme-studio in Chrome on the owner's inventory and confirm the Vertico section + baseline render, orderless/marginalia toggle, and vertico-current shows no background.
 
 * References / Appendix
-- Reuse: [[file:theme-studio-preview-locate-spec.org][theme-studio-preview-locate-spec.org]] (hover/click locate), [[file:theme-studio-package-faces-spec-doing.org][theme-studio-package-faces-spec-doing.org]].
+- Reuse: [[file:theme-studio-preview-locate-spec.org][theme-studio-preview-locate-spec.org]] (hover/click locate), [[file:theme-studio-package-faces-spec.org][theme-studio-package-faces-spec.org]].
 - Spike: /tmp completion-face-preview.el (verified render; not committed — informs this spec, not grown into it).
 - Live face values captured 2026-06-23 (WIP theme): minibuffer-prompt #899bb1/#100f0f bold; orderless-match-face-0..3 #cbd0d6 / #c99990 / #c5d4ae / #bea9dc bold italic; vertico-current inherits highlight (#eddba7 bold, no background).
 

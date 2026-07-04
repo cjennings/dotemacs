@@ -1,11 +1,15 @@
-:PROPERTIES:
-:ID:       03742426-35ce-41c5-aed7-d4e248e91833
-:STATUS:   not-started
-:END:
 #+TITLE: Design: AI Knowledge Base (ai-kb)
 #+AUTHOR: Craig Jennings
 #+DATE: 2026-05-24
 #+OPTIONS: toc:nil num:nil
+#+TODO: TODO | DONE
+#+TODO: DRAFT READY DOING | IMPLEMENTED SUPERSEDED CANCELLED
+
+* DRAFT Design: AI Knowledge Base (ai-kb)
+:PROPERTIES:
+:ID:       03742426-35ce-41c5-aed7-d4e248e91833
+:END:
+- 2026-07-04 Sat @ 15:30:41 -0500 — retrofitted to status-heading convention; keyword DRAFT from existing :STATUS: not-started
 
 * Status
 

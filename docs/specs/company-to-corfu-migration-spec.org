@@ -1,11 +1,15 @@
-:PROPERTIES:
-:ID:       68733ba2-37a7-4a7b-bfaa-b845d82ff1e7
-:STATUS:   not-started
-:END:
 #+TITLE: Design: Migrate from Company to Corfu (with prescient integration)
 #+AUTHOR: Craig Jennings
 #+DATE: 2026-05-15
 #+OPTIONS: toc:nil num:nil
+#+TODO: TODO | DONE
+#+TODO: DRAFT READY DOING | IMPLEMENTED SUPERSEDED CANCELLED
+
+* DRAFT Design: Migrate from Company to Corfu (with prescient integration)
+:PROPERTIES:
+:ID:       68733ba2-37a7-4a7b-bfaa-b845d82ff1e7
+:END:
+- 2026-07-04 Sat @ 15:30:41 -0500 — retrofitted to status-heading convention; keyword DRAFT from existing :STATUS: not-started
 
 * Status
 

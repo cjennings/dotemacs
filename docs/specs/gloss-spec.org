@@ -1,10 +1,13 @@
-:PROPERTIES:
-:ID:       295f9969-ccef-4df9-945b-9e08d8069daf
-:STATUS:   doing
-:END:
 #+TITLE: Design — gloss (Glossary Lookup with Online-Sourced Selection)
 #+DATE: 2026-04-28
-#+STATUS: Draft
+#+TODO: TODO | DONE
+#+TODO: DRAFT READY DOING | IMPLEMENTED SUPERSEDED CANCELLED
+
+* DOING Design — gloss (Glossary Lookup with Online-Sourced Selection)
+:PROPERTIES:
+:ID:       295f9969-ccef-4df9-945b-9e08d8069daf
+:END:
+- 2026-07-04 Sat @ 15:30:41 -0500 — retrofitted to status-heading convention; keyword DOING from existing :STATUS: doing
 
 * Problem
 

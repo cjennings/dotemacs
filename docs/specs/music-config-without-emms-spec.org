@@ -1,10 +1,14 @@
-:PROPERTIES:
-:ID:       423bc355-18d3-4e39-9e7a-f768b865d95b
-:STATUS:   not-started
-:END:
 #+TITLE: Design: music-config Without EMMS
 #+AUTHOR: Craig Jennings
 #+DATE: 2026-05-15
+#+TODO: TODO | DONE
+#+TODO: DRAFT READY DOING | IMPLEMENTED SUPERSEDED CANCELLED
+
+* DRAFT Design: music-config Without EMMS
+:PROPERTIES:
+:ID:       423bc355-18d3-4e39-9e7a-f768b865d95b
+:END:
+- 2026-07-04 Sat @ 15:30:41 -0500 — retrofitted to status-heading convention; keyword DRAFT from existing :STATUS: not-started
 
 * Status
 
