@@ -54,7 +54,8 @@ agent you run (aider, an open-source LLM TUI, etc.)."
   :group 'ai-term)
 
 (defcustom cj/ai-term-project-roots
-  (list (expand-file-name "~/.emacs.d"))
+  (list (expand-file-name "~/.emacs.d")
+        (expand-file-name "~/.dotfiles"))
   "Directories that are themselves AI-agent projects.
 Each entry is included as a candidate when it exists and contains
 .ai/protocols.org.  Use this for single-project roots like ~/.emacs.d."
