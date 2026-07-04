@@ -40,6 +40,9 @@ APP_CORE_J
 // Pure color/UI-boundary helpers (normHex, ratingColor, textOn), inlined from
 // app-util.js. textOn uses rl from the colormath core above.
 APP_UTIL_J
+// The seeding engine (seed model + pure seed()), inlined from seed-core.js. Uses
+// oklchOf/oklch2hex from the colormath core above; the #seedtest gate runs seed().
+SEED_CORE_J
 // Pure palette-generator planner and browser-side generator panel.
 PALETTE_GENERATOR_CORE_J
 PALETTE_GENERATOR_UI_J

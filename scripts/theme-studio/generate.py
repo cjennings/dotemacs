@@ -146,6 +146,11 @@ APP_CORE_BODY=strip_exports(read_text('app-core.js'))
 # test-app-util.mjs. Its `import rl` line is stripped on inline (rl is already in
 # the page from the colormath core).
 APP_UTIL_BODY=strip_exports(read_text('app-util.js'))
+# The seeding engine (seed-core.js): the seed model as data and the pure seed().
+# Inlined below the colormath core (its only dependency) so the browser #seedtest
+# runs the same code the Node tests import. Its `import` from colormath is stripped
+# on inline, where oklchOf/oklch2hex are already present.
+SEED_CORE_BODY=strip_exports(read_text('seed-core.js'))
 # Pure palette-generator planner and its browser UI panel, split from the shared
 # app core so generation behavior and panel wiring can evolve locally.
 PALETTE_GENERATOR_CORE_BODY=strip_exports(read_text('palette-generator-core.js'))
@@ -422,6 +427,7 @@ def _build():
          .replace("CONTROLS_J",CONTROLS_BODY)
          .replace("PREVIEWS_J",PREVIEWS_BODY)
          .replace("APP_UTIL_J",APP_UTIL_BODY)
+         .replace("SEED_CORE_J",SEED_CORE_BODY)
          .replace("PALETTE_GENERATOR_CORE_J",PALETTE_GENERATOR_CORE_BODY)
          .replace("PALETTE_GENERATOR_UI_J",PALETTE_GENERATOR_UI_BODY)
          .replace("PALETTE_ACTIONS_J",PALETTE_ACTIONS_BODY)

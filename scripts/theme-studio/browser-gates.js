@@ -77,6 +77,37 @@ function pkgSelftest(){
   const d=document.createElement('div');d.id='selftest';d.textContent='SELFTEST '+verdict+' roundtrip='+roundtrip+' oldjson='+oldjson+' inherit='+inherited+' height='+height+' cleared='+cleared+' unknown='+unknown+' cycle='+cyc;document.body.appendChild(d);
 }
 if(location.hash==='#selftest')pkgSelftest();
+// Seeding-engine gate (open with #seedtest): the pure seed() projects the guide's
+// role table onto the three owned tiers. Assert representative faces land on the
+// right swatch/weight/channel, and that a non-org bespoke package (magit) keeps
+// its curated APPS seed (seed() owns org among packages, nothing else).
+if(location.hash==='#seedtest')gate('seedtest',A=>{
+ const m=buildModel();
+ const s=seed(m,{cats:CATS.map(c=>c[0])});
+ // syntax tier
+ A(s.syntax.bi.fg===m.swatch['blue-grey'],'bi=blue-grey');
+ A(s.syntax.fnd.fg===m.swatch.gold&&s.syntax.fnd.weight==='bold','fnd=gold+bold');
+ A(s.syntax.fnc.fg===m.swatch['gold-quiet']&&s.syntax.fnc.weight!=='bold','fnc=gold-quiet');
+ A(s.syntax.var.fg===m.swatch.fg,'var=base');
+ A(s.syntax.op.fg===m.swatch['muted-fg']&&s.syntax.punc.fg===m.swatch['muted-fg'],'op/punc=structure');
+ A(s.syntax.kw.fg===m.swatch.blue&&s.syntax.kw.weight==='bold','kw=control');
+ A(s.syntax.doc.slant==='italic','doc=italic');
+ A(s.syntax.bg.fg===m.swatch.ground,'bg=ground');
+ // UI tier
+ A(!!s.ui.region.bg&&!s.ui.region.fg,'region bg-only');
+ A(!!s.ui.link.underline&&s.ui.link.fg===m.swatch.blue,'link underlined');
+ A(s.ui.error.fg===m.swatch.red&&s.ui.warning.fg===m.swatch.amber&&s.ui.success.fg===m.swatch.green,'signals on convention hues');
+ A(s.ui['mode-line'].fg!==s.ui['mode-line-inactive'].fg,'active!=idle chrome');
+ // org tier
+ const org=s.packages['org-mode'];
+ A(Object.keys(s.packages).length===1,'packages=org-mode only');
+ A(oklchOf(org['org-level-1'].fg).L>oklchOf(org['org-level-2'].fg).L&&org['org-level-1'].weight==='bold','org-level-1 strongest+bold');
+ A(org['org-code'].fg===m.swatch.terracotta&&org['org-code'].inherit==='fixed-pitch','org-code literal lane');
+ A(!!org['org-done'].strike,'org-done struck');
+ // non-org bespoke package keeps its curated seed (untouched by seed())
+ const mag=seedPkgmap()['magit'];
+ A(!!mag&&!!mag['magit-section-heading']&&!!mag['magit-section-heading'].fg,'magit keeps curated seed');
+});
 // Lock-mechanism gate (open with #locktest): two behaviors the refactor must
 // preserve, across all three tiers. (1) Locking a row disables its controls via
 // the shared mkLockCell. (2) reset/erase batch actions update editable rows but
