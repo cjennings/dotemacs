@@ -457,7 +457,8 @@
    "inverse": false,
    "extend": false,
    "inherit": null,
-   "height": null
+   "height": null,
+   "heightMode": null
   },
   "p": {
    "fg": "#bfc4d0",
@@ -473,7 +474,8 @@
    "inverse": false,
    "extend": false,
    "inherit": null,
-   "height": null
+   "height": null,
+   "heightMode": null
   },
   "kw": {
    "fg": "#67809c",
@@ -489,7 +491,8 @@
    "inverse": false,
    "extend": false,
    "inherit": null,
-   "height": null
+   "height": null,
+   "heightMode": null
   },
   "bi": {
    "fg": "#a9b2bb",
@@ -505,7 +508,8 @@
    "inverse": false,
    "extend": false,
    "inherit": null,
-   "height": null
+   "height": null,
+   "heightMode": null
   },
   "pp": {
    "fg": "#dce0e3",
@@ -521,7 +525,8 @@
    "inverse": false,
    "extend": false,
    "inherit": null,
-   "height": null
+   "height": null,
+   "heightMode": null
   },
   "fnd": {
    "fg": "#cbd0d6",
@@ -537,7 +542,8 @@
    "inverse": false,
    "extend": false,
    "inherit": null,
-   "height": null
+   "height": null,
+   "heightMode": null
   },
   "fnc": {
    "fg": "#bac1c8",
@@ -553,7 +559,8 @@
    "inverse": false,
    "extend": false,
    "inherit": null,
-   "height": null
+   "height": null,
+   "heightMode": null
   },
   "dec": {
    "fg": "#a9b2bb",
@@ -569,7 +576,8 @@
    "inverse": false,
    "extend": false,
    "inherit": null,
-   "height": null
+   "height": null,
+   "heightMode": null
   },
   "ty": {
    "fg": "#ab8d2e",
@@ -585,7 +593,8 @@
    "inverse": false,
    "extend": false,
    "inherit": null,
-   "height": null
+   "height": null,
+   "heightMode": null
   },
   "prop": {
    "fg": "#a9b2bb",
@@ -601,7 +610,8 @@
    "inverse": false,
    "extend": false,
    "inherit": null,
-   "height": null
+   "height": null,
+   "heightMode": null
   },
   "con": {
    "fg": "#dab53d",
@@ -617,7 +627,8 @@
    "inverse": false,
    "extend": false,
    "inherit": null,
-   "height": null
+   "height": null,
+   "heightMode": null
   },
   "num": {
    "fg": "#cb6b4d",
@@ -633,7 +644,8 @@
    "inverse": false,
    "extend": false,
    "inherit": null,
-   "height": null
+   "height": null,
+   "heightMode": null
   },
   "str": {
    "fg": "#74932f",
@@ -649,7 +661,8 @@
    "inverse": false,
    "extend": false,
    "inherit": null,
-   "height": null
+   "height": null,
+   "heightMode": null
   },
   "esc": {
    "fg": "#bfc4d0",
@@ -665,7 +678,8 @@
    "inverse": false,
    "extend": false,
    "inherit": null,
-   "height": null
+   "height": null,
+   "heightMode": null
   },
   "re": {
    "fg": "#74932f",
@@ -681,7 +695,8 @@
    "inverse": false,
    "extend": false,
    "inherit": null,
-   "height": null
+   "height": null,
+   "heightMode": null
   },
   "rxgb": {
    "fg": "#000000",
@@ -697,7 +712,8 @@
    "inverse": false,
    "extend": false,
    "inherit": null,
-   "height": null
+   "height": null,
+   "heightMode": null
   },
   "rxgc": {
    "fg": "#000000",
@@ -713,7 +729,8 @@
    "inverse": false,
    "extend": false,
    "inherit": null,
-   "height": null
+   "height": null,
+   "heightMode": null
   },
   "doc": {
    "fg": "#bfc4d0",
@@ -729,7 +746,8 @@
    "inverse": false,
    "extend": false,
    "inherit": null,
-   "height": null
+   "height": null,
+   "heightMode": null
   },
   "dmark": {
    "fg": "#d3d3d3",
@@ -745,7 +763,8 @@
    "inverse": false,
    "extend": false,
    "inherit": null,
-   "height": null
+   "height": null,
+   "heightMode": null
   },
   "cm": {
    "fg": "#a9b2bb",
@@ -761,7 +780,8 @@
    "inverse": false,
    "extend": false,
    "inherit": null,
-   "height": null
+   "height": null,
+   "heightMode": null
   },
   "cmd": {
    "fg": "#a9b2bb",
@@ -777,7 +797,8 @@
    "inverse": false,
    "extend": false,
    "inherit": null,
-   "height": null
+   "height": null,
+   "heightMode": null
   },
   "var": {
    "fg": "#dab53d",
@@ -793,7 +814,8 @@
    "inverse": false,
    "extend": false,
    "inherit": null,
-   "height": null
+   "height": null,
+   "heightMode": null
   },
   "op": {
    "fg": "#dce0e3",
@@ -809,7 +831,8 @@
    "inverse": false,
    "extend": false,
    "inherit": null,
-   "height": null
+   "height": null,
+   "heightMode": null
   },
   "neg": {
    "fg": "#000000",
@@ -825,7 +848,8 @@
    "inverse": false,
    "extend": false,
    "inherit": null,
-   "height": null
+   "height": null,
+   "heightMode": null
   },
   "punc": {
    "fg": "#dce0e3",
@@ -841,7 +865,8 @@
    "inverse": false,
    "extend": false,
    "inherit": null,
-   "height": null
+   "height": null,
+   "heightMode": null
   },
   "warn": {
    "fg": "#cb6b4d",
@@ -857,7 +882,8 @@
    "inverse": false,
    "extend": false,
    "inherit": null,
-   "height": null
+   "height": null,
+   "heightMode": null
   }
  },
  "ui": {
@@ -875,7 +901,8 @@
    "inverse": false,
    "extend": false,
    "inherit": null,
-   "height": null
+   "height": null,
+   "heightMode": null
   },
   "region": {
    "fg": null,
@@ -891,7 +918,8 @@
    "inverse": false,
    "extend": false,
    "inherit": null,
-   "height": null
+   "height": null,
+   "heightMode": null
   },
   "hl-line": {
    "fg": null,
@@ -907,7 +935,8 @@
    "inverse": false,
    "extend": false,
    "inherit": "highlight",
-   "height": null
+   "height": null,
+   "heightMode": null
   },
   "highlight": {
    "fg": "#dab53d",
@@ -923,11 +952,12 @@
    "inverse": false,
    "extend": false,
    "inherit": null,
-   "height": null
+   "height": null,
+   "heightMode": null
   },
   "mode-line": {
    "fg": "#cbd0d6",
-   "bg": "#424f5e",
+   "bg": "#303842",
    "distant-fg": null,
    "family": null,
    "weight": null,
@@ -938,7 +968,7 @@
    "box": {
     "style": "line",
     "width": 1,
-    "color": "#a9b2bb"
+    "color": "#7c838a"
    },
    "inverse": false,
    "extend": false,
@@ -948,7 +978,7 @@
   },
   "mode-line-highlight": {
    "fg": "#e6ce88",
-   "bg": "#424f5e",
+   "bg": "#303842",
    "distant-fg": null,
    "family": null,
    "weight": null,
@@ -960,12 +990,13 @@
    "inverse": false,
    "extend": false,
    "inherit": null,
-   "height": null
+   "height": null,
+   "heightMode": null
   },
   "mode-line-inactive": {
    "fg": "#100f0f",
-   "bg": null,
-   "distant-fg": null,
+   "bg": "#100f0f",
+   "distant-fg": "#100f0f",
    "family": null,
    "weight": null,
    "slant": null,
@@ -975,12 +1006,64 @@
    "box": {
     "style": "line",
     "width": 1,
-    "color": "#54677d"
+    "color": "#7c838a"
    },
    "inverse": false,
    "extend": false,
    "inherit": "mode-line",
-   "height": null
+   "height": 2,
+   "heightMode": "abs"
+  },
+  "header-line": {
+   "fg": null,
+   "bg": null,
+   "distant-fg": null,
+   "family": null,
+   "weight": null,
+   "slant": null,
+   "underline": null,
+   "strike": null,
+   "overline": null,
+   "box": null,
+   "inverse": false,
+   "extend": false,
+   "inherit": null,
+   "height": null,
+   "heightMode": null
+  },
+  "tab-bar": {
+   "fg": null,
+   "bg": null,
+   "distant-fg": null,
+   "family": null,
+   "weight": null,
+   "slant": null,
+   "underline": null,
+   "strike": null,
+   "overline": null,
+   "box": null,
+   "inverse": false,
+   "extend": false,
+   "inherit": null,
+   "height": 130,
+   "heightMode": "abs"
+  },
+  "tab-line": {
+   "fg": null,
+   "bg": null,
+   "distant-fg": null,
+   "family": null,
+   "weight": null,
+   "slant": null,
+   "underline": null,
+   "strike": null,
+   "overline": null,
+   "box": null,
+   "inverse": false,
+   "extend": false,
+   "inherit": null,
+   "height": 130,
+   "heightMode": "abs"
   },
   "fringe": {
    "fg": "#f3e7c5",
@@ -996,7 +1079,8 @@
    "inverse": false,
    "extend": false,
    "inherit": null,
-   "height": null
+   "height": null,
+   "heightMode": null
   },
   "line-number": {
    "fg": "#54677d",
@@ -1046,7 +1130,8 @@
    "inverse": false,
    "extend": false,
    "inherit": null,
-   "height": null
+   "height": null,
+   "heightMode": null
   },
   "isearch": {
    "fg": null,
@@ -1062,7 +1147,8 @@
    "inverse": false,
    "extend": false,
    "inherit": null,
-   "height": null
+   "height": null,
+   "heightMode": null
   },
   "lazy-highlight": {
    "fg": null,
@@ -1078,7 +1164,8 @@
    "inverse": false,
    "extend": false,
    "inherit": null,
-   "height": null
+   "height": null,
+   "heightMode": null
   },
   "isearch-fail": {
    "fg": "#cb6b4d",
@@ -1094,7 +1181,8 @@
    "inverse": false,
    "extend": false,
    "inherit": null,
-   "height": null
+   "height": null,
+   "heightMode": null
   },
   "show-paren-match": {
    "fg": "#100f0f",
@@ -1110,7 +1198,8 @@
    "inverse": false,
    "extend": false,
    "inherit": null,
-   "height": null
+   "height": null,
+   "heightMode": null
   },
   "show-paren-mismatch": {
    "fg": "#edeff1",
@@ -1126,7 +1215,8 @@
    "inverse": false,
    "extend": false,
    "inherit": null,
-   "height": null
+   "height": null,
+   "heightMode": null
   },
   "link": {
    "fg": "#5178db",
@@ -1145,7 +1235,8 @@
    "inverse": false,
    "extend": false,
    "inherit": null,
-   "height": null
+   "height": null,
+   "heightMode": null
   },
   "error": {
    "fg": "#cb6b4d",
@@ -1161,7 +1252,8 @@
    "inverse": false,
    "extend": false,
    "inherit": null,
-   "height": null
+   "height": null,
+   "heightMode": null
   },
   "warning": {
    "fg": "#ab8d2e",
@@ -1177,7 +1269,8 @@
    "inverse": false,
    "extend": false,
    "inherit": null,
-   "height": null
+   "height": null,
+   "heightMode": null
   },
   "success": {
    "fg": "#74932f",
@@ -1193,7 +1286,8 @@
    "inverse": false,
    "extend": false,
    "inherit": null,
-   "height": null
+   "height": null,
+   "heightMode": null
   },
   "vertical-border": {
    "fg": "#4a4b4f",
@@ -1209,41 +1303,8 @@
    "inverse": false,
    "extend": false,
    "inherit": null,
-   "height": null
-  },
-  "tab-bar": {
-   "fg": null,
-   "bg": null,
-   "distant-fg": null,
-   "family": null,
-   "weight": null,
-   "slant": null,
-   "underline": null,
-   "strike": null,
-   "overline": null,
-   "box": null,
-   "inverse": false,
-   "extend": false,
-   "inherit": null,
-   "height": 130,
-   "heightMode": "abs"
-  },
-  "tab-line": {
-   "fg": null,
-   "bg": null,
-   "distant-fg": null,
-   "family": null,
-   "weight": null,
-   "slant": null,
-   "underline": null,
-   "strike": null,
-   "overline": null,
-   "box": null,
-   "inverse": false,
-   "extend": false,
-   "inherit": null,
-   "height": 130,
-   "heightMode": "abs"
+   "height": null,
+   "heightMode": null
   }
  },
  "locks": [
@@ -1617,9 +1678,6 @@
   "ui:cursor",
   "ui:hl-line",
   "ui:highlight",
-  "ui:mode-line",
-  "ui:mode-line-highlight",
-  "ui:mode-line-inactive",
   "ui:fringe",
   "ui:line-number",
   "ui:line-number-current-line",
@@ -1761,16 +1819,16 @@
     "weight": "bold",
     "inherit": null,
     "height": 1.2,
-    "source": "user",
-    "heightMode": "rel"
+    "heightMode": "rel",
+    "source": "user"
    },
    "org-document-info": {
     "fg": "#ab8d2e",
     "bg": "#100f0f",
     "inherit": null,
     "height": 1.15,
-    "source": "user",
-    "heightMode": "rel"
+    "heightMode": "rel",
+    "source": "user"
    },
    "org-document-info-keyword": {
     "fg": "#7c838a",
@@ -3887,8 +3945,8 @@
     "slant": "italic",
     "inherit": "default",
     "height": 1.25,
-    "source": "user",
-    "heightMode": "rel"
+    "heightMode": "rel",
+    "source": "user"
    },
    "dashboard-text-banner": {
     "fg": "#dab53d",
@@ -4707,8 +4765,8 @@
     "bg": null,
     "inherit": "cj/nov-reading-sepia",
     "height": 1.2,
-    "source": "user",
-    "heightMode": "rel"
+    "heightMode": "rel",
+    "source": "user"
    },
    "cj/nov-reading-sepia-link": {
     "fg": "#5178db",
@@ -6076,8 +6134,8 @@
     "weight": "bold",
     "inherit": null,
     "height": 1.4,
-    "source": "default",
-    "heightMode": "rel"
+    "heightMode": "rel",
+    "source": "default"
    },
    "shr-h2": {
     "fg": "#bfc4d0",
@@ -6085,8 +6143,8 @@
     "weight": "bold",
     "inherit": null,
     "height": 1.2,
-    "source": "user",
-    "heightMode": "rel"
+    "heightMode": "rel",
+    "source": "user"
    },
    "shr-h3": {
     "fg": "#a6aab4",
@@ -7069,8 +7127,8 @@
     "weight": "bold",
     "inherit": null,
     "height": 1.1,
-    "source": "default",
-    "heightMode": "rel"
+    "heightMode": "rel",
+    "source": "default"
    }
   },
   "emms": {
