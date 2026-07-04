@@ -932,5 +932,20 @@ class BespokePreviewFaceCoverage(unittest.TestCase):
         self.assertEqual(missing, [])
 
 
+class SyntaxCategoriesPersist(unittest.TestCase):
+    """Every editable syntax category (CATS) must have a persistable slot.
+
+    build_syntax keys SYNTAX off COLS (plus the specially-added bg), and both
+    export (dumps SYNTAX) and import (iterates CATS reading d.syntax[k]) rely on
+    that slot existing. A category in CATS but absent from COLS renders as an
+    editable row whose value never saves and never re-imports -- the drift that
+    dropped rxgb/rxgc/dmark/neg/warn from every saved theme."""
+
+    def test_every_cats_category_has_a_cols_slot(self):
+        cats = {c[0] for c in generate.CATS}
+        slots = set(generate.COLS) | {"bg"}
+        self.assertEqual(cats - slots, set())
+
+
 if __name__ == "__main__":
     unittest.main()

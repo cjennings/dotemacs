@@ -4,9 +4,11 @@ COLS={
  'fnd':("#a9b2bb",True),'fnc':("#a9b2bb",False),'dec':("#e8bd30",False),
  'ty':("#9b5fd0",False),'prop':("#838d97",False),
  'con':("#cb6b4d",False),'num':("#cb6b4d",False),'esc':("#cb6b4d",False),
- 'str':("#2ba178",False),'re':("#5d9b86",False),'doc':("#5d9b86",False),
+ 'str':("#2ba178",False),'re':("#5d9b86",False),'rxgb':("#5d9b86",True),'rxgc':("#5d9b86",False),
+ 'doc':("#5d9b86",False),'dmark':("#5d9b86",False),
  'cm':("#be9e74",False),'cmd':("#a9b2bb",False),
- 'var':("#e8bd30",False),'op':("#a9b2bb",False),'punc':("#a9b2bb",False),'p':("#ffffff",False),
+ 'var':("#e8bd30",False),'op':("#a9b2bb",False),'neg':("#cb6b4d",False),
+ 'punc':("#a9b2bb",False),'p':("#ffffff",False),'warn':("#cb6b4d",True),
 }
 NAMES={"#67809c":"blue","#e8bd30":"gold","#9b5fd0":"regal","#2ba178":"emerald","#cb6b4d":"terracotta","#be9e74":"tan","#5d9b86":"sage","#cdced1":"white","#a9b2bb":"silver","#838d97":"steel","#5e6770":"pewter","#2f343a":"gunmetal","#264364":"navy"}
 def esc(t): return t.replace("&","&amp;").replace("<","&lt;").replace(">","&gt;")
