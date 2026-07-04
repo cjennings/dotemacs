@@ -60,9 +60,7 @@ Idempotent: re-running while the server is already up is a no-op."
 ;; the filter to apply to markdown before impatient-mode pushes it to the server
 (defun cj/markdown-preview ()
   "Open the current buffer as a live HTML preview at http://localhost:8080/imp.
-Starts the simple-httpd listener itself when it isn't already running
-\(per the 2026-07-01 decision; the earlier separate-start design
-signaled a `user-error' instead)."
+Starts the simple-httpd listener automatically when it isn't already running."
   (interactive)
   (cj/--markdown-preview-ensure-server)
   (impatient-mode 1)
