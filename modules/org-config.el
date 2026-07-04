@@ -263,6 +263,23 @@ whole row line."
 
 ;; ----------------------------- Org TODO Settings ---------------------------
 
+(defun cj/org--noop-state-log-p (purpose state prev-state)
+  "Return non-nil when a state-change log carries no information.
+PURPOSE is the `org-add-log-setup' purpose symbol; STATE and PREV-STATE
+are the new and previous TODO states.  A \\='state transition whose new
+and previous states are identical (and non-nil) is a no-op worth
+suppressing."
+  (and (eq purpose 'state)
+       state prev-state
+       (equal state prev-state)))
+
+(defun cj/org--suppress-noop-state-log (orig-fn &optional purpose state prev-state how extra)
+  "Around-advice for `org-add-log-setup' that drops no-op state logs.
+Call ORIG-FN with PURPOSE STATE PREV-STATE HOW EXTRA unless the entry is
+a no-op identical-state transition (see `cj/org--noop-state-log-p')."
+  (unless (cj/org--noop-state-log-p purpose state prev-state)
+    (funcall orig-fn purpose state prev-state how extra)))
+
 (defun cj/org-todo-settings ()
   "All org-todo related settings are grouped and set in this function."
 
@@ -283,8 +300,15 @@ whole row line."
   (setq org-enforce-todo-checkbox-dependencies t)
   (setq org-deadline-warning-days 7)    ;; warn me w/in a week of deadlines
   (setq org-treat-insert-todo-heading-as-state-change nil) ;; log task creation
-  (setq org-log-into-drawer nil) ;; don't log into drawer
+  ;; state changes log into :LOGBOOK: drawers, never inline: an inline log
+  ;; line can wedge between a heading and its planning line and break org's
+  ;; planning-line parser (dropping the entry from agenda views)
+  (setq org-log-into-drawer t)
   (setq org-log-done 'time) ;; record a CLOSED timestamp on TODO->DONE
+
+  ;; drop no-op "State X from X" transitions (identical from/to) that carry
+  ;; no information; the advice dedups, so re-running this is safe
+  (advice-add 'org-add-log-setup :around #'cj/org--suppress-noop-state-log)
 
   ;; inherit parents properties (sadly not schedules or deadlines)
   (setq org-use-property-inheritance t))
