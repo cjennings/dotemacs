@@ -10,7 +10,7 @@ primitives (native-comp robustness) :test:refactor:solo:=) so the scope and
 approach can be settled before any code moves. Execution is deferred; this
 document is the discussion vehicle.
 
-Companion reference: [[file:native-comp-subr-mocking.org][native-comp-subr-mocking.org]] holds the full mechanism, the
+Companion reference: [[file:../native-comp-subr-mocking.org][native-comp-subr-mocking.org]] holds the full mechanism, the
 upstream research, and the 2026-06-21 decision. This spec does not restate the
 mechanism; it plans the remaining work that decision deferred.
 
