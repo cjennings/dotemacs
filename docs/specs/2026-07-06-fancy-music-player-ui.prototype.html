@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Music player UI — three directions</title>
+<style>
+  :root {
+    --page-bg: #f3f0ea; --page-fg: #29261f; --page-dim: #6b6459; --card-line: #ded8cc; --accent: #9a6b2f;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --page-bg: #131210; --page-fg: #d6cfc0; --page-dim: #8a8272; --card-line: #2b271f; --accent: #d8a24f; }
+  }
+  :root[data-theme="light"] { --page-bg: #f3f0ea; --page-fg: #29261f; --page-dim: #6b6459; --card-line: #ded8cc; --accent: #9a6b2f; }
+  :root[data-theme="dark"] { --page-bg: #131210; --page-fg: #d6cfc0; --page-dim: #8a8272; --card-line: #2b271f; --accent: #d8a24f; }
+
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--page-bg); color: var(--page-fg);
+    font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif; line-height: 1.55;
+    padding: 3rem 1.25rem 5rem; }
+  .wrap { max-width: 64rem; margin: 0 auto; }
+  .eyebrow { text-transform: uppercase; letter-spacing: .14em; font-size: .72rem; color: var(--accent); font-weight: 600; margin: 0 0 .5rem; }
+  h1 { font-size: 1.85rem; margin: 0 0 .6rem; text-wrap: balance; font-weight: 650; }
+  header p { margin: .3rem 0; max-width: 64ch; color: var(--page-dim); }
+  header p strong { color: var(--page-fg); font-weight: 600; }
+
+  .dir { margin: 2.6rem 0 0; }
+  .dir > .head { display: flex; align-items: baseline; gap: .8rem; flex-wrap: wrap; margin-bottom: .7rem; }
+  .dir .n { font-variant-numeric: tabular-nums; color: var(--accent); font-weight: 700; }
+  .dir h2 { font-size: 1.15rem; margin: 0; font-weight: 640; }
+  .dir .sub { color: var(--page-dim); font-size: .92rem; }
+  .feas { margin: .55rem 0 0; font-size: .86rem; color: var(--page-dim); }
+  .feas b { color: var(--page-fg); font-weight: 600; }
+  .cost { display: inline-block; font-size: .72rem; letter-spacing: .04em; text-transform: uppercase;
+    border: 1px solid var(--card-line); border-radius: 999px; padding: .06rem .55rem; margin-right: .4rem; color: var(--page-dim); }
+
+  /* shared editor frame */
+  .frame { border-radius: 9px; overflow: hidden; box-shadow: 0 16px 40px -22px rgba(0,0,0,.65); border: 1px solid #0000; }
+  .mono { font-family: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace; }
+
+  /* ---------- CURRENT (reference) ---------- */
+  .cur-ref { background: #15140f; color: #b9b1a1; border-color: #322d25; font-size: 12.5px; }
+  .cur-ref .buf { padding: .6rem 0; }
+  .cur-ref .r { white-space: pre; padding: .05rem 1rem; }
+  .cur-ref .lbl { color: #8a8170; }
+  .cur-ref .play { color: #e6c98a; font-weight: 700; }
+
+  /* ---------- 1 · MINIMAL ---------- */
+  .min { background: #15140f; color: #cfc8b8; border-color: #322d25; font-size: 13px; }
+  .min .buf { padding: .7rem 0 .8rem; }
+  .min .r { white-space: pre; padding: .07rem 1.1rem; }
+  .min .lbl { color: #9a917f; }
+  .min .dim { color: #6f685b; }
+  .min .on { color: #e6c98a; } .min .off { color: #4a453b; }
+  .min .keys { color: #6f685b; } .min .keys .k { color: #9a917f; }
+  .min .rule { color: #4a453b; padding: .12rem 1.1rem .28rem; white-space: pre; }
+  .min .bar-full { color: #8faf7f; } .min .bar-empty { color: #43403a; } .min .time { color: #6f685b; }
+  .min .track { display: grid; grid-template-columns: 1.4ch 1fr auto; gap: .7ch; align-items: baseline; padding: .13rem 1.1rem; }
+  .min .g-radio { color: #8fb0c4; } .min .g-note { color: #a7b58f; }
+  .min .track .name { color: #cfc8b8; } .min .track .meta { color: #6f685b; white-space: pre; }
+  .min .track.cur { background: #262119; } .min .track.cur .name { color: #e6c98a; font-weight: 700; }
+
+  /* ---------- 2 · FANCY (hi-fi / vinyl) ---------- */
+  .fan { background: radial-gradient(120% 90% at 12% 0%, #241a10 0%, #17110a 55%, #120d07 100%); color: #e8d9bd; border-color: #3c2c17; }
+  .fan .top { display: flex; gap: 1rem; padding: 1.1rem 1.2rem 1rem; align-items: center; border-bottom: 1px solid #3a2b18; }
+  .fan .cover { width: 78px; height: 78px; border-radius: 6px; flex: none; position: relative;
+    background: radial-gradient(circle at 50% 50%, #3a2c18 0 22%, #1a130b 23% 26%, #2a2012 27% 46%, #17110a 47% 50%, #2a2012 51%);
+    box-shadow: inset 0 0 0 1px #4a3820, 0 6px 16px -8px #000; }
+  .fan .cover::after { content: ""; position: absolute; inset: 45% 45% auto auto; width: 8px; height: 8px; border-radius: 50%;
+    background: #e6c98a; box-shadow: 0 0 0 3px #17110a; top: 46%; left: 46%; }
+  .fan .np-title { font-family: "Iowan Old Style", "Palatino Linotype", Georgia, serif; font-size: 1.5rem; font-weight: 600; color: #f2e4c6; line-height: 1.15; }
+  .fan .np-sub { color: #b99a63; font-size: .9rem; margin-top: .15rem; letter-spacing: .02em; }
+  .fan .seg { display: flex; gap: 3px; margin-top: .7rem; }
+  .fan .seg i { height: 6px; flex: 1; border-radius: 2px; background: #3a2c18; }
+  .fan .seg i.on { background: linear-gradient(#f0cf8a, #d8a24f); }
+  .fan .tline { display: flex; justify-content: space-between; color: #a98c58; font-size: .74rem; margin-top: .3rem; font-variant-numeric: tabular-nums; }
+  .fan .list { padding: .55rem .4rem .7rem; }
+  .fan .t { display: grid; grid-template-columns: 30px 1fr auto; gap: .7rem; align-items: center; padding: .34rem .8rem; border-radius: 7px; }
+  .fan .t .th { width: 26px; height: 26px; border-radius: 4px; background: #241a10; box-shadow: inset 0 0 0 1px #4a3820; display: grid; place-items: center; color: #c79a54; font-size: 12px; }
+  .fan .t .nm { font-family: "Iowan Old Style", Georgia, serif; font-size: 1.02rem; color: #ecdcbc; }
+  .fan .t .mt { color: #9c8154; font-size: .8rem; font-variant-numeric: tabular-nums; }
+  .fan .t.cur { background: linear-gradient(90deg, #2a1f10, #201810); box-shadow: inset 2px 0 0 #e6c98a; }
+  .fan .t.cur .nm { color: #f7e7c4; }
+
+  /* ---------- 3 · MODERN (streaming card) ---------- */
+  .mod { background: #0e1013; color: #cdd3da; border-color: #1c2027; }
+  .mod .top { display: flex; gap: .95rem; padding: 1.05rem 1.1rem; align-items: center; }
+  .mod .cover { width: 66px; height: 66px; border-radius: 12px; flex: none;
+    background: linear-gradient(145deg, #2a6f5a, #1b3b6b); box-shadow: 0 8px 20px -10px #000; display: grid; place-items: center; color: #bfeede; font-size: 20px; }
+  .mod .np-title { font-size: 1.28rem; font-weight: 680; color: #f2f5f8; letter-spacing: -.01em; }
+  .mod .np-sub { color: #8b94a0; font-size: .88rem; margin-top: .1rem; }
+  .mod .prog { display: flex; align-items: center; gap: .6rem; padding: 0 1.1rem .2rem; }
+  .mod .track-bar { position: relative; height: 4px; border-radius: 4px; background: #232830; flex: 1; }
+  .mod .track-bar > i { position: absolute; left: 0; top: 0; bottom: 0; width: 42%; border-radius: 4px; background: #5fd0a8; }
+  .mod .track-bar > b { position: absolute; left: 42%; top: 50%; width: 11px; height: 11px; border-radius: 50%; background: #eafaf3; transform: translate(-50%, -50%); box-shadow: 0 0 0 3px rgba(95,208,168,.25); }
+  .mod .tm { color: #7f8894; font-size: .72rem; font-variant-numeric: tabular-nums; }
+  .mod .ctl { display: flex; gap: .5rem; padding: .55rem 1.1rem .1rem; }
+  .mod .ctl .pill { border: 1px solid #262c34; background: #171b21; border-radius: 999px; padding: .2rem .7rem; font-size: .82rem; color: #aeb6c0; }
+  .mod .ctl .pill.main { background: #5fd0a8; color: #08130e; border-color: #5fd0a8; font-weight: 700; }
+  .mod .list { padding: .5rem .45rem .7rem; }
+  .mod .t { display: grid; grid-template-columns: 34px 1fr auto; gap: .7rem; align-items: center; padding: .4rem .7rem; border-radius: 10px; }
+  .mod .t .th { width: 30px; height: 30px; border-radius: 8px; display: grid; place-items: center; font-size: 13px; color: #dfe6ee; }
+  .mod .t .th.radio { background: linear-gradient(145deg, #2a6f5a, #1b3b6b); } .mod .t .th.note { background: linear-gradient(145deg, #3a3f4a, #23272e); }
+  .mod .t .nm { color: #dfe4ea; font-weight: 550; } .mod .t .mt { color: #7f8894; font-size: .8rem; font-variant-numeric: tabular-nums; }
+  .mod .t.cur { background: #151b22; } .mod .t.cur .nm { color: #eafaf3; }
+  .mod .t.cur .eq { color: #5fd0a8; }
+
+  .foot { margin-top: 2.4rem; padding-top: 1.2rem; border-top: 1px solid var(--card-line); color: var(--page-dim); font-size: .9rem; }
+  .foot b { color: var(--page-fg); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <p class="eyebrow">EMMS playlist buffer · three directions</p>
+    <h1>Music player: pick a look</h1>
+    <p>Same playlist, three treatments. All are achievable inside an Emacs buffer, but they cost different amounts. Today it shows raw stream URLs (below); each direction fixes that and goes further. Mockups, not live renders.</p>
+    <div class="frame cur-ref mono" style="margin-top:1rem; max-width:34rem">
+      <div class="buf">
+        <div class="r"><span class="lbl">Current :</span> https://ice6.somafm.com/groovesalad-256-mp3</div>
+        <div class="r play">https://ice6.somafm.com/groovesalad-256-mp3</div>
+        <div class="r">https://ice1.somafm.com/groovesalad-256-mp3</div>
+        <div class="r">https://ice2.somafm.com/groovesalad-256-mp3</div>
+      </div>
+    </div>
+  </header>
+
+  <!-- 1 · MINIMAL -->
+  <section class="dir">
+    <div class="head"><span class="n">1</span><h2>Minimal</h2><span class="sub">refined terminal — names, one dim glyph, thin now-playing bar</span></div>
+    <div class="frame min mono">
+      <div class="buf">
+        <div class="r"><span class="lbl">Playlist</span> <span class="lbl">:</span> Evening mix <span class="dim">(5)</span></div>
+        <div class="r"><span class="lbl">Current </span> <span class="lbl">:</span> <span style="color:#8faf7f">▶ </span>Groove Salad <span class="dim">· SomaFM</span></div>
+        <div class="r"><span class="dim">          </span><span class="bar-full">━━━━━━━━━━━━</span><span class="bar-empty">────────────────</span>  <span class="time">live · 256k</span></div>
+        <div class="r keys"><span class="k">Keys    </span> <span class="k">:</span> a:add  c:clear  L:load  S:stop  &lt;&gt;:skip</div>
+        <div class="r keys"><span class="k">Radio   </span> <span class="k">:</span> n:by name  t:by tag  m:enter manually</div>
+        <div class="rule">        ────────────────────────────────────────</div>
+        <div class="track cur"><span class="g-radio">◉</span><span class="name">Groove Salad</span><span class="meta">SomaFM · 256k</span></div>
+        <div class="track"><span class="g-radio">◉</span><span class="name">Drone Zone</span><span class="meta">SomaFM · 256k</span></div>
+        <div class="track"><span class="g-note">♪</span><span class="name">Miles Davis — So What</span><span class="meta">9:22</span></div>
+        <div class="track"><span class="g-note">♪</span><span class="name">Bill Evans — Peace Piece</span><span class="meta">6:41</span></div>
+        <div class="track"><span class="g-radio">◉</span><span class="name">Jazz Radio Blues</span><span class="meta">FR · 128k</span></div>
+      </div>
+    </div>
+    <p class="feas"><span class="cost">low lift</span><b>Faces + text only.</b> Names come from the .m3u #EXTINF and local tags; the glyph is a nerd-icon; the bar is one timer-driven line. No images. Sits naturally in the buffer you already have.</p>
+  </section>
+
+  <!-- 2 · FANCY -->
+  <section class="dir">
+    <div class="head"><span class="n">2</span><h2>Fancy</h2><span class="sub">hi-fi / vinyl — cover art, serif titles, warm amber, a real now-playing hero</span></div>
+    <div class="frame fan">
+      <div class="top">
+        <div class="cover"></div>
+        <div>
+          <div class="np-title">Groove Salad</div>
+          <div class="np-sub">SOMA FM · AMBIENT / DOWNTEMPO · 256K</div>
+          <div class="seg"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+          <div class="tline"><span>on air</span><span>live stream</span></div>
+        </div>
+      </div>
+      <div class="list">
+        <div class="t cur"><span class="th">◉</span><span class="nm">Groove Salad</span><span class="mt">SomaFM</span></div>
+        <div class="t"><span class="th">◉</span><span class="nm">Drone Zone</span><span class="mt">SomaFM</span></div>
+        <div class="t"><span class="th">♪</span><span class="nm">Miles Davis — So What</span><span class="mt">9:22</span></div>
+        <div class="t"><span class="th">♪</span><span class="nm">Bill Evans — Peace Piece</span><span class="mt">6:41</span></div>
+        <div class="t"><span class="th">◉</span><span class="nm">Jazz Radio Blues</span><span class="mt">FR</span></div>
+      </div>
+    </div>
+    <p class="feas"><span class="cost">medium lift</span><b>Cover art + variable-pitch serif.</b> Emacs shows images (station favicons, embedded album art) and a serif face for titles via `display` and face remaps. The vinyl cover and segmented bar are drawn with faces/SVG. Needs an art fetch-and-cache layer; the warmth is a theme overlay.</p>
+  </section>
+
+  <!-- 3 · MODERN -->
+  <section class="dir">
+    <div class="head"><span class="n">3</span><h2>Modern</h2><span class="sub">streaming-app card — rounded art, sans title, a slim seek bar with a handle, pill controls</span></div>
+    <div class="frame mod">
+      <div class="top">
+        <div class="cover">♪</div>
+        <div>
+          <div class="np-title">Groove Salad</div>
+          <div class="np-sub">SomaFM · ambient · 256 kbps</div>
+        </div>
+      </div>
+      <div class="prog"><span class="tm">LIVE</span><span class="track-bar"><i></i><b></b></span><span class="tm">∞</span></div>
+      <div class="ctl"><span class="pill">shuffle</span><span class="pill">⏮</span><span class="pill main">⏸ pause</span><span class="pill">⏭</span><span class="pill">repeat</span></div>
+      <div class="list">
+        <div class="t cur"><span class="th radio">◉</span><span class="nm">Groove Salad <span class="eq">▎▍▎</span></span><span class="mt">SomaFM</span></div>
+        <div class="t"><span class="th radio">◉</span><span class="nm">Drone Zone</span><span class="mt">SomaFM</span></div>
+        <div class="t"><span class="th note">♪</span><span class="nm">Miles Davis — So What</span><span class="mt">9:22</span></div>
+        <div class="t"><span class="th note">♪</span><span class="nm">Bill Evans — Peace Piece</span><span class="mt">6:41</span></div>
+        <div class="t"><span class="th radio">◉</span><span class="nm">Jazz Radio Blues</span><span class="mt">FR</span></div>
+      </div>
+    </div>
+    <p class="feas"><span class="cost">higher lift</span><b>Pushes hardest against the buffer model.</b> Rounded art, pill controls, the seek-bar dot handle, and rounded rows are easy in a browser but need SVG-rendered widgets or `svg-lib`-style images in Emacs, redrawn on playback. Doable in GUI Emacs, but it's the most code and the least "text buffer." A cool accent (mint) instead of the theme's amber to read contemporary.</p>
+  </section>
+
+  <div class="foot">
+    <p>My read: <b>Minimal</b> is the honest sweet spot for an Emacs player you live in, and it kills the primitive feeling on its own. <b>Fancy</b> is worth it if you want the now-playing moment to feel like hi-fi and you're happy to add cover art. <b>Modern</b> is the most striking but fights Emacs the most, so it's the biggest build for a look that a browser does more naturally. All three keep the n/t/m radio row and the same keys.</p>
+    <p style="margin:.7rem 0 0">Left out of every direction to stay tasteful: animated equalizers everywhere, a separate browser pane, mouse-first chrome. Glyphs shown here (◉ ♪) stand in for nerd-icons.</p>
+  </div>
+</div>
+<script>
+  (function () { var r = document.documentElement;
+    try { var t = localStorage.getItem('theme'); if (t === 'dark' || t === 'light') r.setAttribute('data-theme', t); } catch (e) {} })();
+</script>
+</body>
+</html>

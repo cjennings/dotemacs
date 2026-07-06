@@ -1,0 +1,162 @@
+#+TITLE: Fancy music-player UI (hi-fi / vinyl) — Spec
+#+AUTHOR: Craig Jennings
+#+DATE: 2026-07-06
+#+TODO: TODO | DONE
+#+TODO: DRAFT READY DOING | IMPLEMENTED SUPERSEDED CANCELLED
+
+* DRAFT Fancy music-player UI
+:PROPERTIES:
+:ID:       af4f2688-ce7d-43f5-82e5-595a603e2593
+:END:
+- 2026-07-06 Mon @ 14:38:15 -0500 — drafted.
+
+* Metadata
+| Status   | draft                                                             |
+|----------+-------------------------------------------------------------------|
+| Owner    | Craig Jennings                                                    |
+|----------+-------------------------------------------------------------------|
+| Reviewer | Craig Jennings                                                    |
+|----------+-------------------------------------------------------------------|
+| Related  | [[file:2026-07-06-fancy-music-player-ui.prototype.html][prototype (fancy direction)]]; modules/music-config.el          |
+|----------+-------------------------------------------------------------------|
+
+* Summary
+
+Turn the EMMS playlist buffer from a raw-URL text list into a hi-fi "fancy" reading surface: station and track names instead of stream URLs, cover art, a now-playing hero with a serif title and a progress bar, and a warm amber palette, all still inside the Emacs buffer. It degrades cleanly to a plain text version in a terminal frame, where images can't render.
+
+* Problem / Context
+
+The music player is an EMMS playlist buffer with a custom multi-line header (Playlist / Current / Mode / Keys / Radio) drawn by cj/music--header-text as an overlay. The track list shows whatever EMMS stores as the track name, which for internet radio is the raw stream URL (https://ice6.somafm.com/groovesalad-256-mp3). It reads as a debug buffer, not a music player. Craig chose the "fancy" direction from the prototype: cover art, serif titles, a now-playing hero, warm amber.
+
+Two facts shape the design. First, Emacs renders images and variable-pitch faces in a GUI frame but not in a TTY, so the fancy look needs a text fallback. Second, cover art is reachable: radio-browser stations carry a favicon (logo) URL, retrievable at search time from the station plist or later via /json/stations/byuuid/<uuid> (verified live 2026-07-06); local files carry embedded album art. Stations with neither get a generated placeholder.
+
+* Goals and Non-Goals
+
+** Goals
+- Show human names, not URLs: station name for streams (from the .m3u #EXTINF or a radio-browser lookup), artist and title for local files.
+- A now-playing hero: cover art, a serif title, a subtitle (station/album), a progress bar, and a time or "on air" line.
+- A track list with small cover thumbnails, serif names, and right-aligned meta; the current row accented.
+- A warm amber palette, theme-owned (the dupre theme).
+- Degrade to a plain text version (names + a dim glyph + a thin bar) in a TTY or when the fancy view is off.
+
+** Non-Goals
+- No separate EMMS browser pane, library manager, or tag editor.
+- No mouse-first chrome, animated equalizers, or transport buttons you click (keys stay the interface).
+- No change to the radio lookup, playback engine, or keybindings (the n/t/m radio row and the transport keys are untouched).
+- No streaming-service integrations.
+
+** Scope tiers
+- v1: name resolution + the text base (TTY-safe), cover-art fetch + cache, and the fancy GUI render layered on top.
+- Out of scope: album/library browsing, playlists-of-playlists UI, per-track ratings.
+- vNext (log to todo.org): a scrubbable/seekable progress bar, homepage/link affordances in the hero, animated now-playing transitions, per-station color theming from the cover art.
+
+* Design
+
+At a caller's altitude: Craig opens the music player as today (same keys). Instead of URLs he sees named rows with a small logo each; the top of the buffer is a now-playing panel with the current station's cover, its name in a serif face, and a progress bar. In a terminal frame or with the fancy view disabled, the same buffer shows the plain text version (names, a dim glyph, a thin bar) with no images.
+
+At the implementer's altitude, three layers, each shippable on its own:
+
+1. Name resolution (pure + text, TTY-safe). A function maps a track to its display name: for a url track, the #EXTINF label from its .m3u if present, else the station name resolved from radio-browser, else a tidied host; for a file track, artist and title from EMMS track info. The row renders name + a dim nerd-icon glyph (broadcast for streams, note for files) + right-aligned meta. The now-playing line under Current gets a thin faces-drawn bar plus a time / "on air" string. This is the plain text base and the fallback; it has no images.
+
+2. Cover art (image infra). cj/music-art--for-track returns a cached local image path for a track: a station favicon (from the station plist at creation time, or a byuuid lookup for an existing .m3u carrying #RADIOBROWSERUUID), embedded album art for a file, or a generated vinyl placeholder when neither exists. Fetches are asynchronous and written to an on-disk cache keyed by station UUID or file, so a redisplay never blocks on the network and art survives restarts.
+
+3. Fancy render (GUI). When the frame is graphical and the fancy view is on, cj/music--header-text and the row renderer insert the cover images (create-image / insert-image), remap the title to a serif variable-pitch face, and paint the amber palette and the segmented progress bar. A small timer advances the bar during playback. When the frame is a TTY or the fancy view is off, the render falls through to layer 1's text.
+
+Pure pieces (name resolution, the m3u-label extraction, the bar-fill computation, the placeholder-vs-art decision) carry the tests; the image insertion, the fetch, and the timer are exercised live.
+
+* Alternatives Considered
+
+** Layer the fancy view on top of a text base (chosen)
+- Good, because the text base ships value immediately (names beat URLs for everyone), is the honest TTY fallback, and de-risks the image work.
+- Bad, because two render paths to keep in sync.
+- Neutral, because EMMS already separates track-name from display.
+
+** Fancy-only, no text fallback
+- Good, because one render path.
+- Bad, because it breaks in a TTY and forces the image/art work before any value lands.
+
+** A separate dedicated buffer/major-mode instead of the EMMS playlist overlay
+- Good, because full control of layout.
+- Bad, because it abandons EMMS's playlist machinery (marking, reorder, the existing keymap) and doubles maintenance.
+- Neutral, deferred: the overlay approach reuses everything and is enough for v1.
+
+* Decisions [/]
+
+** TODO Cover art for streams — where the favicon comes from
+- Owner / by-when: Craig / before Phase 2
+- Context: a radio-browser search result carries a favicon URL, so a newly-created station can capture it. An existing .m3u only has the stream URL and (on 15 of 73) a #RADIOBROWSERUUID; the other 58 have no UUID. A byuuid lookup gets the favicon for the ones that have a UUID.
+- Decision: We will (a) write a #RADIOBROWSERFAVICON line into new stations at creation so they need no lookup, (b) for an existing station carrying #RADIOBROWSERUUID, fetch the favicon by UUID once and cache it, and (c) for a station with neither, use the generated vinyl placeholder.
+- Consequences: easier — most stations get real art with at most one lookup; harder — a small .m3u format addition (an extra comment line) and a byuuid path for legacy files.
+
+** TODO Image cache location and refresh
+- Owner / by-when: Craig / before Phase 2
+- Context: fetched favicons and extracted album art need to persist so redisplay is instant and offline-safe.
+- Decision: We will cache under data/music-art/ (gitignored runtime state), keyed by station UUID or a file hash, fetched once and reused; a manual command clears the cache, and there is no automatic TTL.
+- Consequences: easier — instant, offline, no invalidation logic; harder — a stale logo persists until the user clears the cache (acceptable for logos).
+
+** TODO Serif title face
+- Owner / by-when: Craig / before Phase 3
+- Context: the fancy titles want a serif variable-pitch face, theme-owned.
+- Decision: We will add a defcustom for the title family (default a widely-available serif, e.g. the same reading serif the nov reading view uses) and a theme-owned face the dupre theme colors.
+- Consequences: easier — one knob, consistent with the nov-reading typography choice; harder — another face to register in theme-studio if we want it tunable there (deferred).
+
+** TODO Progress bar rendering and cadence
+- Owner / by-when: Craig / before Phase 3
+- Context: the bar can be drawn with block-character faces or a small SVG; it advances during playback via a timer.
+- Decision: We will draw the bar with faces (block characters, accent-colored fill) rather than SVG for v1, and redraw on a ~1s timer only while a track is playing, only when the player buffer is visible.
+- Consequences: easier — no SVG dependency, works the moment faces do; harder — a character-cell bar is coarser than an SVG one (fine for v1; SVG is a vNext upgrade).
+
+** TODO Fancy view toggle and TTY fallback
+- Owner / by-when: Craig / before Phase 3
+- Context: images need a GUI frame; a TTY (or a user who wants plain) needs the text version.
+- Decision: We will gate the fancy render on (display-graphic-p) AND a defcustom (default on), falling through to the layer-1 text render otherwise, decided per-redisplay so a frame on a TTY and a frame on a GUI can differ live.
+- Consequences: easier — never broken in a TTY, user can opt out; harder — both render paths stay maintained (already a chosen tradeoff).
+
+* Implementation phases
+
+** Phase 1 — Name resolution + text base (TTY-safe, no images)
+Map a track to a display name (url -> #EXTINF label / radio-browser name / tidy host; file -> artist and title), render rows as name + dim glyph + right-aligned meta, and add the thin now-playing bar + time/on-air line and the header spacing + rule. Unit-test the pure name/label/bar-fill helpers. Ships the "names not URLs" win on its own and is the fallback for later phases.
+
+** Phase 2 — Cover art fetch + cache (image infra)
+cj/music-art--for-track returning a cached local image path: favicon capture at station creation (a #RADIOBROWSERFAVICON line), byuuid favicon fetch for legacy UUID stations, embedded album art for files, and a generated vinyl placeholder. Async fetch into data/music-art/. Unit-test the art-vs-placeholder decision and the cache-key logic; the fetch is a smoke test.
+
+** Phase 3 — Fancy GUI render
+The now-playing hero (cover image + serif title + subtitle + segmented bar) and the thumbnailed serif list with the amber palette, gated on (display-graphic-p) + the toggle, degrading to Phase 1's text. The ~1s playback timer. Live verification (images, faces, the bar advancing) since it can't run headless.
+
+* Acceptance criteria
+- [ ] A radio row shows the station name, not the stream URL; a local track shows artist and title.
+- [ ] Each row shows a dim glyph (broadcast for streams, note for files) and right-aligned meta.
+- [ ] In a GUI frame with the fancy view on, the now-playing hero shows the current station's cover art, a serif title, and a progress bar that advances during playback.
+- [ ] A station with no favicon or embedded art shows the generated vinyl placeholder, not a broken image.
+- [ ] In a TTY frame, or with the fancy view off, the same buffer renders the text version (names + glyph + thin bar) with no images and no errors.
+- [ ] Art is fetched once and cached under data/music-art/; a second open is instant and works offline.
+- [ ] The name/label, bar-fill, and art-decision helpers have Normal/Boundary/Error tests.
+
+* Readiness dimensions
+- Data model & ownership: display names are derived (never stored); .m3u files gain an optional #RADIOBROWSERFAVICON comment (Craig-owned, written at creation); cached art under data/music-art/ is generated and disposable.
+- Errors, empty states & failure: a fetch failure or missing art yields the placeholder, never a broken image; a TTY yields text; an empty playlist yields the header with no rows.
+- Security & privacy: fetching a station's favicon URL hits a third-party host the user chose; fetch with a timeout and cache locally; no credentials; nothing sensitive logged.
+- Observability: the player messages when it can't fetch art (once, quietly); a clear-art-cache command exists.
+- Performance & scale: art fetch is async and cached, never blocking redisplay; the bar timer runs ~1s only while playing and only when the buffer is visible; the list is small (a playlist), so per-row images are cheap.
+- Reuse & lost opportunities: reuses the EMMS playlist buffer + keymap, the existing header overlay (cj/music--header-text / update-header), cj/music--track-description, nerd-icons (already used by dashboard/dirvish), the dupre theme, and the nov-reading serif choice. Images via built-in create-image/insert-image. Nothing new is invented that Emacs already provides.
+- Architecture fit & weak points: layers on music-config.el's existing header/render path; the seam is the header overlay + a per-row renderer. Weak point: keeping the text and fancy render paths in sync — mitigated by making the text render the base and the fancy render an image/face overlay on the same rows.
+- Config surface: cj/music-fancy-ui (default on), the serif title face + family, the amber palette (theme-owned), the art cache dir, the bar redraw interval. All with defaults and doc.
+- Documentation plan: a note in the module commentary and the keybinding/header list; no separate doc.
+- Dev tooling: existing make test / test-file; no new tooling.
+- Rollout, compatibility & rollback: additive; cj/music-fancy-ui off restores the plain text render; the #RADIOBROWSERFAVICON line is an ignorable comment in older readers; deleting data/music-art/ is a safe reset.
+- External APIs & deps: radio-browser favicon field and /json/stations/byuuid/<uuid> VERIFIED live 2026-07-06. Local album-art extraction depends on an image being embedded (or a folder cover.jpg) — the fallback is the placeholder.
+
+* Risks, Rabbit Holes, and Drawbacks
+- Local album-art extraction is the likeliest rabbit hole (embedded art via a tag reader vs a sibling cover.jpg). v1 can start with sibling-cover-file + placeholder and defer embedded-tag extraction if it balloons.
+- Image sizing across frame DPIs: pick a fixed pixel size for the hero and thumbnails, scaled by the frame, and don't chase per-monitor perfection.
+- Two render paths drifting: the text base must stay the source of truth for row content; the fancy path only adds images/faces, never different text.
+
+* References / Appendix
+- Prototype (open in a browser): [[file:2026-07-06-fancy-music-player-ui.prototype.html][2026-07-06-fancy-music-player-ui.prototype.html]] — three directions (minimal / fancy / modern); this spec builds the fancy one, with minimal as the text fallback.
+- radio-browser favicon + byuuid verified live 2026-07-06 against de1.api.radio-browser.info.
+
+* Review and iteration history
+** 2026-07-06 Mon @ 14:38:15 -0500 — Claude (for Craig) — author
+- What: initial draft, after Craig picked the fancy direction from the three-way prototype.
+- Why: the player shows raw stream URLs and reads as a debug buffer; the fancy look needs cover art, serif titles, and a now-playing hero, which is real infrastructure (image fetch/cache, GUI-vs-TTY) worth a spec.
+- Artifacts: the fancy prototype; radio-browser favicon/byuuid verified live.
