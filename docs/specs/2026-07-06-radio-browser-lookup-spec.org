@@ -1,0 +1,162 @@
+#+TITLE: Radio-browser station lookup + playlist creator — Spec
+#+AUTHOR: Craig Jennings
+#+DATE: 2026-07-06
+#+TODO: TODO | DONE
+#+TODO: DRAFT READY DOING | IMPLEMENTED SUPERSEDED CANCELLED
+
+* DRAFT Radio-browser lookup
+:PROPERTIES:
+:ID:       4839b2c8-0552-4029-9e0f-4bf69b9a4dcd
+:END:
+- 2026-07-06 Mon @ 10:12:00 -0500 — all four decisions resolved (Craig): url.el; multi-select one-file-per-station; save into the MPD playlist dir; create-and-play. Ready for spec-review.
+- 2026-07-06 Mon @ 10:01:27 -0500 — drafted.
+
+* Metadata
+| Status   | draft                                                             |
+|----------+-------------------------------------------------------------------|
+| Owner    | Craig Jennings                                                    |
+|----------+-------------------------------------------------------------------|
+| Reviewer | Craig Jennings                                                    |
+|----------+-------------------------------------------------------------------|
+| Related  | [[file:../../todo.org][todo.org: Music — create playlists from a radio.info lookup]]     |
+|----------+-------------------------------------------------------------------|
+
+* Summary
+
+Add an in-Emacs command that searches the radio-browser.info directory for internet-radio stations and turns a selection into an M3U the music player can load and play. It closes the loop opened by the multi-directory sourcing work: the player already reads and plays radio .m3u from both ~/music/ and the MPD playlist directory, but every station still has to be found in a browser and hand-entered through cj/music-create-radio-station (name + URL typed by hand). This feature makes discovery native.
+
+* Problem / Context
+
+Craig listens to internet radio through the EMMS + mpv-subprocess player in music-config.el. A radio station is a one-line .m3u: an #EXTINF label and a stream URL. Today those come from two places, neither good. The 73 existing stations were built up over time in an MPD client and relocated into dotfiles; adding a new one means opening radio-browser.info in a browser, copying the stream URL, running cj/music-create-radio-station, and pasting name and URL by hand. There is no way to search, compare, or audition stations without leaving Emacs.
+
+radio-browser.info is a free community directory with an open JSON API: search by name, tag, country, language; each station carries a stable UUID, a resolved stream URL, codec, bitrate, tags, and popularity counts. That is exactly the metadata a good picker needs, and the existing radio .m3u already use radio-browser's UUID header on 15 of 73 files. The problem is purely that nothing in the config talks to the API.
+
+The verified API shape (checked live 2026-07-06):
+- Server list: GET https://all.api.radio-browser.info/json/servers -> [{ip, name}, ...]. A concrete host like de1.api.radio-browser.info answers directly.
+- Search: GET https://<server>/json/stations/search?name=<q>&limit=<n>&hidebroken=true -> array of station objects.
+- Station fields used: stationuuid, name, url_resolved, codec, bitrate, tags (comma string), countrycode, votes, clickcount.
+
+* Goals and Non-Goals
+
+** Goals
+- Search radio-browser.info from inside Emacs and pick from the results.
+- Turn the selection into a playable M3U in the format the existing player already reads (#EXTM3U / #EXTINF:1,<name> / <url>), carrying the #RADIOBROWSERUUID header for provenance.
+- Reuse the existing writer and the multi-directory sourcing so a created station is immediately loadable and playable.
+- Be a good radio-browser client: a descriptive User-Agent and server rotation.
+
+** Non-Goals
+- No replacement of cj/music-create-radio-station; the manual name+URL path stays for stations not in the directory.
+- No station editing, tagging, or curation UI beyond create.
+- No favorites/rating sync back to radio-browser (vote/click counting is vNext).
+- No dependence on MPD's stored-playlist mechanism; this writes .m3u files, consistent with the sourcing design.
+- No audio format work; mpv already plays whatever the stream serves.
+
+** Scope tiers
+- v1: a search command, a result picker, and playlist creation from the selection, wired to the existing writer + sourcing.
+- Out of scope: transient dashboards, station browsing by curated category, in-buffer station management.
+- vNext (log to todo.org): click/vote counting (POST /json/url/<uuid>), tag/country faceted search, an audition-before-save preview, a homepage/favicon-rich annotation.
+
+* Design
+
+At a caller's altitude: Craig runs a search command (bound in the playlist keymap next to R), types a query, and gets a completion list of stations annotated with codec, bitrate, country, and popularity. He picks one or more. The command writes an M3U and reports where it landed; the station is then visible in the load list and plays through mpv like any other radio .m3u.
+
+At the implementer's altitude, four pieces:
+
+1. A thin API client. cj/music-radio--server picks a host (from the /json/servers list, or a pinned default with the list as fallback). cj/music-radio--search runs the GET, parses JSON with the built-in json-parse-string, and returns a list of plists with only the fields the picker and writer need. All network calls send a descriptive User-Agent and carry a timeout; a failed or empty response returns a clear user-error, never a stack trace.
+
+2. A pure result-to-candidate layer. cj/music-radio--format-candidate turns a station plist into the completion string plus an annotation, and the reverse map recovers the chosen station. Keeping this pure keeps the picker testable without the network.
+
+3. A pure M3U emitter. cj/music-radio--station-m3u takes a station plist and returns the exact file text: #EXTM3U, an optional #RADIOBROWSERUUID line, #EXTINF:1,<name>, url_resolved. This mirrors the existing radio files byte-for-byte, so old and new stations are indistinguishable to the player.
+
+4. The interactive command. cj/music-radio-search reads the query, calls the client, drives the multi-select picker, and hands each selected station to the writer, which resolves a safe filename (reusing cj/music--safe-filename) and writes into cj/music-radio-save-dir (default the MPD playlist directory, alongside the existing radio set). It messages the file(s) written, then enqueues the selection into the current EMMS playlist and starts playback through mpv, so a search ends in audio.
+
+The network client and the interactive command are the only impure pieces; the candidate formatting and the M3U emission are pure and carry the test weight, following the module's existing internal/interactive split.
+
+* Alternatives Considered
+
+** HTTP via built-in url.el
+- Good, because no new dependency; ships with Emacs; url-retrieve-synchronously with a let-bound timeout is enough for a one-shot search.
+- Bad, because url.el's error handling and header ergonomics are clunky; async needs a callback dance.
+- Neutral, because JSON parsing is json-parse-string either way.
+
+** HTTP via plz.el (or request.el)
+- Good, because a clean synchronous-or-async API, straightforward headers, better error surfacing.
+- Bad, because a new package dependency for one feature; another thing to keep installed and byte-clean.
+- Neutral, because both are actively maintained.
+
+** Shell out to curl
+- Good, because trivial and already used ad hoc; robust header/timeout handling.
+- Bad, because process management and quoting in Elisp, and a hard curl dependency at runtime; less portable than staying in-process.
+- Neutral, because output still parses with json-parse-string.
+
+** Playlist shape: one .m3u per station vs one multi-station .m3u
+- One-per-station is Good, because it matches all 73 existing files and MPD's per-station model; each station is independently loadable.
+- One multi-station .m3u is Good for a genre queue you skip through, but Bad because it diverges from the existing shape and complicates naming.
+- This is the load-bearing product question; see Decision 2.
+
+* Decisions [4/4]
+
+** DONE HTTP client choice
+- Context: one JSON GET (plus an occasional server-list GET). No streaming, no auth. url.el ships with Emacs; plz is cleaner but a new dep.
+- Decision: We will use built-in url.el (url-retrieve-synchronously with a bound timeout) and json-parse-string, adding no dependency.
+- Consequences: easier install and byte-compile story, no new package to track; harder error ergonomics and any future async, which we accept for a one-shot search.
+
+** DONE Playlist shape and selection
+- Context: "create playlists from a lookup" can mean one file per station (matches the existing 73) or one file holding several stations (a genre queue). Selection can be single or multi.
+- Decision: We will support multi-select and write one .m3u per selected station (matching the existing shape), so a search that returns several good stations creates several stations in one pass rather than a combined file.
+- Consequences: easier consistency with the existing library and independent loadability; harder to express "a single genre playlist of five streams" (deferred to vNext if wanted).
+
+** DONE Save destination for created stations
+- Context: the multi-directory sourcing reads both ~/music/ and ~/.local/share/mpd/playlists/. The radio home is the MPD playlist directory, where the existing 73 stations live as dotfiles-tracked relative symlinks. Craig wants new stations to land with the rest of the radio set, not in ~/music/.
+- Decision: We will write new stations into ~/.local/share/mpd/playlists/ (Craig's call), so a created station sits alongside the existing radio playlists and both MPD and the multi-directory sourcing see it immediately. A defcustom cj/music-radio-save-dir (default that directory) keeps it configurable.
+- Consequences: easier — new stations are co-located with the radio set and instantly playable through either client; harder — a newly written file is a real file in a directory otherwise made of dotfiles-tracked symlinks, so it is not version-controlled until Craig stows it into ~/.dotfiles. The config does not automate that promotion.
+
+** DONE Play-on-create behavior
+- Context: after creating a station Craig may want it to start playing, or just exist for later. Craig's call: play it.
+- Decision: We will create the station and immediately enqueue and play the selection through the current EMMS playlist (mpv), so a search ends in audio. With multi-select, the selected stations are enqueued in order and the first starts.
+- Consequences: easier — search-to-sound in one command, no separate load step; harder — creating always produces playback, so a "just save it for later" flow means creating and then stopping. Acceptable given radio is play-oriented.
+
+* Implementation phases
+
+** Phase 1 — API client + pure emitter (no UI)
+Add cj/music-radio--server, cj/music-radio--search (returns station plists), cj/music-radio--format-candidate, and cj/music-radio--station-m3u. Unit-test the pure pieces (candidate formatting, M3U emission) against fixture station plists; test the client with a stubbed url-retrieve or a recorded JSON fixture, never a live call. Leaves the tree working: helpers exist, nothing bound yet.
+
+** Phase 2 — interactive command + binding
+Add cj/music-radio-search (query -> search -> completing-read multi-select -> writer), reusing cj/music--safe-filename and the save-dir defcustom. Bind it in the playlist keymap next to R. Handle empty results, network failure, and cancel with clear user-errors. Manual live verification (the network + picker + play can't be driven headless) filed as a VERIFY.
+
+* Acceptance criteria
+- [ ] A search for a known station name returns annotated candidates in a completion prompt.
+- [ ] Selecting a station writes a .m3u whose bytes match the existing radio format (#EXTM3U / #EXTINF:1,<name> / <url_resolved>), with a #RADIOBROWSERUUID line.
+- [ ] Creating a station writes it into cj/music-radio-save-dir, then enqueues and starts it playing through mpv; it also appears in the player's load list (multi-directory sourcing).
+- [ ] An empty result set and a network failure each produce a clear message, not a stack trace.
+- [ ] Multi-select creates one file per selected station in a single invocation.
+- [ ] The pure emitter and candidate formatter have Normal/Boundary/Error tests that run without the network.
+
+* Readiness dimensions
+- Data model & ownership: a station plist (uuid, name, url, codec, bitrate, tags, country, votes, clickcount) derived from the API; the .m3u file is generated and owned by Craig once written. No local cache in v1.
+- Errors, empty states & failure: named user-errors — no server reachable, empty results, cancelled selection, write failure (naming the file). No silent data loss; overwrite reuses the existing cj/confirm-strong prompt from create-radio-station.
+- Security & privacy: no credentials. The only outbound data is the search query and a User-Agent to a public API. No sensitive data logged.
+- Observability: the command messages the server used, the result count, and each file written. Search is one short synchronous call; if it ever feels slow, a "Searching radio-browser…" message covers it.
+- Performance & scale: result sets bounded by an explicit limit (default ~30). One GET per search. No scaling concern.
+- Reuse & lost opportunities: reuses cj/music--safe-filename, the overwrite-confirm pattern, cj/music-m3u-root, and the whole multi-directory sourcing + mpv play path. json-parse-string and url.el are built in. Nothing new is invented that the platform already provides.
+- Architecture fit & weak points: integrates at music-config.el alongside cj/music-create-radio-station; the writer is the shared seam. Weak point: radio-browser server availability — mitigated by the server-list fallback and a timeout.
+- Config surface: cj/music-radio-save-dir (default ~/.local/share/mpd/playlists/, the radio home), cj/music-radio-search-limit (default 30), cj/music-radio-user-agent (descriptive default). All with defaults and doc.
+- Documentation plan: a line in the module commentary and the keybinding list; no separate doc needed.
+- Dev tooling: existing make test / test-file targets cover the new unit tests; no new tooling.
+- Rollout, compatibility & rollback: additive — a new command and helpers, no change to existing behavior or files. Removing it is deleting the code; created .m3u files land in the MPD playlist directory as ordinary files (untracked until Craig stows them) and stay.
+- External APIs & deps: radio-browser /json/servers and /json/stations/search VERIFIED live 2026-07-06 (shape recorded in Problem/Context). The vote/click endpoint (vNext) is a research prerequisite if that feature is pursued.
+
+* Risks, Rabbit Holes, and Drawbacks
+- radio-browser etiquette: the project asks clients to identify via User-Agent and to rotate servers rather than hammer one. v1 honors both; skipping click-counting is polite-neutral (it slightly under-reports popularity but adds no load).
+- url.el error handling is the likeliest rabbit hole. Keep the client tiny: one GET, parse, or a single user-error. Do not build a general HTTP layer.
+- Stream URL choice: a station can list several codec/bitrate variants under one name. v1 takes url_resolved as-is; picking among a station's variants is a vNext refinement, not a v1 problem.
+
+* Review and iteration history
+** 2026-07-06 Mon @ 10:12:00 -0500 — Claude (for Craig) — author
+- What: resolved all four open decisions from Craig's answers and folded them into the design, config, rollout, and acceptance sections.
+- Why: HTTP client, playlist shape, save destination, and play-on-create were the real product choices gating a build.
+- Artifacts: Decisions section now [4/4]; save dir is the MPD playlist directory; create-and-play is the default.
+** 2026-07-06 Mon @ 10:01:27 -0500 — Claude (for Craig) — author
+- What: initial draft.
+- Why: the music player can source and play radio .m3u but has no native way to discover stations; radio-browser's API supplies exactly the needed metadata.
+- Artifacts: todo.org "Music — create playlists from a radio.info lookup"; API shape verified live against de1.api.radio-browser.info.
