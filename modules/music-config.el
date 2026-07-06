@@ -16,6 +16,14 @@
 ;;
 ;; The playlist keymap intentionally follows ncmpcpp where it maps cleanly, with
 ;; EMMS-specific additions for M3U editing and consume mode.
+;;
+;; The player has two render paths.  In a graphical frame with `cj/music-fancy-ui'
+;; on (the default), it draws the fancy hi-fi surface: a now-playing hero with
+;; cover art (station favicon / sibling album art / a shipped vinyl placeholder,
+;; cached under data/music-art/), a serif title, and a block progress bar that
+;; advances from mpv's percent-pos while a file plays.  A TTY frame, or the
+;; toggle off, falls back to the plain text player (names, a dim glyph, a thin
+;; status line).  `cj/music-clear-art-cache' empties the art cache.
 
 ;;; Code:
 
@@ -55,6 +63,44 @@
   "Inactive mode indicator in the playlist header.")
 (defface cj/music-keyhint-face '((t :inherit shadow))
   "Key hints in the playlist header.")
+
+;; Fancy-render faces (Phase 3).  Amber comes from the themed `warning' face so
+;; the active theme (dupre) owns the color; the serif family is applied at
+;; render time from `cj/music-title-family'.
+(defface cj/music-title-face '((t :inherit cj/music-header-value-face :weight bold))
+  "Now-playing title in the fancy player.")
+(defface cj/music-subtitle-face '((t :inherit shadow))
+  "Now-playing subtitle (station or album) in the fancy player.")
+(defface cj/music-bar-fill-face '((t :inherit warning))
+  "Filled portion of the fancy progress bar (amber).")
+(defface cj/music-bar-empty-face '((t :inherit shadow))
+  "Empty portion of the fancy progress bar.")
+
+(defgroup cj/music nil
+  "Personal EMMS music-player tweaks."
+  :group 'emms)
+
+(defcustom cj/music-fancy-ui t
+  "When non-nil and the frame is graphical, render the fancy hi-fi player:
+cover art, a serif now-playing hero, and a progress bar.  Nil, or a TTY frame,
+falls back to the plain text player (names, a dim glyph, a thin status line)."
+  :type 'boolean
+  :group 'cj/music)
+
+(defcustom cj/music-title-family
+  (if (boundp 'cj/nov-reading-font-family) cj/nov-reading-font-family "Merriweather")
+  "Serif family for the fancy now-playing title, mirroring the nov reading view."
+  :type 'string
+  :group 'cj/music)
+
+(defvar cj/music-hero-size 96
+  "Pixel height of the now-playing hero cover image.")
+(defvar cj/music-thumb-size 22
+  "Pixel height of a playlist row's cover thumbnail.")
+(defvar cj/music-bar-width 24
+  "Cell width of the now-playing progress bar.")
+(defvar cj/music-bar-interval 1
+  "Seconds between progress-bar redraws while a track is playing and visible.")
 
 ;; Foreign functions used lazily after their packages load.
 (declare-function emms-playlist-mode "emms-playlist-mode")
@@ -177,6 +223,30 @@ A no-op when nothing is playing or the socket is gone, so it never errors."
         (unwind-protect
             (progn (process-send-string proc (concat json "\n"))
                    (accept-process-output proc 0.1))
+          (delete-process proc))))))
+
+(defun cj/music--mpv-get-property (prop)
+  "Query the mpv IPC socket for PROP and return its value, or nil.
+Reads the reply (unlike `cj/music--mpv-command', which only sends), so the
+progress bar can read percent-pos.  Blocks briefly, so call it off redisplay."
+  (when (file-exists-p cj/music--mpv-socket)
+    (ignore-errors
+      (let ((out "") proc)
+        (setq proc (make-network-process
+                    :name "cj-music-mpv-get" :family 'local
+                    :service cj/music--mpv-socket :noquery t
+                    :filter (lambda (_p s) (setq out (concat out s)))))
+        (unwind-protect
+            (progn
+              (process-send-string
+               proc (format "{\"command\":[\"get_property\",\"%s\"]}\n" prop))
+              (accept-process-output proc 0.2)
+              (cl-loop for line in (split-string out "\n" t)
+                       for obj = (ignore-errors
+                                   (json-parse-string line :object-type 'plist
+                                                      :null-object nil))
+                       when (and obj (plist-member obj :data))
+                       return (plist-get obj :data)))
           (delete-process proc))))))
 
 (defun cj/music-seek-forward ()
@@ -913,15 +983,25 @@ fontless frame never shows a tofu box."
         (if stream "»" "•"))))
 
 (defun cj/music--row-string (track)
-  "Playlist row for TRACK: a dim type glyph, the display name, and the meta
-right-aligned to the window edge with a resize-safe :align-to space.
+  "Playlist row for TRACK: a lead glyph or cover thumbnail, the display name,
+and the meta right-aligned to the window edge with a resize-safe :align-to
+space.  In the fancy render the lead is a thumbnail and the name is serif.
 This is `emms-track-description-function'."
   (let* ((name (cj/music--display-name track (cj/music--radio-name-map)))
-         (glyph (cj/music--type-glyph track))
-         (meta (cj/music--format-meta track)))
+         (meta (cj/music--format-meta track))
+         (fancy (cj/music--fancy-p))
+         (lead (if-let* ((fancy)
+                         (img (cj/music--image (cj/music-art--for-track track)
+                                               cj/music-thumb-size)))
+                   (propertize " " 'display img)
+                 (cj/music--type-glyph track)))
+         (label (if fancy
+                    (propertize name 'face (list :family cj/music-title-family
+                                                 :inherit 'cj/music-title-face))
+                  name)))
     (if (string-empty-p meta)
-        (concat glyph " " name)
-      (concat glyph " " name
+        (concat lead " " label)
+      (concat lead " " label
               (propertize " " 'display
                           `(space :align-to (- right ,(1+ (length meta)))))
               (propertize meta 'face 'cj/music-keyhint-face)))))
@@ -934,64 +1014,147 @@ duration for a timed file, empty otherwise."
     (let ((d (cj/music--format-duration (emms-track-get track 'info-playing-time))))
       (if d (format "  %s" d) ""))))
 
+;; ------------------------------ Fancy render ---------------------------------
+;; The GUI hero (cover image + serif title + bar) and thumbnailed serif rows,
+;; gated on a graphical frame + `cj/music-fancy-ui'.  Cover art comes from the
+;; non-blocking `cj/music-art--for-track' (defined with the art layer below).
+
+(defun cj/music--fancy-p ()
+  "Non-nil when the fancy render applies: a graphical frame with the
+`cj/music-fancy-ui' toggle on.  Decided per redisplay, so a TTY frame and a GUI
+frame in the same session can differ."
+  (and cj/music-fancy-ui (display-graphic-p)))
+
+(defun cj/music--image (path height)
+  "Image spec for PATH scaled to HEIGHT px, or nil when it can't be displayed
+\(no image support, an unreadable file, an unavailable format)."
+  (when (and path (file-readable-p path))
+    (ignore-errors
+      (create-image path nil nil :height height :ascent 'center))))
+
+(defun cj/music--bar-string (fill width)
+  "Render a WIDTH-cell block progress bar with FILL filled cells.
+FILL `indeterminate' (a live stream) renders an on-air marker instead."
+  (if (eq fill 'indeterminate)
+      (propertize "◉ on air" 'face 'cj/music-subtitle-face)
+    (let ((n (max 0 (min fill width))))
+      (concat (propertize (make-string n ?█) 'face 'cj/music-bar-fill-face)
+              (propertize (make-string (- width n) ?░)
+                          'face 'cj/music-bar-empty-face)))))
+
+(defun cj/music--current-bar (track)
+  "The progress bar for TRACK: a stream is indeterminate; a file fills from
+mpv's percent-pos."
+  (if (eq (emms-track-type track) 'url)
+      (cj/music--bar-string 'indeterminate cj/music-bar-width)
+    (let ((pct (cj/music--mpv-get-property "percent-pos")))
+      (cj/music--bar-string
+       (cj/music--bar-fill (and (numberp pct) pct) 100 cj/music-bar-width)
+       cj/music-bar-width))))
+
+(defun cj/music--hero-header (track)
+  "Fancy now-playing hero for TRACK: cover image, serif amber title, subtitle,
+and the progress bar, stacked vertically."
+  (let* ((img (cj/music--image (cj/music-art--for-track track) cj/music-hero-size))
+         (title (cj/music--display-name track (cj/music--radio-name-map)))
+         (sub (if (eq (emms-track-type track) 'url)
+                  "radio"
+                (or (emms-track-get track 'info-album) ""))))
+    (concat
+     (if img (concat (propertize " " 'display img) "\n") "")
+     (propertize title 'face (list :family cj/music-title-family
+                                   :inherit 'cj/music-title-face))
+     "\n"
+     (if (string-empty-p sub)
+         ""
+       (concat (propertize sub 'face 'cj/music-subtitle-face) "\n"))
+     (cj/music--current-bar track)
+     "\n")))
+
 ;; Multi-line header overlay
 (defvar-local cj/music--header-overlay nil
   "Overlay displaying the playlist header.")
 
-(defun cj/music--header-text ()
-  "Build a multi-line header string for the playlist buffer overlay."
-  (let* ((pl-name (if cj/music-playlist-file
-                      (file-name-sans-extension
-                       (file-name-nondirectory cj/music-playlist-file))
-                    "Untitled"))
-         (track-count (count-lines (point-min) (point-max)))
-         (now-playing (cond
-                       ((not emms-player-playing-p) "Stopped")
-                       (emms-player-paused-p "Paused")
-                       (t (let ((track (emms-playlist-current-selected-track)))
-                            (if track
-                                (concat (cj/music--display-name
-                                         track (cj/music--radio-name-map))
-                                        (cj/music--now-playing-suffix track))
-                              "Playing")))))
-         (mode-indicator
-          (lambda (key label active)
-            (let ((face (if active 'cj/music-mode-on-face 'cj/music-mode-off-face)))
-              (propertize (format "[%s] %s" key label) 'face face)))))
+(defun cj/music--playlist-string ()
+  "The \"Playlist : NAME (N)\" header line."
+  (let ((pl-name (if cj/music-playlist-file
+                     (file-name-sans-extension
+                      (file-name-nondirectory cj/music-playlist-file))
+                   "Untitled"))
+        (track-count (count-lines (point-min) (point-max))))
+    (concat (propertize "Playlist" 'face 'cj/music-header-face)
+            (propertize " : " 'face 'cj/music-header-face)
+            (propertize (format "%s (%d)" pl-name track-count)
+                        'face 'cj/music-header-value-face)
+            "\n")))
+
+(defun cj/music--controls-string ()
+  "The Mode / Keys / Radio control lines and the closing full-width rule.
+The rule uses a resize-safe :align-to span, not a hardcoded character count."
+  (let ((mode-indicator
+         (lambda (key label active)
+           (let ((face (if active 'cj/music-mode-on-face 'cj/music-mode-off-face)))
+             (propertize (format "[%s] %s" key label) 'face face)))))
     (concat
-     (propertize "Playlist" 'face 'cj/music-header-face)
-     (propertize " : " 'face 'cj/music-header-face)
-     (propertize (format "%s (%d)" pl-name track-count) 'face 'cj/music-header-value-face)
-     "\n"
-     (propertize "Current " 'face 'cj/music-header-face)
-     (propertize " : " 'face 'cj/music-header-face)
-     (propertize now-playing 'face 'cj/music-header-value-face)
-     "\n"
      (propertize "Mode    " 'face 'cj/music-header-face)
      (propertize " : " 'face 'cj/music-header-face)
-     (funcall mode-indicator "r" "repeat" (bound-and-true-p emms-repeat-playlist))
-     "  "
-     (funcall mode-indicator "s" "single" (bound-and-true-p emms-repeat-track))
-     "  "
-     (funcall mode-indicator "z" "random" (bound-and-true-p emms-random-playlist))
-     "  "
-     (funcall mode-indicator "x" "consume" cj/music-consume-mode)
-     "\n"
+     (funcall mode-indicator "r" "repeat" (bound-and-true-p emms-repeat-playlist)) "  "
+     (funcall mode-indicator "s" "single" (bound-and-true-p emms-repeat-track)) "  "
+     (funcall mode-indicator "z" "random" (bound-and-true-p emms-random-playlist)) "  "
+     (funcall mode-indicator "x" "consume" cj/music-consume-mode) "\n"
      (propertize "Keys    " 'face 'cj/music-header-face)
      (propertize " : " 'face 'cj/music-header-face)
      (propertize "a:add  c:clear  L:load  S:stop  SPC:pause  <>:skip  ↑↓:move  C-↑↓:reorder  q:dismiss"
-                 'face 'cj/music-keyhint-face)
-     "\n"
+                 'face 'cj/music-keyhint-face) "\n"
      (propertize "Radio   " 'face 'cj/music-header-face)
      (propertize " : " 'face 'cj/music-header-face)
      (propertize "n:by name  t:by tag  m:enter manually"
-                 'face 'cj/music-keyhint-face)
-     "\n"
-     ;; A full-width rule under the header, resize-safe (redisplay recomputes
-     ;; the :align-to span rather than a hardcoded character count).
+                 'face 'cj/music-keyhint-face) "\n"
      (propertize " " 'face '(:strike-through t :inherit shadow)
                  'display '(space :align-to right))
      "\n\n")))
+
+(defun cj/music--current-track ()
+  "The selected track when one is playing or paused, else nil."
+  (and emms-player-playing-p
+       (ignore-errors (emms-playlist-current-selected-track))))
+
+(defun cj/music--text-header ()
+  "The plain text header: Playlist, Current, then the controls."
+  (let ((now (cond ((not emms-player-playing-p) "Stopped")
+                   (emms-player-paused-p "Paused")
+                   (t (let ((track (cj/music--current-track)))
+                        (if track
+                            (concat (cj/music--display-name
+                                     track (cj/music--radio-name-map))
+                                    (cj/music--now-playing-suffix track))
+                          "Playing"))))))
+    (concat (cj/music--playlist-string)
+            (propertize "Current " 'face 'cj/music-header-face)
+            (propertize " : " 'face 'cj/music-header-face)
+            (propertize now 'face 'cj/music-header-value-face) "\n"
+            (cj/music--controls-string))))
+
+(defun cj/music--fancy-header ()
+  "The fancy header: Playlist, the now-playing hero when a track plays, then
+the controls."
+  (let ((track (cj/music--current-track)))
+    (concat (cj/music--playlist-string)
+            (if track
+                (cj/music--hero-header track)
+              (concat (propertize "Current " 'face 'cj/music-header-face)
+                      (propertize " : " 'face 'cj/music-header-face)
+                      (propertize (if emms-player-paused-p "Paused" "Stopped")
+                                  'face 'cj/music-header-value-face)
+                      "\n"))
+            (cj/music--controls-string))))
+
+(defun cj/music--header-text ()
+  "Build the playlist header overlay string: fancy in a graphical frame with
+`cj/music-fancy-ui' on, plain text otherwise."
+  (if (cj/music--fancy-p)
+      (cj/music--fancy-header)
+    (cj/music--text-header)))
 
 (defun cj/music--update-header ()
   "Insert or update the multi-line header overlay in the playlist buffer."
@@ -1003,6 +1166,43 @@ duration for a timed file, empty otherwise."
       (move-overlay cj/music--header-overlay (point-min) (point-min))
       (overlay-put cj/music--header-overlay 'before-string
                    (cj/music--header-text)))))
+
+;; Progress-bar redraw timer and cover-art pre-warm (Phase 3).
+(defvar cj/music--bar-timer nil
+  "Repeating timer redrawing the progress bar while a track plays.")
+
+(defun cj/music--bar-tick ()
+  "Redraw the header when the player buffer is visible and a track is playing.
+The timer keeps running while idle/paused; it just skips the redraw."
+  (when (and emms-player-playing-p (not emms-player-paused-p)
+             (get-buffer-window cj/music-playlist-buffer-name t))
+    (cj/music--update-header)))
+
+(defun cj/music--start-bar-timer (&rest _)
+  "Start the progress-bar redraw timer if it is not already running."
+  (unless cj/music--bar-timer
+    (setq cj/music--bar-timer
+          (run-at-time t cj/music-bar-interval #'cj/music--bar-tick))))
+
+(defun cj/music--stop-bar-timer (&rest _)
+  "Stop the progress-bar redraw timer."
+  (when cj/music--bar-timer
+    (cancel-timer cj/music--bar-timer)
+    (setq cj/music--bar-timer nil)))
+
+(defun cj/music--do-prewarm-art ()
+  "Fetch the current track's cover art, then refresh the header so the fetched
+art replaces the placeholder.  Blocks on the network; runs off an idle timer."
+  (when-let ((track (cj/music--current-track)))
+    (when (cj/music-art--ensure track)
+      (cj/music--update-header))))
+
+(defun cj/music--prewarm-art (&rest _)
+  "Schedule a cover-art fetch for the current track during idle, so a slow
+fetch never blocks playback start (the emms-player-started-hook).  A no-op
+unless fancy."
+  (when (cj/music--fancy-p)
+    (run-with-idle-timer 0.2 nil #'cj/music--do-prewarm-art)))
 
 (defvar-local cj/music--bg-remap-cookie nil
   "Cookie for the active-window background face remapping.")
@@ -1075,6 +1275,13 @@ duration for a timed file, empty otherwise."
   (add-hook 'emms-player-paused-hook #'cj/music--update-header)
   (add-hook 'emms-player-finished-hook #'cj/music--update-header)
   (add-hook 'emms-playlist-cleared-hook #'cj/music--update-header)
+
+  ;; Fancy render: run the bar timer only across a playing span, and pre-warm
+  ;; the current track's cover art off the redisplay path.
+  (add-hook 'emms-player-started-hook #'cj/music--start-bar-timer)
+  (add-hook 'emms-player-started-hook #'cj/music--prewarm-art)
+  (add-hook 'emms-player-stopped-hook #'cj/music--stop-bar-timer)
+  (add-hook 'emms-player-finished-hook #'cj/music--stop-bar-timer)
 
   ;; Refresh header immediately when toggling modes
   (dolist (fn '(emms-toggle-repeat-playlist
