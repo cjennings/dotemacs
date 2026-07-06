@@ -816,40 +816,59 @@ unchanged, so a non-URL name shows as-is instead of erroring."
           host))
     url))
 
-(defun cj/music--m3u-labels (text)
-  "Parse M3U TEXT into an alist of (STREAM-URL . #EXTINF-LABEL).
-A url line takes the label from the most recent #EXTINF; a url with no
-preceding #EXTINF is skipped, and other comment lines (a #RADIOBROWSERUUID)
-between the two are ignored."
-  (let ((pending nil) (pairs '()))
-    (dolist (line (split-string text "[\r\n]+" t) (nreverse pairs))
+(defun cj/music--m3u-entries (text)
+  "Parse M3U TEXT into an alist of (STREAM-URL . PLIST).
+Each PLIST carries :name (the #EXTINF label), :uuid (#RADIOBROWSERUUID), and
+:favicon (#RADIOBROWSERFAVICON), read from the comment lines preceding the url.
+A url with no #EXTINF is skipped; fields reset after each url so nothing leaks
+between stations."
+  (let ((name nil) (uuid nil) (favicon nil) (entries '()))
+    (dolist (line (split-string text "[\r\n]+" t) (nreverse entries))
       (cond
        ((string-match "\\`#EXTINF:[^,]*,\\(.*\\)\\'" line)
-        (setq pending (match-string 1 line)))
-       ((string-prefix-p "#" line))     ; other comment — keep PENDING
-       (t (when pending (push (cons line pending) pairs))
-          (setq pending nil))))))
+        (setq name (match-string 1 line)))
+       ((string-match "\\`#RADIOBROWSERUUID:\\(.*\\)\\'" line)
+        (setq uuid (match-string 1 line)))
+       ((string-match "\\`#RADIOBROWSERFAVICON:\\(.*\\)\\'" line)
+        (setq favicon (match-string 1 line)))
+       ((string-prefix-p "#" line))     ; other comment
+       (t (when name
+            (push (cons line (list :name name :uuid uuid :favicon favicon))
+                  entries))
+          (setq name nil uuid nil favicon nil))))))
 
-(defvar cj/music--radio-name-map-cache nil
-  "Cached url->#EXTINF-label alist across `cj/music-m3u-roots'.
+(defun cj/music--m3u-labels (text)
+  "Alist of (STREAM-URL . #EXTINF-LABEL) parsed from M3U TEXT.
+A thin projection of `cj/music--m3u-entries' onto the label field."
+  (mapcar (lambda (e) (cons (car e) (plist-get (cdr e) :name)))
+          (cj/music--m3u-entries text)))
+
+(defvar cj/music--radio-metadata-cache nil
+  "Cached url->plist metadata (:name :uuid :favicon) across `cj/music-m3u-roots'.
 Built lazily so a row render never re-scans disk; cleared by
 `cj/music--refresh-radio-name-map' when a station is created or a playlist
 loads.")
 
-(defun cj/music--radio-name-map ()
-  "Alist of stream-url -> station label, unioned across all playlist roots.
-Reads each .m3u once and caches the result."
-  (or cj/music--radio-name-map-cache
-      (setq cj/music--radio-name-map-cache
+(defun cj/music--radio-metadata ()
+  "Alist of stream-url -> plist metadata, unioned across all playlist roots.
+Reads each .m3u once and caches the result; both name resolution and the
+cover-art layer read from it."
+  (or cj/music--radio-metadata-cache
+      (setq cj/music--radio-metadata-cache
             (cl-loop for (_base . path) in (cj/music--get-m3u-files)
-                     append (cj/music--m3u-labels
+                     append (cj/music--m3u-entries
                              (with-temp-buffer
                                (insert-file-contents path)
                                (buffer-string)))))))
 
+(defun cj/music--radio-name-map ()
+  "Alist of stream-url -> station label, derived from the cached metadata."
+  (mapcar (lambda (e) (cons (car e) (plist-get (cdr e) :name)))
+          (cj/music--radio-metadata)))
+
 (defun cj/music--refresh-radio-name-map ()
-  "Clear the cached radio name-map so the next render rebuilds it."
-  (setq cj/music--radio-name-map-cache nil))
+  "Clear the cached radio metadata so the next render rebuilds it."
+  (setq cj/music--radio-metadata-cache nil))
 
 (defun cj/music--display-name (track &optional name-map)
   "Human display name for TRACK, name only (no duration).
@@ -1183,11 +1202,18 @@ Matches the existing radio files: #EXTM3U, an optional #RADIOBROWSERUUID line,
          ;; m3u lines; the API returns single-line names, but it's external data.
          (name (replace-regexp-in-string "[\r\n]+" " "
                                          (or (plist-get st :name) "Radio")))
-         (uuid (plist-get st :stationuuid)))
+         (uuid (plist-get st :stationuuid))
+         (favicon (plist-get st :favicon)))
     (when url
       (concat "#EXTM3U\n"
               (if (and (stringp uuid) (not (string-empty-p uuid)))
                   (format "#RADIOBROWSERUUID:%s\n" uuid)
+                "")
+              ;; Capture the favicon at creation so the cover-art layer needs
+              ;; no byuuid lookup later; same newline-strip guard as the name.
+              (if (and (stringp favicon) (not (string-empty-p favicon)))
+                  (format "#RADIOBROWSERFAVICON:%s\n"
+                          (replace-regexp-in-string "[\r\n]+" " " favicon))
                 "")
               (format "#EXTINF:1,%s\n%s\n" name url)))))
 
@@ -1387,6 +1413,133 @@ mpv (interrupting whatever was playing)."
   "Search radio-browser.info by tag/genre, then create and play a selection."
   (interactive "sRadio search (tag): ")
   (cj/music-radio--search-and-play tag "tag"))
+
+;; ------------------------------- Cover art -----------------------------------
+;; A track maps to a local cover-image path: a cached favicon/album art, or a
+;; shipped vinyl placeholder.  `cj/music-art--for-track' is non-blocking (it
+;; reads only the cache) so the row renderer can call it during redisplay;
+;; `cj/music-art--ensure' does the network fetch off the render path.  The pure
+;; pieces (cache key, favicon URL, image validation) carry the tests; the fetch
+;; is a live smoke test.  Consumed by the Phase 3 fancy render.
+
+(require 'image)
+
+(defvar cj/music-art-cache-dir
+  (expand-file-name "music-art/" (expand-file-name "data/" user-emacs-directory))
+  "Directory holding fetched or extracted cover art, keyed by station UUID or a
+file hash.  Gitignored runtime state; `cj/music-clear-art-cache' empties it.")
+
+(defvar cj/music-art-placeholder
+  (expand-file-name "vinyl-placeholder.svg"
+                    (expand-file-name "assets/" user-emacs-directory))
+  "Shipped vinyl-record placeholder shown when a track has no cover art.")
+
+(defun cj/music-art--cache-key (track &optional entries)
+  "Stable cache-file basename (no extension) for TRACK.
+A url with a #RADIOBROWSERUUID in ENTRIES keys on the uuid so a station shares
+one cached logo; any other url keys on a hash of its address; a file keys on a
+hash of its path."
+  (let ((name (emms-track-name track)))
+    (if (eq (emms-track-type track) 'url)
+        (let ((uuid (plist-get (cdr (assoc name entries)) :uuid)))
+          (if (and (stringp uuid) (not (string-empty-p uuid)))
+              uuid
+            (concat "url-" (sha1 name))))
+      (concat "file-" (sha1 name)))))
+
+(defun cj/music-art--favicon-url (track &optional entries)
+  "Direct favicon image URL for a url TRACK from its captured
+#RADIOBROWSERFAVICON, or nil.  A station with only a uuid resolves via a byuuid
+lookup elsewhere; a file track has no favicon URL."
+  (when (eq (emms-track-type track) 'url)
+    (let ((fav (plist-get (cdr (assoc (emms-track-name track) entries)) :favicon)))
+      (and (stringp fav) (not (string-empty-p fav)) fav))))
+
+(defun cj/music-art--valid-image-p (data)
+  "Non-nil when DATA looks like a displayable image (a recognizable image
+header), so an empty body, an HTML error page, or a text response is rejected
+before it is cached."
+  (and (stringp data) (not (string-empty-p data))
+       (image-type-from-data data) t))
+
+(defun cj/music-art--cached-file (key)
+  "Return an existing cached art file for KEY (any extension), or nil."
+  (car (file-expand-wildcards
+        (expand-file-name (concat key ".*") cj/music-art-cache-dir))))
+
+(defun cj/music-art--file-cover (track)
+  "Return a sibling cover image (cover/folder/front .jpg/.jpeg/.png) next to a
+file TRACK, or nil.  Embedded-tag art extraction is deferred (vNext)."
+  (when (eq (emms-track-type track) 'file)
+    (when-let ((dir (file-name-directory (emms-track-name track))))
+      (cl-loop for base in '("cover" "folder" "front")
+               thereis (cl-loop for ext in '("jpg" "jpeg" "png")
+                                for f = (expand-file-name (concat base "." ext) dir)
+                                when (file-exists-p f) return f)))))
+
+(defun cj/music-art--fetch-to-cache (url key)
+  "Fetch URL and, if it is a valid image, write it into the art cache under KEY.
+Returns the cached path, or nil on a failed or non-image response.  Blocks on
+the network, so call it off the redisplay path.  Only http/https URLs are
+fetched, so an external favicon field can't point the reader at a file:// or
+other-scheme resource."
+  (when-let* (((string-match-p "\\`https?://" url))
+              (data (cj/music-radio--http-get url))
+              ((cj/music-art--valid-image-p data)))
+    (make-directory cj/music-art-cache-dir t)
+    (let ((path (expand-file-name
+                 (concat key "." (symbol-name (image-type-from-data data)))
+                 cj/music-art-cache-dir))
+          (coding-system-for-write 'binary))
+      (with-temp-file path
+        (set-buffer-multibyte nil)
+        (insert data))
+      path)))
+
+(defun cj/music-art--byuuid-favicon (uuid)
+  "Look up station UUID via radio-browser byuuid and return its favicon URL, or
+nil.  The fallback for a legacy station that carries a uuid but no captured
+favicon.  Blocks on the network."
+  (when-let* ((body (cj/music-radio--http-get
+                     (format "https://%s/json/stations/byuuid/%s"
+                             cj/music-radio-server uuid)))
+              (stations (ignore-errors (cj/music-radio--parse-search body)))
+              (fav (plist-get (car stations) :favicon)))
+    (and (stringp fav) (not (string-empty-p fav)) fav)))
+
+(defun cj/music-art--for-track (track)
+  "Local cover-art path for TRACK, WITHOUT any network: an already-cached file,
+a sibling cover for a local file, else the vinyl placeholder.  Never blocks, so
+the row renderer can call it during redisplay; `cj/music-art--ensure' does the
+fetch off the render path."
+  (let ((key (cj/music-art--cache-key track (cj/music--radio-metadata))))
+    (or (cj/music-art--cached-file key)
+        (cj/music-art--file-cover track)
+        cj/music-art-placeholder)))
+
+(defun cj/music-art--ensure (track)
+  "Fetch and cache TRACK's cover art if it is not cached yet.  Blocks on the
+network, so call it off the redisplay path.  Returns the cached path, or nil
+when there is nothing to fetch."
+  (let* ((entries (cj/music--radio-metadata))
+         (key (cj/music-art--cache-key track entries)))
+    (unless (cj/music-art--cached-file key)
+      (when (eq (emms-track-type track) 'url)
+        (let ((fav (or (cj/music-art--favicon-url track entries)
+                       (let ((uuid (plist-get (cdr (assoc (emms-track-name track)
+                                                          entries))
+                                              :uuid)))
+                         (and (stringp uuid) (not (string-empty-p uuid))
+                              (cj/music-art--byuuid-favicon uuid))))))
+          (and fav (cj/music-art--fetch-to-cache fav key)))))))
+
+(defun cj/music-clear-art-cache ()
+  "Delete every cached cover-art file so art is re-fetched on next need."
+  (interactive)
+  (when (file-directory-p cj/music-art-cache-dir)
+    (dolist (f (directory-files cj/music-art-cache-dir t "\\`[^.]"))
+      (delete-file f)))
+  (message "Cleared music art cache: %s" cj/music-art-cache-dir))
 
 ;; Radio row in the playlist buffer: n = search by name, t = search by tag,
 ;; m = enter a station by hand.  This moves the "single" mode toggle off t to s

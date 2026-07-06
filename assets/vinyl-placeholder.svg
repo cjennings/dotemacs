@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="300" height="300" viewBox="0 0 300 300" role="img" aria-label="Vinyl record placeholder">
+  <defs>
+    <radialGradient id="disc" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#1a1a1a"/>
+      <stop offset="100%" stop-color="#000000"/>
+    </radialGradient>
+  </defs>
+  <circle cx="150" cy="150" r="148" fill="url(#disc)"/>
+  <g fill="none" stroke="#2b2b2b" stroke-width="1">
+    <circle cx="150" cy="150" r="138"/>
+    <circle cx="150" cy="150" r="126"/>
+    <circle cx="150" cy="150" r="114"/>
+    <circle cx="150" cy="150" r="102"/>
+    <circle cx="150" cy="150" r="90"/>
+    <circle cx="150" cy="150" r="78"/>
+  </g>
+  <circle cx="150" cy="150" r="52" fill="#d99a2b"/>
+  <circle cx="150" cy="150" r="52" fill="none" stroke="#a8741a" stroke-width="2"/>
+  <circle cx="150" cy="150" r="7" fill="#111111"/>
+</svg>

@@ -90,6 +90,21 @@
   "Error: a station with no usable stream URL emits nil (not a broken file)."
   (should-not (cj/music-radio--station-m3u '(:name "Broken" :url_resolved "" :url ""))))
 
+(ert-deftest test-music-radio-station-m3u-captures-favicon ()
+  "Normal: a station with a favicon writes a #RADIOBROWSERFAVICON line so the
+cover-art layer needs no lookup later."
+  (let ((m3u (cj/music-radio--station-m3u
+              '(:name "Art Radio" :url_resolved "https://art.example/live"
+                :stationuuid "u-art" :favicon "https://cdn.example/art.png"))))
+    (should (string-match-p "#RADIOBROWSERFAVICON:https://cdn.example/art.png" m3u))))
+
+(ert-deftest test-music-radio-station-m3u-no-favicon-omits-line ()
+  "Boundary: a station with an empty favicon writes no #RADIOBROWSERFAVICON line."
+  (let ((m3u (cj/music-radio--station-m3u
+              '(:name "Plain" :url_resolved "https://plain.example/live"
+                :stationuuid "u-plain" :favicon ""))))
+    (should-not (string-match-p "#RADIOBROWSERFAVICON" m3u))))
+
 ;;; --------------------------- tags-snippet -----------------------------------
 
 (ert-deftest test-music-radio-tags-snippet-takes-first-n ()
