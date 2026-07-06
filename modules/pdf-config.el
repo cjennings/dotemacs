@@ -8,9 +8,17 @@
 ;; Load shape: eager.
 ;; Eager reason: none; heavy PDF packages should load on PDF open, a file/mode
 ;;   deferral candidate.
-;; Top-level side effects: package configuration via use-package.
+;; Top-level side effects: a defgroup, defcustoms, a defvar-local, and package
+;;   configuration via use-package.
 ;; Runtime requires: none (configures packages via use-package).
 ;; Direct test load: yes.
+;;
+;; A reading-view palette layer sits on top of pdf-tools: a fresh PDF opens in
+;; the "dark" tint, and `c' cycles dark -> sepia -> light -> none, mirroring the
+;; nov-mode reading view (see nov-reading.el).  Each palette is a (FG . BG) cons
+;; driven through `pdf-view-midnight-minor-mode', which recolors the rendered
+;; page as a duotone -- so "sepia" and "light" are the same mechanism as the
+;; built-in midnight mode, just with warmer / lighter color pairs.
 ;;
 ;;; Code:
 
@@ -30,13 +38,107 @@
 (declare-function cj/open-file-with-command "system-utils")
 (declare-function cj/org-noter-insert-note-dwim "org-noter-config")
 
+;; `pdf-view-midnight-colors' lives in pdf-view.el, which loads lazily on the
+;; first PDF open.  Declare it special so the `setq-local' below compiles as a
+;; dynamic binding rather than a lexical no-op.
+(defvar pdf-view-midnight-colors)
+
+;; ------------------------------ Reading palettes -----------------------------
+;; pdf-view has no sepia/light of its own -- only a binary midnight toggle.  This
+;; layer generalizes that toggle into a named palette cycle: `pdf-view-midnight-
+;; minor-mode' recolors the page from a (FG . BG) pair, so any tint is just a
+;; different pair.  Colors mirror the nov-reading palettes for a consistent read
+;; across EPUBs and PDFs; tune them there and here together.
+
+(defgroup cj/pdf-reading nil
+  "Reading-view theming for pdf-view PDFs."
+  :group 'cj)
+
+(defcustom cj/pdf-reading-palettes
+  '(("dark"  . ("#cfc8b8" . "#15140f"))
+    ("sepia" . ("#c9b187" . "#1f1b16"))
+    ("light" . ("#2a2622" . "#ece3cf")))
+  "Alist of reading-palette NAME -> (FOREGROUND . BACKGROUND) for pdf-view.
+Each value is the color pair `pdf-view-midnight-minor-mode' renders the page
+with (white maps to BACKGROUND, black to FOREGROUND).  The selector and cycle
+commands choose among these names; add an entry to add a palette."
+  :type '(alist :key-type string
+                :value-type (cons (string :tag "Foreground")
+                                  (string :tag "Background")))
+  :group 'cj/pdf-reading)
+
+(defcustom cj/pdf-reading-default-palette "dark"
+  "Reading palette applied to a freshly opened PDF.
+A key in `cj/pdf-reading-palettes', or nil for the PDF's native colors."
+  :type '(choice (const :tag "None (native colors)" nil) string)
+  :group 'cj/pdf-reading)
+
+(defvar-local cj/pdf--reading-palette nil
+  "Name of the reading palette active in this pdf buffer, or nil for none.")
+
+(defun cj/pdf--reading-palette-colors (name)
+  "Return the (FOREGROUND . BACKGROUND) cons for palette NAME, or nil when unknown.
+NAME nil (the no-palette state) and unknown names both yield nil."
+  (cdr (assoc name cj/pdf-reading-palettes)))
+
+(defun cj/pdf--next-reading-palette (current names)
+  "Return the palette after CURRENT in the cycle NAMES then nil, wrapping.
+CURRENT nil is the no-palette state, and a returned nil means no palette.  An
+unknown CURRENT falls back to the first palette."
+  (let* ((cycle (append names (list nil)))
+         (tail (cdr (member current cycle))))
+    (car (or tail cycle))))
+
+(defun cj/pdf--apply-reading-palette (name)
+  "Apply reading palette NAME to this pdf buffer; NAME nil removes any palette.
+Drives `pdf-view-midnight-minor-mode' with the palette's (FG . BG) colors so the
+page renders as a duotone in the reading tint.  An unknown or nil NAME turns
+midnight mode off, restoring the PDF's native colors."
+  (let ((colors (cj/pdf--reading-palette-colors name)))
+    (if colors
+        (progn
+          (setq-local pdf-view-midnight-colors colors)
+          (pdf-view-midnight-minor-mode 1)
+          (setq cj/pdf--reading-palette name))
+      (pdf-view-midnight-minor-mode -1)
+      (setq cj/pdf--reading-palette nil))))
+
+(defun cj/pdf-set-reading-palette (name)
+  "Choose reading palette NAME for this pdf buffer; \"none\" clears it.
+Interactively prompts among `cj/pdf-reading-palettes' plus \"none\"."
+  (interactive
+   (list (completing-read "Reading palette: "
+                          (cons "none" (mapcar #'car cj/pdf-reading-palettes))
+                          nil t)))
+  (unless (derived-mode-p 'pdf-view-mode)
+    (user-error "Not in a pdf-view-mode buffer"))
+  (cj/pdf--apply-reading-palette (unless (equal name "none") name))
+  (message "Reading palette: %s" (or cj/pdf--reading-palette "none")))
+
+(defun cj/pdf-cycle-reading-palette ()
+  "Cycle to the next reading palette, then the no-palette state, wrapping."
+  (interactive)
+  (unless (derived-mode-p 'pdf-view-mode)
+    (user-error "Not in a pdf-view-mode buffer"))
+  (let ((next (cj/pdf--next-reading-palette
+               cj/pdf--reading-palette
+               (mapcar #'car cj/pdf-reading-palettes))))
+    (cj/pdf--apply-reading-palette next)
+    (message "Reading palette: %s" (or next "none"))))
+
+(defun cj/pdf-reading-setup ()
+  "Apply the default reading palette to a freshly opened PDF.
+Called from the `pdf-view-mode' launch hook."
+  (when cj/pdf-reading-default-palette
+    (cj/pdf--apply-reading-palette cj/pdf-reading-default-palette)))
+
 ;; --------------------------------- PDF Tools ---------------------------------
 
 (use-package pdf-tools
   :defer t
   :mode (("\\.pdf\\'" . pdf-view-mode))
   :hook
-  (pdf-view-mode . pdf-view-midnight-minor-mode)
+  (pdf-view-mode . cj/pdf-reading-setup)
   :custom
   (pdf-view-display-size 'fit-page)
   (pdf-view-resize-factor 1.1)
@@ -61,7 +163,11 @@
     (with-current-buffer buf
       (when (eq major-mode 'pdf-view-mode)
         (revert-buffer nil t))))
-  (define-key pdf-view-mode-map "M" #'pdf-view-midnight-minor-mode)
+  ;; Reading palette: c cycles dark -> sepia -> light -> none, C selects by name.
+  ;; M keeps the old midnight key working, now as the cycle.
+  (define-key pdf-view-mode-map "c" #'cj/pdf-cycle-reading-palette)
+  (define-key pdf-view-mode-map "C" #'cj/pdf-set-reading-palette)
+  (define-key pdf-view-mode-map "M" #'cj/pdf-cycle-reading-palette)
   (define-key pdf-view-mode-map "m" #'bookmark-set)
   (define-key pdf-view-mode-map (kbd "C-=") #'pdf-view-enlarge)
   (define-key pdf-view-mode-map (kbd "C--") #'pdf-view-shrink)

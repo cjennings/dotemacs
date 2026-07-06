@@ -93,12 +93,12 @@
   :group 'cj/nov-reading)
 
 (defcustom cj/nov-reading-palettes
-  '(("sepia" :face cj/nov-reading-sepia
-             :heading cj/nov-reading-sepia-heading
-             :link cj/nov-reading-sepia-link)
-    ("dark"  :face cj/nov-reading-dark
+  '(("dark"  :face cj/nov-reading-dark
              :heading cj/nov-reading-dark-heading
              :link cj/nov-reading-dark-link)
+    ("sepia" :face cj/nov-reading-sepia
+             :heading cj/nov-reading-sepia-heading
+             :link cj/nov-reading-sepia-link)
     ("light" :face cj/nov-reading-light
              :heading cj/nov-reading-light-heading
              :link cj/nov-reading-light-link))
@@ -114,7 +114,7 @@ palette; omit :heading or :link to leave that element at the theme's default."
                 (plist :options ((:face face) (:heading face) (:link face))))
   :group 'cj/nov-reading)
 
-(defcustom cj/nov-reading-default-palette "sepia"
+(defcustom cj/nov-reading-default-palette "dark"
   "Reading palette applied to a fresh nov-mode buffer.
 A key in `cj/nov-reading-palettes', or nil for the theme's normal rendering."
   :type '(choice (const :tag "None (theme default)" nil) string)
