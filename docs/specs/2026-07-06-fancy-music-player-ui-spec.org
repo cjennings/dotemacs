@@ -4,15 +4,17 @@
 #+TODO: TODO | DONE
 #+TODO: DRAFT READY DOING | IMPLEMENTED SUPERSEDED CANCELLED
 
-* DRAFT Fancy music-player UI
+* READY Fancy music-player UI
 :PROPERTIES:
 :ID:       af4f2688-ce7d-43f5-82e5-595a603e2593
 :END:
+- 2026-07-06 Mon @ 15:14:06 -0500 — spec-response: all 7 findings dispositioned (5 accept, 2 modify, 0 reject), Review findings [7/7]. Both blockers resolved and folded in. Decisions [5/5], no blocking open → Ready. DRAFT -> READY.
+- 2026-07-06 Mon @ 15:14:06 -0500 — spec-review: Not ready. Decisions [5/5] but Review findings [0/7], two :blocking: (progress-bar data source undefined; row rendering overloads cj/music--track-description). Stays DRAFT until dispositioned.
 - 2026-07-06 Mon @ 15:03:57 -0500 — Craig accepted all five recommended decisions; Decisions [5/5]. Still DRAFT, ready for spec-review.
 - 2026-07-06 Mon @ 14:38:15 -0500 — drafted.
 
 * Metadata
-| Status   | draft                                                             |
+| Status   | ready                                                             |
 |----------+-------------------------------------------------------------------|
 | Owner    | Craig Jennings                                                    |
 |----------+-------------------------------------------------------------------|
@@ -57,9 +59,9 @@ At a caller's altitude: Craig opens the music player as today (same keys). Inste
 
 At the implementer's altitude, three layers, each shippable on its own:
 
-1. Name resolution (pure + text, TTY-safe). A function maps a track to its display name: for a url track, the #EXTINF label from its .m3u if present, else the station name resolved from radio-browser, else a tidied host; for a file track, artist and title from EMMS track info. The row renders name + a dim nerd-icon glyph (broadcast for streams, note for files) + right-aligned meta. The now-playing line under Current gets a thin faces-drawn bar plus a time / "on air" string. This is the plain text base and the fallback; it has no images.
+1. Name resolution (pure + text, TTY-safe). A pure cj/music--display-name maps a track to its name only: for a url track, the #EXTINF label from its .m3u if present, else the station name resolved from radio-browser, else a tidied host; for a file track, artist and title from EMMS track info. This helper is shared — the header's Current line calls it directly, and so does the row renderer — so the two never drift and the glyph/meta never leak into the header. Row rendering is a separate seam: emms-track-description-function composes cj/music--display-name + a dim nerd-icon glyph (broadcast for streams, note for files) + right-aligned meta. The glyph is guarded on nerd-icons being available with a Nerd Font present (music-config.el gains the require/guard — it doesn't reference nerd-icons today), degrading to a plain marker or none otherwise. The meta is right-aligned with a display :align-to spec so it stays aligned across window resizes, not a pad-to-column computed once at insert time. The now-playing line under Current gets a thin faces-drawn bar plus a time / "on air" string. This is the plain text base and the fallback; it has no images.
 
-2. Cover art (image infra). cj/music-art--for-track returns a cached local image path for a track: a station favicon (from the station plist at creation time, or a byuuid lookup for an existing .m3u carrying #RADIOBROWSERUUID), embedded album art for a file, or a generated vinyl placeholder when neither exists. Fetches are asynchronous and written to an on-disk cache keyed by station UUID or file, so a redisplay never blocks on the network and art survives restarts.
+2. Cover art (image infra). cj/music-art--for-track returns a cached local image path for a track: a station favicon (from the station plist at creation time, or a byuuid lookup for an existing .m3u carrying #RADIOBROWSERUUID), embedded album art for a file, or the vinyl placeholder when neither exists. An empty favicon field counts as no art, and a fetched response is cached only after it validates as a displayable image (a create-image / image-type-available-p probe); a non-image or unsupported-format response (an .ico Emacs can't show, an HTML error page served 200) falls to the placeholder, a distinct outcome from a failed fetch. The placeholder is a single shipped static SVG asset under assets/ that scales cleanly at hero and thumbnail sizes on any DPI — not procedurally generated per station (per-station tinting is vNext); on an Emacs without svg support it degrades to no image. Fetches are asynchronous and written to an on-disk cache keyed by station UUID or file, so a redisplay never blocks on the network and art survives restarts.
 
 3. Fancy render (GUI). When the frame is graphical and the fancy view is on, cj/music--header-text and the row renderer insert the cover images (create-image / insert-image), remap the title to a serif variable-pitch face, and paint the amber palette and the segmented progress bar. A small timer advances the bar during playback. When the frame is a TTY or the fancy view is off, the render falls through to layer 1's text.
 
@@ -86,8 +88,8 @@ Pure pieces (name resolution, the m3u-label extraction, the bar-fill computation
 ** DONE Cover art for streams — where the favicon comes from
 - Owner / by-when: Craig / before Phase 2
 - Context: a radio-browser search result carries a favicon URL, so a newly-created station can capture it. An existing .m3u only has the stream URL and (on 15 of 73) a #RADIOBROWSERUUID; the other 58 have no UUID. A byuuid lookup gets the favicon for the ones that have a UUID.
-- Decision: We will (a) write a #RADIOBROWSERFAVICON line into new stations at creation so they need no lookup, (b) for an existing station carrying #RADIOBROWSERUUID, fetch the favicon by UUID once and cache it, and (c) for a station with neither, use the generated vinyl placeholder.
-- Consequences: easier — most stations get real art with at most one lookup; harder — a small .m3u format addition (an extra comment line) and a byuuid path for legacy files.
+- Decision: We will (a) write a #RADIOBROWSERFAVICON line into search-created stations at creation (the radio-browser result carries the favicon) so they need no lookup, (b) for an existing station carrying #RADIOBROWSERUUID, fetch the favicon by UUID once and cache it, and (c) for a station with neither — including manually-created stations (the m row and cj/music-create-radio-station), which have no favicon and no UUID — use the vinyl placeholder.
+- Consequences: easier — most stations get real art with at most one lookup; harder — a small .m3u format addition (an extra comment line) and a byuuid path for legacy files. Manually-entered stations always show the placeholder, which is acceptable.
 
 ** DONE Image cache location and refresh
 - Owner / by-when: Craig / before Phase 2
@@ -98,14 +100,14 @@ Pure pieces (name resolution, the m3u-label extraction, the bar-fill computation
 ** DONE Serif title face
 - Owner / by-when: Craig / before Phase 3
 - Context: the fancy titles want a serif variable-pitch face, theme-owned.
-- Decision: We will add a defcustom for the title family (default a widely-available serif, e.g. the same reading serif the nov reading view uses) and a theme-owned face the dupre theme colors.
+- Decision: We will add a defcustom for the title family defaulting to the nov reading view's serif (cj/nov-reading-font-family, currently "Merriweather") and a theme-owned face the dupre theme colors.
 - Consequences: easier — one knob, consistent with the nov-reading typography choice; harder — another face to register in theme-studio if we want it tunable there (deferred).
 
 ** DONE Progress bar rendering and cadence
 - Owner / by-when: Craig / before Phase 3
 - Context: the bar can be drawn with block-character faces or a small SVG; it advances during playback via a timer.
-- Decision: We will draw the bar with faces (block characters, accent-colored fill) rather than SVG for v1, and redraw on a ~1s timer only while a track is playing, only when the player buffer is visible.
-- Consequences: easier — no SVG dependency, works the moment faces do; harder — a character-cell bar is coarser than an SVG one (fine for v1; SVG is a vNext upgrade).
+- Decision: We will draw the bar with faces (block characters, accent-colored fill) rather than SVG for v1, and redraw on a ~1s timer only while a track is playing, only when the player buffer is visible. The bar's data is per track type: a stream has no duration, so it renders indeterminate (the existing "on air" line, no fill); a local file renders elapsed/total, where total is info-playing-time (already read at music-config.el:807) and elapsed comes from an mpv IPC get_property round-trip on percent-pos — cj/music--mpv-command (currently send-only) is extended to read its reply, or a small cj/music--mpv-get-property helper is added. v1 does not re-enable EMMS's own playing-time timer (deliberately disabled at music-config.el:941); mpv is the single position source.
+- Consequences: easier — no SVG dependency, works the moment faces do, and mpv already runs the socket the seek commands use; harder — a character-cell bar is coarser than an SVG one (fine for v1; SVG is a vNext upgrade), and the file bar needs a reply-reading round-trip the seek path never needed. mpv's get_property over the JSON IPC socket is a documented, stable command.
 
 ** DONE Fancy view toggle and TTY fallback
 - Owner / by-when: Craig / before Phase 3
@@ -113,13 +115,43 @@ Pure pieces (name resolution, the m3u-label extraction, the bar-fill computation
 - Decision: We will gate the fancy render on (display-graphic-p) AND a defcustom (default on), falling through to the layer-1 text render otherwise, decided per-redisplay so a frame on a TTY and a frame on a GUI can differ live.
 - Consequences: easier — never broken in a TTY, user can opt out; harder — both render paths stay maintained (already a chosen tradeoff).
 
+* Review findings [7/7]
+
+** DONE Progress-bar data source is undefined :blocking:
+Decision 4 picks the bar's rendering (block-char faces) and cadence (~1s timer), but never its input: where elapsed and total come from per track type. Two facts from the code make this a gap the implementer would have to invent. First, a radio stream has no duration — the bar is indeterminate, and the header already shows "on air" for it. Second, for a local file the elapsed position is not available today: emms-playing-time-display-mode is disabled (music-config.el:941), and cj/music--mpv-command (music-config.el:168) is send-only — it writes to the mpv IPC socket and discards the reply, so nothing reads back time-pos. The total duration is reachable (info-playing-time, already used at music-config.el:807), but the moving position is not.
+MODIFY — folded into Decision 4. Accepted the gap; narrowed the resolution: v1 uses mpv's JSON IPC get_property on percent-pos (simplest — 0..100 directly) as the single position source for local files, with cj/music--mpv-command extended to read its reply; a stream renders indeterminate ("on air", no fill). Deliberately did NOT re-enable EMMS's own playing-time timer (it was disabled on purpose), keeping mpv the one source rather than reviving parallel machinery.
+
+** DONE Row rendering overloads cj/music--track-description :blocking:
+The Design named the row renderer as cj/music--track-description, but that function is also the source of the header's now-playing line (music-config.el:843) and is EMMS's emms-track-description-function (music-config.el:952), so EMMS calls it for the mode line and elsewhere. Overloading it with glyph + meta + image leaks those into the header and every other consumer.
+ACCEPT — folded into Design layer 1 and Phase 1. A pure cj/music--display-name (name only) is now the shared seam the header's Current line and the row renderer both call; only the row renderer (emms-track-description-function) adds the glyph, :align-to meta, and Phase-3 image, so the header stays clean.
+
+** DONE "#RADIOBROWSERFAVICON at creation" only covers search-created stations
+Decision 1(a) wrote a favicon line into "new stations at creation," but only the radio-browser search path (cj/music-radio--station-m3u, music-config.el:1078) has a favicon in hand. The manual creators — the m row and cj/music-create-radio-station (music-config.el:1014) — take just a name and URL and have none.
+ACCEPT — folded into Decision 1. Scoped clause (a) to search-created stations and stated that manually-created stations (no favicon, no UUID) show the vinyl placeholder.
+
+** DONE Fetched favicon may be empty, non-image, or an unsupported format
+radio-browser's favicon field is frequently the empty string, and when present can be an .ico, .svg, .gif, an HTML error page served 200, or an oversized image. Placeholder-on-fetch-failure covers a failed request but not a successful fetch that isn't a usable image.
+ACCEPT — folded into Design layer 2, Phase 2, and acceptance. Empty favicon counts as no art; a fetched response is cached only after it validates as a displayable image (create-image / image-type-available-p probe), else placeholder — a distinct outcome from a failed fetch. The decision helper's tests cover empty and non-image inputs.
+
+** DONE Right-aligned meta goes stale on window resize
+emms-track-description-function runs at track-insert time, not on redisplay, so a meta column computed from window width at insert is wrong after the playlist window resizes (F10 docks it right or bottom at varying widths — music-config.el:659).
+ACCEPT — folded into Design layer 1 and Phase 1. The meta is right-aligned with a display :align-to spec, recomputed by redisplay, rather than a pad-to-column measured once.
+
+** DONE Vinyl placeholder generation mechanism unnamed
+The spec called the placeholder "generated" without saying how — SVG (needs svg support) or a shipped static asset.
+MODIFY — folded into Design layer 2 and Phase 2. Named it and narrowed scope: v1 ships a single static vinyl-placeholder SVG under assets/ (scales at hero and thumbnail sizes, degrades to no image where svg is unavailable), NOT procedurally generated per station. Per-station tinted generation is explicitly vNext — that's the "generated" ambition the original word implied, deferred.
+
+** DONE nerd-icons is not required in music-config.el
+The Reuse dimension claimed the row glyphs reuse nerd-icons "already used by dashboard/dirvish," but music-config.el neither requires nor references it today (it loads only transitively).
+ACCEPT — folded into Design layer 1 and Phase 1. Phase 1 adds the require/availability guard; the glyph needs a Nerd Font in the GUI and degrades to a plain marker or none otherwise, so a row never renders a tofu box.
+
 * Implementation phases
 
 ** Phase 1 — Name resolution + text base (TTY-safe, no images)
-Map a track to a display name (url -> #EXTINF label / radio-browser name / tidy host; file -> artist and title), render rows as name + dim glyph + right-aligned meta, and add the thin now-playing bar + time/on-air line and the header spacing + rule. Unit-test the pure name/label/bar-fill helpers. Ships the "names not URLs" win on its own and is the fallback for later phases.
+Extract a pure cj/music--display-name (url -> #EXTINF label / radio-browser name / tidy host; file -> artist and title) and point the header's Current line at it. Add the row renderer on emms-track-description-function: display-name + dim glyph (nerd-icons require/guard, TTY fallback) + :align-to right-aligned meta. Add the thin now-playing bar + time/on-air line and the header spacing + rule. Unit-test the pure name/label/bar-fill helpers. Ships the "names not URLs" win on its own and is the fallback for later phases.
 
 ** Phase 2 — Cover art fetch + cache (image infra)
-cj/music-art--for-track returning a cached local image path: favicon capture at station creation (a #RADIOBROWSERFAVICON line), byuuid favicon fetch for legacy UUID stations, embedded album art for files, and a generated vinyl placeholder. Async fetch into data/music-art/. Unit-test the art-vs-placeholder decision and the cache-key logic; the fetch is a smoke test.
+cj/music-art--for-track returning a cached local image path: favicon capture at search-station creation (a #RADIOBROWSERFAVICON line), byuuid favicon fetch for legacy UUID stations, embedded album art for files, and the shipped vinyl-placeholder SVG when neither resolves. Validate a fetched response is a displayable image before caching (empty / non-image / unsupported-format -> placeholder). Async fetch into data/music-art/. Unit-test the art-vs-placeholder decision (including empty and non-image inputs) and the cache-key logic; the fetch is a smoke test.
 
 ** Phase 3 — Fancy GUI render
 The now-playing hero (cover image + serif title + subtitle + segmented bar) and the thumbnailed serif list with the amber palette, gated on (display-graphic-p) + the toggle, degrading to Phase 1's text. The ~1s playback timer. Live verification (images, faces, the bar advancing) since it can't run headless.
@@ -127,8 +159,9 @@ The now-playing hero (cover image + serif title + subtitle + segmented bar) and 
 * Acceptance criteria
 - [ ] A radio row shows the station name, not the stream URL; a local track shows artist and title.
 - [ ] Each row shows a dim glyph (broadcast for streams, note for files) and right-aligned meta.
-- [ ] In a GUI frame with the fancy view on, the now-playing hero shows the current station's cover art, a serif title, and a progress bar that advances during playback.
-- [ ] A station with no favicon or embedded art shows the generated vinyl placeholder, not a broken image.
+- [ ] The header's Current line and the playlist rows both derive their name from the shared cj/music--display-name; the header line carries no row glyph or meta.
+- [ ] In a GUI frame with the fancy view on, the now-playing hero shows the current station's cover art, a serif title, and a progress bar. For a local file the bar advances from mpv's reported position; for a stream it shows "on air" with no fill.
+- [ ] A station with no favicon or embedded art shows the vinyl placeholder, not a broken image; a fetched favicon that is empty, non-image, or an unsupported format also yields the placeholder and is not cached as art.
 - [ ] In a TTY frame, or with the fancy view off, the same buffer renders the text version (names + glyph + thin bar) with no images and no errors.
 - [ ] Art is fetched once and cached under data/music-art/; a second open is instant and works offline.
 - [ ] The name/label, bar-fill, and art-decision helpers have Normal/Boundary/Error tests.
@@ -157,7 +190,12 @@ The now-playing hero (cover image + serif title + subtitle + segmented bar) and 
 - radio-browser favicon + byuuid verified live 2026-07-06 against de1.api.radio-browser.info.
 
 * Review and iteration history
-** 2026-07-06 Mon @ 14:38:15 -0500 — Claude (for Craig) — author
-- What: initial draft, after Craig picked the fancy direction from the three-way prototype.
-- Why: the player shows raw stream URLs and reads as a debug buffer; the fancy look needs cover art, serif titles, and a now-playing hero, which is real infrastructure (image fetch/cache, GUI-vs-TTY) worth a spec.
-- Artifacts: the fancy prototype; radio-browser favicon/byuuid verified live.
+** 2026-07-06 Mon @ 15:14:06 -0500 — Claude Code (emacs-d) — responder
+- What: dispositioned all 7 review findings — 5 accept, 2 modify, 0 reject; Review findings [7/7]. Modifies: (1) the progress-bar data source narrowed to mpv percent-pos over the existing IPC socket for files + indeterminate "on air" for streams, deliberately not reviving EMMS's disabled playing-time timer; (6) the placeholder named as a single shipped static vinyl SVG under assets/, with per-station tinted generation pushed to vNext. Accepts folded into Design layers 1-2, Decisions 1/3/4, Phases 1-2, and acceptance criteria: the pure cj/music--display-name split so the header never gets row glyph/meta, :align-to meta, fetched-image validation, favicon-at-creation scoped to search stations, the nerd-icons guard, and Decision 3's serif pinned to Merriweather. Flipped DRAFT -> READY (keyword + history + Metadata mirror).
+- Why: two findings were true blockers that would have forced the implementer to invent behavior; the rest tightened scope and named mechanisms. The modifies avoid re-introducing machinery that was turned off on purpose (the EMMS timer) and defer the expensive half of "generated" art.
+- Artifacts: Review findings [7/7] in this spec; scope-expansion check — mpv get_property percent-pos is a documented IPC command on an already-open socket, the SVG asset uses built-in svg on the GUI-only path, so neither adds an unverified dependency needing a new finding.
+
+** 2026-07-06 Mon @ 15:14:06 -0500 — Claude Code (emacs-d) — reviewer
+- What: first review pass. Read the render path in modules/music-config.el (cj/music--track-description, cj/music--header-text/update-header, the emms use-package config, the radio client) before critiquing. Rubric: Not ready — recorded Review findings [0/7], two :blocking:. The three implementation phases are present and cleanly decomposable (each reaches a clean stopping point; no broken intermediate state). Confirmed the concrete default for Decision 3's serif is cj/nov-reading-font-family = "Merriweather" (nov-reading.el:197), and that data/ is gitignored (so data/music-art/ under Decision 2 is covered).
+- Why: two gaps would force the implementer to invent product behavior. The progress bar has a chosen rendering and cadence but no data source — a stream has no duration, and for a local file the elapsed position isn't wired (playing-time display disabled, the mpv IPC helper is send-only). And the named row-render seam, cj/music--track-description, is shared by the header's Current line and EMMS internals, so overloading it with glyph/meta/image corrupts them. Five non-blocking findings tighten the favicon-at-creation scope, fetched-image validation, resize-safe meta alignment, the placeholder mechanism, and the nerd-icons dependency.
+- Artifacts: Review findings [0/7] in this spec; source checks at music-config.el:168/807/843/941/952/1014/1078 and nov-reading.el:197.
