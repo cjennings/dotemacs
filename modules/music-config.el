@@ -1146,5 +1146,132 @@ Tries `cj/music-radio-server' first, then falls back to a host from
     (unless body (user-error "radio-browser: no response (network down?)"))
     (cj/music-radio--parse-search body)))
 
+(defun cj/music-radio--candidates (stations)
+  "Return an alist of (DISPLAY . STATION) for STATIONS with unique display keys.
+DISPLAY is the station name; a repeated name gets its codec/bitrate appended,
+then a numeric suffix, so completing-read keys never collide and each maps back
+to one station.  Pure helper."
+  (let ((seen (make-hash-table :test 'equal))
+        (out '()))
+    (dolist (st stations (nreverse out))
+      (let* ((name (string-trim (or (plist-get st :name) "(unnamed)")))
+             (disp name)
+             (n 2))
+        (when (gethash disp seen)
+          (setq disp (format "%s (%s%s)" name (or (plist-get st :codec) "")
+                             (let ((b (plist-get st :bitrate)))
+                               (if (and (integerp b) (> b 0)) (format " %dk" b) "")))))
+        (while (gethash disp seen)
+          (setq disp (format "%s #%d" name n))
+          (setq n (1+ n)))
+        (puthash disp t seen)
+        (push (cons disp st) out)))))
+
+(defun cj/music-radio--write-stations (stations dir)
+  "Write each station in STATIONS as an .m3u into DIR.
+Skips a station with no stream URL and disambiguates a filename that collides
+with an already-written one this run.  Returns a plist (:written PATHS :skipped
+NAMES).  Creates DIR when absent."
+  (make-directory dir t)
+  (let ((taken '()) (written '()) (skipped '()))
+    (dolist (st stations)
+      (let ((m3u (cj/music-radio--station-m3u st)))
+        (if (not m3u)
+            (push (or (plist-get st :name) "(unnamed)") skipped)
+          (let* ((base (cj/music-radio--disambiguate-name
+                        (or (plist-get st :name) "Radio")
+                        (plist-get st :stationuuid) taken))
+                 (path (expand-file-name (concat base ".m3u") dir)))
+            (push base taken)
+            (with-temp-file path (insert m3u))
+            (push path written)))))
+    (list :written (nreverse written) :skipped (nreverse skipped))))
+
+(defun cj/music-radio--completion-table (candidates)
+  "Completion table over CANDIDATES carrying the Variant-B marginalia affix."
+  (lambda (string pred action)
+    (if (eq action 'metadata)
+        `(metadata
+          (category . cj-radio-station)
+          (affixation-function
+           . ,(lambda (cands)
+                (mapcar (lambda (c)
+                          (let ((st (cdr (assoc c candidates))))
+                            ;; The "[done]" sentinel has no station, so it gets
+                            ;; no annotation rather than a bogus "0" row.
+                            (list c "" (if st
+                                           (concat "   "
+                                                   (propertize (cj/music-radio--format-candidate st)
+                                                               'face 'completions-annotations))
+                                         ""))))
+                        cands))))
+      (complete-with-action action (mapcar #'car candidates) string pred))))
+
+(defun cj/music-radio--pick-loop (candidates)
+  "Repeatedly prompt to pick from CANDIDATES until \"[done]\" is chosen.
+CANDIDATES is a (DISPLAY . STATION) alist.  Returns the chosen station plists in
+selection order; each pick is removed from the pool so it can't be chosen twice."
+  (let ((pool (copy-sequence candidates))
+        (chosen '())
+        (done nil))
+    (while (and (not done) pool)
+      (let ((pick (completing-read
+                   (format "Add station (%d picked, RET [done] to finish): "
+                           (length chosen))
+                   (cj/music-radio--completion-table (cons '("[done]") pool))
+                   nil t)))
+        (if (equal pick "[done]")
+            (setq done t)
+          (when-let ((cell (assoc pick pool)))
+            (push (cdr cell) chosen)
+            (setq pool (delq cell pool))))))
+    (nreverse chosen)))
+
+(defun cj/music-radio--play (paths)
+  "Play the first .m3u in PATHS immediately (interrupting), enqueue the rest."
+  (when paths
+    (emms-play-playlist (car paths))
+    (dolist (p (cdr paths))
+      (emms-add-playlist p))))
+
+(defun cj/music-radio-search (query)
+  "Search radio-browser.info for QUERY, pick stations, then create and play them.
+Prompts for a query, lists matching stations (annotated with codec, bitrate,
+country, votes, and tags), and lets you pick several one at a time.  Each pick is
+written as an .m3u into `cj/music-radio-save-dir', then the selection plays
+through mpv (interrupting whatever was playing)."
+  (interactive "sRadio search: ")
+  (when (string-empty-p (string-trim query))
+    (user-error "Empty search"))
+  (let* ((stations (cj/music-radio--search query))
+         (candidates (cj/music-radio--candidates stations)))
+    (unless candidates
+      (user-error "No stations found for %S" query))
+    (let ((chosen (cj/music-radio--pick-loop candidates)))
+      (unless chosen
+        (user-error "No stations selected"))
+      (let* ((result (cj/music-radio--write-stations chosen cj/music-radio-save-dir))
+             (written (plist-get result :written))
+             (skipped (plist-get result :skipped)))
+        (when written
+          (cj/music-radio--play written))
+        (message "Created %d station%s%s%s"
+                 (length written)
+                 (if (= (length written) 1) "" "s")
+                 (if skipped
+                     (format ", skipped %d with no URL (%s)"
+                             (length skipped) (string-join skipped ", "))
+                   "")
+                 (if written
+                     (format " — playing %s"
+                             (file-name-sans-extension
+                              (file-name-nondirectory (car written))))
+                   ""))))))
+
+;; Bound alongside the manual radio-station creator (R); S = search-and-create.
+;; ("s" stays emms-stop.)
+(with-eval-after-load 'emms
+  (keymap-set emms-playlist-mode-map "S" #'cj/music-radio-search))
+
 (provide 'music-config)
 ;;; music-config.el ends here

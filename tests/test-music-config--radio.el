@@ -136,5 +136,54 @@
     (should (string-match-p "limit=30" u))
     (should (string-match-p "/json/stations/search" u))))
 
+(declare-function cj/music-radio--candidates "music-config" (stations))
+(declare-function cj/music-radio--write-stations "music-config" (stations dir))
+
+;;; --------------------------- candidates (dedup) -----------------------------
+
+(ert-deftest test-music-radio-candidates-distinct ()
+  "Normal: distinct station names produce distinct display keys mapping to their stations."
+  (let* ((stations '((:name "Jazz Radio" :codec "MP3" :bitrate 128)
+                     (:name "Blues FM" :codec "AAC" :bitrate 64)))
+         (cands (cj/music-radio--candidates stations)))
+    (should (= (length cands) 2))
+    (should (assoc "Jazz Radio" cands))
+    (should (assoc "Blues FM" cands))))
+
+(ert-deftest test-music-radio-candidates-same-name-disambiguated ()
+  "Boundary: two stations with the same name get distinct display keys."
+  (let* ((stations '((:name "Jazz Radio" :codec "MP3" :bitrate 128 :stationuuid "a")
+                     (:name "Jazz Radio" :codec "OGG" :bitrate 192 :stationuuid "b")))
+         (cands (cj/music-radio--candidates stations))
+         (keys (mapcar #'car cands)))
+    (should (= (length cands) 2))
+    (should (= (length (delete-dups (copy-sequence keys))) 2))))
+
+;;; --------------------------- write-stations ---------------------------------
+
+(ert-deftest test-music-radio-write-stations-writes-and-skips ()
+  "Normal + Error: a station with a URL is written; one with no URL is skipped and named."
+  (let ((dir (make-temp-file "radio-write-" t)))
+    (unwind-protect
+        (let* ((stations (list (test-music-radio--first)
+                               '(:name "No URL Here" :url_resolved "" :url "")))
+               (result (cj/music-radio--write-stations stations dir)))
+          (should (= (length (plist-get result :written)) 1))
+          (should (member "No URL Here" (plist-get result :skipped)))
+          (should (file-exists-p (car (plist-get result :written)))))
+      (delete-directory dir t))))
+
+(ert-deftest test-music-radio-write-stations-collision-writes-two-files ()
+  "Boundary: two same-named stations in one run write two distinct files, no overwrite."
+  (let ((dir (make-temp-file "radio-write-" t)))
+    (unwind-protect
+        (let* ((stations '((:name "Same Name" :url_resolved "http://a.test/s" :stationuuid "aaaa1111")
+                           (:name "Same Name" :url_resolved "http://b.test/s" :stationuuid "bbbb2222")))
+               (result (cj/music-radio--write-stations stations dir))
+               (written (plist-get result :written)))
+          (should (= (length written) 2))
+          (should-not (equal (nth 0 written) (nth 1 written))))
+      (delete-directory dir t))))
+
 (provide 'test-music-config--radio)
 ;;; test-music-config--radio.el ends here
