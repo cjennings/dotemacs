@@ -796,33 +796,124 @@ Dirs added recursively."
   (when (and seconds (numberp seconds) (> seconds 0))
     (format "%d:%02d" (/ seconds 60) (mod seconds 60))))
 
-(defun cj/music--track-description (track)
-  "Return a human-readable description of TRACK.
-For tagged tracks: \"Artist - Title [M:SS]\".
-For file tracks without tags: filename without path or extension.
-For URL tracks: decoded URL."
+;; ---------------------------- Display-name layer -----------------------------
+;; A track maps to a display NAME (shared by the header's Current line and the
+;; playlist row renderer) plus, on a row, a dim type glyph and right-aligned
+;; meta.  The pure pieces (name resolution, #EXTINF-label extraction, host
+;; tidying, progress-bar fill) carry the tests; the glyph, the :align-to meta,
+;; and the disk-backed name-map are exercised live.
+
+(defun cj/music--tidy-host (url)
+  "Return a readable host label for URL: scheme and path dropped, a leading
+\"www.\" removed, and a multi-label host reduced to its last two labels
+\(ice6.somafm.com -> somafm.com).  A string with no scheme://host is returned
+unchanged, so a non-URL name shows as-is instead of erroring."
+  (if (string-match "\\`[a-zA-Z]+://\\(?:[^@/]*@\\)?\\([^:/?#]+\\)" url)
+      (let* ((host (replace-regexp-in-string "\\`www\\." "" (match-string 1 url)))
+             (labels (split-string host "\\." t)))
+        (if (> (length labels) 2)
+            (string-join (last labels 2) ".")
+          host))
+    url))
+
+(defun cj/music--m3u-labels (text)
+  "Parse M3U TEXT into an alist of (STREAM-URL . #EXTINF-LABEL).
+A url line takes the label from the most recent #EXTINF; a url with no
+preceding #EXTINF is skipped, and other comment lines (a #RADIOBROWSERUUID)
+between the two are ignored."
+  (let ((pending nil) (pairs '()))
+    (dolist (line (split-string text "[\r\n]+" t) (nreverse pairs))
+      (cond
+       ((string-match "\\`#EXTINF:[^,]*,\\(.*\\)\\'" line)
+        (setq pending (match-string 1 line)))
+       ((string-prefix-p "#" line))     ; other comment — keep PENDING
+       (t (when pending (push (cons line pending) pairs))
+          (setq pending nil))))))
+
+(defvar cj/music--radio-name-map-cache nil
+  "Cached url->#EXTINF-label alist across `cj/music-m3u-roots'.
+Built lazily so a row render never re-scans disk; cleared by
+`cj/music--refresh-radio-name-map' when a station is created or a playlist
+loads.")
+
+(defun cj/music--radio-name-map ()
+  "Alist of stream-url -> station label, unioned across all playlist roots.
+Reads each .m3u once and caches the result."
+  (or cj/music--radio-name-map-cache
+      (setq cj/music--radio-name-map-cache
+            (cl-loop for (_base . path) in (cj/music--get-m3u-files)
+                     append (cj/music--m3u-labels
+                             (with-temp-buffer
+                               (insert-file-contents path)
+                               (buffer-string)))))))
+
+(defun cj/music--refresh-radio-name-map ()
+  "Clear the cached radio name-map so the next render rebuilds it."
+  (setq cj/music--radio-name-map-cache nil))
+
+(defun cj/music--display-name (track &optional name-map)
+  "Human display name for TRACK, name only (no duration).
+A tagged track (file or url) shows \"Artist - Title\" or the bare title; an
+untagged file shows its filename; a url track resolves to its #EXTINF label
+from NAME-MAP (an alist of url->label), else a tidied host.  Unknown types
+fall back to `emms-track-simple-description'."
   (let ((type (emms-track-type track))
         (title (emms-track-get track 'info-title))
         (artist (emms-track-get track 'info-artist))
-        (duration (emms-track-get track 'info-playing-time))
         (name (emms-track-name track)))
     (cond
-     ;; Tagged track with title
-     (title
-      (let ((dur-str (cj/music--format-duration duration))
-            (parts '()))
-        (when artist (push artist parts))
-        (push title parts)
-        (let ((desc (string-join (nreverse parts) " - ")))
-          (if dur-str (format "%s  [%s]" desc dur-str) desc))))
-     ;; File without tags — show clean filename
-     ((eq type 'file)
-      (file-name-sans-extension (file-name-nondirectory name)))
-     ;; URL — decode percent-encoded characters
-     ((eq type 'url)
-      (decode-coding-string (url-unhex-string name) 'utf-8))
-     ;; Fallback
+     (title (if artist (format "%s - %s" artist title) title))
+     ((eq type 'file) (file-name-sans-extension (file-name-nondirectory name)))
+     ((eq type 'url) (or (cdr (assoc name name-map)) (cj/music--tidy-host name)))
      (t (emms-track-simple-description track)))))
+
+(defun cj/music--format-meta (track)
+  "Right-aligned meta string for TRACK's row: a file's duration as \"[M:SS]\",
+empty when there's no duration (a live stream, or an untimed file)."
+  (let ((dur (cj/music--format-duration (emms-track-get track 'info-playing-time))))
+    (if dur (format "[%s]" dur) "")))
+
+(defun cj/music--bar-fill (elapsed total width)
+  "Filled-cell count for a WIDTH-cell progress bar at ELAPSED/TOTAL seconds.
+Returns 0..WIDTH, or the symbol `indeterminate' when TOTAL is nil or
+non-positive (a live stream).  A nil ELAPSED counts as zero."
+  (if (or (null total) (<= total 0))
+      'indeterminate
+    (let ((ratio (min 1.0 (max 0.0 (/ (float (or elapsed 0)) total)))))
+      (round (* ratio width)))))
+
+(defun cj/music--type-glyph (track)
+  "A leading glyph for TRACK: a broadcast icon for a stream, a note for a file.
+Uses nerd-icons when available; otherwise a plain marker, so a TTY or a
+fontless frame never shows a tofu box."
+  (let ((stream (eq (emms-track-type track) 'url)))
+    (or (and (fboundp 'nerd-icons-mdicon)
+             (ignore-errors
+               (nerd-icons-mdicon (if stream "nf-md-broadcast" "nf-md-music_note")
+                                  :face 'cj/music-header-face)))
+        (if stream "»" "•"))))
+
+(defun cj/music--row-string (track)
+  "Playlist row for TRACK: a dim type glyph, the display name, and the meta
+right-aligned to the window edge with a resize-safe :align-to space.
+This is `emms-track-description-function'."
+  (let* ((name (cj/music--display-name track (cj/music--radio-name-map)))
+         (glyph (cj/music--type-glyph track))
+         (meta (cj/music--format-meta track)))
+    (if (string-empty-p meta)
+        (concat glyph " " name)
+      (concat glyph " " name
+              (propertize " " 'display
+                          `(space :align-to (- right ,(1+ (length meta)))))
+              (propertize meta 'face 'cj/music-keyhint-face)))))
+
+(defun cj/music--now-playing-suffix (track)
+  "Trailing status for the header Current line: on-air for a stream, the
+duration for a timed file, empty otherwise."
+  (if (eq (emms-track-type track) 'url)
+      "  ◉ on air"
+    (let ((d (cj/music--format-duration (emms-track-get track 'info-playing-time))))
+      (if d (format "  %s" d) ""))))
 
 ;; Multi-line header overlay
 (defvar-local cj/music--header-overlay nil
@@ -840,7 +931,9 @@ For URL tracks: decoded URL."
                        (emms-player-paused-p "Paused")
                        (t (let ((track (emms-playlist-current-selected-track)))
                             (if track
-                                (cj/music--track-description track)
+                                (concat (cj/music--display-name
+                                         track (cj/music--radio-name-map))
+                                        (cj/music--now-playing-suffix track))
                               "Playing")))))
          (mode-indicator
           (lambda (key label active)
@@ -874,6 +967,11 @@ For URL tracks: decoded URL."
      (propertize " : " 'face 'cj/music-header-face)
      (propertize "n:by name  t:by tag  m:enter manually"
                  'face 'cj/music-keyhint-face)
+     "\n"
+     ;; A full-width rule under the header, resize-safe (redisplay recomputes
+     ;; the :align-to span rather than a hardcoded character count).
+     (propertize " " 'face '(:strike-through t :inherit shadow)
+                 'display '(space :align-to right))
      "\n\n")))
 
 (defun cj/music--update-header ()
@@ -949,7 +1047,7 @@ For URL tracks: decoded URL."
   ;;; Playlist display
 
   ;; Track description: show "Artist - Title [M:SS]" instead of file paths
-  (setq emms-track-description-function #'cj/music--track-description)
+  (setq emms-track-description-function #'cj/music--row-string)
 
   (add-hook 'emms-playlist-mode-hook #'cj/music--setup-playlist-display)
   (add-hook 'emms-player-started-hook #'cj/music--record-random-history)
@@ -1028,6 +1126,7 @@ For URL tracks: decoded URL."
       (user-error "Aborted creating radio station"))
     (with-temp-file file
       (insert content))
+    (cj/music--refresh-radio-name-map)
     (message "Created radio station: %s" (file-name-nondirectory file))))
 
 ;; The manual name+URL creator is bound to m in the radio row below (see the
@@ -1195,6 +1294,8 @@ NAMES).  Creates DIR when absent."
             (push base taken)
             (with-temp-file path (insert m3u))
             (push path written)))))
+    ;; New .m3u files landed, so the cached url->label map is stale.
+    (when written (cj/music--refresh-radio-name-map))
     (list :written (nreverse written) :skipped (nreverse skipped))))
 
 (defun cj/music-radio--completion-table (candidates)
