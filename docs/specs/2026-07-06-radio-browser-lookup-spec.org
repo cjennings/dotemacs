@@ -151,6 +151,10 @@ Add cj/music-radio-search (query -> search -> completing-read multi-select -> wr
 - url.el error handling is the likeliest rabbit hole. Keep the client tiny: one GET, parse, or a single user-error. Do not build a general HTTP layer.
 - Stream URL choice: a station can list several codec/bitrate variants under one name. v1 takes url_resolved as-is; picking among a station's variants is a vNext refinement, not a v1 problem.
 
+* References / Appendix
+- UI prototype (open in a browser): [[file:2026-07-06-radio-browser-lookup.prototype.html][2026-07-06-radio-browser-lookup.prototype.html]] — faithful vertico + marginalia mockup of the four minibuffer screens (query, station list, multi-select, created+playing) with real jazz-search data. Shows the two candidate-annotation variants the design chooses between (A: codec/bitrate/country/votes/plays; B: codec/bitrate/country/votes/tags).
+- API shape verified live 2026-07-06 against de1.api.radio-browser.info (recorded in Problem / Context).
+
 * Review and iteration history
 ** 2026-07-06 Mon @ 10:12:00 -0500 — Claude (for Craig) — author
 - What: resolved all four open decisions from Craig's answers and folded them into the design, config, rollout, and acceptance sections.

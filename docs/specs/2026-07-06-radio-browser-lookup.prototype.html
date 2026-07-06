@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Radio-browser lookup — UI prototype</title>
+<style>
+  :root {
+    --page-bg: #f3f0ea; --page-fg: #2b2822; --page-dim: #6b6459;
+    --card-line: #d9d3c7; --accent: #9a6b2f;
+    /* Emacs frame (always dark — it depicts a dark editor) */
+    --e-bg: #15140f; --e-fg: #cfc8b8; --e-dim: #857c6c;
+    --e-sel-bg: #2a2620; --e-sel-fg: #e6c98a; --e-prompt: #8fb0c4;
+    --e-mark: #d98f7a; --e-play: #8faf7f; --e-modeline: #201d17;
+    --e-rule: #322d25;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --page-bg: #14130f; --page-fg: #d4cdbf; --page-dim: #8a8272;
+            --card-line: #2c281f; --accent: #d8a24f; }
+  }
+  :root[data-theme="light"] { --page-bg: #f3f0ea; --page-fg: #2b2822; --page-dim: #6b6459; --card-line: #d9d3c7; --accent: #9a6b2f; }
+  :root[data-theme="dark"] { --page-bg: #14130f; --page-fg: #d4cdbf; --page-dim: #8a8272; --card-line: #2c281f; --accent: #d8a24f; }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--page-bg); color: var(--page-fg);
+    font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+    line-height: 1.55; padding: 3rem 1.25rem 5rem;
+  }
+  .wrap { max-width: 60rem; margin: 0 auto; }
+  header { margin-bottom: 2.5rem; }
+  .eyebrow { text-transform: uppercase; letter-spacing: .14em; font-size: .72rem;
+             color: var(--accent); font-weight: 600; margin: 0 0 .5rem; }
+  h1 { font-size: 1.9rem; margin: 0 0 .6rem; text-wrap: balance; font-weight: 650; }
+  header p { margin: .3rem 0; max-width: 62ch; color: var(--page-dim); }
+  header p strong { color: var(--page-fg); font-weight: 600; }
+
+  .step { margin: 2.4rem 0 .8rem; }
+  .step .n { color: var(--accent); font-weight: 700; font-variant-numeric: tabular-nums; }
+  .step h2 { display: inline; font-size: 1.15rem; font-weight: 620; }
+  .step + .note { margin: 0 0 1rem; color: var(--page-dim); font-size: .92rem; max-width: 64ch; }
+
+  /* Emacs frame */
+  .frame {
+    background: var(--e-bg); color: var(--e-fg);
+    border: 1px solid var(--e-rule); border-radius: 8px; overflow: hidden;
+    box-shadow: 0 12px 34px -20px rgba(0,0,0,.6);
+    font-family: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+    font-size: 13.5px;
+  }
+  .buffer { padding: .55rem 0 0; }
+  .buf-line { padding: .05rem 1rem; white-space: pre; color: var(--e-dim); }
+  .buf-line .txt { color: var(--e-fg); }
+  .modeline {
+    background: var(--e-modeline); color: var(--e-dim);
+    padding: .2rem 1rem; margin-top: .55rem;
+    border-top: 1px solid var(--e-rule); border-bottom: 1px solid var(--e-rule);
+    display: flex; gap: 1.2rem; font-size: 12.5px;
+  }
+  .modeline .lead { color: var(--e-fg); }
+  .mini { padding: .45rem 1rem .6rem; display: flex; align-items: baseline; }
+  .prompt { color: var(--e-prompt); }
+  .input { color: var(--e-fg); }
+  .caret { display: inline-block; width: .55ch; height: 1.15em; background: var(--e-fg);
+           translate: 0 .18em; margin-left: 1px; }
+
+  /* vertico completion list */
+  .vhead { padding: .45rem 1rem .3rem; color: var(--e-prompt); border-top: 1px solid var(--e-rule); }
+  .vhead .count { color: var(--e-dim); float: right; font-variant-numeric: tabular-nums; }
+  .cand { display: grid; grid-template-columns: 1.4ch 1fr auto; gap: .5ch;
+          padding: .12rem 1rem; align-items: baseline; }
+  .cand .mark { color: var(--e-mark); }
+  .cand .name { color: var(--e-fg); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .cand .ann  { color: var(--e-dim); white-space: pre; font-variant-numeric: tabular-nums; text-align: right; }
+  .cand.sel { background: var(--e-sel-bg); }
+  .cand.sel .name { color: var(--e-sel-fg); }
+  .cand.marked .name { color: var(--e-fg); }
+  .cand.marked .mark { color: var(--e-mark); }
+  .tag { color: #7f94a6; }
+
+  .playrow .np { color: var(--e-play); }
+  .legend { margin-top: 1.4rem; padding-top: 1.2rem; border-top: 1px solid var(--card-line);
+            color: var(--page-dim); font-size: .9rem; }
+  .legend code { background: color-mix(in srgb, var(--page-fg) 8%, transparent);
+                 padding: .05rem .35rem; border-radius: 4px; font-family: ui-monospace, monospace; font-size: .85em; }
+  .pick { display: flex; gap: .6rem; flex-wrap: wrap; margin: .6rem 0 0; }
+  .pill { border: 1px solid var(--card-line); border-radius: 999px; padding: .15rem .7rem;
+          font-size: .82rem; color: var(--page-dim); }
+  .pill b { color: var(--accent); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <p class="eyebrow">Emacs · vertico + marginalia · prototype</p>
+    <h1>Radio-browser station lookup — how the screens read</h1>
+    <p>One command, <strong>cj/music-radio-search</strong>, taking you from a query to audio. These are faithful mockups of the four minibuffer screens, drawn with a real live search for <strong>jazz</strong> (results sorted by popularity). Everything is monospace because it all lives in the minibuffer.</p>
+    <p>The one real design choice is the station line: what metadata rides alongside the name, and in what order. Step 2 shows two variants — pick one.</p>
+  </header>
+
+  <!-- STEP 1 -->
+  <div class="step"><span class="n">1</span> &nbsp;<h2>The query</h2></div>
+  <p class="note">Bound next to <code style="font-family:ui-monospace,monospace">R</code> in the playlist keymap. You type a name or keyword; Enter fires the search.</p>
+  <div class="frame">
+    <div class="buffer">
+      <div class="buf-line">;; <span class="txt">*EMMS-Playlist*</span> — 3 tracks, playing “Kind of Blue / So What”</div>
+    </div>
+    <div class="modeline"><span class="lead">*EMMS-Playlist*</span><span>Radio</span><span>▶ playing</span></div>
+    <div class="mini"><span class="prompt">Radio search:&nbsp;</span><span class="input">jazz</span><span class="caret"></span></div>
+  </div>
+
+  <!-- STEP 2A -->
+  <div class="step"><span class="n">2</span> &nbsp;<h2>The station list</h2> &nbsp;<span style="color:var(--page-dim);font-size:.9rem">— Variant A: codec · bitrate · country · ♥votes ▶plays</span></div>
+  <p class="note">vertico lists the matches; marginalia annotates each on the right, dimmed. The current row carries the gold highlight. Codec and bitrate tell you the quality; ♥ is radio-browser votes, ▶ is play count — both proxies for “is this station any good.”</p>
+  <div class="frame">
+    <div class="vhead">Stations for “jazz” (TAB to mark, RET to create+play): <span class="count">7/842</span></div>
+    <div class="cand sel"><span class="mark"></span><span class="name">Adroit Jazz Underground</span><span class="ann">MP3  320k  US   ♥174208 ▶148</span></div>
+    <div class="cand"><span class="mark"></span><span class="name">101 SMOOTH JAZZ</span><span class="ann">MP3  128k  US   ♥86929  ▶389</span></div>
+    <div class="cand"><span class="mark"></span><span class="name">Adroit Jazz Underground HD Opus</span><span class="ann">OGG  192k  US   ♥67573  ▶51</span></div>
+    <div class="cand"><span class="mark"></span><span class="name">Jazz Radio Blues</span><span class="ann">MP3  128k  FR   ♥62960  ▶113</span></div>
+    <div class="cand"><span class="mark"></span><span class="name">Jazz Radio</span><span class="ann">MP3  192k  FR   ♥49272  ▶108</span></div>
+    <div class="cand"><span class="mark"></span><span class="name">Jazz Radio Classic Jazz</span><span class="ann">MP3  128k  FR   ♥27269  ▶52</span></div>
+    <div class="cand"><span class="mark"></span><span class="name">Radio Swiss Jazz</span><span class="ann">MP3  128k  CH   ♥26626  ▶58</span></div>
+    <div class="mini"><span class="prompt">Stations for “jazz”…:&nbsp;</span><span class="input"></span><span class="caret"></span></div>
+  </div>
+
+  <!-- STEP 2B -->
+  <div class="step"><span class="n">2</span> &nbsp;<h2>The station list</h2> &nbsp;<span style="color:var(--page-dim);font-size:.9rem">— Variant B: adds a tag snippet, drops play count</span></div>
+  <p class="note">Same list, but the annotation trades ▶plays for the station’s top tags — more help telling two same-named stations apart by what they actually play, at the cost of a wider line.</p>
+  <div class="frame">
+    <div class="vhead">Stations for “jazz” (TAB to mark, RET to create+play): <span class="count">7/842</span></div>
+    <div class="cand sel"><span class="mark"></span><span class="name">Adroit Jazz Underground</span><span class="ann">MP3 320k US ♥174208 · <span class="tag">bebop, hard bop, cool</span></span></div>
+    <div class="cand"><span class="mark"></span><span class="name">101 SMOOTH JAZZ</span><span class="ann">MP3 128k US ♥86929 · <span class="tag">smooth jazz, easy</span></span></div>
+    <div class="cand"><span class="mark"></span><span class="name">Adroit Jazz Underground HD Opus</span><span class="ann">OGG 192k US ♥67573 · <span class="tag">avant-garde, opus</span></span></div>
+    <div class="cand"><span class="mark"></span><span class="name">Jazz Radio Blues</span><span class="ann">MP3 128k FR ♥62960 · <span class="tag">blues, jazz</span></span></div>
+    <div class="cand"><span class="mark"></span><span class="name">Jazz Radio</span><span class="ann">MP3 192k FR ♥49272 · <span class="tag">jazz, soul</span></span></div>
+    <div class="cand"><span class="mark"></span><span class="name">Jazz Radio Classic Jazz</span><span class="ann">MP3 128k FR ♥27269 · <span class="tag">classical, jazz</span></span></div>
+    <div class="cand"><span class="mark"></span><span class="name">Radio Swiss Jazz</span><span class="ann">MP3 128k CH ♥26626 · <span class="tag">public radio</span></span></div>
+    <div class="mini"><span class="prompt">Stations for “jazz”…:&nbsp;</span><span class="input"></span><span class="caret"></span></div>
+  </div>
+
+  <!-- STEP 3 -->
+  <div class="step"><span class="n">3</span> &nbsp;<h2>Marking several</h2></div>
+  <p class="note">It’s <code style="font-family:ui-monospace,monospace">completing-read-multiple</code>: TAB marks a row (red bullet, name stays lit), and one search can create several stations at once. Here three are marked; Enter creates all three.</p>
+  <div class="frame">
+    <div class="vhead">Stations for “jazz” (TAB to mark, RET to create+play): <span class="count">7/842</span></div>
+    <div class="cand marked"><span class="mark">●</span><span class="name">Adroit Jazz Underground</span><span class="ann">MP3  320k  US   ♥174208 ▶148</span></div>
+    <div class="cand"><span class="mark"></span><span class="name">101 SMOOTH JAZZ</span><span class="ann">MP3  128k  US   ♥86929  ▶389</span></div>
+    <div class="cand"><span class="mark"></span><span class="name">Adroit Jazz Underground HD Opus</span><span class="ann">OGG  192k  US   ♥67573  ▶51</span></div>
+    <div class="cand marked"><span class="mark">●</span><span class="name">Jazz Radio Blues</span><span class="ann">MP3  128k  FR   ♥62960  ▶113</span></div>
+    <div class="cand"><span class="mark"></span><span class="name">Jazz Radio</span><span class="ann">MP3  192k  FR   ♥49272  ▶108</span></div>
+    <div class="cand"><span class="mark"></span><span class="name">Jazz Radio Classic Jazz</span><span class="ann">MP3  128k  FR   ♥27269  ▶52</span></div>
+    <div class="cand sel marked"><span class="mark">●</span><span class="name">Radio Swiss Jazz</span><span class="ann">MP3  128k  CH   ♥26626  ▶58</span></div>
+    <div class="mini"><span class="prompt">Stations for “jazz”…:&nbsp;</span><span class="input">Adroit Jazz Underground,Jazz Radio Blues,Radio Swiss Jazz</span><span class="caret"></span></div>
+  </div>
+
+  <!-- STEP 4 -->
+  <div class="step"><span class="n">4</span> &nbsp;<h2>Created and playing</h2></div>
+  <p class="note">Each pick is written as an .m3u into the MPD playlist directory (Decision 3), then enqueued and started through mpv (Decision 4) — the search ends in sound. The echo area confirms; the three land in the playlist, the first now playing.</p>
+  <div class="frame">
+    <div class="buffer">
+      <div class="buf-line playrow"><span class="np">▶ </span><span class="txt">Adroit Jazz Underground</span></div>
+      <div class="buf-line">&nbsp;&nbsp;<span class="txt">Jazz Radio Blues</span></div>
+      <div class="buf-line">&nbsp;&nbsp;<span class="txt">Radio Swiss Jazz</span></div>
+    </div>
+    <div class="modeline"><span class="lead">*EMMS-Playlist*</span><span>Radio</span><span class="playrow"><span class="np">▶ playing</span></span></div>
+    <div class="mini"><span class="prompt" style="color:var(--e-play)">Created + playing 3 stations&nbsp;</span><span style="color:var(--e-dim)">→ ~/.local/share/mpd/playlists/</span></div>
+  </div>
+
+  <div class="legend">
+    <div>Two things to react to:</div>
+    <div class="pick">
+      <span class="pill"><b>A</b> — quality + popularity (codec · bitrate · country · ♥ ▶)</span>
+      <span class="pill"><b>B</b> — quality + tags (codec · bitrate · country · ♥ · tags)</span>
+    </div>
+    <p style="margin:.9rem 0 0">Everything else (the flow, multi-select, create-and-play into the MPD dir) matches the resolved spec. Data is a live jazz search; ♥ = radio-browser votes, ▶ = play count. This is a static mockup — no live search runs in the page.</p>
+  </div>
+</div>
+
+<script>
+  (function () {
+    var root = document.documentElement;
+    try {
+      var t = localStorage.getItem('theme');
+      if (t === 'dark' || t === 'light') root.setAttribute('data-theme', t);
+    } catch (e) {}
+  })();
+</script>
+</body>
+</html>
