@@ -4,17 +4,18 @@
 #+TODO: TODO | DONE
 #+TODO: DRAFT READY DOING | IMPLEMENTED SUPERSEDED CANCELLED
 
-* READY Radio-browser lookup
+* DOING Radio-browser lookup
 :PROPERTIES:
 :ID:       4839b2c8-0552-4029-9e0f-4bf69b9a4dcd
 :END:
+- 2026-07-06 Mon @ 13:08:32 -0500 — spec-response Phase 6: decomposed into build tasks in todo.org (parent stamped :SPEC_ID:); READY -> DOING. Build under way.
 - 2026-07-06 Mon @ 13:01:55 -0500 — spec-response: all 7 findings dispositioned (6 accept/modify, 1 resolved via new Decision 5); decisions [5/5], findings [7/7]. No blocking finding remains; readiness rubric re-run on the expanded spec passes. DRAFT -> READY. Awaiting Craig's go to decompose into build tasks (spec-response Phase 6, flips READY -> DOING).
 - 2026-07-06 Mon @ 10:48:20 -0500 — spec-review: Not ready. 7 findings recorded (1 blocking: completing-read-multiple splits on commas in station names). Stays DRAFT pending disposition via spec-response.
 - 2026-07-06 Mon @ 10:12:00 -0500 — all four decisions resolved (Craig): url.el; multi-select one-file-per-station; save into the MPD playlist dir; create-and-play. Ready for spec-review.
 - 2026-07-06 Mon @ 10:01:27 -0500 — drafted.
 
 * Metadata
-| Status   | ready                                                             |
+| Status   | doing                                                             |
 |----------+-------------------------------------------------------------------|
 | Owner    | Craig Jennings                                                    |
 |----------+-------------------------------------------------------------------|

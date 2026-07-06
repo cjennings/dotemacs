@@ -1030,5 +1030,121 @@ For URL tracks: decoded URL."
 (with-eval-after-load 'emms
   (keymap-set emms-playlist-mode-map "R" #'cj/music-create-radio-station))
 
+;; --------------------------- Radio-browser Lookup ----------------------------
+;; Search radio-browser.info and turn a selection into a playable radio .m3u.
+;; Spec: docs/specs/2026-07-06-radio-browser-lookup-spec.org.  The pure pieces
+;; (parse / emit / format / filename) carry the tests; the network GET and the
+;; interactive command are exercised live.
+
+(require 'url)
+
+(defvar cj/music-radio-server "de1.api.radio-browser.info"
+  "Default radio-browser API host.
+On a connection failure the client falls back to a host from /json/servers.")
+
+(defvar cj/music-radio-user-agent "cj-emacs-music/1.0 (radio-browser lookup)"
+  "User-Agent sent with radio-browser requests.
+The project asks clients to identify themselves.")
+
+(defvar cj/music-radio-search-limit 30
+  "Maximum number of stations a radio-browser search returns.")
+
+(defvar cj/music-radio-save-dir (expand-file-name "~/.local/share/mpd/playlists/")
+  "Directory new radio-browser stations are written to (the radio home).")
+
+(defun cj/music-radio--parse-search (json-text)
+  "Parse a radio-browser JSON-TEXT array into a list of station plists.
+Signals a `user-error' rather than a raw parse error when JSON-TEXT is not
+JSON (a gateway HTML page or a rate-limit notice), so a bad response reads as a
+clear message instead of a stack trace."
+  (condition-case nil
+      (json-parse-string json-text :object-type 'plist :array-type 'list :null-object nil)
+    (error (user-error "radio-browser returned an unreadable response"))))
+
+(defun cj/music-radio--station-url (st)
+  "Best stream URL for station ST: url_resolved, then url, then nil."
+  (let ((r (plist-get st :url_resolved))
+        (u (plist-get st :url)))
+    (cond ((and (stringp r) (not (string-empty-p r))) r)
+          ((and (stringp u) (not (string-empty-p u))) u))))
+
+(defun cj/music-radio--station-m3u (st)
+  "Return the .m3u file text for station ST, or nil when it has no stream URL.
+Matches the existing radio files: #EXTM3U, an optional #RADIOBROWSERUUID line,
+#EXTINF:1,<name>, and the stream URL."
+  (let* ((url (cj/music-radio--station-url st))
+         ;; Strip newlines so an unexpected multi-line name can't inject extra
+         ;; m3u lines; the API returns single-line names, but it's external data.
+         (name (replace-regexp-in-string "[\r\n]+" " "
+                                         (or (plist-get st :name) "Radio")))
+         (uuid (plist-get st :stationuuid)))
+    (when url
+      (concat "#EXTM3U\n"
+              (if (and (stringp uuid) (not (string-empty-p uuid)))
+                  (format "#RADIOBROWSERUUID:%s\n" uuid)
+                "")
+              (format "#EXTINF:1,%s\n%s\n" name url)))))
+
+(defun cj/music-radio--tags-snippet (tags n)
+  "Return the first N comma-separated TAGS as a trimmed display string.
+TAGS is a comma-separated string or nil; nil or empty yields the empty string."
+  (if (and (stringp tags) (not (string-empty-p tags)))
+      (string-join (seq-take (split-string tags "," t "[ \t]*") n) ", ")
+    ""))
+
+(defun cj/music-radio--format-candidate (st)
+  "Marginalia annotation for station ST.
+Variant B: codec, bitrate, country, votes, and the first few tags."
+  (let ((codec (or (plist-get st :codec) ""))
+        (bitrate (let ((b (plist-get st :bitrate)))
+                   (if (and (integerp b) (> b 0)) (format "%dk" b) "")))
+        (cc (or (plist-get st :countrycode) ""))
+        (votes (or (plist-get st :votes) 0))
+        (tags (cj/music-radio--tags-snippet (plist-get st :tags) 3)))
+    (format "%-4s %-5s %-2s ♥%d  %s" codec bitrate cc votes tags)))
+
+(defun cj/music-radio--disambiguate-name (name uuid taken)
+  "Return a filesystem-safe basename for NAME, unique against the TAKEN list.
+On a collision, append a short fragment of UUID.  Pure helper: keeps two
+same-named stations picked in one search from overwriting each other."
+  (let ((base (cj/music--safe-filename name)))
+    (if (member base taken)
+        (concat base "_" (substring (or uuid "x") 0 (min 8 (length (or uuid "x")))))
+      base)))
+
+(defun cj/music-radio--search-url (server query)
+  "Build the radio-browser station-search URL for QUERY against SERVER."
+  (format "https://%s/json/stations/search?name=%s&limit=%d&hidebroken=true&order=votes&reverse=true"
+          server (url-hexify-string query) cj/music-radio-search-limit))
+
+(defun cj/music-radio--http-get (url)
+  "GET URL with the radio-browser User-Agent; return the response body or nil."
+  (let ((url-request-extra-headers `(("User-Agent" . ,cj/music-radio-user-agent))))
+    (when-let* ((buf (url-retrieve-synchronously url t t 15)))
+      (with-current-buffer buf
+        (goto-char (point-min))
+        (prog1 (when (re-search-forward "\n\n" nil t)
+                 (buffer-substring-no-properties (point) (point-max)))
+          (kill-buffer buf))))))
+
+(defun cj/music-radio--search-fallback (query)
+  "Fetch an alternate radio-browser host and retry the QUERY search once."
+  (when-let* ((body (cj/music-radio--http-get
+                     "https://all.api.radio-browser.info/json/servers"))
+              (servers (cj/music-radio--parse-search body))
+              (host (plist-get (car servers) :name)))
+    (cj/music-radio--http-get (cj/music-radio--search-url host query))))
+
+(defun cj/music-radio--search (query)
+  "Search radio-browser for QUERY; return a list of station plists.
+Tries `cj/music-radio-server' first, then falls back to a host from
+/json/servers once.  Signals a `user-error' when nothing responds."
+  (let ((body (or (ignore-errors
+                    (cj/music-radio--http-get
+                     (cj/music-radio--search-url cj/music-radio-server query)))
+                  (ignore-errors (cj/music-radio--search-fallback query)))))
+    (unless body (user-error "radio-browser: no response (network down?)"))
+    (cj/music-radio--parse-search body)))
+
 (provide 'music-config)
 ;;; music-config.el ends here
