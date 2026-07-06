@@ -8,6 +8,7 @@
 :PROPERTIES:
 :ID:       af4f2688-ce7d-43f5-82e5-595a603e2593
 :END:
+- 2026-07-06 Mon @ 15:03:57 -0500 — Craig accepted all five recommended decisions; Decisions [5/5]. Still DRAFT, ready for spec-review.
 - 2026-07-06 Mon @ 14:38:15 -0500 — drafted.
 
 * Metadata
@@ -80,33 +81,33 @@ Pure pieces (name resolution, the m3u-label extraction, the bar-fill computation
 - Bad, because it abandons EMMS's playlist machinery (marking, reorder, the existing keymap) and doubles maintenance.
 - Neutral, deferred: the overlay approach reuses everything and is enough for v1.
 
-* Decisions [/]
+* Decisions [5/5]
 
-** TODO Cover art for streams — where the favicon comes from
+** DONE Cover art for streams — where the favicon comes from
 - Owner / by-when: Craig / before Phase 2
 - Context: a radio-browser search result carries a favicon URL, so a newly-created station can capture it. An existing .m3u only has the stream URL and (on 15 of 73) a #RADIOBROWSERUUID; the other 58 have no UUID. A byuuid lookup gets the favicon for the ones that have a UUID.
 - Decision: We will (a) write a #RADIOBROWSERFAVICON line into new stations at creation so they need no lookup, (b) for an existing station carrying #RADIOBROWSERUUID, fetch the favicon by UUID once and cache it, and (c) for a station with neither, use the generated vinyl placeholder.
 - Consequences: easier — most stations get real art with at most one lookup; harder — a small .m3u format addition (an extra comment line) and a byuuid path for legacy files.
 
-** TODO Image cache location and refresh
+** DONE Image cache location and refresh
 - Owner / by-when: Craig / before Phase 2
 - Context: fetched favicons and extracted album art need to persist so redisplay is instant and offline-safe.
 - Decision: We will cache under data/music-art/ (gitignored runtime state), keyed by station UUID or a file hash, fetched once and reused; a manual command clears the cache, and there is no automatic TTL.
 - Consequences: easier — instant, offline, no invalidation logic; harder — a stale logo persists until the user clears the cache (acceptable for logos).
 
-** TODO Serif title face
+** DONE Serif title face
 - Owner / by-when: Craig / before Phase 3
 - Context: the fancy titles want a serif variable-pitch face, theme-owned.
 - Decision: We will add a defcustom for the title family (default a widely-available serif, e.g. the same reading serif the nov reading view uses) and a theme-owned face the dupre theme colors.
 - Consequences: easier — one knob, consistent with the nov-reading typography choice; harder — another face to register in theme-studio if we want it tunable there (deferred).
 
-** TODO Progress bar rendering and cadence
+** DONE Progress bar rendering and cadence
 - Owner / by-when: Craig / before Phase 3
 - Context: the bar can be drawn with block-character faces or a small SVG; it advances during playback via a timer.
 - Decision: We will draw the bar with faces (block characters, accent-colored fill) rather than SVG for v1, and redraw on a ~1s timer only while a track is playing, only when the player buffer is visible.
 - Consequences: easier — no SVG dependency, works the moment faces do; harder — a character-cell bar is coarser than an SVG one (fine for v1; SVG is a vNext upgrade).
 
-** TODO Fancy view toggle and TTY fallback
+** DONE Fancy view toggle and TTY fallback
 - Owner / by-when: Craig / before Phase 3
 - Context: images need a GUI frame; a TTY (or a user who wants plain) needs the text version.
 - Decision: We will gate the fancy render on (display-graphic-p) AND a defcustom (default on), falling through to the layer-1 text render otherwise, decided per-redisplay so a frame on a TTY and a frame on a GUI can differ live.
