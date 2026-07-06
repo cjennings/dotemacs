@@ -859,7 +859,7 @@ For URL tracks: decoded URL."
      (propertize " : " 'face 'cj/music-header-face)
      (funcall mode-indicator "r" "repeat" (bound-and-true-p emms-repeat-playlist))
      "  "
-     (funcall mode-indicator "t" "single" (bound-and-true-p emms-repeat-track))
+     (funcall mode-indicator "s" "single" (bound-and-true-p emms-repeat-track))
      "  "
      (funcall mode-indicator "z" "random" (bound-and-true-p emms-random-playlist))
      "  "
@@ -867,7 +867,12 @@ For URL tracks: decoded URL."
      "\n"
      (propertize "Keys    " 'face 'cj/music-header-face)
      (propertize " : " 'face 'cj/music-header-face)
-     (propertize "a:add  c:clear  L:load  S:save  SPC:pause  <>:skip  ↑↓:move  C-↑↓:reorder  q:dismiss"
+     (propertize "a:add  c:clear  L:load  S:stop  SPC:pause  <>:skip  ↑↓:move  C-↑↓:reorder  q:dismiss"
+                 'face 'cj/music-keyhint-face)
+     "\n"
+     (propertize "Radio   " 'face 'cj/music-header-face)
+     (propertize " : " 'face 'cj/music-header-face)
+     (propertize "n:by name  t:by tag  m:enter manually"
                  'face 'cj/music-keyhint-face)
      "\n\n")))
 
@@ -1025,10 +1030,8 @@ For URL tracks: decoded URL."
       (insert content))
     (message "Created radio station: %s" (file-name-nondirectory file))))
 
-;; Bound here rather than in the emms `:bind' so use-package does not emit a
-;; redundant autoload that collides with this same-file definition.
-(with-eval-after-load 'emms
-  (keymap-set emms-playlist-mode-map "R" #'cj/music-create-radio-station))
+;; The manual name+URL creator is bound to m in the radio row below (see the
+;; with-eval-after-load block near the radio-browser lookup), not R.
 
 ;; --------------------------- Radio-browser Lookup ----------------------------
 ;; Search radio-browser.info and turn a selection into a playable radio .m3u.
@@ -1051,6 +1054,10 @@ The project asks clients to identify themselves.")
 
 (defvar cj/music-radio-save-dir (expand-file-name "~/.local/share/mpd/playlists/")
   "Directory new radio-browser stations are written to (the radio home).")
+
+(defvar cj/music-radio-filename-suffix "-Radio"
+  "Suffix appended to a created station's basename, before the .m3u extension.
+Marks a lookup-created station in the playlist directory.")
 
 (defun cj/music-radio--parse-search (json-text)
   "Parse a radio-browser JSON-TEXT array into a list of station plists.
@@ -1112,10 +1119,11 @@ same-named stations picked in one search from overwriting each other."
         (concat base "_" (substring (or uuid "x") 0 (min 8 (length (or uuid "x")))))
       base)))
 
-(defun cj/music-radio--search-url (server query)
-  "Build the radio-browser station-search URL for QUERY against SERVER."
-  (format "https://%s/json/stations/search?name=%s&limit=%d&hidebroken=true&order=votes&reverse=true"
-          server (url-hexify-string query) cj/music-radio-search-limit))
+(defun cj/music-radio--search-url (server query &optional field)
+  "Build the radio-browser station-search URL for QUERY against SERVER.
+FIELD is the search field: \"name\" (default) or \"tag\"."
+  (format "https://%s/json/stations/search?%s=%s&limit=%d&hidebroken=true&order=votes&reverse=true"
+          server (or field "name") (url-hexify-string query) cj/music-radio-search-limit))
 
 (defun cj/music-radio--http-get (url)
   "GET URL with the radio-browser User-Agent; return the response body or nil."
@@ -1127,22 +1135,23 @@ same-named stations picked in one search from overwriting each other."
                  (buffer-substring-no-properties (point) (point-max)))
           (kill-buffer buf))))))
 
-(defun cj/music-radio--search-fallback (query)
-  "Fetch an alternate radio-browser host and retry the QUERY search once."
+(defun cj/music-radio--search-fallback (query &optional field)
+  "Fetch an alternate radio-browser host and retry the QUERY/FIELD search once."
   (when-let* ((body (cj/music-radio--http-get
                      "https://all.api.radio-browser.info/json/servers"))
               (servers (cj/music-radio--parse-search body))
               (host (plist-get (car servers) :name)))
-    (cj/music-radio--http-get (cj/music-radio--search-url host query))))
+    (cj/music-radio--http-get (cj/music-radio--search-url host query field))))
 
-(defun cj/music-radio--search (query)
-  "Search radio-browser for QUERY; return a list of station plists.
-Tries `cj/music-radio-server' first, then falls back to a host from
-/json/servers once.  Signals a `user-error' when nothing responds."
+(defun cj/music-radio--search (query &optional field)
+  "Search radio-browser for QUERY on FIELD; return a list of station plists.
+FIELD is \"name\" (default) or \"tag\".  Tries `cj/music-radio-server' first,
+then falls back to a host from /json/servers once.  Signals a `user-error' when
+nothing responds."
   (let ((body (or (ignore-errors
                     (cj/music-radio--http-get
-                     (cj/music-radio--search-url cj/music-radio-server query)))
-                  (ignore-errors (cj/music-radio--search-fallback query)))))
+                     (cj/music-radio--search-url cj/music-radio-server query field)))
+                  (ignore-errors (cj/music-radio--search-fallback query field)))))
     (unless body (user-error "radio-browser: no response (network down?)"))
     (cj/music-radio--parse-search body)))
 
@@ -1181,7 +1190,8 @@ NAMES).  Creates DIR when absent."
           (let* ((base (cj/music-radio--disambiguate-name
                         (or (plist-get st :name) "Radio")
                         (plist-get st :stationuuid) taken))
-                 (path (expand-file-name (concat base ".m3u") dir)))
+                 (path (expand-file-name
+                        (concat base cj/music-radio-filename-suffix ".m3u") dir)))
             (push base taken)
             (with-temp-file path (insert m3u))
             (push path written)))))
@@ -1234,19 +1244,18 @@ selection order; each pick is removed from the pool so it can't be chosen twice.
     (dolist (p (cdr paths))
       (emms-add-playlist p))))
 
-(defun cj/music-radio-search (query)
-  "Search radio-browser.info for QUERY, pick stations, then create and play them.
-Prompts for a query, lists matching stations (annotated with codec, bitrate,
-country, votes, and tags), and lets you pick several one at a time.  Each pick is
-written as an .m3u into `cj/music-radio-save-dir', then the selection plays
-through mpv (interrupting whatever was playing)."
-  (interactive "sRadio search: ")
+(defun cj/music-radio--search-and-play (query field)
+  "Search radio-browser for QUERY on FIELD, pick stations, then create and play.
+FIELD is \"name\" or \"tag\".  Lists matching stations (annotated with codec,
+bitrate, country, votes, and tags), lets you pick several one at a time, writes
+each as an .m3u into `cj/music-radio-save-dir', then plays the selection through
+mpv (interrupting whatever was playing)."
   (when (string-empty-p (string-trim query))
     (user-error "Empty search"))
-  (let* ((stations (cj/music-radio--search query))
+  (let* ((stations (cj/music-radio--search query field))
          (candidates (cj/music-radio--candidates stations)))
     (unless candidates
-      (user-error "No stations found for %S" query))
+      (user-error "No stations found for %s %S" field query))
     (let ((chosen (cj/music-radio--pick-loop candidates)))
       (unless chosen
         (user-error "No stations selected"))
@@ -1268,10 +1277,25 @@ through mpv (interrupting whatever was playing)."
                               (file-name-nondirectory (car written))))
                    ""))))))
 
-;; Bound alongside the manual radio-station creator (R); S = search-and-create.
-;; ("s" stays emms-stop.)
+(defun cj/music-radio-search-by-name (query)
+  "Search radio-browser.info by station name, then create and play a selection."
+  (interactive "sRadio search (name): ")
+  (cj/music-radio--search-and-play query "name"))
+
+(defun cj/music-radio-search-by-tag (tag)
+  "Search radio-browser.info by tag/genre, then create and play a selection."
+  (interactive "sRadio search (tag): ")
+  (cj/music-radio--search-and-play tag "tag"))
+
+;; Radio row in the playlist buffer: n = search by name, t = search by tag,
+;; m = enter a station by hand.  This moves the "single" mode toggle off t to s
+;; and emms-stop off s to S (see the header's Mode/Keys/Radio rows).
 (with-eval-after-load 'emms
-  (keymap-set emms-playlist-mode-map "S" #'cj/music-radio-search))
+  (keymap-set emms-playlist-mode-map "n" #'cj/music-radio-search-by-name)
+  (keymap-set emms-playlist-mode-map "t" #'cj/music-radio-search-by-tag)
+  (keymap-set emms-playlist-mode-map "m" #'cj/music-create-radio-station)
+  (keymap-set emms-playlist-mode-map "s" #'emms-toggle-repeat-track)
+  (keymap-set emms-playlist-mode-map "S" #'emms-stop))
 
 (provide 'music-config)
 ;;; music-config.el ends here

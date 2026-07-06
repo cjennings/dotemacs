@@ -8,6 +8,7 @@
 :PROPERTIES:
 :ID:       4839b2c8-0552-4029-9e0f-4bf69b9a4dcd
 :END:
+- 2026-07-06 Mon @ 14:04:53 -0500 — build UX changes (Craig, during Phase 2 verify): pulled tag search from vNext into v1; the feature is a Radio row in the playlist buffer (n: by name, t: by tag, m: enter manually) rather than one command on S; single mode moved off t to s and emms-stop off s to S; created filenames carry a "-Radio" suffix. Still DOING.
 - 2026-07-06 Mon @ 13:08:32 -0500 — spec-response Phase 6: decomposed into build tasks in todo.org (parent stamped :SPEC_ID:); READY -> DOING. Build under way.
 - 2026-07-06 Mon @ 13:01:55 -0500 — spec-response: all 7 findings dispositioned (6 accept/modify, 1 resolved via new Decision 5); decisions [5/5], findings [7/7]. No blocking finding remains; readiness rubric re-run on the expanded spec passes. DRAFT -> READY. Awaiting Craig's go to decompose into build tasks (spec-response Phase 6, flips READY -> DOING).
 - 2026-07-06 Mon @ 10:48:20 -0500 — spec-review: Not ready. 7 findings recorded (1 blocking: completing-read-multiple splits on commas in station names). Stays DRAFT pending disposition via spec-response.
@@ -55,9 +56,9 @@ The verified API shape (checked live 2026-07-06):
 - No audio format work; mpv already plays whatever the stream serves.
 
 ** Scope tiers
-- v1: a search command, a result picker, and playlist creation from the selection, wired to the existing writer + sourcing.
+- v1: search by name and by tag, a result picker, and playlist creation from the selection, wired to the existing writer + sourcing. Surfaced as a Radio row in the playlist buffer (n: by name, t: by tag, m: enter manually).
 - Out of scope: transient dashboards, station browsing by curated category, in-buffer station management.
-- vNext (log to todo.org): click/vote counting (POST /json/url/<uuid>), tag/country faceted search, an audition-before-save preview, a homepage/favicon-rich annotation.
+- vNext (log to todo.org): click/vote counting (POST /json/url/<uuid>), country faceted search, choosing among a station's codec/bitrate variants, an audition-before-save preview, a homepage/favicon-rich annotation. (Tag search moved into v1 2026-07-06.)
 
 * Design
 

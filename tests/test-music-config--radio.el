@@ -129,12 +129,18 @@
 ;;; --------------------------- search-url -------------------------------------
 
 (ert-deftest test-music-radio-search-url-encodes-query-and-limit ()
-  "Normal: the search URL hex-encodes the query and carries the limit."
+  "Normal: the search URL hex-encodes the query and carries the limit; name is the default field."
   (let* ((cj/music-radio-search-limit 30)
          (u (cj/music-radio--search-url "de1.api.radio-browser.info" "smooth jazz")))
-    (should (string-match-p "smooth%20jazz" u))
+    (should (string-match-p "name=smooth%20jazz" u))
     (should (string-match-p "limit=30" u))
     (should (string-match-p "/json/stations/search" u))))
+
+(ert-deftest test-music-radio-search-url-tag-field ()
+  "Normal: field \"tag\" searches the tag= parameter instead of name=."
+  (let ((u (cj/music-radio--search-url "de1.api.radio-browser.info" "ambient" "tag")))
+    (should (string-match-p "tag=ambient" u))
+    (should-not (string-match-p "name=ambient" u))))
 
 (declare-function cj/music-radio--candidates "music-config" (stations))
 (declare-function cj/music-radio--write-stations "music-config" (stations dir))
@@ -171,6 +177,16 @@
           (should (= (length (plist-get result :written)) 1))
           (should (member "No URL Here" (plist-get result :skipped)))
           (should (file-exists-p (car (plist-get result :written)))))
+      (delete-directory dir t))))
+
+(ert-deftest test-music-radio-write-stations-radio-suffix ()
+  "Normal: a written filename carries the -Radio suffix before .m3u."
+  (let ((dir (make-temp-file "radio-write-" t)))
+    (unwind-protect
+        (let* ((result (cj/music-radio--write-stations (list (test-music-radio--first)) dir))
+               (path (car (plist-get result :written))))
+          (should (string-suffix-p "-Radio.m3u" path))
+          (should (string-match-p "Adroit_Jazz_Underground-Radio\\.m3u\\'" path)))
       (delete-directory dir t))))
 
 (ert-deftest test-music-radio-write-stations-collision-writes-two-files ()
