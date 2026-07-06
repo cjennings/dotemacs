@@ -685,6 +685,51 @@ no popup frame is live."
    ("v"       . dirvish-vc-menu)
    ("y"       . dirvish-yank-menu)))
 
+;;; --------------------- Dirvish Thumbnail Cache Width Bucket ------------------
+;; dirvish keys its media thumbnail cache path on the exact preview-window pixel
+;; width (thumbnails/<width>/<md5>.jpg).  Fast image thumbnails finish before the
+;; window settles, so their width is stable across a landing.  Slow video (webm
+;; VP9 decode + seek) loses that race: the jpg is written at the generation-time
+;; width, then `dirvish-media--cache-sentinel' recomputes the width for redisplay,
+;; and if the preview window jittered even one pixel across a `floor' boundary the
+;; lookup hits a different bucket, misses, regenerates, and flashes blank.
+;; Quantizing the computed size to a coarse bucket maps that jitter to one stable
+;; key.  A local workaround for the upstream cache design.
+
+(defgroup cj/dirvish nil
+  "Local dirvish tweaks on top of the upstream package."
+  :group 'dirvish)
+
+(defcustom cj/dirvish-thumb-width-bucket 100
+  "Pixel bucket dirvish's thumbnail cache width is quantized to.
+Rounding `dirvish-media--img-size' to this bucket keeps small preview-window
+jitter on one cache key, so a slow video thumbnail isn't looked up under a
+different width than it was written at.  A larger bucket tolerates more jitter at
+a slight thumbnail-resolution cost.  Set to 0 or nil to disable quantization."
+  :type '(choice (const :tag "Off" nil) integer)
+  :group 'cj/dirvish)
+
+(defun cj/--dirvish-quantize-thumb-size (size bucket)
+  "Round SIZE to the nearest multiple of BUCKET, clamped to at least BUCKET.
+BUCKET nil or non-positive returns SIZE unchanged (quantization off).  Pure
+helper behind the `dirvish-media--img-size' advice."
+  (if (and (integerp bucket) (> bucket 0))
+      (max bucket (* bucket (round size bucket)))
+    size))
+
+(defun cj/--dirvish-thumb-size-advice (size)
+  "Quantize dirvish's computed thumbnail SIZE to a stable cache bucket.
+`:filter-return' advice on `dirvish-media--img-size'; the bucket is
+`cj/dirvish-thumb-width-bucket'."
+  (cj/--dirvish-quantize-thumb-size size cj/dirvish-thumb-width-bucket))
+
+;; dirvish-media--img-size lives in dirvish-widgets.el (loaded lazily on the
+;; first media preview), so advise it only once that file is present.  advice-add
+;; with a named function is idempotent, so a module reload never stacks copies.
+(with-eval-after-load 'dirvish-widgets
+  (advice-add 'dirvish-media--img-size :filter-return
+              #'cj/--dirvish-thumb-size-advice))
+
 ;;; ----------------------------- Dired Text Greying ----------------------------
 
 ;; `default' is remapped buffer-locally to `shadow' inside dired/dirvish (see
