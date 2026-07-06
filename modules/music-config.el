@@ -82,7 +82,19 @@
   "Root directory of your music collection.")
 
 (defvar cj/music-m3u-root cj/music-root
-  "Directory where M3U playlists are saved and loaded.")
+  "Directory M3U playlists are saved to (the single writable target).
+Reading and selection union `cj/music-m3u-roots'; only saving and radio-station
+creation write here.")
+
+(defvar cj/music-m3u-roots
+  (list cj/music-root
+        (expand-file-name "~/.local/share/mpd/playlists/"))
+  "Directories to source M3U playlists from, in precedence order.
+Both the local-library playlists (`cj/music-root') and the dotfiles-tracked
+internet-radio playlists (MPD's playlist_directory) surface together for
+selection and loading.  Earlier directories win on a basename collision.
+Missing directories are skipped.  Saving still targets the single
+`cj/music-m3u-root'.")
 
 (defvar cj/music-file-extensions '("aac" "flac" "m4a" "mp3" "ogg" "opus" "wav")
   "List of valid music file extensions.")
@@ -279,13 +291,29 @@ modification date so marginalia can show them."
           (forward-line 1))))
     (nreverse tracks)))
 
+(defun cj/music--dedup-m3u-files (paths)
+  "Return (BASENAME . PATH) conses for PATHS, first occurrence of a basename winning.
+Pure helper: since `cj/music--get-m3u-files' scans `cj/music-m3u-roots' in order,
+an earlier directory shadows a same-named playlist in a later one."
+  (let ((seen (make-hash-table :test 'equal))
+        (result '()))
+    (dolist (p paths (nreverse result))
+      (let ((base (file-name-nondirectory p)))
+        (unless (gethash base seen)
+          (puthash base t seen)
+          (push (cons base p) result))))))
+
 (defun cj/music--get-m3u-files ()
-  "Return list of (BASENAME . FULLPATH) conses for M3Us in cj/music-m3u-root."
-  (let ((files (directory-files cj/music-m3u-root t "\\.m3u\\'" t)))
-    (mapcar (lambda (f) (cons (file-name-nondirectory f) f)) files)))
+  "Return (BASENAME . FULLPATH) conses for M3Us across `cj/music-m3u-roots'.
+Directories are scanned in order and missing ones skipped; on a basename
+collision the earlier directory wins."
+  (cj/music--dedup-m3u-files
+   (cl-loop for dir in cj/music-m3u-roots
+            when (file-directory-p dir)
+            append (directory-files dir t "\\.m3u\\'" t))))
 
 (defun cj/music--get-m3u-basenames ()
-  "Return list of M3U basenames (no extension) in cj/music-m3u-root."
+  "Return list of M3U basenames (no extension) across `cj/music-m3u-roots'."
   (mapcar (lambda (pair) (file-name-sans-extension (car pair)))
           (cj/music--get-m3u-files)))
 
@@ -312,11 +340,12 @@ Signals user-error if missing or deleted."
                   (file-name-nondirectory cj/music-playlist-file))))))
 
 (defun cj/music--assert-m3u-files-exist ()
-  "Assert that M3U files exist in cj/music-m3u-root.
+  "Assert that M3U files exist across `cj/music-m3u-roots'.
 Returns the list of (BASENAME . FULLPATH) conses. Signals user-error if none."
   (let ((files (cj/music--get-m3u-files)))
     (when (null files)
-      (user-error "No M3U files found in %s" cj/music-m3u-root))
+      (user-error "No M3U files found in %s"
+                  (string-join cj/music-m3u-roots ", ")))
     files))
 
 (defun cj/music--sync-playlist-file (file-path)

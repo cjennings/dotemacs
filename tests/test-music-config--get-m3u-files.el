@@ -4,12 +4,12 @@
 ;;
 ;;; Commentary:
 ;; Unit tests for cj/music--get-m3u-files function.
-;; Tests the helper that discovers M3U files in the music directory.
+;; Tests the helper that discovers M3U files across cj/music-m3u-roots.
 ;;
 ;; Test organization:
 ;; - Normal Cases: Multiple M3U files, single file
 ;; - Boundary Cases: Empty directory, non-M3U files, various filenames
-;; - Error Cases: Nonexistent directory
+;; - Error Cases: Nonexistent directory is skipped (not fatal)
 ;;
 ;;; Code:
 
@@ -48,7 +48,7 @@
         (rename-file file2 (expand-file-name "playlist2.m3u" test-dir))
         (rename-file file3 (expand-file-name "playlist3.m3u" test-dir))
 
-        (let ((cj/music-m3u-root test-dir))
+        (let ((cj/music-m3u-roots (list test-dir)))
           (let ((result (cj/music--get-m3u-files)))
             (should (= (length result) 3))
             ;; Check structure: list of (basename . fullpath) conses
@@ -70,7 +70,7 @@
              (file1 (cj/create-temp-test-file-with-content "" "myplaylist.m3u")))
         (rename-file file1 (expand-file-name "myplaylist.m3u" test-dir))
 
-        (let ((cj/music-m3u-root test-dir))
+        (let ((cj/music-m3u-roots (list test-dir)))
           (let ((result (cj/music--get-m3u-files)))
             (should (= (length result) 1))
             (should (equal (caar result) "myplaylist.m3u"))
@@ -84,7 +84,7 @@
   (test-music-config--get-m3u-files-setup)
   (unwind-protect
       (let* ((test-dir (cj/create-test-subdirectory "empty-playlists")))
-        (let ((cj/music-m3u-root test-dir))
+        (let ((cj/music-m3u-roots (list test-dir)))
           (let ((result (cj/music--get-m3u-files)))
             (should (null result)))))
     (test-music-config--get-m3u-files-teardown)))
@@ -101,7 +101,7 @@
         (rename-file mp3-file (expand-file-name "song.mp3" test-dir))
         (rename-file json-file (expand-file-name "data.json" test-dir))
 
-        (let ((cj/music-m3u-root test-dir))
+        (let ((cj/music-m3u-roots (list test-dir)))
           (let ((result (cj/music--get-m3u-files)))
             (should (null result)))))
     (test-music-config--get-m3u-files-teardown)))
@@ -114,7 +114,7 @@
              (file1 (cj/create-temp-test-file-with-content "" "my-playlist.m3u")))
         (rename-file file1 (expand-file-name "My Favorite Songs.m3u" test-dir))
 
-        (let ((cj/music-m3u-root test-dir))
+        (let ((cj/music-m3u-roots (list test-dir)))
           (let ((result (cj/music--get-m3u-files)))
             (should (= (length result) 1))
             (should (equal (caar result) "My Favorite Songs.m3u")))))
@@ -132,7 +132,7 @@
         (rename-file txt-file (expand-file-name "readme.txt" test-dir))
         (rename-file mp3-file (expand-file-name "song.mp3" test-dir))
 
-        (let ((cj/music-m3u-root test-dir))
+        (let ((cj/music-m3u-roots (list test-dir)))
           (let ((result (cj/music--get-m3u-files)))
             (should (= (length result) 1))
             (should (equal (caar result) "playlist.m3u")))))
@@ -140,11 +140,10 @@
 
 ;;; Error Cases
 
-(ert-deftest test-music-config--get-m3u-files-error-nonexistent-directory-signals-error ()
-  "Nonexistent directory signals error."
-  (let ((cj/music-m3u-root "/nonexistent/directory/path"))
-    (should-error (cj/music--get-m3u-files)
-                  :type 'file-error)))
+(ert-deftest test-music-config--get-m3u-files-error-nonexistent-directory-skipped ()
+  "Nonexistent directories in the roots list are skipped, returning empty."
+  (let ((cj/music-m3u-roots '("/nonexistent/directory/path")))
+    (should-not (cj/music--get-m3u-files))))
 
 (provide 'test-music-config--get-m3u-files)
 ;;; test-music-config--get-m3u-files.el ends here

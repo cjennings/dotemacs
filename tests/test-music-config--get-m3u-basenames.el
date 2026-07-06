@@ -9,7 +9,7 @@
 ;; Test organization:
 ;; - Normal Cases: Multiple files, single file
 ;; - Boundary Cases: Empty directory, extension removal
-;; - Error Cases: Nonexistent directory
+;; - Error Cases: Nonexistent directory is skipped (not fatal)
 ;;
 ;;; Code:
 
@@ -47,7 +47,7 @@
         (rename-file file2 (expand-file-name "jazz.m3u" test-dir))
         (rename-file file3 (expand-file-name "classical.m3u" test-dir))
 
-        (let ((cj/music-m3u-root test-dir))
+        (let ((cj/music-m3u-roots (list test-dir)))
           (let ((result (cj/music--get-m3u-basenames)))
             (should (= (length result) 3))
             ;; Sort for consistent comparison
@@ -63,7 +63,7 @@
              (file1 (cj/create-temp-test-file-with-content "" "favorites.m3u")))
         (rename-file file1 (expand-file-name "favorites.m3u" test-dir))
 
-        (let ((cj/music-m3u-root test-dir))
+        (let ((cj/music-m3u-roots (list test-dir)))
           (let ((result (cj/music--get-m3u-basenames)))
             (should (= (length result) 1))
             (should (equal (car result) "favorites")))))
@@ -76,7 +76,7 @@
   (test-music-config--get-m3u-basenames-setup)
   (unwind-protect
       (let* ((test-dir (cj/create-test-subdirectory "empty-playlists")))
-        (let ((cj/music-m3u-root test-dir))
+        (let ((cj/music-m3u-roots (list test-dir)))
           (let ((result (cj/music--get-m3u-basenames)))
             (should (null result)))))
     (test-music-config--get-m3u-basenames-teardown)))
@@ -89,7 +89,7 @@
              (file1 (cj/create-temp-test-file-with-content "" "test.m3u")))
         (rename-file file1 (expand-file-name "playlist.m3u" test-dir))
 
-        (let ((cj/music-m3u-root test-dir))
+        (let ((cj/music-m3u-roots (list test-dir)))
           (let ((result (cj/music--get-m3u-basenames)))
             (should (equal result '("playlist")))
             ;; Verify no .m3u extension present
@@ -104,18 +104,17 @@
              (file1 (cj/create-temp-test-file-with-content "" "test.m3u")))
         (rename-file file1 (expand-file-name "My Favorite Songs.m3u" test-dir))
 
-        (let ((cj/music-m3u-root test-dir))
+        (let ((cj/music-m3u-roots (list test-dir)))
           (let ((result (cj/music--get-m3u-basenames)))
             (should (equal result '("My Favorite Songs"))))))
     (test-music-config--get-m3u-basenames-teardown)))
 
 ;;; Error Cases
 
-(ert-deftest test-music-config--get-m3u-basenames-error-nonexistent-directory-signals-error ()
-  "Nonexistent directory signals error."
-  (let ((cj/music-m3u-root "/nonexistent/directory/path"))
-    (should-error (cj/music--get-m3u-basenames)
-                  :type 'file-error)))
+(ert-deftest test-music-config--get-m3u-basenames-error-nonexistent-directory-skipped ()
+  "Nonexistent directories in the roots list are skipped, returning empty."
+  (let ((cj/music-m3u-roots '("/nonexistent/directory/path")))
+    (should-not (cj/music--get-m3u-basenames))))
 
 (provide 'test-music-config--get-m3u-basenames)
 ;;; test-music-config--get-m3u-basenames.el ends here
