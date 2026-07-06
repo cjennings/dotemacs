@@ -70,7 +70,16 @@ is killed externally."
       (message "Audio recording stopped: %s" (string-trim event)))
      ((eq process cj/video-recording-ffmpeg-process)
       (setq cj/video-recording-ffmpeg-process nil)
-      (message "Video recording stopped: %s" (string-trim event))))
+      (let ((start (process-get process 'cj-start-time)))
+        (if (and start
+                 (not (process-get process 'cj-stopping))
+                 (cj/recording--start-failed-p (- (float-time) start)
+                                               cj/recording-start-fail-threshold))
+            ;; Died almost immediately and the user didn't stop it: wf-recorder
+            ;; couldn't grab the screen. Say so instead of silently clearing,
+            ;; so Craig isn't left blind-retrying (which bursts fragment files).
+            (message "Video recording failed to start (wf-recorder couldn't grab the screen). Try again.")
+          (message "Video recording stopped: %s" (string-trim event))))))
     (force-mode-line-update t)))
 
 (defun cj/recording--wait-for-exit (process timeout-secs)
@@ -86,6 +95,39 @@ so a fixed 0.5s wait was causing zero-byte output files."
                 (< (float-time) deadline))
       (accept-process-output process 0.1))
     (not (process-live-p process))))
+
+(defvar cj/recording-wf-recorder-wait-timeout 2.0
+  "Seconds to wait for a dying wf-recorder to release the compositor capture.
+Bounds the start-path poll in `cj/ffmpeg-record-video' so it never hangs.")
+
+(defvar cj/recording-start-fail-threshold 1.5
+  "Seconds below which a video recording that exits is treated as a failed start.
+A wf-recorder that can't grab the screen dies almost immediately (~0.5s); a real
+recording runs far longer, so an exit sooner than this is a start failure, not a
+normal stop.")
+
+(defun cj/recording--wf-recorder-running-p ()
+  "Return non-nil if any wf-recorder process is currently running."
+  (eq 0 (call-process "pgrep" nil nil nil "-x" "wf-recorder")))
+
+(defun cj/recording--wait-for-no-wf-recorder (timeout-secs &optional running-p)
+  "Poll until no wf-recorder remains, or TIMEOUT-SECS elapse.
+Returns t if wf-recorder cleared within the timeout, nil on timeout.  RUNNING-P
+is the predicate checked each poll (default `cj/recording--wf-recorder-running-p');
+tests inject a fake.  This replaces a fixed `sit-for' after the start-path
+`pkill -INT wf-recorder': the kill signals the old recorder to finalize and
+exit, but releasing the compositor capture takes longer than a fixed wait, so
+launching too soon loses the grab and produces a ~0.5s fragment file."
+  (let ((check (or running-p #'cj/recording--wf-recorder-running-p))
+        (deadline (+ (float-time) timeout-secs)))
+    (while (and (funcall check) (< (float-time) deadline))
+      (sleep-for 0.05))
+    (not (funcall check))))
+
+(defun cj/recording--start-failed-p (elapsed threshold)
+  "Return non-nil when ELAPSED seconds since start is below THRESHOLD.
+A failed wf-recorder start exits almost immediately; a real recording does not."
+  (< elapsed threshold))
 
 ;;; Dependency Checks
 
@@ -199,7 +241,10 @@ On X11: ffmpeg captures screen directly via x11grab with PulseAudio audio."
   (if on-wayland
       (progn
         (cj/recording--check-wf-recorder)
-        (format (concat "wf-recorder -y -c libx264 -m matroska -f /dev/stdout 2>/dev/null | "
+        ;; wf-recorder stderr is NOT discarded: it flows to the process buffer
+        ;; (*ffmpeg-video-recording*) so a failed capture grab is diagnosable
+        ;; instead of silent.
+        (format (concat "wf-recorder -y -c libx264 -m matroska -f /dev/stdout | "
                         "ffmpeg -i pipe:0 "
                         "-f pulse -i %s "
                         "-f pulse -i %s "
@@ -264,9 +309,13 @@ Uses wf-recorder on Wayland, x11grab on X11."
     ;; kill on purpose: the orphans' launching shells are already dead, so
     ;; there is no live PID to scope to. The stop path, by contrast, scopes
     ;; to our own shell's child (see cj/recording--interrupt-child-wf-recorder).
+    ;; Wait for the signalled wf-recorder to actually exit and release the
+    ;; compositor capture before launching a new one. A fixed `sit-for' here
+    ;; raced the dying recorder and left ~0.5s fragment files (same class the
+    ;; stop path already fixed with `cj/recording--wait-for-exit').
     (when (cj/recording--wayland-p)
       (call-process "pkill" nil nil nil "-INT" "wf-recorder")
-      (sit-for 0.1))
+      (cj/recording--wait-for-no-wf-recorder cj/recording-wf-recorder-wait-timeout))
     (let* ((devices (cj/recording-get-devices))
            (mic-device (car devices))
            (system-device (cdr devices))
@@ -282,6 +331,9 @@ Uses wf-recorder on Wayland, x11grab on X11."
                                          record-command))
       (set-process-query-on-exit-flag cj/video-recording-ffmpeg-process nil)
       (set-process-sentinel cj/video-recording-ffmpeg-process #'cj/recording-process-sentinel)
+      ;; Stamp the start time so the sentinel can tell a ~0.5s failed start
+      ;; (wf-recorder couldn't grab the screen) from a normal recording.
+      (process-put cj/video-recording-ffmpeg-process 'cj-start-time (float-time))
       (force-mode-line-update t)
       (message "Started video recording to %s (%s, mic: %.1fx, system: %.1fx)."
                filename
@@ -339,6 +391,9 @@ for ffmpeg to write container metadata before giving up."
   (if (not cj/video-recording-ffmpeg-process)
       (message "No video recording in progress.")
     (let ((proc cj/video-recording-ffmpeg-process))
+      ;; Mark this as a user stop so the sentinel's fail-fast check doesn't
+      ;; misread a quick intentional stop as a failed start.
+      (process-put proc 'cj-stopping t)
       ;; On Wayland, kill the producer (wf-recorder) FIRST so ffmpeg sees
       ;; a clean EOF on pipe:0. This triggers ffmpeg's orderly shutdown:
       ;; drain remaining frames, write container metadata, close file.

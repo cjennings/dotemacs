@@ -27,6 +27,14 @@
         (should (string-match-p "-i pipe:0" cmd))
         (should (string-match-p "-c:v copy" cmd))))))
 
+(ert-deftest test-video-audio-recording--build-video-command-normal-wayland-keeps-wf-recorder-stderr ()
+  "Wayland command does not discard wf-recorder stderr, so a failed grab is diagnosable."
+  (let ((cj/recording-mic-boost 2.0)
+        (cj/recording-system-volume 1.0))
+    (cl-letf (((symbol-function 'executable-find) (lambda (_prog &rest _) t)))
+      (let ((cmd (cj/recording--build-video-command "mic" "sys" "/tmp/out.mkv" t)))
+        (should-not (string-match-p "2>/dev/null" cmd))))))
+
 (ert-deftest test-video-audio-recording--build-video-command-normal-x11-uses-x11grab ()
   "X11 command uses ffmpeg with x11grab, no wf-recorder."
   (let ((cj/recording-mic-boost 2.0)
