@@ -9,7 +9,9 @@
 ;;   cj/music-playlist-edit
 ;;   cj/music-playlist-toggle
 ;;   cj/music-playlist-show
-;;   cj/music-create-radio-station
+;;
+;; cj/music-create-radio-station lives in
+;; test-music-config-create-radio-station.el.
 
 ;;; Code:
 
@@ -17,12 +19,21 @@
 (require 'cl-lib)
 
 (add-to-list 'load-path (expand-file-name "modules" user-emacs-directory))
+
+;; Stub dependencies before loading the module.
+(defvar cj/custom-keymap (make-sparse-keymap)
+  "Stub keymap for testing.")
+
+(let ((emms-dir (car (file-expand-wildcards
+                      (expand-file-name "elpa/emms-*" user-emacs-directory)))))
+  (when emms-dir (add-to-list 'load-path emms-dir)))
+
+(require 'emms)
 (require 'music-config)
 
 ;; Top-level defvars so let-binds reach the dynamic var under lexical
 ;; scope.
 (defvar cj/music-playlist-file nil)
-(defvar emms-source-playlist-ask-before-overwrite t)
 
 ;;; cj/music-playlist-load
 
@@ -56,28 +67,87 @@
 
 ;;; cj/music-playlist-save
 
-(ert-deftest test-music-playlist-save-writes-fresh-name ()
-  "Normal: save with a fresh name writes via emms-playlist-save."
-  (let* ((tmp (file-name-as-directory (make-temp-file "cj-music-save-" t)))
-         (cj/music-m3u-root tmp)
-         saved-args msg)
-    (unwind-protect
-        (cl-letf (((symbol-function 'cj/music--get-m3u-basenames)
-                   (lambda () nil))
-                  ((symbol-function 'completing-read)
-                   (lambda (&rest _) "fresh"))
-                  ((symbol-function 'cj/music--ensure-playlist-buffer)
-                   (lambda () (current-buffer)))
-                  ((symbol-function 'emms-playlist-save)
-                   (lambda (fmt path) (setq saved-args (list fmt path))))
-                  ((symbol-function 'cj/music--sync-playlist-file) #'ignore)
-                  ((symbol-function 'message)
-                   (lambda (fmt &rest args) (setq msg (apply #'format fmt args)))))
-          (cj/music-playlist-save))
-      (delete-directory tmp t))
-    (should (equal (car saved-args) 'm3u))
-    (should (string-match-p "fresh\\.m3u\\'" (cadr saved-args)))
-    (should (string-match-p "Saved playlist" msg))))
+(defmacro test-music-save--with-env (&rest body)
+  "Run BODY with a fresh playlist buffer and temp save directories.
+Binds TMP-M3U and TMP-RADIO (both cleaned up) and captures completing-read's
+INITIAL argument in CR-INITIAL."
+  `(let* ((cj/music-playlist-buffer-name
+           (generate-new-buffer-name "*test-save*"))
+          (tmp-m3u (file-name-as-directory (make-temp-file "cj-save-m3u-" t)))
+          (tmp-radio (file-name-as-directory (make-temp-file "cj-save-radio-" t)))
+          (cj/music-m3u-root tmp-m3u)
+          (cj/music-radio-save-dir tmp-radio)
+          (cr-initial 'unset))
+     (ignore cr-initial)
+     (unwind-protect
+         (cl-letf (((symbol-function 'message) #'ignore)
+                   ((symbol-function 'completing-read)
+                    (lambda (_prompt _coll &optional _pred _req initial _hist def &rest _)
+                      (setq cr-initial initial)
+                      (or initial def "fallback"))))
+           ,@body)
+       (when (get-buffer cj/music-playlist-buffer-name)
+         (kill-buffer cj/music-playlist-buffer-name))
+       (delete-directory tmp-m3u t)
+       (delete-directory tmp-radio t))))
+
+(defun test-music-save--queue (tracks)
+  "Put TRACKS into the (fresh) test playlist buffer."
+  (with-current-buffer (cj/music--ensure-playlist-buffer)
+    (save-excursion
+      (goto-char (point-max))
+      (dolist (tr tracks)
+        (emms-playlist-insert-track tr)))))
+
+(ert-deftest test-music-playlist-save-station-queue-prefills-and-targets-radio-dir ()
+  "Normal: an all-stream queue pre-fills the station name and saves into the
+radio dir with the station metadata written."
+  (test-music-save--with-env
+   (let ((tr (emms-track 'url "https://gs.example/stream")))
+     (emms-track-set tr 'info-title "Groove Salad")
+     (emms-track-set tr 'radio-uuid "uuid-gs")
+     (test-music-save--queue (list tr)))
+   (cj/music-playlist-save)
+   (should (equal cr-initial "Groove Salad"))
+   (let ((file (expand-file-name "Groove Salad.m3u" tmp-radio)))
+     (should (file-exists-p file))
+     (with-temp-buffer
+       (insert-file-contents file)
+       (let ((text (buffer-string)))
+         (should (string-match-p "^#EXTINF:-1,Groove Salad$" text))
+         (should (string-match-p "^#RADIOBROWSERUUID:uuid-gs$" text))
+         (should (string-match-p "^https://gs\\.example/stream$" text)))))
+   (should-not (directory-files tmp-m3u nil "\\.m3u\\'"))))
+
+(ert-deftest test-music-playlist-save-file-queue-targets-m3u-root-no-prefill ()
+  "Normal: a file queue saves into the music root with no station pre-fill."
+  (test-music-save--with-env
+   (test-music-save--queue (list (emms-track 'file "/music/a.flac")))
+   (cj/music-playlist-save)
+   (should-not cr-initial)
+   (should (= (length (directory-files tmp-m3u nil "\\.m3u\\'")) 1))
+   (should-not (directory-files tmp-radio nil "\\.m3u\\'"))))
+
+(ert-deftest test-music-playlist-save-associated-file-name-wins-over-station ()
+  "Normal: a queue with an associated playlist file defaults to that name,
+even when it contains stations."
+  (test-music-save--with-env
+   (let ((tr (emms-track 'url "https://gs.example/stream")))
+     (emms-track-set tr 'info-title "Groove Salad")
+     (test-music-save--queue (list tr)))
+   (with-current-buffer (cj/music--ensure-playlist-buffer)
+     (setq cj/music-playlist-file (expand-file-name "morning.m3u" tmp-radio)))
+   (cj/music-playlist-save)
+   (should-not cr-initial)
+   (should (file-exists-p (expand-file-name "morning.m3u" tmp-radio)))))
+
+(ert-deftest test-music-playlist-save-error-empty-name ()
+  "Error: an empty name at the prompt signals user-error, not a hidden .m3u."
+  (test-music-save--with-env
+   (test-music-save--queue (list (emms-track 'url "https://x.example/s")))
+   (cl-letf (((symbol-function 'completing-read) (lambda (&rest _) "")))
+     (should-error (cj/music-playlist-save) :type 'user-error))
+   (should-not (directory-files tmp-radio nil "m3u"))))
 
 ;;; cj/music-playlist-edit
 
@@ -137,37 +207,6 @@
       (kill-buffer buf))
     (should (eq switched buf))
     (should msg)))
-
-;;; cj/music-create-radio-station
-
-(ert-deftest test-music-create-radio-station-writes-m3u ()
-  "Normal: with name+url, an EXTM3U-style file is written into music-m3u-root."
-  (let* ((tmp (file-name-as-directory (make-temp-file "cj-music-radio-" t)))
-         (cj/music-m3u-root tmp)
-         msg)
-    (unwind-protect
-        (progn
-          (cl-letf (((symbol-function 'message)
-                     (lambda (fmt &rest args) (setq msg (apply #'format fmt args)))))
-            (cj/music-create-radio-station "NPR" "https://example.test/stream"))
-          (let ((file (expand-file-name "NPR_Radio.m3u" tmp)))
-            (should (file-exists-p file))
-            (with-temp-buffer
-              (insert-file-contents file)
-              (let ((text (buffer-string)))
-                (should (string-match-p "#EXTM3U" text))
-                (should (string-match-p "NPR" text))
-                (should (string-match-p "https://example.test/stream" text))))))
-      (delete-directory tmp t))
-    (should (string-match-p "Created radio station" msg))))
-
-(ert-deftest test-music-create-radio-station-rejects-empty-name ()
-  "Error: an empty name is rejected with user-error."
-  (should-error (cj/music-create-radio-station "" "https://x") :type 'user-error))
-
-(ert-deftest test-music-create-radio-station-rejects-empty-url ()
-  "Error: an empty URL is rejected with user-error."
-  (should-error (cj/music-create-radio-station "NPR" "") :type 'user-error))
 
 (provide 'test-music-config-more-commands)
 ;;; test-music-config-more-commands.el ends here

@@ -48,5 +48,22 @@
   (let ((track (emms-track 'file "/music/x.flac")))
     (should (null (cj/music-art--favicon-url track nil)))))
 
+(ert-deftest test-music-config--art-favicon-url-normal-track-property ()
+  "Normal: a queued lookup station carries its favicon as a track property."
+  (let ((track (emms-track 'url "https://fp.example.net/live")))
+    (emms-track-set track 'radio-favicon "https://fp.example.net/icon.png")
+    (should (string= (cj/music-art--favicon-url track nil)
+                     "https://fp.example.net/icon.png"))))
+
+(ert-deftest test-music-config--art-favicon-url-normal-property-beats-entries ()
+  "Normal: the track property wins over a conflicting entries favicon."
+  (let* ((url "https://fp2.example.net/live")
+         (track (emms-track 'url url))
+         (entries (list (list url :name "X" :uuid nil
+                              :favicon "https://entries.example/e.png"))))
+    (emms-track-set track 'radio-favicon "https://prop.example/p.png")
+    (should (string= (cj/music-art--favicon-url track entries)
+                     "https://prop.example/p.png"))))
+
 (provide 'test-music-config--art-favicon-url)
 ;;; test-music-config--art-favicon-url.el ends here

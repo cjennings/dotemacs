@@ -50,5 +50,20 @@
     (should (string= (cj/music-art--cache-key track entries)
                      (concat "url-" (sha1 url))))))
 
+(ert-deftest test-music-config--art-cache-key-normal-track-property ()
+  "Normal: a queued lookup station carries its uuid as a track property and
+needs no entries at all."
+  (let ((track (emms-track 'url "https://ck4.example.net/live")))
+    (emms-track-set track 'radio-uuid "prop-uuid")
+    (should (string= (cj/music-art--cache-key track nil) "prop-uuid"))))
+
+(ert-deftest test-music-config--art-cache-key-normal-property-beats-entries ()
+  "Normal: the track property wins over a conflicting entries uuid."
+  (let* ((url "https://ck5.example.net/live")
+         (track (emms-track 'url url))
+         (entries (list (list url :name "X" :uuid "entries-uuid" :favicon nil))))
+    (emms-track-set track 'radio-uuid "prop-uuid")
+    (should (string= (cj/music-art--cache-key track entries) "prop-uuid"))))
+
 (provide 'test-music-config--art-cache-key)
 ;;; test-music-config--art-cache-key.el ends here

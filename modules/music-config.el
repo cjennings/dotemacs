@@ -38,7 +38,6 @@
 ;; compiles as a dynamic bind, not a dead lexical local -- otherwise emms /
 ;; orderless never see the binding (the lexical-binding foreign-special-var trap).
 (defvar orderless-smart-case)
-(defvar emms-source-playlist-ask-before-overwrite)
 (defvar emms-playlist-buffer-p)
 (defvar emms-playlist-buffer)
 (defvar emms-random-playlist)
@@ -109,11 +108,15 @@ falls back to the plain text player (names, a dim glyph, a thin status line)."
 (declare-function emms-track-name "emms")
 (declare-function emms-track-type "emms")
 (declare-function emms-track-get "emms")
+(declare-function emms-track "emms")
+(declare-function emms-track-set "emms")
 (declare-function emms-track-simple-description "emms")
 (declare-function emms-playlist-current-selected-track "emms")
 (declare-function emms-playlist-select "emms")
+(declare-function emms-playlist-selected-track "emms")
 (declare-function emms-playlist-clear "emms")
-(declare-function emms-playlist-save "emms-source-playlist")
+(declare-function emms-playlist-insert-track "emms")
+(declare-function emms-stop "emms")
 (declare-function emms-start "emms")
 (declare-function emms-random "emms")
 (declare-function emms-next "emms")
@@ -349,17 +352,21 @@ modification date so marginalia can show them."
                     tracks))))
         (nreverse tracks)))))
 
-(defun cj/music--playlist-tracks ()
-  "Return list of track names from current EMMS playlist buffer."
+(defun cj/music--playlist-track-objects ()
+  "Return the track objects from the current EMMS playlist buffer, in order."
   (let ((tracks '()))
     (with-current-buffer (cj/music--ensure-playlist-buffer)
       (save-excursion
         (goto-char (point-min))
         (while (not (eobp))
           (when-let ((track (emms-playlist-track-at (point))))
-            (push (emms-track-name track) tracks))
+            (push track tracks))
           (forward-line 1))))
     (nreverse tracks)))
+
+(defun cj/music--playlist-tracks ()
+  "Return list of track names from current EMMS playlist buffer."
+  (mapcar #'emms-track-name (cj/music--playlist-track-objects)))
 
 (defun cj/music--dedup-m3u-files (paths)
   "Return (BASENAME . PATH) conses for PATHS, first occurrence of a basename winning.
@@ -386,10 +393,6 @@ collision the earlier directory wins."
   "Return list of M3U basenames (no extension) across `cj/music-m3u-roots'."
   (mapcar (lambda (pair) (file-name-sans-extension (car pair)))
           (cj/music--get-m3u-files)))
-
-(defun cj/music--safe-filename (name)
-  "Return NAME made filesystem-safe by replacing bad chars with underscores."
-  (replace-regexp-in-string "[^a-zA-Z0-9_-]" "_" name))
 
 (defun cj/music--playlist-modified-p ()
   "Return non-nil if current playlist differs from its associated M3U file."
@@ -537,23 +540,103 @@ Replaces current playlist."
     (message "Loaded playlist: %s" choice-name)))
 
 
+(defun cj/music--m3u-track-lines (track entries)
+  "The .m3u lines for TRACK.
+A file track is its bare absolute path.  A url track carries its station
+metadata — an #EXTINF label plus #RADIOBROWSERUUID / #RADIOBROWSERFAVICON when
+known — read from the track's properties first, then its ENTRIES metadata (a
+loaded legacy playlist has entries but no properties), so a saved station
+keeps its display name and cover art on reload."
+  (let ((name (emms-track-name track)))
+    (if (not (eq (emms-track-type track) 'url))
+        (concat name "\n")
+      (let* ((meta (cdr (assoc name entries)))
+             (label (or (emms-track-get track 'info-title)
+                        (plist-get meta :name)
+                        (cj/music--tidy-host name)))
+             (uuid (or (emms-track-get track 'radio-uuid)
+                       (plist-get meta :uuid)))
+             (favicon (or (emms-track-get track 'radio-favicon)
+                          (plist-get meta :favicon))))
+        (concat
+         (if (and (stringp uuid) (not (string-empty-p uuid)))
+             (format "#RADIOBROWSERUUID:%s\n" uuid)
+           "")
+         (if (and (stringp favicon) (not (string-empty-p favicon)))
+             (format "#RADIOBROWSERFAVICON:%s\n"
+                     (replace-regexp-in-string "[\r\n]+" " " favicon))
+           "")
+         (format "#EXTINF:-1,%s\n"
+                 (replace-regexp-in-string "[\r\n]+" " " label))
+         name "\n")))))
+
+(defun cj/music--m3u-text (tracks entries)
+  "The full .m3u file text for TRACKS, station metadata from ENTRIES.
+The stock EMMS m3u writer emits bare URLs; this emitter writes the comment
+lines `cj/music--m3u-entries' parses, so save -> load round-trips."
+  (concat "#EXTM3U\n"
+          (mapconcat (lambda (tr) (cj/music--m3u-track-lines tr entries))
+                     tracks "")))
+
+(defun cj/music--write-playlist-file (path tracks entries)
+  "Write TRACKS to PATH as .m3u text, station metadata from ENTRIES.
+Refreshes the radio metadata cache since a new .m3u just landed."
+  (with-temp-file path
+    (insert (cj/music--m3u-text tracks entries)))
+  (cj/music--refresh-radio-name-map))
+
+(defun cj/music--save-default-name (tracks file entries)
+  "The name the save prompt should offer.
+FILE (the playlist's associated .m3u) wins when present.  Otherwise the first
+url track's station name — its title property, else its #EXTINF label from
+ENTRIES.  Nil when neither applies (the caller falls back to a timestamp)."
+  (if file
+      (file-name-sans-extension (file-name-nondirectory file))
+    (cl-loop for tr in tracks
+             when (eq (emms-track-type tr) 'url)
+             thereis (or (emms-track-get tr 'info-title)
+                         (plist-get (cdr (assoc (emms-track-name tr) entries))
+                                    :name)))))
+
+(defun cj/music--save-directory (tracks)
+  "Directory a saved playlist targets.
+An all-stream queue is a radio playlist and saves into
+`cj/music-radio-save-dir'; anything else saves into `cj/music-m3u-root'."
+  (if (and tracks
+           (cl-every (lambda (tr) (eq (emms-track-type tr) 'url)) tracks))
+      cj/music-radio-save-dir
+    cj/music-m3u-root))
+
 (defun cj/music-playlist-save ()
-  "Save current EMMS playlist to a file in cj/music-m3u-root.
-Offers completion over existing names but allows new names."
+  "Save the current EMMS playlist to an .m3u file.
+An all-stream queue saves into `cj/music-radio-save-dir' (the radio playlist
+home); anything else saves into `cj/music-m3u-root'.  A queue of freshly
+looked-up stations pre-fills the first station's name in the prompt; a
+playlist with an associated file keeps that file's name as the default.
+Station metadata (name, uuid, favicon) is written with each stream so a
+reloaded playlist keeps its display name and cover art."
   (interactive)
-  (let* ((existing (cj/music--get-m3u-basenames))
-         (default-name (if cj/music-playlist-file
-                           (file-name-sans-extension (file-name-nondirectory cj/music-playlist-file))
-                         (format-time-string "playlist-%Y%m%d-%H%M%S")))
-         (chosen (completing-read "Save playlist as: " existing nil nil nil nil default-name))
+  (let* ((tracks (cj/music--playlist-track-objects))
+         (entries (cj/music--radio-metadata))
+         (existing (cj/music--get-m3u-basenames))
+         (assoc-file (with-current-buffer (cj/music--ensure-playlist-buffer)
+                       cj/music-playlist-file))
+         (prefill (and (null assoc-file)
+                       (cj/music--save-default-name tracks nil entries)))
+         (default-name (or (cj/music--save-default-name tracks assoc-file entries)
+                           (format-time-string "playlist-%Y%m%d-%H%M%S")))
+         (chosen (completing-read "Save playlist as: " existing nil nil
+                                  prefill nil default-name))
          (filename (if (string-suffix-p ".m3u" chosen) chosen (concat chosen ".m3u")))
-         (full (expand-file-name filename cj/music-m3u-root)))
+         (dir (cj/music--save-directory tracks))
+         (full (expand-file-name filename dir)))
+    (when (string-empty-p (string-trim chosen))
+      (user-error "Playlist name cannot be empty"))
     (when (and (file-exists-p full)
                (not (cj/confirm-strong (format "Overwrite %s? " filename))))
       (user-error "Aborted saving playlist"))
-    (with-current-buffer (cj/music--ensure-playlist-buffer)
-      (let ((emms-source-playlist-ask-before-overwrite nil))
-        (emms-playlist-save 'm3u full)))
+    (make-directory dir t)
+    (cj/music--write-playlist-file full tracks entries)
     (cj/music--sync-playlist-file full)
     (message "Saved playlist: %s" filename)))
 
@@ -590,8 +673,9 @@ Offers completion over existing names but allows new names."
     (let ((path cj/music-playlist-file))
       (when (cj/music--playlist-modified-p)
         (when (yes-or-no-p "Playlist modified. Save before editing? ")
-          (let ((emms-source-playlist-ask-before-overwrite nil))
-            (emms-playlist-save 'm3u path))))
+          (cj/music--write-playlist-file path
+                                         (cj/music--playlist-track-objects)
+                                         (cj/music--radio-metadata))))
       ;; Re-validate existence before opening
       (if (file-exists-p path)
           (find-file-other-window path)
@@ -838,7 +922,7 @@ Dirs added recursively."
     "C-; m m" "toggle playlist"
     "C-; m M" "show playlist"
     "C-; m a" "add music"
-    "C-; m R" "create radio"
+    "C-; m R" "queue radio station"
     "C-; m SPC" "pause"
     "C-; m s" "stop"
     "C-; m n" "next track"
@@ -1104,7 +1188,7 @@ The rule uses a resize-safe :align-to span, not a hardcoded character count."
      (funcall mode-indicator "x" "consume" cj/music-consume-mode) "\n"
      (propertize "Keys    " 'face 'cj/music-header-face)
      (propertize " : " 'face 'cj/music-header-face)
-     (propertize "a:add  c:clear  L:load  S:stop  SPC:pause  <>:skip  ↑↓:move  C-↑↓:reorder  q:dismiss"
+     (propertize "a:add  c:clear  L:load  w:save  S:stop  SPC:pause  <>:skip  ↑↓:move  C-↑↓:reorder  q:dismiss"
                  'face 'cj/music-keyhint-face) "\n"
      (propertize "Radio   " 'face 'cj/music-header-face)
      (propertize " : " 'face 'cj/music-header-face)
@@ -1320,7 +1404,7 @@ unless fancy."
         ("L" . cj/music-playlist-load)
         ("E" . cj/music-playlist-edit)
         ("g" . cj/music-playlist-reload)
-        ("S" . cj/music-playlist-save)
+        ("w" . cj/music-playlist-save)
         ;; Track reordering
         ("S-<up>"   . emms-playlist-mode-shift-track-up)
         ("S-<down>" . emms-playlist-mode-shift-track-down)
@@ -1336,7 +1420,10 @@ unless fancy."
 ;;; Radio station creation
 
 (defun cj/music-create-radio-station (name url)
-  "Create a radio station M3U playlist with NAME and URL in cj/music-m3u-root."
+  "Queue and play a radio station from a hand-entered NAME and URL.
+The station becomes a url track in the playlist (NAME as its title) and
+playback starts.  Nothing is written to disk — save the queue with the normal
+playlist save, where NAME pre-fills the prompt."
   (interactive
    (list (read-string "Radio station name: ")
          (read-string "Stream URL: ")))
@@ -1344,25 +1431,21 @@ unless fancy."
     (user-error "Radio station name cannot be empty"))
   (when (string-empty-p url)
     (user-error "Stream URL cannot be empty"))
-  (let* ((safe (cj/music--safe-filename name))
-         (file (expand-file-name (concat safe "_Radio.m3u") cj/music-m3u-root))
-         (content (format "#EXTM3U\n#EXTINF:-1,%s\n%s\n" name url)))
-    (when (and (file-exists-p file)
-               (not (cj/confirm-strong (format "Overwrite %s? " (file-name-nondirectory file)))))
-      (user-error "Aborted creating radio station"))
-    (with-temp-file file
-      (insert content))
-    (cj/music--refresh-radio-name-map)
-    (message "Created radio station: %s" (file-name-nondirectory file))))
+  (cj/emms--setup)
+  (cj/music-radio--enqueue-and-play
+   (list (cj/music-radio--station-track (list :name name :url url))))
+  (message "Queued radio station: %s" name))
 
 ;; The manual name+URL creator is bound to m in the radio row below (see the
 ;; with-eval-after-load block near the radio-browser lookup), not R.
 
 ;; --------------------------- Radio-browser Lookup ----------------------------
-;; Search radio-browser.info and turn a selection into a playable radio .m3u.
-;; Spec: docs/specs/2026-07-06-radio-browser-lookup-spec.org.  The pure pieces
-;; (parse / emit / format / filename) carry the tests; the network GET and the
-;; interactive command are exercised live.
+;; Search radio-browser.info and queue a selection as playing url tracks, each
+;; carrying its station metadata as track properties.  Nothing is written at
+;; pick time; the playlist save writes the metadata back out as .m3u comment
+;; lines.  Spec: docs/specs/2026-07-06-radio-browser-lookup-spec.org.  The
+;; pure pieces (parse / track-build / format) carry the tests; the network GET
+;; and the interactive command are exercised live.
 
 (require 'url)
 
@@ -1378,11 +1461,8 @@ The project asks clients to identify themselves.")
   "Maximum number of stations a radio-browser search returns.")
 
 (defvar cj/music-radio-save-dir (expand-file-name "~/.local/share/mpd/playlists/")
-  "Directory new radio-browser stations are written to (the radio home).")
-
-(defvar cj/music-radio-filename-suffix "-Radio"
-  "Suffix appended to a created station's basename, before the .m3u extension.
-Marks a lookup-created station in the playlist directory.")
+  "Directory radio playlists are saved to (the radio home).
+The playlist save targets it when every track in the queue is a stream.")
 
 (defun cj/music-radio--parse-search (json-text)
   "Parse a radio-browser JSON-TEXT array into a list of station plists.
@@ -1400,29 +1480,43 @@ clear message instead of a stack trace."
     (cond ((and (stringp r) (not (string-empty-p r))) r)
           ((and (stringp u) (not (string-empty-p u))) u))))
 
-(defun cj/music-radio--station-m3u (st)
-  "Return the .m3u file text for station ST, or nil when it has no stream URL.
-Matches the existing radio files: #EXTM3U, an optional #RADIOBROWSERUUID line,
-#EXTINF:1,<name>, and the stream URL."
-  (let* ((url (cj/music-radio--station-url st))
-         ;; Strip newlines so an unexpected multi-line name can't inject extra
-         ;; m3u lines; the API returns single-line names, but it's external data.
-         (name (replace-regexp-in-string "[\r\n]+" " "
-                                         (or (plist-get st :name) "Radio")))
-         (uuid (plist-get st :stationuuid))
-         (favicon (plist-get st :favicon)))
-    (when url
-      (concat "#EXTM3U\n"
-              (if (and (stringp uuid) (not (string-empty-p uuid)))
-                  (format "#RADIOBROWSERUUID:%s\n" uuid)
-                "")
-              ;; Capture the favicon at creation so the cover-art layer needs
-              ;; no byuuid lookup later; same newline-strip guard as the name.
-              (if (and (stringp favicon) (not (string-empty-p favicon)))
-                  (format "#RADIOBROWSERFAVICON:%s\n"
-                          (replace-regexp-in-string "[\r\n]+" " " favicon))
-                "")
-              (format "#EXTINF:1,%s\n%s\n" name url)))))
+(defun cj/music-radio--station-track (st)
+  "Return an EMMS url track for station ST, or nil when it has no stream URL.
+The track carries the station name as `info-title' plus `radio-uuid' and
+`radio-favicon' properties, so display names and cover art need no .m3u on
+disk; the playlist save writes the same metadata back out as comment lines.
+Newlines in the external name/favicon are flattened so they can't inject
+extra .m3u lines at save time."
+  (when-let ((url (cj/music-radio--station-url st)))
+    (let ((track (emms-track 'url url))
+          (name (replace-regexp-in-string "[\r\n]+" " "
+                                          (or (plist-get st :name) "Radio")))
+          (uuid (plist-get st :stationuuid))
+          (favicon (plist-get st :favicon)))
+      (emms-track-set track 'info-title name)
+      (when (and (stringp uuid) (not (string-empty-p uuid)))
+        (emms-track-set track 'radio-uuid uuid))
+      (when (and (stringp favicon) (not (string-empty-p favicon)))
+        (emms-track-set track 'radio-favicon
+                        (replace-regexp-in-string "[\r\n]+" " " favicon)))
+      track)))
+
+(defun cj/music-radio--enqueue-and-play (tracks)
+  "Append TRACKS to the playlist buffer and play the first of them.
+Interrupts whatever is playing; the rest of the queue is left in place.  A nil
+TRACKS is a no-op."
+  (when tracks
+    (cj/emms--setup)
+    (with-current-buffer (cj/music--ensure-playlist-buffer)
+      (let ((first-pos nil))
+        (save-excursion
+          (dolist (tr tracks)
+            (goto-char (point-max))
+            (unless first-pos (setq first-pos (point)))
+            (emms-playlist-insert-track tr)))
+        (emms-playlist-select first-pos)))
+    (when emms-player-playing-p (emms-stop))
+    (emms-start)))
 
 (defun cj/music-radio--tags-snippet (tags n)
   "Return the first N comma-separated TAGS as a trimmed display string.
@@ -1441,15 +1535,6 @@ Variant B: codec, bitrate, country, votes, and the first few tags."
         (votes (or (plist-get st :votes) 0))
         (tags (cj/music-radio--tags-snippet (plist-get st :tags) 3)))
     (format "%-4s %-5s %-2s ♥%d  %s" codec bitrate cc votes tags)))
-
-(defun cj/music-radio--disambiguate-name (name uuid taken)
-  "Return a filesystem-safe basename for NAME, unique against the TAKEN list.
-On a collision, append a short fragment of UUID.  Pure helper: keeps two
-same-named stations picked in one search from overwriting each other."
-  (let ((base (cj/music--safe-filename name)))
-    (if (member base taken)
-        (concat base "_" (substring (or uuid "x") 0 (min 8 (length (or uuid "x")))))
-      base)))
 
 (defun cj/music-radio--search-url (server query &optional field)
   "Build the radio-browser station-search URL for QUERY against SERVER.
@@ -1508,29 +1593,6 @@ to one station.  Pure helper."
         (puthash disp t seen)
         (push (cons disp st) out)))))
 
-(defun cj/music-radio--write-stations (stations dir)
-  "Write each station in STATIONS as an .m3u into DIR.
-Skips a station with no stream URL and disambiguates a filename that collides
-with an already-written one this run.  Returns a plist (:written PATHS :skipped
-NAMES).  Creates DIR when absent."
-  (make-directory dir t)
-  (let ((taken '()) (written '()) (skipped '()))
-    (dolist (st stations)
-      (let ((m3u (cj/music-radio--station-m3u st)))
-        (if (not m3u)
-            (push (or (plist-get st :name) "(unnamed)") skipped)
-          (let* ((base (cj/music-radio--disambiguate-name
-                        (or (plist-get st :name) "Radio")
-                        (plist-get st :stationuuid) taken))
-                 (path (expand-file-name
-                        (concat base cj/music-radio-filename-suffix ".m3u") dir)))
-            (push base taken)
-            (with-temp-file path (insert m3u))
-            (push path written)))))
-    ;; New .m3u files landed, so the cached url->label map is stale.
-    (when written (cj/music--refresh-radio-name-map))
-    (list :written (nreverse written) :skipped (nreverse skipped))))
-
 (defun cj/music-radio--completion-table (candidates)
   "Completion table over CANDIDATES carrying the Variant-B marginalia affix."
   (lambda (string pred action)
@@ -1571,21 +1633,17 @@ selection order; each pick is removed from the pool so it can't be chosen twice.
             (setq pool (delq cell pool))))))
     (nreverse chosen)))
 
-(defun cj/music-radio--play (paths)
-  "Play the first .m3u in PATHS immediately (interrupting), enqueue the rest."
-  (when paths
-    (emms-play-playlist (car paths))
-    (dolist (p (cdr paths))
-      (emms-add-playlist p))))
-
 (defun cj/music-radio--search-and-play (query field)
-  "Search radio-browser for QUERY on FIELD, pick stations, then create and play.
+  "Search radio-browser for QUERY on FIELD, pick stations, then queue and play.
 FIELD is \"name\" or \"tag\".  Lists matching stations (annotated with codec,
-bitrate, country, votes, and tags), lets you pick several one at a time, writes
-each as an .m3u into `cj/music-radio-save-dir', then plays the selection through
-mpv (interrupting whatever was playing)."
+bitrate, country, votes, and tags), lets you pick several one at a time, adds
+each to the playlist as a url track carrying its station metadata, and plays
+the first pick (interrupting whatever was playing).  Nothing is written to
+disk; save the queue with the normal playlist save, where the station name
+pre-fills the prompt."
   (when (string-empty-p (string-trim query))
     (user-error "Empty search"))
+  (cj/emms--setup)
   (let* ((stations (cj/music-radio--search query field))
          (candidates (cj/music-radio--candidates stations)))
     (unless candidates
@@ -1593,31 +1651,30 @@ mpv (interrupting whatever was playing)."
     (let ((chosen (cj/music-radio--pick-loop candidates)))
       (unless chosen
         (user-error "No stations selected"))
-      (let* ((result (cj/music-radio--write-stations chosen cj/music-radio-save-dir))
-             (written (plist-get result :written))
-             (skipped (plist-get result :skipped)))
-        (when written
-          (cj/music-radio--play written))
-        (message "Created %d station%s%s%s"
-                 (length written)
-                 (if (= (length written) 1) "" "s")
+      (let ((tracks (delq nil (mapcar #'cj/music-radio--station-track chosen)))
+            (skipped (cl-loop for st in chosen
+                              unless (cj/music-radio--station-url st)
+                              collect (or (plist-get st :name) "(unnamed)"))))
+        (cj/music-radio--enqueue-and-play tracks)
+        (message "Queued %d station%s%s%s"
+                 (length tracks)
+                 (if (= (length tracks) 1) "" "s")
                  (if skipped
                      (format ", skipped %d with no URL (%s)"
                              (length skipped) (string-join skipped ", "))
                    "")
-                 (if written
+                 (if tracks
                      (format " — playing %s"
-                             (file-name-sans-extension
-                              (file-name-nondirectory (car written))))
+                             (emms-track-get (car tracks) 'info-title))
                    ""))))))
 
 (defun cj/music-radio-search-by-name (query)
-  "Search radio-browser.info by station name, then create and play a selection."
+  "Search radio-browser.info by station name, then queue and play a selection."
   (interactive "sRadio search (name): ")
   (cj/music-radio--search-and-play query "name"))
 
 (defun cj/music-radio-search-by-tag (tag)
-  "Search radio-browser.info by tag/genre, then create and play a selection."
+  "Search radio-browser.info by tag/genre, then queue and play a selection."
   (interactive "sRadio search (tag): ")
   (cj/music-radio--search-and-play tag "tag"))
 
@@ -1643,23 +1700,28 @@ file hash.  Gitignored runtime state; `cj/music-clear-art-cache' empties it.")
 
 (defun cj/music-art--cache-key (track &optional entries)
   "Stable cache-file basename (no extension) for TRACK.
-A url with a #RADIOBROWSERUUID in ENTRIES keys on the uuid so a station shares
-one cached logo; any other url keys on a hash of its address; a file keys on a
-hash of its path."
+A url with a station uuid — the track's `radio-uuid' property, else a
+#RADIOBROWSERUUID in ENTRIES — keys on the uuid so a station shares one cached
+logo; any other url keys on a hash of its address; a file keys on a hash of
+its path."
   (let ((name (emms-track-name track)))
     (if (eq (emms-track-type track) 'url)
-        (let ((uuid (plist-get (cdr (assoc name entries)) :uuid)))
+        (let ((uuid (or (emms-track-get track 'radio-uuid)
+                        (plist-get (cdr (assoc name entries)) :uuid))))
           (if (and (stringp uuid) (not (string-empty-p uuid)))
               uuid
             (concat "url-" (sha1 name))))
       (concat "file-" (sha1 name)))))
 
 (defun cj/music-art--favicon-url (track &optional entries)
-  "Direct favicon image URL for a url TRACK from its captured
-#RADIOBROWSERFAVICON, or nil.  A station with only a uuid resolves via a byuuid
-lookup elsewhere; a file track has no favicon URL."
+  "Direct favicon image URL for a url TRACK, or nil.
+The track's `radio-favicon' property wins, then its captured
+#RADIOBROWSERFAVICON from ENTRIES.  A station with only a uuid resolves via a
+byuuid lookup elsewhere; a file track has no favicon URL."
   (when (eq (emms-track-type track) 'url)
-    (let ((fav (plist-get (cdr (assoc (emms-track-name track) entries)) :favicon)))
+    (let ((fav (or (emms-track-get track 'radio-favicon)
+                   (plist-get (cdr (assoc (emms-track-name track) entries))
+                              :favicon))))
       (and (stringp fav) (not (string-empty-p fav)) fav))))
 
 (defun cj/music-art--valid-image-p (data)
@@ -1733,9 +1795,10 @@ when there is nothing to fetch."
     (unless (cj/music-art--cached-file key)
       (when (eq (emms-track-type track) 'url)
         (let ((fav (or (cj/music-art--favicon-url track entries)
-                       (let ((uuid (plist-get (cdr (assoc (emms-track-name track)
-                                                          entries))
-                                              :uuid)))
+                       (let ((uuid (or (emms-track-get track 'radio-uuid)
+                                       (plist-get (cdr (assoc (emms-track-name track)
+                                                              entries))
+                                                  :uuid))))
                          (and (stringp uuid) (not (string-empty-p uuid))
                               (cj/music-art--byuuid-favicon uuid))))))
           (and fav (cj/music-art--fetch-to-cache fav key)))))))

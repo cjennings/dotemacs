@@ -3,11 +3,12 @@
 ;; Author: Craig Jennings <c@cjennings.net>
 ;;
 ;;; Commentary:
-;; Phase 1 of the radio-browser lookup (spec docs/specs/2026-07-06-radio-browser-lookup-spec.org):
-;; the pure pieces behind the search command.  Parsing a recorded JSON response,
-;; picking a station's stream URL, emitting the .m3u, formatting the marginalia
-;; annotation (Variant B: codec/bitrate/country/votes/tags), disambiguating a
-;; colliding filename, and building the search URL.  The network GET and the
+;; The pure pieces behind the radio-browser search command (spec
+;; docs/specs/2026-07-06-radio-browser-lookup-spec.org): parsing a recorded
+;; JSON response, picking a station's stream URL, formatting the marginalia
+;; annotation (Variant B: codec/bitrate/country/votes/tags), and building the
+;; search URL.  The station->track builder and the queue mechanics live in
+;; test-music-config--radio-station-track.el; the network GET and the
 ;; interactive command are exercised in the daemon, not here.
 
 ;;; Code:
@@ -22,10 +23,8 @@
 
 (declare-function cj/music-radio--parse-search "music-config" (json-text))
 (declare-function cj/music-radio--station-url "music-config" (st))
-(declare-function cj/music-radio--station-m3u "music-config" (st))
 (declare-function cj/music-radio--tags-snippet "music-config" (tags n))
 (declare-function cj/music-radio--format-candidate "music-config" (st))
-(declare-function cj/music-radio--disambiguate-name "music-config" (name uuid taken))
 (declare-function cj/music-radio--search-url "music-config" (server query))
 
 (defconst test-music-radio--fixture
@@ -62,48 +61,19 @@
 ;;; --------------------------- station-url ------------------------------------
 
 (ert-deftest test-music-radio-station-url-resolved ()
-  "Normal: url_resolved is preferred."
+  "Normal: url_resolved wins when present."
   (should (equal (cj/music-radio--station-url (test-music-radio--first))
                  "https://icecast.walmradio.com:8443/jazz")))
 
 (ert-deftest test-music-radio-station-url-fallback-to-url ()
-  "Boundary: empty url_resolved falls back to url."
+  "Boundary: an empty url_resolved falls back to url."
   (should (equal (cj/music-radio--station-url
-                  '(:url_resolved "" :url "http://example.test/stream"))
-                 "http://example.test/stream")))
+                  '(:url_resolved "" :url "http://fallback.test/stream"))
+                 "http://fallback.test/stream")))
 
 (ert-deftest test-music-radio-station-url-none ()
   "Error: neither url_resolved nor url yields nil."
   (should-not (cj/music-radio--station-url '(:url_resolved "" :url ""))))
-
-;;; --------------------------- station-m3u ------------------------------------
-
-(ert-deftest test-music-radio-station-m3u-shape ()
-  "Normal: the .m3u carries #EXTM3U, the UUID, #EXTINF, and the stream URL."
-  (let ((m3u (cj/music-radio--station-m3u (test-music-radio--first))))
-    (should (string-prefix-p "#EXTM3U\n" m3u))
-    (should (string-match-p "#RADIOBROWSERUUID:ea8059be-d119-4de3-b27b-0d9bd6aedb17" m3u))
-    (should (string-match-p "#EXTINF:1,Adroit Jazz Underground" m3u))
-    (should (string-match-p "https://icecast.walmradio.com:8443/jazz" m3u))))
-
-(ert-deftest test-music-radio-station-m3u-no-url-is-nil ()
-  "Error: a station with no usable stream URL emits nil (not a broken file)."
-  (should-not (cj/music-radio--station-m3u '(:name "Broken" :url_resolved "" :url ""))))
-
-(ert-deftest test-music-radio-station-m3u-captures-favicon ()
-  "Normal: a station with a favicon writes a #RADIOBROWSERFAVICON line so the
-cover-art layer needs no lookup later."
-  (let ((m3u (cj/music-radio--station-m3u
-              '(:name "Art Radio" :url_resolved "https://art.example/live"
-                :stationuuid "u-art" :favicon "https://cdn.example/art.png"))))
-    (should (string-match-p "#RADIOBROWSERFAVICON:https://cdn.example/art.png" m3u))))
-
-(ert-deftest test-music-radio-station-m3u-no-favicon-omits-line ()
-  "Boundary: a station with an empty favicon writes no #RADIOBROWSERFAVICON line."
-  (let ((m3u (cj/music-radio--station-m3u
-              '(:name "Plain" :url_resolved "https://plain.example/live"
-                :stationuuid "u-plain" :favicon ""))))
-    (should-not (string-match-p "#RADIOBROWSERFAVICON" m3u))))
 
 ;;; --------------------------- tags-snippet -----------------------------------
 
@@ -126,21 +96,6 @@ cover-art layer needs no lookup later."
     (should (string-match-p "174208" ann))
     (should (string-match-p "bebop" ann))))
 
-;;; --------------------------- disambiguate-name ------------------------------
-
-(ert-deftest test-music-radio-disambiguate-name-unique ()
-  "Normal: a name not already taken keeps its safe basename."
-  (should (equal (cj/music-radio--disambiguate-name "Jazz Radio" "uuid1234" '())
-                 "Jazz_Radio")))
-
-(ert-deftest test-music-radio-disambiguate-name-collision ()
-  "Boundary: a colliding name gets a UUID fragment appended, making it unique."
-  (let ((first (cj/music-radio--disambiguate-name "Jazz Radio" "aaaabbbbcccc" '())))
-    (should (equal first "Jazz_Radio"))
-    (should-not (equal (cj/music-radio--disambiguate-name "Jazz Radio" "aaaabbbbcccc"
-                                                          (list first))
-                       first))))
-
 ;;; --------------------------- search-url -------------------------------------
 
 (ert-deftest test-music-radio-search-url-encodes-query-and-limit ()
@@ -158,7 +113,6 @@ cover-art layer needs no lookup later."
     (should-not (string-match-p "name=ambient" u))))
 
 (declare-function cj/music-radio--candidates "music-config" (stations))
-(declare-function cj/music-radio--write-stations "music-config" (stations dir))
 
 ;;; --------------------------- candidates (dedup) -----------------------------
 
@@ -179,42 +133,6 @@ cover-art layer needs no lookup later."
          (keys (mapcar #'car cands)))
     (should (= (length cands) 2))
     (should (= (length (delete-dups (copy-sequence keys))) 2))))
-
-;;; --------------------------- write-stations ---------------------------------
-
-(ert-deftest test-music-radio-write-stations-writes-and-skips ()
-  "Normal + Error: a station with a URL is written; one with no URL is skipped and named."
-  (let ((dir (make-temp-file "radio-write-" t)))
-    (unwind-protect
-        (let* ((stations (list (test-music-radio--first)
-                               '(:name "No URL Here" :url_resolved "" :url "")))
-               (result (cj/music-radio--write-stations stations dir)))
-          (should (= (length (plist-get result :written)) 1))
-          (should (member "No URL Here" (plist-get result :skipped)))
-          (should (file-exists-p (car (plist-get result :written)))))
-      (delete-directory dir t))))
-
-(ert-deftest test-music-radio-write-stations-radio-suffix ()
-  "Normal: a written filename carries the -Radio suffix before .m3u."
-  (let ((dir (make-temp-file "radio-write-" t)))
-    (unwind-protect
-        (let* ((result (cj/music-radio--write-stations (list (test-music-radio--first)) dir))
-               (path (car (plist-get result :written))))
-          (should (string-suffix-p "-Radio.m3u" path))
-          (should (string-match-p "Adroit_Jazz_Underground-Radio\\.m3u\\'" path)))
-      (delete-directory dir t))))
-
-(ert-deftest test-music-radio-write-stations-collision-writes-two-files ()
-  "Boundary: two same-named stations in one run write two distinct files, no overwrite."
-  (let ((dir (make-temp-file "radio-write-" t)))
-    (unwind-protect
-        (let* ((stations '((:name "Same Name" :url_resolved "http://a.test/s" :stationuuid "aaaa1111")
-                           (:name "Same Name" :url_resolved "http://b.test/s" :stationuuid "bbbb2222")))
-               (result (cj/music-radio--write-stations stations dir))
-               (written (plist-get result :written)))
-          (should (= (length written) 2))
-          (should-not (equal (nth 0 written) (nth 1 written))))
-      (delete-directory dir t))))
 
 (provide 'test-music-config--radio)
 ;;; test-music-config--radio.el ends here
