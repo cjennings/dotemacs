@@ -898,19 +898,25 @@ Dirs added recursively."
 ;;; EMMS setup and keybindings
 
 ;; Music/EMMS keymap
+(defvar-keymap cj/music-radio-map
+  :doc "Radio prefix: mirrors the playlist buffer's n/t/m radio row."
+  "n" #'cj/music-radio-search-by-name
+  "t" #'cj/music-radio-search-by-tag
+  "m" #'cj/music-create-radio-station)
+
 (defvar-keymap cj/music-map
-  :doc "Keymap for music commands"
+  :doc "Keymap for music commands (all lowercase, chord-friendly)"
   "m" #'cj/music-playlist-toggle
-  "M" #'cj/music-playlist-show
+  "v" #'cj/music-playlist-show
   "a" #'cj/music-fuzzy-select-and-add
-  "R" #'cj/music-create-radio-station
+  "r" cj/music-radio-map
   "SPC" #'emms-pause
   "s" #'emms-stop
   "n" #'cj/music-next
   "p" #'cj/music-previous
   "g" #'emms-playlist-mode-go
-  "Z" #'emms-shuffle
-  "r" #'emms-toggle-repeat-playlist
+  "u" #'emms-shuffle
+  "l" #'emms-toggle-repeat-playlist
   "t" #'emms-toggle-repeat-track
   "z" #'emms-toggle-random-playlist
   "x" #'cj/music-toggle-consume)
@@ -920,16 +926,19 @@ Dirs added recursively."
   (which-key-add-key-based-replacements
     "C-; m" "music menu"
     "C-; m m" "toggle playlist"
-    "C-; m M" "show playlist"
+    "C-; m v" "show playlist"
     "C-; m a" "add music"
-    "C-; m R" "queue radio station"
+    "C-; m r" "+radio"
+    "C-; m r n" "radio by name"
+    "C-; m r t" "radio by tag"
+    "C-; m r m" "radio manual entry"
     "C-; m SPC" "pause"
     "C-; m s" "stop"
     "C-; m n" "next track"
     "C-; m p" "previous track"
     "C-; m g" "goto playlist"
-    "C-; m Z" "shuffle"
-    "C-; m r" "repeat playlist"
+    "C-; m u" "shuffle"
+    "C-; m l" "repeat playlist"
     "C-; m t" "repeat track"
     "C-; m z" "random"
     "C-; m x" "consume"))
@@ -1188,7 +1197,7 @@ The rule uses a resize-safe :align-to span, not a hardcoded character count."
      (funcall mode-indicator "x" "consume" cj/music-consume-mode) "\n"
      (propertize "Keys    " 'face 'cj/music-header-face)
      (propertize " : " 'face 'cj/music-header-face)
-     (propertize "a:add  c:clear  L:load  w:save  S:stop  SPC:pause  <>:skip  ↑↓:move  C-↑↓:reorder  q:dismiss"
+     (propertize "a:add  c:clear  L:load  v:save  S:stop  SPC:pause  <>:skip  ↑↓:move  C-↑↓:reorder  q:dismiss"
                  'face 'cj/music-keyhint-face) "\n"
      (propertize "Radio   " 'face 'cj/music-header-face)
      (propertize " : " 'face 'cj/music-header-face)
@@ -1404,7 +1413,7 @@ unless fancy."
         ("L" . cj/music-playlist-load)
         ("E" . cj/music-playlist-edit)
         ("g" . cj/music-playlist-reload)
-        ("w" . cj/music-playlist-save)
+        ("v" . cj/music-playlist-save)
         ;; Track reordering
         ("S-<up>"   . emms-playlist-mode-shift-track-up)
         ("S-<down>" . emms-playlist-mode-shift-track-down)

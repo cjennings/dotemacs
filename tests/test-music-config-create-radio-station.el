@@ -94,6 +94,28 @@
                                   'info-title)
                   "Café Del Mar ☕"))))
 
+;;; Keymap
+
+(ert-deftest test-music-config-radio-map-prefix-mirrors-playlist-keys ()
+  "Normal: C-; m r is a radio prefix whose n/t/m mirror the playlist buffer."
+  (let ((map (lookup-key cj/music-map "r")))
+    (should (keymapp map))
+    (should (eq (lookup-key map "n") 'cj/music-radio-search-by-name))
+    (should (eq (lookup-key map "t") 'cj/music-radio-search-by-tag))
+    (should (eq (lookup-key map "m") 'cj/music-create-radio-station))))
+
+(ert-deftest test-music-config-menu-map-lowercase-keys ()
+  "Normal: the menu's former uppercase keys live on lowercase homes, and the
+playlist buffer saves on v."
+  (should (eq (lookup-key cj/music-map "v") 'cj/music-playlist-show))
+  (should (eq (lookup-key cj/music-map "u") 'emms-shuffle))
+  (should (eq (lookup-key cj/music-map "l") 'emms-toggle-repeat-playlist))
+  (should-not (lookup-key cj/music-map "R"))
+  (should-not (lookup-key cj/music-map "M"))
+  (should-not (lookup-key cj/music-map "Z"))
+  (should (eq (lookup-key emms-playlist-mode-map "v") 'cj/music-playlist-save))
+  (should-not (eq (lookup-key emms-playlist-mode-map "w") 'cj/music-playlist-save)))
+
 ;;; Error Cases
 
 (ert-deftest test-music-config-create-radio-station-error-empty-name-signals-user-error ()
