@@ -23,6 +23,14 @@
 ;; terminal background, so -- unlike the old ghostel/vterm engines, which baked
 ;; color per-terminal with no per-window hook -- they follow the per-window
 ;; dimmed background like any other buffer.
+;;
+;; One caveat, so nobody chases it through this alist: ANSI-coloured spans in a
+;; terminal keep their colour when dimmed.  EAT attaches those as anonymous face
+;; plists carrying a literal foreground, e.g. (:foreground "#AFD7FF" :inherit
+;; (eat-term-font-0)), and `face-remap-add-relative' only reaches named faces.
+;; There is no face name to add below.  Reaching them would need an overlay
+;; (whose face outranks a text property), not a remap.  Background and uncoloured
+;; text still dim, which is close enough; this is deliberate, not an oversight.
 
 ;;; Code:
 
