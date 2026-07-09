@@ -93,6 +93,28 @@ focus cue on a split-displayed dashboard, accepted as a fair trade."
 		  (org-level-8                      . (auto-dim-other-buffers      . nil))
 		  (org-link                         . (auto-dim-other-buffers      . nil))
 		  (org-tag                          . (auto-dim-other-buffers      . nil))
+		  ;; org-todo and org-priority are deliberately absent: they are keyword
+		  ;; class, like the org-faces-* set below, and flat-dimming them would
+		  ;; erase the status colour those -dim variants exist to preserve.
+		  ;; Document header: #+TITLE:, #+AUTHOR:, #+ARCHIVE: and their values.
+		  (org-document-title               . (auto-dim-other-buffers      . nil))
+		  (org-document-info                . (auto-dim-other-buffers      . nil))
+		  (org-document-info-keyword        . (auto-dim-other-buffers      . nil))
+		  (org-meta-line                    . (auto-dim-other-buffers      . nil))
+		  ;; Inline markup and source blocks.
+		  (org-code                         . (auto-dim-other-buffers      . nil))
+		  (org-verbatim                     . (auto-dim-other-buffers      . nil))
+		  (org-block-begin-line             . (auto-dim-other-buffers      . nil))
+		  (org-block-end-line               . (auto-dim-other-buffers      . nil))
+		  ;; Drawers, properties, and planning lines.
+		  (org-drawer                       . (auto-dim-other-buffers      . nil))
+		  (org-special-keyword              . (auto-dim-other-buffers      . nil))
+		  (org-property-value               . (auto-dim-other-buffers      . nil))
+		  (org-date                         . (auto-dim-other-buffers      . nil))
+		  ;; Tables and the fold indicator.
+		  (org-table                        . (auto-dim-other-buffers      . nil))
+		  (org-table-row                    . (auto-dim-other-buffers      . nil))
+		  (org-ellipsis                     . (auto-dim-other-buffers      . nil))
 		  ;; Org TODO-keyword + priority faces dim to their own -dim variant
 		  ;; (a darker shade of the same colour) rather than the flat gray, so
 		  ;; a dimmed window's keywords stay recognizable.  Faces are defined

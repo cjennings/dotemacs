@@ -38,12 +38,28 @@
 (defconst test-auto-dim--flat-dimmed-org-faces
   (append (mapcar (lambda (n) (intern (format "org-level-%d" n)))
                   (number-sequence 1 8))
-          '(org-link org-tag))
+          '(org-link org-tag
+            ;; Document header: #+TITLE:, #+AUTHOR:, #+ARCHIVE: and their values.
+            org-document-title org-document-info org-document-info-keyword
+            org-meta-line
+            ;; Inline markup and blocks.
+            org-code org-verbatim org-block-begin-line org-block-end-line
+            ;; Drawers, properties, planning lines.
+            org-drawer org-special-keyword org-property-value org-date
+            ;; Tables and the fold indicator.
+            org-table org-table-row org-ellipsis))
   "Org faces that must flat-dim to the `auto-dim-other-buffers' face.
-These carry no signal that a dedicated -dim variant would preserve: the
-theme gives `org-level-1' through `org-level-8' one shared foreground and
-no height or weight, `org-link' keeps its underline through a relative
-remap, and `org-tag' keeps its surrounding colons.")
+These carry structure, not status: nothing about them needs to stay
+readable in a window the user is not looking at.  Excluded on purpose are
+`org-todo' and `org-priority' (keyword class -- see the -dim variant test
+below) and `org-hide' (needs `auto-dim-other-buffers-hide' so folded text
+stays hidden).")
+
+(defconst test-auto-dim--keyword-dim-variants
+  '((org-faces-todo       . org-faces-todo-dim)
+    (org-faces-doing      . org-faces-doing-dim)
+    (org-faces-priority-a . org-faces-priority-a-dim))
+  "Sample of keyword faces that must keep dedicated -dim variants.")
 
 (ert-deftest test-auto-dim-config-org-structure-faces-flat-dim ()
   "Normal: org heading, link, and tag faces remap to the flat dim face."
@@ -61,12 +77,30 @@ Keyword status is scanned across unfocused windows, so it earns a variant;
 heading colour does not.  Guards the flat-dim change from over-reaching."
   (skip-unless (file-directory-p test-auto-dim--fork))
   (require 'auto-dim-config)
-  (dolist (pair '((org-faces-todo       . org-faces-todo-dim)
-                  (org-faces-doing      . org-faces-doing-dim)
-                  (org-faces-priority-a . org-faces-priority-a-dim)))
+  (dolist (pair test-auto-dim--keyword-dim-variants)
     (let ((entry (assq (car pair) auto-dim-other-buffers-affected-faces)))
       (should entry)
       (should (eq (cdr pair) (car (cdr entry)))))))
+
+(ert-deftest test-auto-dim-config-todo-priority-faces-not-flat-dimmed ()
+  "Boundary: `org-todo' and `org-priority' are never flat-dimmed.
+They are keyword class.  Dimming them would erase the status colour the
+-dim variants exist to preserve, so they stay out of the flat-dim set."
+  (skip-unless (file-directory-p test-auto-dim--fork))
+  (require 'auto-dim-config)
+  (dolist (face '(org-todo org-priority))
+    (should-not (memq face test-auto-dim--flat-dimmed-org-faces))
+    (let ((entry (assq face auto-dim-other-buffers-affected-faces)))
+      (should-not (and entry (eq 'auto-dim-other-buffers (car (cdr entry))))))))
+
+(ert-deftest test-auto-dim-config-org-hide-uses-hide-face ()
+  "Boundary: `org-hide' remaps to the -hide face, not the flat dim face.
+Flat-dimming it would give folded text a visible foreground."
+  (skip-unless (file-directory-p test-auto-dim--fork))
+  (require 'auto-dim-config)
+  (let ((entry (assq 'org-hide auto-dim-other-buffers-affected-faces)))
+    (should entry)
+    (should (eq 'auto-dim-other-buffers-hide (car (cdr entry))))))
 
 (ert-deftest test-auto-dim-config-never-dim-dashboard-exempts-dashboard ()
   "Normal: the *dashboard* buffer is exempt from dimming."
