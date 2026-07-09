@@ -75,6 +75,24 @@ focus cue on a split-displayed dashboard, accepted as a fair trade."
 		  (font-lock-builtin-face           . (auto-dim-other-buffers      . nil))
 		  (font-lock-preprocessor-face      . (auto-dim-other-buffers      . nil))
 		  (font-lock-warning-face           . (auto-dim-other-buffers      . nil))
+		  ;; Org structure faces flat-dim like font-lock rather than getting
+		  ;; -dim variants: the active theme gives org-level-1..8 one shared
+		  ;; foreground and no height or weight, so there is no level-by-colour
+		  ;; signal to preserve.  The remap is relative, so org-link keeps its
+		  ;; underline and the heading stars / org-indent keep conveying depth.
+		  ;; That premise is theme-dependent -- a theme that colours heading
+		  ;; levels distinctly would make the flat dim discard real signal, and
+		  ;; those levels would then want -dim variants like the keywords below.
+		  (org-level-1                      . (auto-dim-other-buffers      . nil))
+		  (org-level-2                      . (auto-dim-other-buffers      . nil))
+		  (org-level-3                      . (auto-dim-other-buffers      . nil))
+		  (org-level-4                      . (auto-dim-other-buffers      . nil))
+		  (org-level-5                      . (auto-dim-other-buffers      . nil))
+		  (org-level-6                      . (auto-dim-other-buffers      . nil))
+		  (org-level-7                      . (auto-dim-other-buffers      . nil))
+		  (org-level-8                      . (auto-dim-other-buffers      . nil))
+		  (org-link                         . (auto-dim-other-buffers      . nil))
+		  (org-tag                          . (auto-dim-other-buffers      . nil))
 		  ;; Org TODO-keyword + priority faces dim to their own -dim variant
 		  ;; (a darker shade of the same colour) rather than the flat gray, so
 		  ;; a dimmed window's keywords stay recognizable.  Faces are defined

@@ -35,6 +35,39 @@
     (when (fboundp 'auto-dim-other-buffers-mode)
       (auto-dim-other-buffers-mode -1))))
 
+(defconst test-auto-dim--flat-dimmed-org-faces
+  (append (mapcar (lambda (n) (intern (format "org-level-%d" n)))
+                  (number-sequence 1 8))
+          '(org-link org-tag))
+  "Org faces that must flat-dim to the `auto-dim-other-buffers' face.
+These carry no signal that a dedicated -dim variant would preserve: the
+theme gives `org-level-1' through `org-level-8' one shared foreground and
+no height or weight, `org-link' keeps its underline through a relative
+remap, and `org-tag' keeps its surrounding colons.")
+
+(ert-deftest test-auto-dim-config-org-structure-faces-flat-dim ()
+  "Normal: org heading, link, and tag faces remap to the flat dim face."
+  (skip-unless (file-directory-p test-auto-dim--fork))
+  (require 'auto-dim-config)
+  (dolist (face test-auto-dim--flat-dimmed-org-faces)
+    (let ((entry (assq face auto-dim-other-buffers-affected-faces)))
+      (should entry)
+      (should (eq 'auto-dim-other-buffers (car (cdr entry))))
+      (should (null (cdr (cdr entry)))))))
+
+(ert-deftest test-auto-dim-config-keyword-faces-keep-dim-variants ()
+  "Boundary: org TODO-keyword faces keep dedicated -dim variants, not flat dim.
+Keyword status is scanned across unfocused windows, so it earns a variant;
+heading colour does not.  Guards the flat-dim change from over-reaching."
+  (skip-unless (file-directory-p test-auto-dim--fork))
+  (require 'auto-dim-config)
+  (dolist (pair '((org-faces-todo       . org-faces-todo-dim)
+                  (org-faces-doing      . org-faces-doing-dim)
+                  (org-faces-priority-a . org-faces-priority-a-dim)))
+    (let ((entry (assq (car pair) auto-dim-other-buffers-affected-faces)))
+      (should entry)
+      (should (eq (cdr pair) (car (cdr entry)))))))
+
 (ert-deftest test-auto-dim-config-never-dim-dashboard-exempts-dashboard ()
   "Normal: the *dashboard* buffer is exempt from dimming."
   (skip-unless (file-directory-p test-auto-dim--fork))
