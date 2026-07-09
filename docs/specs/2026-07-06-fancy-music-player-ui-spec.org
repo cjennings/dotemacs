@@ -4,10 +4,11 @@
 #+TODO: TODO | DONE
 #+TODO: DRAFT READY DOING | IMPLEMENTED SUPERSEDED CANCELLED
 
-* DOING Fancy music-player UI
+* IMPLEMENTED Fancy music-player UI
 :PROPERTIES:
 :ID:       af4f2688-ce7d-43f5-82e5-595a603e2593
 :END:
+- 2026-07-09 Thu @ 17:50:32 -0500 — Craig ran the Phase-3 visual VERIFY and found no issues: hero cover art, serif title, amber accents, advancing bar, on-air marker, and the plain-text fallback all pass. All three phases built and pushed. DOING -> IMPLEMENTED.
 - 2026-07-06 Mon @ 15:14:06 -0500 — spec-response Phase 6: decomposed into 3 build tasks + flip-to-IMPLEMENTED under the todo.org parent (stamped :SPEC_ID: af4f2688), Phase-3 visual VERIFY filed. READY -> DOING.
 - 2026-07-06 Mon @ 15:14:06 -0500 — spec-response: all 7 findings dispositioned (5 accept, 2 modify, 0 reject), Review findings [7/7]. Both blockers resolved and folded in. Decisions [5/5], no blocking open → Ready. DRAFT -> READY.
 - 2026-07-06 Mon @ 15:14:06 -0500 — spec-review: Not ready. Decisions [5/5] but Review findings [0/7], two :blocking: (progress-bar data source undefined; row rendering overloads cj/music--track-description). Stays DRAFT until dispositioned.
@@ -15,7 +16,7 @@
 - 2026-07-06 Mon @ 14:38:15 -0500 — drafted.
 
 * Metadata
-| Status   | doing                                                             |
+| Status   | implemented                                                       |
 |----------+-------------------------------------------------------------------|
 | Owner    | Craig Jennings                                                    |
 |----------+-------------------------------------------------------------------|

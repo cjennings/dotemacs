@@ -4,10 +4,11 @@
 #+TODO: TODO | DONE
 #+TODO: DRAFT READY DOING | IMPLEMENTED SUPERSEDED CANCELLED
 
-* DOING Radio-browser lookup
+* IMPLEMENTED Radio-browser lookup
 :PROPERTIES:
 :ID:       4839b2c8-0552-4029-9e0f-4bf69b9a4dcd
 :END:
+- 2026-07-09 Thu @ 17:50:32 -0500 — Craig ran the queue-first VERIFY (n / t / m picks, save on v, file-playlist save unchanged, empty and offline searches) and found no issues. DOING -> IMPLEMENTED.
 - 2026-07-08 Wed @ 10:16:25 -0500 — model revision (Craig): queue-first, save-on-request. The lookup (and the manual m creator) no longer writes .m3u files at pick time; picked stations become url tracks in the queue (name/uuid/favicon as track properties) and play immediately. Saving is the normal playlist save (moved to w — the earlier S binding was shadowed by emms-stop): an all-stream queue saves into the MPD playlist dir, the plain station name pre-fills the prompt (the "-Radio" filename suffix is retired), and a custom .m3u emitter writes the station metadata back out so load round-trips names and cover art. First pick names a multi-station save. Still DOING.
 - 2026-07-06 Mon @ 14:04:53 -0500 — build UX changes (Craig, during Phase 2 verify): pulled tag search from vNext into v1; the feature is a Radio row in the playlist buffer (n: by name, t: by tag, m: enter manually) rather than one command on S; single mode moved off t to s and emms-stop off s to S; created filenames carry a "-Radio" suffix. Still DOING.
 - 2026-07-06 Mon @ 13:08:32 -0500 — spec-response Phase 6: decomposed into build tasks in todo.org (parent stamped :SPEC_ID:); READY -> DOING. Build under way.
@@ -17,7 +18,7 @@
 - 2026-07-06 Mon @ 10:01:27 -0500 — drafted.
 
 * Metadata
-| Status   | doing                                                             |
+| Status   | implemented                                                       |
 |----------+-------------------------------------------------------------------|
 | Owner    | Craig Jennings                                                    |
 |----------+-------------------------------------------------------------------|
