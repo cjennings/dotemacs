@@ -1,0 +1,231 @@
+#+TITLE: Org workflow doctor — Spec
+#+AUTHOR: Craig Jennings
+#+DATE: 2026-07-10
+#+TODO: TODO | DONE
+#+TODO: DRAFT READY DOING | IMPLEMENTED SUPERSEDED CANCELLED
+
+* DRAFT Org workflow doctor
+:PROPERTIES:
+:ID:       c0e06025-a3b8-4238-a9a0-07f9e55913f4
+:END:
+- 2026-07-10 Fri @ 00:29:10 -0500 — drafted.
+
+* Metadata
+| Status   | draft                                                    |
+|----------+----------------------------------------------------------|
+| Owner    | Craig Jennings                                           |
+|----------+----------------------------------------------------------|
+| Reviewer | Craig Jennings                                            |
+|----------+----------------------------------------------------------|
+| Related  | [[file:../../todo.org][todo.org]] — "Add an Org workflow health check command" |
+|----------+----------------------------------------------------------|
+
+* Summary
+
+A single on-demand command, =cj/org-workflow-doctor=, that checks whether the Org
+workflow's prerequisites are actually present: the files and directories it reads
+and writes, the external programs it shells out to, and the optional packages it
+defers loading. It reports what it found and never changes anything.
+
+Today a missing prerequisite surfaces at command time, in whatever shape the first
+module to trip over it happens to produce. The doctor moves that discovery to a
+moment the user chose.
+
+* Problem / Context
+
+The Org workflow spans many modules, and each depends on some mix of a personal
+path (=org-dir=, =roam-dir=), an external binary (pandoc, hugo), and an optional
+package that loads lazily (=org-noter=, =org-web-tools=). None of those
+dependencies is checked anywhere.
+
+When one is missing, the failure appears wherever the first module happens to hit
+it. A missing =contacts-file= surfaces as a capture template erroring mid-capture.
+An absent pandoc surfaces as a shell command returning nothing useful. The user
+learns about a broken prerequisite at the least convenient moment, and the message
+rarely names the prerequisite.
+
+Nothing about this is hard. It just isn't anywhere, and the checks are scattered
+across modules that each know only their own corner.
+
+* Goals and Non-Goals
+
+** Goals
+- One command reports the health of every Org workflow prerequisite.
+- The check never mutates user data. It reads, it does not create or repair.
+- The result is structured data, so it is unit-testable and can be rendered to
+  either the echo area or a buffer without recomputing.
+- Startup stays quiet. Nothing runs unless asked.
+
+** Non-Goals
+- It will not fix anything. No creating a missing directory, no installing a
+  package, no offering to. A doctor that repairs is a different, riskier command.
+- It will not check every package in the config, only the Org workflow's.
+- It will not run on a timer, a hook, or at startup.
+- It will not be a general config linter. The scope is the Org workflow.
+
+** Scope tiers
+- v1: the seven paths, the two external binaries, the six optional packages, a
+  structured result, and a rendering to a buffer.
+- Out of scope: repair actions, non-Org prerequisites, scheduled runs.
+- vNext: a =--fix= variant that offers to create missing directories after
+  confirmation; checking that =org-agenda-files= entries all resolve.
+
+* Design
+
+** For the caller
+
+=M-x cj/org-workflow-doctor= opens a report buffer listing every prerequisite with
+its status. A prerequisite is =ok=, =missing=, or =skipped= (checked something the
+user hasn't configured). With a prefix argument the command reports a one-line
+summary to the echo area instead, for a quick "is anything broken?" glance.
+
+Nothing on disk changes. Running it twice produces the same report.
+
+** For the implementer
+
+The command splits in two, per the interactive-versus-internal rule.
+
+=cj/org-workflow--check= is pure with respect to user data: it probes the
+environment and returns a list of plists, one per prerequisite, each carrying
+=:name=, =:kind= (=path= / =executable= / =package=), =:status= and =:detail=. It
+takes no arguments and prompts for nothing, so a test can call it directly against
+a temp =user-emacs-directory= and assert on the structure.
+
+=cj/org-workflow-doctor= is the thin interactive wrapper: call the internal,
+render the result, done.
+
+*** The probe each kind uses
+
+Paths are checked with =file-exists-p= against the variable's value, and reported
+=skipped= when the variable is unbound or nil rather than =missing= — an unset
+=cj/hugo-content-org-dir= means the user doesn't publish with Hugo, which is not a
+fault.
+
+Executables are checked with =executable-find=.
+
+Packages are the one place a naive implementation gets it wrong, and this is the
+decision the spec exists to record. The obvious probe is =featurep=, and it is
+incorrect here: this config defers loading, so =featurep= returns nil for a package
+that is installed and perfectly healthy. Probed on 2026-07-10, =org-noter= and
+=org-web-tools= both report =(featurep) => nil= while =(locate-library) => t=. A
+doctor built on =featurep= would report a false failure for precisely the packages
+the config is designed to load lazily, which is worse than no doctor: it teaches
+the user to ignore it.
+
+=locate-library= answers the question actually being asked, which is "can this load
+when something needs it?" rather than "has it loaded already?".
+
+* Alternatives considered
+
+*** Probe packages with =featurep=
+- Good, because: it is the first thing that comes to mind and costs nothing.
+- Bad, because: it reports false failures for every lazily-loaded package, which is
+  most of them. Verified, not theorised.
+- Neutral, because: it would be correct in a config that loads everything eagerly.
+
+*** Check prerequisites at startup instead of on demand
+- Good, because: the user learns about a broken prerequisite before they need it.
+- Bad, because: it costs startup time on every launch to answer a question asked a
+  few times a year, and it puts warnings in front of a user who didn't ask.
+- Neutral, because: a doctor command can be run from a startup hook later if the
+  cost turns out to be trivial.
+
+*** Have each module check its own prerequisites
+- Good, because: the check lives next to the thing that needs it.
+- Bad, because: this is the status quo, and the problem is that the checks don't
+  compose into an answer to "is my Org workflow healthy?".
+- Neutral, because: the doctor doesn't prevent a module from also checking.
+
+* Decisions [2/2]
+
+** DONE Probe optional packages with =locate-library=, not =featurep=
+Context: the config loads Org packages lazily, so a healthy package is routinely
+unloaded. Probed 2026-07-10: =org-noter= and =org-web-tools= are both
+=featurep=-nil and =locate-library=-non-nil.
+
+Decision: we will probe package availability with =locate-library=.
+
+Consequences: the doctor answers "can this load?", which is the question that
+matters, and it stops reporting false failures for deferred packages. Harder: the
+doctor cannot distinguish "installed but broken on load" from "installed and fine",
+because it deliberately does not load anything. That is the right trade for a
+read-only check, and a load error surfaces at use time anyway.
+
+** DONE An unset optional path reports =skipped=, not =missing=
+Context: not every user of this config publishes with Hugo or uses reveal.js. An
+unbound or nil =cj/hugo-content-org-dir= is a configuration choice, not a fault.
+
+Decision: we will report =skipped= when a path variable is unbound or nil, and
+=missing= only when it holds a value that does not resolve on disk.
+
+Consequences: the report stays honest, so a clean report means something. Harder:
+the status vocabulary grows a third value, and the renderer has to distinguish
+three states rather than two.
+
+* Implementation phases
+
+1. *The internal, with tests.* =cj/org-workflow--check= plus its three probe
+   helpers (path, executable, package). Tests drive real state: a temp directory
+   that exists and one that doesn't, an executable that resolves and a nonsense
+   name, a library that locates and one that doesn't. Tree is working; nothing is
+   bound to a key yet.
+2. *The renderer and the command.* =cj/org-workflow-doctor=, the report buffer, and
+   the prefix-argument echo-area summary. Tests cover the rendering of a synthetic
+   result list, not the environment.
+
+* Acceptance criteria
+
+- =cj/org-workflow--check= returns one plist per prerequisite, each with =:name=,
+  =:kind=, =:status= and =:detail=.
+- A path variable holding a resolving directory reports =ok=; one holding a
+  nonexistent path reports =missing=; one unbound or nil reports =skipped=.
+- =org-noter= and =org-web-tools= report =ok= on this machine despite being
+  unloaded. This is the regression the spec exists to prevent.
+- Running the command twice leaves the filesystem byte-identical.
+- The command is absent from every hook and timer.
+
+* Readiness dimensions
+
+- *Data model & ownership* — the result is generated, ephemeral, and owned by the
+  command. Nothing persists.
+- *Errors, empty states & failure* — a probe that throws is caught per-prerequisite
+  and reported as =missing= with the error text as =:detail=, so one bad probe
+  cannot abort the report.
+- *Security & privacy* — the report prints paths from the user's config. It stays
+  in a local buffer and is never written to disk or transmitted.
+- *Observability* — the report is the observability.
+- *Performance & scale* — fifteen probes, all local filesystem stats. No concern.
+- *Reuse & lost opportunities* — =executable-find= and =locate-library= are the
+  platform's answers; nothing is reimplemented. =cj/executable-find-or-warn=
+  (=system-lib.el=) exists but warns as a side effect, which a read-only check must
+  not do, so the doctor calls =executable-find= directly.
+- *Architecture fit* — a new module, =modules/org-workflow-doctor.el=, requiring
+  nothing but the variables it probes. It must not require the Org modules, or
+  probing them would load them and defeat the lazy-loading it is checking.
+- *Config surface* — none in v1. The prerequisite list is a defconst.
+- *Documentation plan* — module commentary, plus the keybinding if one is added.
+- *Dev tooling* — the existing =make test= covers it. No new target.
+- *Rollout, compatibility & rollback* — additive, read-only, deletable. N/A.
+- *External APIs & deps* — none. Both binaries were verified present on 2026-07-10
+  (=/usr/bin/pandoc=, =/usr/bin/hugo=), and their absence is the case under test.
+
+* Risks, rabbit holes, and drawbacks
+
+The rabbit hole is scope. "Check the Org workflow's prerequisites" slides easily
+into "lint the whole config", and from there into "offer to fix what it finds". The
+non-goals exist to hold that line. If the doctor is useful, a =--fix= variant is a
+separate spec with a separate risk profile, because a command that creates
+directories is no longer read-only.
+
+The smaller risk is the prerequisite list going stale as modules change. A doctor
+that checks the wrong things is worse than none, since it reports health that isn't
+real. The defconst lives next to the probes so it is at least easy to find.
+
+* Review and iteration history
+
+** 2026-07-10 Fri @ 00:29:10 -0500 — Craig Jennings — Author
+What: drafted the spec.
+Why: the task is feature-level, so the speedrun's per-item disposition rule
+delivers a spec rather than an implementation.
+Artifacts: this file. Probed the live daemon for the seven paths, both binaries,
+and the six packages; the =featurep= finding drove the first decision.
