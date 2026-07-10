@@ -55,6 +55,13 @@ readable in a window the user is not looking at.  Excluded on purpose are
 below) and `org-hide' (needs `auto-dim-other-buffers-hide' so folded text
 stays hidden).")
 
+(defconst test-auto-dim--flat-dimmed-link-faces
+  '(link link-visited)
+  "Built-in link faces that must flat-dim, distinct from `org-link'.
+They fontify links in help, info, and customize buffers.  Both carry
+`:underline t', which survives the relative remap, so a dimmed link still
+reads as a link.")
+
 (defconst test-auto-dim--keyword-dim-variants
   '((org-faces-todo       . org-faces-todo-dim)
     (org-faces-doing      . org-faces-doing-dim)
@@ -70,6 +77,30 @@ stays hidden).")
       (should entry)
       (should (eq 'auto-dim-other-buffers (car (cdr entry))))
       (should (null (cdr (cdr entry)))))))
+
+(ert-deftest test-auto-dim-config-link-faces-flat-dim ()
+  "Normal: the built-in `link' and `link-visited' faces flat-dim.
+Without these, links in help, info, and customize buffers stay lit while
+the rest of an unfocused window fades.  `org-link' is a separate face and
+is covered above."
+  (skip-unless (file-directory-p test-auto-dim--fork))
+  (require 'auto-dim-config)
+  (dolist (face test-auto-dim--flat-dimmed-link-faces)
+    (let ((entry (assq face auto-dim-other-buffers-affected-faces)))
+      (should entry)
+      (should (eq 'auto-dim-other-buffers (car (cdr entry))))
+      (should (null (cdr (cdr entry)))))))
+
+(ert-deftest test-auto-dim-config-link-underline-survives-the-remap ()
+  "Boundary: the dim face sets no `:underline', so the link cue survives.
+A relative remap layers the dim face over the base face, so an underline
+the dim face does not specify falls through from `link'.  If the theme ever
+gives `auto-dim-other-buffers' an `:underline', dimmed links stop looking
+like links and this test says so."
+  (skip-unless (file-directory-p test-auto-dim--fork))
+  (require 'auto-dim-config)
+  (should (eq 'unspecified
+              (face-attribute 'auto-dim-other-buffers :underline nil nil))))
 
 (ert-deftest test-auto-dim-config-keyword-faces-keep-dim-variants ()
   "Boundary: org TODO-keyword faces keep dedicated -dim variants, not flat dim.

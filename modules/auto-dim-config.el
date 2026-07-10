@@ -83,6 +83,11 @@ focus cue on a split-displayed dashboard, accepted as a fair trade."
 		  (font-lock-builtin-face           . (auto-dim-other-buffers      . nil))
 		  (font-lock-preprocessor-face      . (auto-dim-other-buffers      . nil))
 		  (font-lock-warning-face           . (auto-dim-other-buffers      . nil))
+		  ;; The built-in link faces, distinct from org-link below.  They fontify
+		  ;; links in help, info, and customize buffers.  Both carry :underline t,
+		  ;; which survives the relative remap, so a dimmed link still reads as one.
+		  (link                             . (auto-dim-other-buffers      . nil))
+		  (link-visited                     . (auto-dim-other-buffers      . nil))
 		  ;; Org structure faces flat-dim like font-lock rather than getting
 		  ;; -dim variants: the active theme gives org-level-1..8 one shared
 		  ;; foreground and no height or weight, so there is no level-by-colour
