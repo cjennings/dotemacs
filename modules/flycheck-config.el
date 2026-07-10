@@ -44,7 +44,11 @@
   :defer t
   :commands (flycheck-list-errors
              cj/flycheck-list-errors)
-  :hook ((sh-mode emacs-lisp-mode) . flycheck-mode)
+  ;; ledger-mode is here, not in ledger-config.el, so this list stays the one
+  ;; answer to "where is flycheck turned on?".  flycheck-ledger registers a
+  ;; `ledger' checker but never enables the mode, so before this hook existed an
+  ;; unbalanced transaction in a ledger file produced no warning at all.
+  :hook ((sh-mode emacs-lisp-mode ledger-mode) . flycheck-mode)
   :bind
    (:map cj/custom-keymap
 			  ("?" . cj/flycheck-list-errors))

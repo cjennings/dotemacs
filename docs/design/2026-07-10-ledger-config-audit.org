@@ -19,6 +19,11 @@ follow-on work is "enough guardrails that it's hard to make a costly mistake."
 
 ** F1. The linting doesn't run. Nothing checks unbalanced transactions.
 
+FIXED 2026-07-10. =flycheck-config.el= now hooks =flycheck-mode= to =ledger-mode=.
+Verified end to end on an unbalanced fixture: flycheck reports "Transaction does not
+balance" with the =$10.00= remainder. The finding is kept below as the record of
+what was wrong.
+
 The module's own commentary says it provides "flycheck linting."
 
 =flycheck-ledger= is loaded (=ledger-config.el:59-60=) and registers the =ledger=
@@ -56,8 +61,20 @@ So every =C-x C-s= rewrites the transaction order of a financial file. The task
 asked whether clean-on-save "ever reorders or rewrites in a surprising way." It
 reorders, every time, by design of the upstream function.
 
-Whether that's wanted is Craig's call. It is at minimum undocumented: the module
-commentary calls it "clean-on-save," which reads as whitespace tidying.
+*Accepted 2026-07-10, on inspection of the sort key.* The reordering is
+chronological and nothing else. =ledger-sort-startkey= (=ledger-sort.el:62=) builds
+its key from the first ten characters of a transaction's opening line, the ISO date,
+through =ledger-parse-iso-date= and =float-time=. Payee, amount, and account never
+enter the key. =sort-subr= uses Emacs's stable sort, so transactions sharing a date
+keep the order they were typed in.
+
+The scope is bounded on request: =ledger-sort-buffer= narrows to the region between
+=; Ledger-mode: Start sort= and =; Ledger-mode: End sort= marker comments when the
+file carries them, and only falls back to the whole buffer when it doesn't.
+
+So a save sorts by date, stably, over a region the file can choose. Craig accepts
+that. The finding stays recorded because "clean-on-save" still reads as whitespace
+tidying, and the next person to meet this function should know it sorts.
 
 ** F3. The demoted error hides a partial rewrite, not just a message.
 
@@ -105,8 +122,9 @@ Worth recording so the guardrail work doesn't chase it.
 
 * Gaps, as a list
 
-1. No linting reaches ledger buffers (F1).
-2. No confirmation before a whole-buffer rewrite on save (F2).
+1. +No linting reaches ledger buffers (F1).+ Fixed 2026-07-10.
+2. No confirmation before the date-sort on save (F2). Accepted: the sort is
+   chronological and stable.
 3. No rollback when that rewrite fails partway (F3).
 4. No confirmation before reconcile mutates the file (F4).
 5. No validation that a save leaves the file balanced.
@@ -114,11 +132,15 @@ Worth recording so the guardrail work doesn't chase it.
 
 * What this note deliberately does not do
 
-It proposes no fix. Whether clean-on-save should prompt, become opt-in, or be
-replaced by a check-only lint is a preference call about Craig's own accounting
-workflow, and so is the shape of a reconcile confirmation. Those belong to the
-ledger guardrail UX task.
+It designs no guardrails. Whether a clean that fails should roll back, and what
+shape a reconcile confirmation takes, are preference calls about Craig's own
+accounting workflow. Those belong to the ledger guardrail UX task.
 
-The one finding that isn't a preference call is F1: turning flycheck on in ledger
-buffers restores a guardrail the module already claims to have. That's a defect,
-not a design choice.
+The one finding that wasn't a preference call was F1: turning flycheck on in ledger
+buffers restored a guardrail the module already claimed to have. That was a defect,
+not a design choice, and it is fixed.
+
+F2 was resolved by reading the sort key rather than by changing code. What remains
+for the guardrail task is F3 (no rollback when a clean fails partway) and F4 (no
+confirmation before reconcile), plus the open question of whether a save should
+verify the file still balances.
