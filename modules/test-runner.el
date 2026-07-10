@@ -239,7 +239,10 @@ Returns: \\='success if added successfully,
 Second value is the relative filename if successful."
   (cond
    ((null filepath) (cons 'no-file nil))
-   ((not (string-prefix-p (file-truename testdir) (file-truename filepath)))
+   ;; Route through the helper: it appends the trailing slash, so a sibling
+   ;; sharing the directory's name prefix (tests-old/ against tests/) is
+   ;; rejected.  A bare `string-prefix-p' on the truenames accepts it.
+   ((not (cj/test--file-in-directory-p filepath testdir))
     (cons 'not-in-testdir nil))
    (t
     (let ((relative (file-relative-name filepath testdir)))

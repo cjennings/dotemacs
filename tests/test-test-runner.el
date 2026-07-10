@@ -152,6 +152,25 @@ FILES is an alist of relative test filenames to file contents."
     (should (eq (car result) 'not-in-testdir)))
   (test-testrunner-teardown))
 
+(ert-deftest test-testrunner-focus-add-file-shared-prefix-sibling-rejected ()
+  "Boundary: a sibling directory sharing the test dir's name prefix is outside it.
+`/tmp/x/tests-old/f.el' starts with `/tmp/x/tests' as a string, but it is not
+in `/tmp/x/tests'.  A raw `string-prefix-p' on the two truenames accepts it;
+comparing against the directory with a trailing slash rejects it."
+  (test-testrunner-setup)
+  (let* ((testdir (file-truename test-testrunner--temp-dir))
+         (sibling (concat (directory-file-name testdir) "-old"))
+         (filepath (expand-file-name "test-foo.el" sibling)))
+    (unwind-protect
+        (progn
+          (make-directory sibling t)
+          (with-temp-file filepath (insert ";; not in the test dir\n"))
+          (let ((result (cj/test--do-focus-add-file
+                         filepath test-testrunner--temp-dir '())))
+            (should (eq (car result) 'not-in-testdir))))
+      (when (file-directory-p sibling) (delete-directory sibling t))))
+  (test-testrunner-teardown))
+
 (ert-deftest test-testrunner-focus-add-file-already-focused ()
   "Should detect already focused file."
   (test-testrunner-setup)
