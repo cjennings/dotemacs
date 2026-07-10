@@ -409,46 +409,129 @@ defer to `electric-pair-default-inhibit' for any other CHAR."
   (setq ws-butler-convert-leading-tabs-or-spaces t))
 
 ;; ------------------------------------ LSP ------------------------------------
-;; Language Server Protocol for intelligent code completion and navigation
-;; Works with multiple languages: C, Python, Go, Rust, JavaScript, etc.
+;; Language Server Protocol for intelligent code completion and navigation.
+;; Single owner of generic LSP policy (prog-lsp.el folded in and removed
+;; 2026-07-10).  Language-specific server variables and the lsp-deferred mode
+;; hooks stay in the per-language modules.  Reference for what to turn off:
+;; https://emacs-lsp.github.io/lsp-mode/tutorials/how-to-turn-off/
 
-;; Forward declarations for LSP variables
+;; Forward declarations for byte-compile.  lsp-mode's defcustoms aren't loaded
+;; under `make test' (no package-initialize) and use-package defers the package
+;; via :commands, so these vars are unknown at compile time without declaring.
+(defvar lsp-mode-map)
+(defvar eldoc-documentation-functions)
+(defvar lsp-file-watch-ignored-directories)
+(defvar lsp-enable-remote)
+(defvar lsp-auto-guess-root)
+(defvar lsp-restart)
 (defvar lsp-idle-delay)
 (defvar lsp-log-io)
 (defvar lsp-enable-folding)
+(defvar lsp-enable-imenu)
 (defvar lsp-enable-snippet)
+(defvar lsp-enable-symbol-highlighting)
+(defvar lsp-enable-on-type-formatting)
+(defvar lsp-signature-auto-activate)
+(defvar lsp-signature-render-documentation)
+(defvar lsp-modeline-code-actions-enable)
+(defvar lsp-modeline-diagnostics-enable)
 (defvar lsp-headerline-breadcrumb-enable)
+(defvar lsp-semantic-tokens-enable)
 (defvar lsp-completion-provider)
 (defvar lsp-completion-show-detail)
 (defvar lsp-completion-show-kind)
+(declare-function lsp-eldoc-function "lsp-mode")
+
+;; File-watch ignore patterns.  lsp-mode prompts when a workspace exceeds
+;; `lsp-file-watch-threshold' (1000) directories.  Real source repos cross that
+;; once node_modules, build outputs, and language caches are counted.  These
+;; extend the lsp-mode defaults (.git, .svn, .idea, ...) instead of replacing
+;; them.  A buffer-local override via `.dir-locals.el' doesn't work: lsp-mode
+;; reads the global value at workspace init, not the buffer-local one, so the
+;; defaults live here globally.
+(defvar cj/lsp-file-watch-ignored-extras
+  '("[/\\\\]node_modules\\'"
+    "[/\\\\]\\.ruff_cache\\'"
+    "[/\\\\]dist\\'"
+    "[/\\\\]coverage\\'"
+    "[/\\\\]test-results\\'"
+    "[/\\\\]playwright-report\\'"
+    "[/\\\\]tf[/\\\\]\\.terraform\\'"
+    "[/\\\\]__pycache__\\'"
+    "[/\\\\]\\.venv\\'"
+    "[/\\\\]venv\\'"
+    "[/\\\\]\\.pytest_cache\\'"
+    "[/\\\\]\\.mypy_cache\\'"
+    "[/\\\\]target\\'")
+  "Build/cache directory patterns to add to `lsp-file-watch-ignored-directories'.
+Each entry is an Emacs regex matching a path ending in the named directory.")
+
+(defun cj/lsp--add-file-watch-ignored-extras ()
+  "Append `cj/lsp-file-watch-ignored-extras' to lsp-mode's ignore list.
+Idempotent — `add-to-list' skips patterns already present."
+  (dolist (pattern cj/lsp-file-watch-ignored-extras)
+    (add-to-list 'lsp-file-watch-ignored-directories pattern)))
+
+(defun cj/lsp--remove-eldoc-provider-global ()
+  "Remove lsp-mode's provider from the global `eldoc-documentation-functions'.
+Run once after lsp-mode loads.  The previous per-buffer removal raced
+lsp's own buffer-local add: the buffer-local remove fired before lsp
+populated the buffer-local hook (lsp inherits the global default and
+mutates from there), so the buffer-local hook ended up holding the
+provider anyway.  Removing globally before lsp ever attaches a buffer
+makes the absence stick for every subsequent lsp-managed buffer."
+  (remove-hook 'eldoc-documentation-functions #'lsp-eldoc-function))
 
 (use-package lsp-mode
   :commands (lsp lsp-deferred)
+  :bind (:map lsp-mode-map
+              ("C-c d" . lsp-describe-thing-at-point)
+              ("C-c a" . lsp-execute-code-action))
   :custom
   (lsp-keymap-prefix "C-c l")  ;; LSP commands under C-c l prefix
+  :init
+  (setq lsp-enable-remote nil) ;; Don't start LSP on TRAMP files (slow, prompts for root)
   :config
-  ;; Performance optimizations
-  (setq lsp-idle-delay 0.1)
+  ;; Quiet, performance-first policy
+  (setq lsp-idle-delay 0.5)
   (setq lsp-log-io nil)
+  (setq lsp-auto-guess-root t)
+  (setq lsp-restart 'auto-restart)
   (setq lsp-enable-folding nil)
-  (setq lsp-enable-snippet t)
+  (setq lsp-enable-imenu nil)
+  (setq lsp-enable-snippet nil)
+  (setq lsp-enable-symbol-highlighting nil)
+  (setq lsp-enable-on-type-formatting nil)
+  (setq lsp-signature-auto-activate nil)
+  (setq lsp-signature-render-documentation nil)
+  (setq lsp-modeline-code-actions-enable nil)
+  (setq lsp-modeline-diagnostics-enable nil)
   (setq lsp-headerline-breadcrumb-enable nil)
-
-  ;; Improve completion
+  (setq lsp-semantic-tokens-enable nil)
+  (setq read-process-output-max (* 1024 1024)) ;; 1MB
+  ;; Completion
   (setq lsp-completion-provider :capf)
   (setq lsp-completion-show-detail t)
-  (setq lsp-completion-show-kind t))
+  (setq lsp-completion-show-kind t)
+  ;; Strip lsp's global eldoc provider once (see the helper for the race note).
+  (cj/lsp--remove-eldoc-provider-global)
+  (cj/lsp--add-file-watch-ignored-extras))
 
 (use-package lsp-ui
   :after lsp-mode
   :commands lsp-ui-mode
   :custom
-  (lsp-ui-doc-enable t)
+  (lsp-ui-doc-enable nil)
   (lsp-ui-doc-position 'at-point)
   (lsp-ui-doc-delay 0.5)
+  (lsp-ui-doc-header t)
+  (lsp-ui-doc-include-signature t)
+  (lsp-ui-doc-border (face-foreground 'default))
   (lsp-ui-sideline-enable t)
   (lsp-ui-sideline-show-diagnostics t)
   (lsp-ui-sideline-show-hover nil)
+  (lsp-ui-sideline-show-code-actions nil)
+  (lsp-ui-sideline-delay 0.05)
   (lsp-ui-peek-enable t)
   (lsp-ui-peek-show-directory t))
 
