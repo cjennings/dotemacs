@@ -83,6 +83,17 @@ focus cue on a split-displayed dashboard, accepted as a fair trade."
 		  (font-lock-builtin-face           . (auto-dim-other-buffers      . nil))
 		  (font-lock-preprocessor-face      . (auto-dim-other-buffers      . nil))
 		  (font-lock-warning-face           . (auto-dim-other-buffers      . nil))
+		  ;; org-superstar draws heading stars and list bullets, and puts its own face
+		  ;; ahead of the org face beneath, so a star renders as
+		  ;; (org-superstar-header-bullet org-level-1) and outranks the dimmed level.
+		  ;; Without these three, bullets are the last thing left lit in a dimmed window.
+		  (org-superstar-header-bullet      . (auto-dim-other-buffers      . nil))
+		  (org-superstar-item               . (auto-dim-other-buffers      . nil))
+		  (org-superstar-first              . (auto-dim-other-buffers      . nil))
+		  ;; org-superstar-leading takes the -hide face, not the flat dim: its
+		  ;; foreground IS the background colour, which is what keeps hidden leading
+		  ;; stars invisible.  Flat-dimming it would reveal them.  Same as org-hide.
+		  (org-superstar-leading            . (auto-dim-other-buffers-hide . nil))
 		  ;; The built-in link faces, distinct from org-link below.  They fontify
 		  ;; links in help, info, and customize buffers.  Both carry :underline t,
 		  ;; which survives the relative remap, so a dimmed link still reads as one.

@@ -62,6 +62,15 @@ They fontify links in help, info, and customize buffers.  Both carry
 `:underline t', which survives the relative remap, so a dimmed link still
 reads as a link.")
 
+(defconst test-auto-dim--flat-dimmed-superstar-faces
+  '(org-superstar-header-bullet org-superstar-item org-superstar-first)
+  "org-superstar faces that must flat-dim.
+org-superstar puts its own face ahead of the org face beneath, so a heading
+star renders as (org-superstar-header-bullet org-level-1) and wins over the
+dimmed org-level-1.  Without these, bullets stay lit in an unfocused window
+even though every face under them dims.
+`org-superstar-leading' is excluded on purpose -- see the test below.")
+
 (defconst test-auto-dim--keyword-dim-variants
   '((org-faces-todo       . org-faces-todo-dim)
     (org-faces-doing      . org-faces-doing-dim)
@@ -101,6 +110,30 @@ like links and this test says so."
   (require 'auto-dim-config)
   (should (eq 'unspecified
               (face-attribute 'auto-dim-other-buffers :underline nil nil))))
+
+(ert-deftest test-auto-dim-config-superstar-bullets-flat-dim ()
+  "Normal: org-superstar's heading stars and list bullets flat-dim.
+They were the last thing left lit in an unfocused org window."
+  (skip-unless (file-directory-p test-auto-dim--fork))
+  (require 'auto-dim-config)
+  (dolist (face test-auto-dim--flat-dimmed-superstar-faces)
+    (let ((entry (assq face auto-dim-other-buffers-affected-faces)))
+      (should entry)
+      (should (eq 'auto-dim-other-buffers (car (cdr entry))))
+      (should (null (cdr (cdr entry)))))))
+
+(ert-deftest test-auto-dim-config-superstar-leading-uses-hide-face ()
+  "Error: `org-superstar-leading' takes the -hide face, never the flat dim.
+Its foreground is the background colour, which is what keeps hidden leading
+stars invisible.  Flat-dimming it would give them the dim face's visible grey
+and reveal stars the user chose to hide.  Same contract as `org-hide'."
+  (skip-unless (file-directory-p test-auto-dim--fork))
+  (require 'auto-dim-config)
+  (should-not (memq 'org-superstar-leading
+                    test-auto-dim--flat-dimmed-superstar-faces))
+  (let ((entry (assq 'org-superstar-leading auto-dim-other-buffers-affected-faces)))
+    (should entry)
+    (should (eq 'auto-dim-other-buffers-hide (car (cdr entry))))))
 
 (ert-deftest test-auto-dim-config-keyword-faces-keep-dim-variants ()
   "Boundary: org TODO-keyword faces keep dedicated -dim variants, not flat dim.
