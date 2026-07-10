@@ -83,6 +83,20 @@ focus cue on a split-displayed dashboard, accepted as a fair trade."
 		  (font-lock-builtin-face           . (auto-dim-other-buffers      . nil))
 		  (font-lock-preprocessor-face      . (auto-dim-other-buffers      . nil))
 		  (font-lock-warning-face           . (auto-dim-other-buffers      . nil))
+		  ;; Faces that sit AHEAD of a mapped face in a face list and outrank it, so
+		  ;; the text under them stayed lit until each was named here: a table header
+		  ;; renders as (org-table-header org-table), a TODO line as
+		  ;; (org-faces-todo org-level-3).  tests/test-auto-dim-config.el walks a
+		  ;; fontified org buffer and fails when a built-in org face is left out.
+		  (org-table-header                 . (auto-dim-other-buffers      . nil))
+		  (org-formula                      . (auto-dim-other-buffers      . nil))
+		  (org-checkbox                     . (auto-dim-other-buffers      . nil))
+		  (org-checkbox-statistics-done     . (auto-dim-other-buffers      . nil))
+		  (org-headline-done                . (auto-dim-other-buffers      . nil))
+		  (org-drill-visible-cloze-face     . (auto-dim-other-buffers      . nil))
+		  ;; org-indent inherits org-hide, so its foreground IS the background: that
+		  ;; is what makes indent prefixes invisible.  -hide face, never the flat dim.
+		  (org-indent                       . (auto-dim-other-buffers-hide . nil))
 		  ;; org-superstar draws heading stars and list bullets, and puts its own face
 		  ;; ahead of the org face beneath, so a star renders as
 		  ;; (org-superstar-header-bullet org-level-1) and outranks the dimmed level.

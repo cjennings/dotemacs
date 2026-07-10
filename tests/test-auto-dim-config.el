@@ -71,6 +71,19 @@ dimmed org-level-1.  Without these, bullets stay lit in an unfocused window
 even though every face under them dims.
 `org-superstar-leading' is excluded on purpose -- see the test below.")
 
+(defconst test-auto-dim--hide-class-faces
+  '(org-hide org-superstar-leading org-indent)
+  "Faces whose foreground IS the background colour.
+That is what makes them invisible.  They take `auto-dim-other-buffers-hide',
+never the flat dim, which would paint them visible grey.")
+
+(defconst test-auto-dim--no-foreground-faces
+  '(bold italic underline)
+  "Faces that carry no foreground, even through inheritance.
+They set weight, slant or underline only, so text wearing them takes its
+colour from `default', which is already remapped.  They need no entry and
+must not gain one, or the alist grows entries that do nothing.")
+
 (defconst test-auto-dim--keyword-dim-variants
   '((org-faces-todo       . org-faces-todo-dim)
     (org-faces-doing      . org-faces-doing-dim)
@@ -134,6 +147,66 @@ and reveal stars the user chose to hide.  Same contract as `org-hide'."
   (let ((entry (assq 'org-superstar-leading auto-dim-other-buffers-affected-faces)))
     (should entry)
     (should (eq 'auto-dim-other-buffers-hide (car (cdr entry))))))
+
+(ert-deftest test-auto-dim-config-hide-class-faces-use-hide-face ()
+  "Error: every background-coloured face takes the -hide face.
+`org-hide', `org-superstar-leading' and `org-indent' all resolve to the
+background colour, which is what keeps folded text, leading stars and indent
+prefixes invisible.  Flat-dimming any of them reveals what the user hid."
+  (skip-unless (file-directory-p test-auto-dim--fork))
+  (require 'auto-dim-config)
+  (dolist (face test-auto-dim--hide-class-faces)
+    (let ((entry (assq face auto-dim-other-buffers-affected-faces)))
+      (should entry)
+      (should (eq 'auto-dim-other-buffers-hide (car (cdr entry)))))))
+
+(ert-deftest test-auto-dim-config-no-org-face-left-unmapped ()
+  "Boundary: a fontified org buffer uses no face we forgot to handle.
+Four rounds of this bug all had the same shape: a face nobody enumerated,
+sitting ahead of a mapped face in a face list and outranking it.  This walks
+a representative buffer, collects every face it actually uses (including the
+`line-prefix' and `wrap-prefix' org-indent hangs its faces on), and fails on
+anything that is neither mapped nor deliberately excluded.
+
+Built-in org only.  org-superstar and org-drill are elpa packages, and the
+test run has no `package-initialize', so their faces are pinned by name in
+the tests above instead."
+  (skip-unless (file-directory-p test-auto-dim--fork))
+  (require 'auto-dim-config)
+  (require 'org)
+  (let ((used (make-hash-table :test #'eq))
+        (allowed (append test-auto-dim--no-foreground-faces
+                         ;; Keyword class: deliberately unmapped so status stays
+                         ;; readable in an unfocused window.  Pinned by
+                         ;; test-auto-dim-config-todo-priority-faces-not-flat-dimmed.
+                         '(org-todo org-priority)
+                         (mapcar #'car auto-dim-other-buffers-affected-faces))))
+    (with-temp-buffer
+      (insert "#+TITLE: T\n#+AUTHOR: A\n\n* H1 :tag:\n** TODO [#A] task\n"
+              "DEADLINE: <2026-07-10 Fri>\n:PROPERTIES:\n:K: v\n:END:\n"
+              "Body ~verbatim~ =code= [[https://x.org][link]].\n"
+              "| a | b |\n|---+---|\n| 1 | 2 |\n"
+              "#+begin_src sh\necho hi\n#+end_src\n"
+              "- [X] done item\n")
+      (org-mode)
+      (font-lock-ensure)
+      (let ((p (point-min)))
+        (while (< p (point-max))
+          (dolist (f (let ((v (get-text-property p 'face)))
+                       (if (listp v) v (list v))))
+            (when (and f (symbolp f)) (puthash f t used)))
+          (dolist (prop '(line-prefix wrap-prefix))
+            (let ((s (get-text-property p prop)))
+              (when (stringp s)
+                (dolist (f (let ((v (get-text-property 0 'face s)))
+                             (if (listp v) v (list v))))
+                  (when (and f (symbolp f)) (puthash f t used))))))
+          (setq p (1+ p)))))
+    (let (unmapped)
+      (maphash (lambda (face _v)
+                 (unless (memq face allowed) (push face unmapped)))
+               used)
+      (should (equal nil (sort unmapped #'string<))))))
 
 (ert-deftest test-auto-dim-config-keyword-faces-keep-dim-variants ()
   "Boundary: org TODO-keyword faces keep dedicated -dim variants, not flat dim.
