@@ -1,0 +1,96 @@
+#+TITLE: Survey — where a curated "?" help menu makes sense
+#+AUTHOR: Craig Jennings
+#+DATE: 2026-07-10
+
+* What this is
+
+The mechanical half of the "=?= = curated help menu" convention task. It reports,
+per mode, whether =?= is free, whether =H= is free, and what the package already
+ships. It changes no keybinding and makes no per-mode recommendation, because which
+commands belong in a curated menu is a taste call.
+
+The reference implementation is calibredb (=modules/calibredb-epub-config.el:129-131=):
+=?= runs =cj/calibredb-menu=, a curated transient of the frequent workflows, and =H=
+runs the package's own =calibredb-dispatch=.
+
+* Method
+
+Bindings were read from the live keymaps, not from source, because a package's
+=define-key= calls and its =:bind= forms don't always agree with what ends up in the
+map.
+
+The probe ran in a throwaway =emacs --batch= with =package-initialize=, not in the
+running daemon, for two reasons. Probing =calibredb-search-mode-map= or
+=mu4e-headers-mode-map= in the daemon would force-load those packages into a live
+session. And a batch Emacs reports the *package's* defaults rather than the defaults
+plus Craig's config, which is the question being asked: what does the package ship?
+
+=mu4e= is not an ELPA package. It installs with =mu= into
+=/usr/share/emacs/site-lisp/mu4e=, so it needed an explicit =load-path= entry.
+
+* The table
+
+=FREE= means the key is unbound in that mode's map.
+
+| Mode          | =?=                            | =H=                       | Ships a dispatch?      |
+|---------------+--------------------------------+---------------------------+------------------------|
+| calibredb     | =cj/calibredb-menu= (curated)  | =calibredb-dispatch=      | yes, moved to =H=      |
+|---------------+--------------------------------+---------------------------+------------------------|
+| nov           | FREE                           | FREE                      | no                     |
+|---------------+--------------------------------+---------------------------+------------------------|
+| eat           | FREE                           | FREE                      | no                     |
+|---------------+--------------------------------+---------------------------+------------------------|
+| elfeed-search | FREE                           | FREE                      | no                     |
+|---------------+--------------------------------+---------------------------+------------------------|
+| elfeed-show   | FREE                           | FREE                      | no                     |
+|---------------+--------------------------------+---------------------------+------------------------|
+| dired/dirvish | =dired-summary=                | =dired-do-hardlink=       | no (summary is a       |
+|               |                                |                           | one-line echo)         |
+|---------------+--------------------------------+---------------------------+------------------------|
+| magit-status  | =magit-dispatch=               | =magit-describe-section=  | yes, already on =?=    |
+|---------------+--------------------------------+---------------------------+------------------------|
+| pdf-view      | =describe-mode=                | =pdf-view-fit-height-...= | no                     |
+|---------------+--------------------------------+---------------------------+------------------------|
+| org-agenda    | =org-agenda-show-the-flagging- | =org-agenda-holidays=     | no                     |
+|               | note=                          |                           |                        |
+|---------------+--------------------------------+---------------------------+------------------------|
+| mu4e-headers  | =mu4e-headers-mark-for-unread= | =mu4e-display-manual=     | no                     |
+|---------------+--------------------------------+---------------------------+------------------------|
+
+* What the table shows
+
+Four modes have both keys free: nov, eat, elfeed-search, elfeed-show. Nothing has to
+be displaced to adopt the convention there. These are the cheap ones.
+
+Three modes bind =?= to something small. =dired-summary= echoes a one-line key
+reminder. =pdf-view= sends =?= to =describe-mode=. =org-agenda= puts a
+flagging-note command on it. In each case the convention would displace a command of
+low value, but it is a displacement and needs a decision.
+
+=mu4e-headers= is the awkward one. Its =?= is =mu4e-headers-mark-for-unread=, a real
+editing command in the marking family (=u=, =d=, =!=). Rebinding it would break
+muscle memory for an operation that mutates mail state. Its =H= is already
+=mu4e-display-manual=.
+
+=magit= is the counterexample worth noting. It already does exactly what the
+convention proposes: =?= opens =magit-dispatch=, its own curated transient. The
+convention is not new, it is magit's habit, generalized. Magit needs no change.
+
+=dirvish= inherits =dired-mode-map=, so a change there lands on plain dired too.
+
+* Caveats
+
+The probe reads package defaults. Craig's own config may rebind =?= in a mode after
+the package loads, and the batch probe would not see it. A grep for =?=-rebinding in
+=modules/*.el= found only the calibredb case, so the table should hold, but a mode
+whose config binds =?= inside a =:config= block reached by a path the grep missed
+would not show up.
+
+=signel= and =pearl= are in the task's candidate list and are absent from the table.
+Neither was probeable: they are local checkouts, not ELPA packages, and loading them
+in batch pulls in dependencies the probe deliberately avoided.
+
+* The decisions this leaves
+
+For each mode, whether a curated =?= menu is worth its cost, and if so, which
+commands go in it. That is the taste call, and the reason this survey stops here.
