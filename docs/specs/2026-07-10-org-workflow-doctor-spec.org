@@ -4,14 +4,34 @@
 #+TODO: TODO | DONE
 #+TODO: DRAFT READY DOING | IMPLEMENTED SUPERSEDED CANCELLED
 
-* DRAFT Org workflow doctor
+* CANCELLED Org workflow doctor
 :PROPERTIES:
 :ID:       c0e06025-a3b8-4238-a9a0-07f9e55913f4
 :END:
+- 2026-07-10 Fri @ 05:58:00 -0500 — CANCELLED. The feature has no job. Craig asked what the doctor buys when it refuses to install anything, and the answer is nothing that isn't already there. Every external binary is already guarded at its point of use, with a clear message: hugo-config guards hugo and the file-manager opener, org-webclipper guards pandoc, org-export-config guards zathura, and ox-pandoc guards itself upstream (ox-pandoc.el:1533, 1970). Package availability surfaces at load or first use. Path checks were the only genuinely new capability, and a startup warning about a missing org-dir contradicts this spec's own goal of keeping startup quiet, while an on-demand check nobody remembers to run is worth roughly nothing. DRAFT -> CANCELLED.
 - 2026-07-10 Fri @ 00:29:10 -0500 — drafted.
 
+* Postmortem
+
+The spec cleared spec-create's Phase 0 bar narrowly, and that was the signal to stop
+and ask what the feature bought over the mechanisms already in the tree. It wasn't
+taken.
+
+The =Reuse & lost opportunities= dimension exists to catch exactly this. It was
+filled in, it named =cj/executable-find-or-warn=, and it dismissed the helper in one
+clause for warning as a side effect. Warning as a side effect is the feature. The
+dimension was answered without being used.
+
+Three claims in the surrounding audit came from grepping for a helper's *name* rather
+than reading for the *behavior*, and all three were wrong: the org modules were said
+not to guard their binaries when they guard them at the point of use, which is the
+better place. Reading corrected the claim each time.
+
+The one real finding this line of work produced landed elsewhere and stands: ledger
+buffers were never linted, fixed in 55b85754.
+
 * Metadata
-| Status   | draft                                                    |
+| Status   | cancelled                                                |
 |----------+----------------------------------------------------------|
 | Owner    | Craig Jennings                                           |
 |----------+----------------------------------------------------------|
@@ -32,6 +52,15 @@ module to trip over it happens to produce. The doctor moves that discovery to a
 moment the user chose.
 
 * Problem / Context
+
+#+begin_quote
+*Correction, 2026-07-10.* The premise below is false and the body is left intact as
+the record of the mistake. Every external binary *is* checked, at its point of use:
+=hugo-config= guards hugo and the file-manager opener, =org-webclipper= guards
+pandoc, =org-export-config= guards zathura, and =ox-pandoc= guards itself upstream.
+The claim came from grepping for =cj/executable-find-or-warn= by name instead of
+reading the modules for the behavior. See the Postmortem above.
+#+end_quote
 
 The Org workflow spans many modules, and each depends on some mix of a personal
 path (=org-dir=, =roam-dir=), an external binary (pandoc, hugo), and an optional
