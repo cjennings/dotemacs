@@ -1,0 +1,138 @@
+#+TITLE: Org module ownership and load boundaries
+#+AUTHOR: Craig Jennings
+#+DATE: 2026-07-10
+
+* Why this note exists
+
+The Org workflow is spread across sixteen modules with overlapping
+responsibilities. The code works. What's missing is a map: which module owns which
+behavior, what each one adds to a shared variable, and in what order they load.
+
+Future load-order work needs that map. Four modules add capture templates, four
+touch =org-agenda-files=, and five register org-protocol handlers. None of that is
+wrong, but none of it is written down either, so the only way to answer "who sets
+this?" is to grep.
+
+This is a description of what is, not a proposal. Where the map turned up something
+that looks like a defect, it's flagged at the bottom rather than fixed here.
+
+* The modules
+
+Every Org module declares =Layer=, =Category=, and =Load shape= in its commentary
+header. The layer numbers below come from those headers, not from this note.
+
+| Module                       | Layer | Owns                                                    |
+|------------------------------+-------+---------------------------------------------------------|
+| =org-faces-config.el=        |     2 | Agenda keyword and priority faces, plus their -dim      |
+|                              |       | variants for unfocused windows                          |
+|------------------------------+-------+---------------------------------------------------------|
+| =org-config.el=              |     3 | Base org-mode settings, the org keymap, tag alignment   |
+|------------------------------+-------+---------------------------------------------------------|
+| =org-agenda-config.el=       |     3 | Agenda views, task tracking, notifications; loads       |
+|                              |       | =org-agenda-config-debug= on demand                     |
+|------------------------------+-------+---------------------------------------------------------|
+| =org-capture-config.el=      |     3 | The base capture templates and their dispatch keys      |
+|------------------------------+-------+---------------------------------------------------------|
+| =org-refile-config.el=       |     3 | Refile targets and the cached target list               |
+|------------------------------+-------+---------------------------------------------------------|
+| =org-roam-config.el=         |     3 | Roam database, capture, and its agenda-file additions   |
+|------------------------------+-------+---------------------------------------------------------|
+| =org-contacts-config.el=     |     3 | Contacts storage and its capture template               |
+|------------------------------+-------+---------------------------------------------------------|
+| =org-babel-config.el=        |     3 | Source-block languages and tempo templates              |
+|------------------------------+-------+---------------------------------------------------------|
+| =org-export-config.el=       |     3 | Export backends and their defaults                      |
+|------------------------------+-------+---------------------------------------------------------|
+| =org-spec-links.el=          |     3 | Resolves =[[id:]]= links into project spec docs         |
+|------------------------------+-------+---------------------------------------------------------|
+| =hugo-config.el=             |     3 | ox-hugo blog publishing (=C-; h=)                       |
+|------------------------------+-------+---------------------------------------------------------|
+| =org-drill-config.el=        |     4 | Spaced repetition, its own refile targets               |
+|------------------------------+-------+---------------------------------------------------------|
+| =org-noter-config.el=        |     4 | PDF and EPUB annotation                                 |
+|------------------------------+-------+---------------------------------------------------------|
+| =org-reveal-config.el=       |     4 | reveal.js presentations (=C-; p=)                       |
+|------------------------------+-------+---------------------------------------------------------|
+| =org-webclipper.el=          |     4 | org-protocol web clipping into roam                     |
+|------------------------------+-------+---------------------------------------------------------|
+| =quick-video-capture.el=     |     4 | Video download via an org-protocol bookmark             |
+|------------------------------+-------+---------------------------------------------------------|
+
+* Shared variables and who writes to them
+
+This is the part grep answers slowly and a table answers fast. Each of these
+variables is appended to by more than one module.
+
+** =org-capture-templates= — four writers
+
+=org-capture-config.el= establishes the base set. =org-contacts-config.el=,
+=org-webclipper.el=, and =quick-video-capture.el= each append their own. Dispatch
+keys must not collide across all four, which is why
+=tests/test-org-capture-templates-integrity.el= exists: it loads the cleanly
+loadable capture modules, applies their additions, and asserts no two templates
+share a key.
+
+That test is the enforcement mechanism for a boundary no single module can see.
+
+** =org-agenda-files= — four writers
+
+=org-agenda-config.el= sets the base list. =org-roam-config.el= adds roam files.
+=config-utilities.el= manipulates it, and =org-agenda-config-debug.el= reads it for
+diagnostics.
+
+** org-protocol handlers — five registrars
+
+=org-config.el=, =org-capture-config.el=, =org-drill-config.el=,
+=org-webclipper.el=, and =quick-video-capture.el= all touch org-protocol. The
+handlers are keyed by protocol name, so collisions are possible in principle and
+nothing checks for them today.
+
+** =org-refile-targets= — two writers
+
+=org-refile-config.el= owns the general targets. =org-drill-config.el= adds its
+own, because drill files are refile destinations but not agenda files.
+
+* Load order
+
+=init.el= loads the Org stack at lines 130 through 145, in this order: base config,
+faces, agenda, babel, capture, contacts, drill, export, hugo, reveal, refile, roam,
+spec-links, webclipper, noter.
+
+The order is deliberate in two places. =org-config= precedes everything because it
+establishes the keymap the rest bind into. =org-faces-config= precedes
+=org-agenda-config= because the agenda renders with those faces.
+
+One module sits outside that block. =quick-video-capture.el= loads at line 106,
+twenty-four lines before =org-config=, because it is grouped with the media modules
+rather than the Org modules. It nonetheless appends to =org-capture-templates=. It
+works because the append is a plain =add-to-list= against a variable org-mode has
+not yet claimed, but the grouping means a reader looking for "who adds capture
+templates" in the Org block will not find it.
+
+* Load shape
+
+Every Org module declares =Load shape: eager=. Nothing in the Org stack defers.
+
+This is the single largest fact about the Org workflow's startup cost, and it is
+worth stating plainly rather than leaving implicit across sixteen headers. Layer-4
+modules (drill, noter, reveal, webclipper, video capture) are optional features by
+their own classification, and all five load eagerly on every launch.
+
+Whether that matters is a measurement question, not an argument, and this note does
+not make it. It records the fact so the question can be asked.
+
+* Observations for follow-up
+
+These turned up while mapping. None is fixed here.
+
+1. =modules/org-config.el.faces.bak= is tracked in git (25KB). It appears to be a
+   leftover from the 2026-06-14 face-stripping work. A =.bak= file in =modules/=
+   is not loaded, but it is on the load-path's directory and will confuse the next
+   reader.
+2. =org-agenda-config-debug.el= carries no =Layer= / =Category= / =Load shape=
+   header, unlike every other module. It loads conditionally from
+   =org-agenda-config.el:42= when =cj/debug-modules= names it, so its absence from
+   =init.el= is by design, not an orphan.
+3. Nothing checks org-protocol handler collisions the way the capture-template test
+   checks key collisions. Five modules register handlers.
+4. Every Layer-4 Org module loads eagerly despite being classified optional.
