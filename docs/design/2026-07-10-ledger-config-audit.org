@@ -1,0 +1,124 @@
+#+TITLE: Ledger config audit — correctness and guardrail gaps
+#+AUTHOR: Craig Jennings
+#+DATE: 2026-07-10
+
+* Scope
+
+The correctness half of the ledger guardrail work. It audits
+=modules/ledger-config.el= (71 lines, no test file before today) and reports what's
+wrong and what's missing. It designs no guardrails, because those choices are
+Craig's.
+
+Characterization tests for the behavior that exists now landed alongside this note
+at =tests/test-ledger-config.el=.
+
+The stakes set the bar. This is a financial file, and Craig's stated goal for the
+follow-on work is "enough guardrails that it's hard to make a costly mistake."
+
+* Findings
+
+** F1. The linting doesn't run. Nothing checks unbalanced transactions.
+
+The module's own commentary says it provides "flycheck linting."
+
+=flycheck-ledger= is loaded (=ledger-config.el:59-60=) and registers the =ledger=
+checker. But =flycheck-mode= is never enabled in a ledger buffer.
+=flycheck-config.el:47= hooks =flycheck-mode= to exactly two modes:
+
+#+begin_src elisp
+:hook ((sh-mode emacs-lisp-mode) . flycheck-mode)
+#+end_src
+
+There is no =global-flycheck-mode= anywhere in the config. Verified against a real
+=ledger-mode= buffer in the running daemon: =major-mode= is =ledger-mode=,
+=flycheck-checkers= contains =ledger=, and =flycheck-mode= is =nil=.
+
+So an unbalanced transaction, a malformed date, and a typo'd account name all
+produce no warning. The guardrail Craig believes he has is not connected.
+
+This is the finding that matters. Everything below is smaller.
+
+** F2. Every save silently reorders the entire file.
+
+=cj/ledger--clean-before-save= runs =ledger-mode-clean-buffer= on
+=before-save-hook= (=ledger-config.el:32-40=), with =cj/ledger-clean-on-save=
+defaulting to =t=.
+
+=ledger-mode-clean-buffer= (=ledger-mode.el:226=) is not a formatter. Its own
+docstring says "Indent, remove multiple line feeds and sort the buffer," and its
+body calls, in order: =untabify=, =ledger-sort-buffer=, =ledger-post-align-postings=,
+=ledger-mode-remove-extra-lines=.
+
+=ledger-sort-buffer= (=ledger-sort.el:106=) sorts the whole buffer by date, from
+=point-min= to =point-max= unless the file carries explicit sort markers.
+
+So every =C-x C-s= rewrites the transaction order of a financial file. The task
+asked whether clean-on-save "ever reorders or rewrites in a surprising way." It
+reorders, every time, by design of the upstream function.
+
+Whether that's wanted is Craig's call. It is at minimum undocumented: the module
+commentary calls it "clean-on-save," which reads as whitespace tidying.
+
+** F3. The demoted error hides a partial rewrite, not just a message.
+
+The clean is wrapped in =with-demoted-errors= so "a malformed buffer still saves"
+(=ledger-config.el:34-37=).
+
+The comment is accurate about the save. It is misleading about the buffer. The
+operations inside =ledger-mode-clean-buffer= run in sequence and mutate as they go.
+An error raised by =ledger-post-align-postings= or by the =search-forward= that
+restores point (=ledger-mode.el:239=) happens *after* =ledger-sort-buffer= has
+already reordered everything. Nothing rolls back.
+
+The result is a file that saved, in a state neither the user nor the cleaner
+intended, with a message in the echo area that scrolls away.
+
+** F4. Reconcile has no confirmation, and clears whole transactions.
+
+=ledger-clear-whole-transactions= is =t= (=ledger-config.el:43=), so a reconcile
+marks entire transactions cleared rather than individual postings. Combined with no
+confirmation step anywhere in the module, a stray keypress in a reconcile buffer
+mutates the ledger file.
+
+This is upstream behavior, not a bug in this module. It is named here because the
+follow-on guardrail work asked about "reconcile safety" and this is what reconcile
+safety currently amounts to.
+
+* What is not a problem
+
+Worth recording so the guardrail work doesn't chase it.
+
+- *company-ledger's global backend is correctly scoped.* =ledger-config.el:68= does
+  =(add-to-list 'company-backends 'company-ledger)= globally, which looks like it
+  would offer ledger completions everywhere. It doesn't: the backend's own =prefix=
+  command (=company-ledger.el:110-111=) returns nil unless the buffer is
+  =beancount-mode= or derives from =ledger-mode=.
+- *The reports pass =--strict=.* All five entries in =ledger-reports=
+  (=ledger-config.el:48-52=) use =--strict=, so a report over a file with an
+  undeclared account errors rather than silently inventing one. This is a real
+  guardrail and it is on.
+- *The missing-binary check is at the right place.* =cj/executable-find-or-warn=
+  runs at =:config= (=ledger-config.el:54=), so a missing =ledger= CLI warns at load
+  rather than failing cryptically inside a report.
+- *The clean-on-save hook is installed buffer-locally* (=ledger-config.el:40=), not
+  globally. Pinned by a test.
+
+* Gaps, as a list
+
+1. No linting reaches ledger buffers (F1).
+2. No confirmation before a whole-buffer rewrite on save (F2).
+3. No rollback when that rewrite fails partway (F3).
+4. No confirmation before reconcile mutates the file (F4).
+5. No validation that a save leaves the file balanced.
+6. No test coverage before today.
+
+* What this note deliberately does not do
+
+It proposes no fix. Whether clean-on-save should prompt, become opt-in, or be
+replaced by a check-only lint is a preference call about Craig's own accounting
+workflow, and so is the shape of a reconcile confirmation. Those belong to the
+ledger guardrail UX task.
+
+The one finding that isn't a preference call is F1: turning flycheck on in ledger
+buffers restores a guardrail the module already claims to have. That's a defect,
+not a design choice.
