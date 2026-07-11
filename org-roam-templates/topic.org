@@ -1,7 +1,0 @@
-#+TITLE: ${title}
-#+CATEGORY: ${title}
-#+FILETAGS: Topic
-
-* ${title}
-
-

@@ -147,6 +147,17 @@
     ;; The 4th arg is the subdir
     (should (equal (nth 3 args) "recipes/"))))
 
+(ert-deftest test-org-roam-find-node-project-delegates-to-find-node ()
+  "Normal: `find-node-project' uses Project tag, 'p' key, project.org template."
+  (let ((args nil))
+    (cl-letf (((symbol-function 'cj/org-roam-find-node)
+               (lambda (&rest a) (setq args a))))
+      (cj/org-roam-find-node-project))
+    (should (equal (car args) "Project"))
+    (should (equal (cadr args) "p"))
+    ;; The 3rd arg is the template file, under the canonical roam-dir/templates/.
+    (should (string-suffix-p "templates/project.org" (nth 2 args)))))
+
 ;;; cj/org-roam-node-insert-immediate
 
 (ert-deftest test-org-roam-node-insert-immediate-rebinds-templates-and-calls-insert ()

@@ -77,25 +77,23 @@ FILETAGS and TITLE must sit on separate lines so Org parses the
 	  :unnarrowed t)
 
 	 ("v" "v2mom" plain
-	  (file ,(concat user-emacs-directory "org-roam-templates/v2mom.org"))
+	  (file ,(concat roam-dir "templates/v2mom.org"))
 	  :if-new (file+head "%<%Y%m%d%H%M%S>-${slug}.org" "")
 	  :unnarrowed t)
 
 	 ("r" "recipe" plain
-	  (file ,(concat user-emacs-directory "org-roam-templates/recipe.org"))
+	  (file ,(concat roam-dir "templates/recipe.org"))
 	  :if-new (file+head "recipes/%<%Y%m%d%H%M%S>-${slug}.org" "")
 	  :unnarrowed t)
 
 	 ("t" "topic" plain
-	  (file ,(concat user-emacs-directory "org-roam-templates/topic.org"))
+	  (file ,(concat roam-dir "templates/topic.org"))
 	  :if-new (file+head "%<%Y%m%d%H%M%S>-${slug}.org" "")
 	  :unnarrowed t)))
 
   :bind (("C-c n l" . org-roam-buffer-toggle)
          ("C-c n f" . org-roam-node-find)
-         ("C-c n p" . cj/org-roam-find-node-project)
          ("C-c n i" . org-roam-node-insert)
-         ("C-c n w" . cj/org-roam-find-node-webclip)
          :map org-mode-map
          ("C-M-i" . completion-at-point))
   :config
@@ -209,10 +207,17 @@ created in that subdirectory of `org-roam-directory'."
   (interactive)
   (cj/org-roam-find-node "Recipe" "r" (concat roam-dir "templates/recipe.org") "recipes/"))
 
+
+(defun cj/org-roam-find-node-project ()
+  "List nodes of type \"Project\" in completing read for selection or creation."
+  (interactive)
+  (cj/org-roam-find-node "Project" "p" (concat roam-dir "templates/project.org")))
+
 ;; Bound after their defuns (not in the use-package :bind) so the byte-compiler
 ;; doesn't see both a :bind autoload and the real defun as two definitions.
 (keymap-global-set "C-c n r" #'cj/org-roam-find-node-recipe)
 (keymap-global-set "C-c n t" #'cj/org-roam-find-node-topic)
+(keymap-global-set "C-c n p" #'cj/org-roam-find-node-project)
 
 ;; ---------------------- Org Capture After Finalize Hook ----------------------
 
@@ -394,36 +399,6 @@ cut stays undoable.  A confirmation prompt guards large subtrees (see
 	  (org-roam-db-sync)
 	  (message "'%s' moved to a new org-roam node (%s)." title filename))))
 
-;; TASK: Need to decide keybindings before implementation and testing
-;; (use-package consult-org-roam
-;;    :ensure t
-;;    :after org-roam
-;;    :init
-;;    (require 'consult-org-roam)
-;;    ;; Activate the minor mode
-;;    (consult-org-roam-mode 1)
-;;    :custom
-;;    ;; Use `ripgrep' for searching with `consult-org-roam-search'
-;;    (consult-org-roam-grep-func #'consult-ripgrep)
-;;    ;; Configure a custom narrow key for `consult-buffer'
-;;    (consult-org-roam-buffer-narrow-key ?r)
-;;    ;; Display org-roam buffers right after non-org-roam buffers
-;;    ;; in consult-buffer (and not down at the bottom)
-;;    (consult-org-roam-buffer-after-buffers t)
-;;    :config
-;;    ;; Eventually suppress previewing for certain functions
-;;    (consult-customize
-;;     consult-org-roam-forward-links
-;;     :preview-key "M-.")
-;;    :bind
-;;    ;; Define some convenient keybindings as an addition
-;;    ("C-c n e" . consult-org-roam-file-find)
-;;    ("C-c n b" . consult-org-roam-backlinks)
-;;    ("C-c n B" . consult-org-roam-backlinks-recursive)
-;;    ("C-c n l" . consult-org-roam-forward-links)
-;;    ("C-c n r" . consult-org-roam-search))
-
-
 ;; which-key labels
 (with-eval-after-load 'which-key
   (which-key-add-key-based-replacements
@@ -434,7 +409,6 @@ cut stays undoable.  A confirmation prompt guards large subtrees (see
     "C-c n r" "roam find recipe"
     "C-c n t" "roam find topic"
     "C-c n i" "roam insert node"
-    "C-c n w" "roam find webclip"
     "C-c n I" "roam insert immediate"
     "C-c n d" "roam dailies menu"))
 
