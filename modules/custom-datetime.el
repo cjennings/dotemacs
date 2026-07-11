@@ -51,7 +51,7 @@ See `format-time-string' for possible replacements.")
 
 ;; ------------------------------- Sortable Time -------------------------------
 
-(defvar sortable-time-format "%I:%M:%S %p %Z "
+(defvar sortable-time-format "%H:%M:%S %Z "
   "Format string used by `cj/insert-sortable-time'.
 See `format-time-string' for possible replacements.")
 

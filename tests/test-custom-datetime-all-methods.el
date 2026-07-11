@@ -54,9 +54,10 @@
     (should (string-match-p "14:30:45" result))))
 
 (ert-deftest test-custom-datetime-all-methods-normal-sortable-time ()
-  "cj/insert-sortable-time should insert time with AM/PM and timezone."
+  "cj/insert-sortable-time should insert 24-hour time so it sorts lexically."
   (let ((result (test-datetime--run #'cj/insert-sortable-time)))
-    (should (string-match-p "02:30:45 PM" result))))
+    (should (string-match-p "14:30:45" result))
+    (should-not (string-match-p "PM" result))))
 
 (ert-deftest test-custom-datetime-all-methods-normal-readable-time ()
   "cj/insert-readable-time should insert short time with AM/PM."
