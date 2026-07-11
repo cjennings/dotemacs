@@ -43,6 +43,35 @@ Returns the transformed string."
 Returns the transformed string."
   (cj/--dedent-lines text count))
 
+;;; Interactive default resolution (the prefix-arg decoupling fix)
+
+(ert-deftest test-indent-lines-interactive-no-prefix-is-four-spaces ()
+  "Interactive: no prefix indents by 4, spaces when `indent-tabs-mode' is nil.
+The old \"p\\nP\" spec defaulted count to 1 and forced tabs on any prefix."
+  (with-temp-buffer
+    (setq-local indent-tabs-mode nil)
+    (insert "line")
+    (let ((current-prefix-arg nil))
+      (call-interactively #'cj/indent-lines-in-region-or-buffer))
+    (should (string= "    line" (buffer-string)))))
+
+(ert-deftest test-indent-lines-interactive-follows-indent-tabs-mode ()
+  "Interactive: tabs-vs-spaces follows `indent-tabs-mode', not the prefix arg."
+  (with-temp-buffer
+    (setq-local indent-tabs-mode t)
+    (insert "line")
+    (let ((current-prefix-arg nil))
+      (call-interactively #'cj/indent-lines-in-region-or-buffer))
+    (should (string= "\t\t\t\tline" (buffer-string)))))
+
+(ert-deftest test-dedent-lines-interactive-no-prefix-is-four ()
+  "Interactive: no prefix removes up to 4 leading whitespace characters."
+  (with-temp-buffer
+    (insert "        line")               ; eight leading spaces
+    (let ((current-prefix-arg nil))
+      (call-interactively #'cj/dedent-lines-in-region-or-buffer))
+    (should (string= "    line" (buffer-string)))))
+
 ;;; Indent Tests - Normal Cases with Spaces
 
 (ert-deftest test-indent-single-line-4-spaces ()

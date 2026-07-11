@@ -180,9 +180,14 @@ Returns the indented text without modifying the buffer."
 
 (defun cj/indent-lines-in-region-or-buffer (count use-tabs)
   "Indent each line in region or buffer by COUNT characters.
-COUNT is the number of characters to indent (default 4).
-USE-TABS when non-nil (prefix argument) uses tabs instead of spaces."
-  (interactive "p\nP")
+COUNT is the numeric prefix argument, defaulting to 4 with no prefix.
+USE-TABS non-nil indents with tabs instead of spaces; interactively it
+follows the buffer's `indent-tabs-mode', so the prefix argument is free to
+mean the count.  Call it from Lisp with an explicit USE-TABS to override."
+  (interactive (list (if current-prefix-arg
+                         (prefix-numeric-value current-prefix-arg)
+                       4)
+                     indent-tabs-mode))
   (let* ((bounds (cj/--region-or-buffer-bounds))
          (start-pos (car bounds))
          (end-pos (cdr bounds))
@@ -224,9 +229,11 @@ Returns the dedented text without modifying the buffer."
 
 (defun cj/dedent-lines-in-region-or-buffer (count)
   "Remove up to COUNT leading whitespace characters from each line.
-COUNT is the number of characters to remove (default 4).
+COUNT is the numeric prefix argument, defaulting to 4 with no prefix.
 Works on region if active, otherwise entire buffer."
-  (interactive "p")
+  (interactive (list (if current-prefix-arg
+                         (prefix-numeric-value current-prefix-arg)
+                       4)))
   (let* ((bounds (cj/--region-or-buffer-bounds))
          (start-pos (car bounds))
          (end-pos (cdr bounds))
