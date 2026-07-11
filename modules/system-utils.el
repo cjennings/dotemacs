@@ -92,7 +92,7 @@ detached from Emacs."
 		 output-buffer
 		 (format "%s %s" command (shell-quote-argument file)))
 		(message "Running %s on %s..."
-				 (file-name-nondirectory file) command)))))
+				 command (file-name-nondirectory file))))))
 
 
 ;;; ------------------------------ Server Shutdown ------------------------------
