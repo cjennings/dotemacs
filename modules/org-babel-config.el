@@ -173,8 +173,5 @@ session when working in trusted files, and back on when done."
 ;; requires ob-racket, not yet in repositories
 ;;   (add-to-list 'org-structure-template-alist '("sicp"   . "src racket :lang sicp"))
 
-;; drop Org’s default footnote list at the end
-(setq org-html-footnote-separator "")
-
 (provide 'org-babel-config)
 ;;; org-babel-config.el ends here.

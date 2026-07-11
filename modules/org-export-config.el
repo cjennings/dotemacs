@@ -20,7 +20,6 @@
 ;; - HTML: Web publishing with HTML5 support
 ;; - Markdown: README files and web content
 ;; - ODT: Office documents for LibreOffice/MS Word
-;; - Texinfo: GNU documentation and Info files
 ;;
 ;; Extended via Pandoc:
 ;; - Additional formats: DOCX, self-contained HTML5
@@ -28,7 +27,7 @@
 ;;
 ;; Key features:
 ;; - UTF-8 encoding enforced across all backends
-;; - Subtree export as default scope
+;; - Buffer export as default scope
 ;;
 ;; Note: reveal.js presentations are handled by org-reveal-config.el (C-; p)
 ;;
@@ -68,17 +67,8 @@
   :config
   (setq org-html-postamble nil)
   (setq org-html-html5-fancy t)
-  (setq org-html-head-include-default-style nil))
-
-
-(use-package ox-texinfo
-  :ensure nil  ; Built into Org
-  :defer t
-  :after ox
-  :config
-  (setq org-texinfo-coding-system 'utf-8)
-  (setq org-texinfo-default-class "info")
-  (add-to-list 'org-export-backends 'texinfo))
+  (setq org-html-head-include-default-style nil)
+  (setq org-html-footnote-separator "")) ;; no separator between adjacent footnote refs
 
 (use-package ox-pandoc
   :defer t
