@@ -61,6 +61,14 @@ string can return a meta-prefix event count rather than nil.)"
     (cj/keyboard-compat-terminal-setup)
     (should (equal input-decode-map (make-sparse-keymap)))))
 
+(ert-deftest test-keyboard-compat-terminal-setup-on-tty-setup-hook ()
+  "Normal: terminal setup is registered on `tty-setup-hook', which runs for each
+new tty frame.  `input-decode-map' is terminal-local, so `emacs-startup-hook'
+\(once, at daemon start, with no tty) leaves every later `emacsclient -t' frame
+without the arrow-key decodings.  The GUI half already frame-scopes itself."
+  (should (memq 'cj/keyboard-compat-terminal-setup tty-setup-hook))
+  (should-not (memq 'cj/keyboard-compat-terminal-setup emacs-startup-hook)))
+
 ;; -------------------------- cj/keyboard-compat-gui-setup ---------------------
 
 (defmacro test-kbc--gui (gui-p &rest body)

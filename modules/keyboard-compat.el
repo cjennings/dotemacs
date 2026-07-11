@@ -45,8 +45,11 @@ This runs after init to override any package settings."
     (define-key input-decode-map "\eOC" [right])
     (define-key input-decode-map "\eOD" [left])))
 
-;; Run after init completes to override any package settings
-(add-hook 'emacs-startup-hook #'cj/keyboard-compat-terminal-setup)
+;; `input-decode-map' is terminal-local, and a daemon's `emacs-startup-hook'
+;; runs once with no tty, so a startup-hook registration never reaches the
+;; `emacsclient -t' frames that need it.  `tty-setup-hook' runs for each new
+;; tty frame (daemon and non-daemon alike), which is where the decodings belong.
+(add-hook 'tty-setup-hook #'cj/keyboard-compat-terminal-setup)
 
 ;; Icon-rendering functions return blank on terminal frames so unicode
 ;; artifacts don't show up. The check runs per call against the selected
