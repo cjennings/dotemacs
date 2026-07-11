@@ -131,12 +131,18 @@ Signals `user-error' if METHOD-SYMBOL is nil or not fboundp."
 
 ;;; ----------------------------- Config Compilation ----------------------------
 
+(defun cj/--native-comp-p ()
+  "Return non-nil when native compilation is available on this build.
+Detected with `native-comp-available-p', not `boundp' of the async function:
+`native-compile-async' is a function, so `boundp' is always nil."
+  (and (fboundp 'native-comp-available-p) (native-comp-available-p)))
+
 (defun cj/--recompile-emacs-home (dir &optional native-p)
   "Delete all .elc/.eln files under DIR, then recompile.
 NATIVE-P chooses native compilation when non-nil, byte otherwise.
-Also removes the eln (native) or elc (byte) cache directory.
+Also removes the eln-cache (native) or elc (byte) cache directory.
 Returns the compilation method used: \\='native or \\='byte."
-  (let ((elt-dir (expand-file-name (if native-p "eln" "elc") dir)))
+  (let ((elt-dir (expand-file-name (if native-p "eln-cache" "elc") dir)))
     (message "Deleting all compiled files in %s" dir)
     (dolist (file (directory-files-recursively dir "\\(\\.elc\\|\\.eln\\)$"))
       (delete-file file))
@@ -157,7 +163,7 @@ Returns the compilation method used: \\='native or \\='byte."
   "Delete all compiled files in the Emacs home before recompiling.
 Recompile natively when supported, otherwise fall back to byte compilation."
   (interactive)
-  (let* ((native (boundp 'native-compile-async))
+  (let* ((native (cj/--native-comp-p))
          (mode-word (if native "native" "byte")))
     (if (yes-or-no-p
          (format "Please confirm recursive %s recompilation of %s: "

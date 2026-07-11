@@ -81,19 +81,28 @@ Returns the temp dir path."
           (should-not (file-exists-p (expand-file-name "sub/c.elc" dir))))
       (delete-directory dir t))))
 
-(ert-deftest test-config-utilities-recompile-removes-eln-dir-on-native-path ()
-  "Boundary: the native path removes the eln cache directory when present."
+(ert-deftest test-config-utilities-recompile-removes-eln-cache-dir-on-native-path ()
+  "Boundary: the native path removes the eln-cache directory when present.
+The native cache is eln-cache/, not eln/, so that is the directory to clear."
   (let ((dir (test-config-utilities--make-recompile-fixture))
-        (eln-dir nil))
+        (eln-cache-dir nil))
     (unwind-protect
         (progn
-          (setq eln-dir (expand-file-name "eln" dir))
-          (make-directory eln-dir)
-          (with-temp-file (expand-file-name "stale.eln" eln-dir) (insert ""))
+          (setq eln-cache-dir (expand-file-name "eln-cache" dir))
+          (make-directory eln-cache-dir)
+          (with-temp-file (expand-file-name "stale.eln" eln-cache-dir) (insert ""))
           (cl-letf (((symbol-function 'native-compile-async) (lambda (&rest _) nil)))
             (cj/--recompile-emacs-home dir t))
-          (should-not (file-exists-p eln-dir)))
+          (should-not (file-exists-p eln-cache-dir)))
       (delete-directory dir t))))
+
+(ert-deftest test-config-utilities-native-comp-detection-not-boundp ()
+  "Regression: native-comp detection must not test `boundp' of the async
+function -- native-compile-async is a function, so `boundp' is always nil and
+native compilation would never be selected.  On a native-comp build, detection
+returns non-nil."
+  (when (and (fboundp 'native-comp-available-p) (native-comp-available-p))
+    (should (cj/--native-comp-p))))
 
 (ert-deftest test-config-utilities-recompile-removes-elc-dir-on-byte-path ()
   "Boundary: the byte path removes the elc cache directory when present."
