@@ -60,16 +60,17 @@ an active region, and return the result."
                  "The Art of War")))
 
 (ert-deftest test-custom-case-title-case-region-normal-all-minor-words ()
-  "All minor words in the skip list should be lowercased in mid-sentence."
+  "All minor words in the skip list should be lowercased in mid-sentence.
+\"is\" is a linking verb, so it is a major word and is capitalized."
   (should (equal (test-title-case--on-string
                   "go a an and as at but by for if in is nor of on or so the to yet go")
-                 "Go a an and as at but by for if in is nor of on or so the to yet Go")))
+                 "Go a an and as at but by for if in Is nor of on or so the to yet Go")))
 
 (ert-deftest test-custom-case-title-case-region-normal-four-letter-words-capitalized ()
   "Words of four or more letters should always be capitalized.
-Note: 'is' is explicitly in the minor word list, so it stays lowercase."
+\"is\" is a linking verb (a major word), so it is capitalized too."
   (should (equal (test-title-case--on-string "this is from that with over")
-                 "This is From That With Over")))
+                 "This Is From That With Over")))
 
 (ert-deftest test-custom-case-title-case-region-normal-allcaps-input ()
   "All-caps input should be downcased first, then title-cased."
@@ -94,7 +95,16 @@ Note: 'is' is explicitly in the minor word list, so it stays lowercase."
 (ert-deftest test-custom-case-title-case-region-normal-question-resets ()
   "Word immediately after a question mark should be capitalized, even if minor."
   (should (equal (test-title-case--on-string "really? the answer is no")
-                 "Really? The Answer is No")))
+                 "Really? The Answer Is No")))
+
+(ert-deftest test-custom-case-title-case-region-normal-last-word-capitalized ()
+  "The last word is always capitalized, even a minor one."
+  (should (equal (test-title-case--on-string "the art of") "The Art Of")))
+
+(ert-deftest test-custom-case-title-case-region-normal-period-restarts ()
+  "A word after a sentence-ending period should be capitalized."
+  (should (equal (test-title-case--on-string "one. the next sentence")
+                 "One. The Next Sentence")))
 
 (ert-deftest test-custom-case-title-case-region-normal-hyphenated-word ()
   "Second part of a hyphenated word should NOT be capitalized."
@@ -141,7 +151,7 @@ Note: 'is' is explicitly in the minor word list, so it stays lowercase."
 (ert-deftest test-custom-case-title-case-region-boundary-unicode-words ()
   "Unicode characters should pass through without error."
   (should (equal (test-title-case--on-string "the café is nice")
-                 "The Café is Nice")))
+                 "The Café Is Nice")))
 
 (ert-deftest test-custom-case-title-case-region-boundary-numbers-in-text ()
   "Numbers mixed with text should not break title casing."

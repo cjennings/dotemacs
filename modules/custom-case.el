@@ -49,13 +49,14 @@
 		  (downcase-region (car bounds) (cdr bounds))
 		(user-error "No symbol at point")))))
 
-(defun cj/--title-case-capitalize-word-p (word is-first prev-word-end word-skip chars-skip-reset)
+(defun cj/--title-case-capitalize-word-p (word is-first is-last prev-word-end word-skip chars-skip-reset)
   "Return non-nil when WORD at point should be capitalized in title case.
 Point is at WORD's first character.  WORD is capitalized when it is the first
-word (IS-FIRST), is not a minor skip word (in WORD-SKIP), or immediately follows
-a skip-reset character (one of CHARS-SKIP-RESET: : ! ?), reached by skipping
-blanks back to PREV-WORD-END."
+word (IS-FIRST) or the last word (IS-LAST), is not a minor skip word (in
+WORD-SKIP), or immediately follows a skip-reset character (one of
+CHARS-SKIP-RESET: : ! ? .), reached by skipping blanks back to PREV-WORD-END."
   (or is-first
+      is-last
       (not (member word word-skip))
       (save-excursion
         (and (not (zerop (skip-chars-backward "[:blank:]" prev-word-end)))
@@ -67,22 +68,30 @@ Title case is a capitalization convention where major words are capitalized,
 and most minor words are lowercase.  Nouns, verbs (including linking verbs),
 adjectives, adverbs,pronouns, and all words of four letters or more are
 considered major words. Short (i.e., three letters or fewer) conjunctions,
-short prepositions, and all articles are considered minor words."
+short prepositions, and all articles are considered minor words.  The first
+and last words are always capitalized, and a word following a sentence-ending
+period (or a colon, exclamation mark, or question mark) restarts
+capitalization even when it is a minor word."
   (interactive)
   (let ((beg nil)
         (end nil)
         (prev-word-end nil)
-        ;; Allow capitals for skip characters after this, so:
-        ;;   Warning: An Example
-        ;; Capitalizes the `An'.
-        (chars-skip-reset '(?: ?! ??))
+        (last-word-start nil)
+        ;; Restart capitalization for a minor word after one of these, so
+        ;; "Warning: An Example" capitalizes the "An" and a sentence-ending
+        ;; period capitalizes the next word ("End. The Next").
+        (chars-skip-reset '(?: ?! ?? ?.))
         ;; Don't capitalize characters directly after these. e.g.
-        ;; "Foo-bar" or "Foo\bar" or "Foo's".
+        ;; "Foo-bar" or "Foo\bar" or "Foo's".  A period is here too, so
+        ;; "3.14" and "foo.bar" are left alone; a period followed by a
+        ;; blank still restarts via `chars-skip-reset' above.
         (chars-separator '(?\\ ?- ?' ?.))
         (word-chars "[:alnum:]")
+        ;; "is" and other linking verbs are major words, so they are not in
+        ;; this minor-word skip list.
         (word-skip
          (list "a" "an" "and" "as" "at" "but" "by"
-               "for" "if" "in" "is" "nor" "of"
+               "for" "if" "in" "nor" "of"
                "on" "or" "so" "the" "to" "yet"))
         (is-first t))
     (cond
@@ -92,6 +101,15 @@ short prepositions, and all articles are considered minor words."
      (t
       (setq beg (line-beginning-position))
       (setq end (line-end-position))))
+    ;; The last word is always capitalized in title case, so find its start
+    ;; once: from END, skip back over any trailing non-word chars, then over
+    ;; the word itself.
+    (setq last-word-start
+          (save-excursion
+            (goto-char end)
+            (skip-chars-backward (concat "^" word-chars) beg)
+            (skip-chars-backward word-chars beg)
+            (point)))
     (save-excursion
       ;; work on uppercased text (e.g., headlines) by downcasing first
       (downcase-region beg end)
@@ -112,7 +130,8 @@ short prepositions, and all articles are considered minor words."
               (unless (string-equal c-orig c-up)
                 (let ((word (buffer-substring-no-properties (point) word-end)))
                   (when (cj/--title-case-capitalize-word-p
-                         word is-first prev-word-end word-skip chars-skip-reset)
+                         word is-first (= (point) last-word-start)
+                         prev-word-end word-skip chars-skip-reset)
                     (delete-region (point) (1+ (point)))
                     (insert c-up))))))
           (goto-char word-end)
