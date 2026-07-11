@@ -122,9 +122,10 @@ Returns the transformed string."
     (should (string= result "1. "))))
 
 (ert-deftest test-number-lines-empty-lines ()
-  "Should number empty lines."
+  "Should number empty lines, treating the final newline as a terminator.
+The old split counted the trailing newline as a spurious third line."
   (let ((result (test-number-lines "\n\n" "N. " nil)))
-    (should (string= result "1. \n2. \n3. "))))
+    (should (string= result "1. \n2. \n"))))
 
 (ert-deftest test-number-lines-with-existing-numbers ()
   "Should number lines that already have content."

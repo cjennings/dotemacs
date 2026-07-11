@@ -86,9 +86,11 @@ Returns the transformed string."
     (should (string= result "b\n\na"))))
 
 (ert-deftest test-reverse-lines-trailing-newline ()
-  "Should handle trailing newline."
+  "Should reverse the lines and preserve the trailing newline.
+The old split dropped the trailing newline into a leading empty line,
+producing \"\\nline2\\nline1\"."
   (let ((result (test-reverse-lines "line1\nline2\n")))
-    (should (string= result "\nline2\nline1"))))
+    (should (string= result "line2\nline1\n"))))
 
 (ert-deftest test-reverse-lines-only-newlines ()
   "Should reverse lines that are only newlines."

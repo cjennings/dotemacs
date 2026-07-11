@@ -145,8 +145,15 @@ START and END identify the active region."
 START and END define the region to operate on.
 Returns the transformed string without modifying the buffer."
   (cj/--ordering-validate-region start end)
-  (let ((lines (split-string (buffer-substring start end) "\n")))
-    (mapconcat #'identity (nreverse lines) "\n")))
+  ;; Strip a trailing newline before splitting so it doesn't become a spurious
+  ;; empty line (which reversing would float to the top); reattach it after.
+  ;; Internal blank lines are preserved.
+  (let* ((raw (buffer-substring start end))
+         (trailing-newline (string-suffix-p "\n" raw))
+         (body (if trailing-newline (substring raw 0 -1) raw))
+         (lines (split-string body "\n")))
+    (concat (mapconcat #'identity (nreverse lines) "\n")
+            (if trailing-newline "\n" ""))))
 
 (defun cj/reverse-lines (start end)
   "Reverse the order of lines in region between START and END.
@@ -164,20 +171,28 @@ ZERO-PAD when non-nil pads numbers with zeros for alignment.
   Example with 100 lines: \"001\", \"002\", ..., \"100\".
 Returns the transformed string without modifying the buffer."
   (cj/--ordering-validate-region start end)
-  (let* ((lines (split-string (buffer-substring start end) "\n"))
+  ;; Strip a trailing newline before splitting so it doesn't become a spurious
+  ;; extra numbered empty line; reattach it after.  Internal blank lines are
+  ;; preserved and numbered.
+  (let* ((raw (buffer-substring start end))
+         (trailing-newline (string-suffix-p "\n" raw))
+         (body (if trailing-newline (substring raw 0 -1) raw))
+         (lines (split-string body "\n"))
          (line-count (length lines))
          (width (if zero-pad (length (number-to-string line-count)) 1))
          (format-spec (if zero-pad (format "%%0%dd" width) "%d")))
-    (mapconcat
-     (lambda (pair)
-       (let* ((num (car pair))
-              (line (cdr pair))
-              (num-str (format format-spec num)))
-         (concat (replace-regexp-in-string "N" num-str format-string) line)))
-     (cl-loop for line in lines
-              for i from 1
-              collect (cons i line))
-     "\n")))
+    (concat
+     (mapconcat
+      (lambda (pair)
+        (let* ((num (car pair))
+               (line (cdr pair))
+               (num-str (format format-spec num)))
+          (concat (replace-regexp-in-string "N" num-str format-string) line)))
+      (cl-loop for line in lines
+               for i from 1
+               collect (cons i line))
+      "\n")
+     (if trailing-newline "\n" ""))))
 
 (defun cj/number-lines (start end format-string zero-pad)
   "Number lines in region between START and END with custom format.
