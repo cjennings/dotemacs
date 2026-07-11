@@ -8,6 +8,7 @@
 :PROPERTIES:
 :ID:       e1fd137e-e164-42f4-a658-f4d32fbe3228
 :END:
+- 2026-07-10 Fri @ 22:50:03 -0500 — reconciled the programming target to shipped decisions: generic LSP policy consolidated under =prog-general= (not =prog-lsp=, which was folded in and deleted, commit dfdb3580), and tree-sitter auto-install gated to ='prompt=. Both were owned items of this spec; recording the outcome, keyword stays DOING for the remaining load-graph work.
 - 2026-07-04 Sat @ 15:30:41 -0500 — retrofitted to status-heading convention; keyword DOING from existing :STATUS: doing
 
 * Status
@@ -312,7 +313,7 @@ Category key:
 | =video-audio-recording= | O/D/S | command-loaded | External process/device probing only on command. |
 | =transcription-config= | O/D/P | command-loaded | Auth/process workflow. |
 | =weather-config= | O/D/P | command-loaded | Optional command. |
-| =prog-general= | C/P/S | eager or hooks | Projectile, treesit policy, LSP ownership concerns. |
+| =prog-general= | C/P/S | eager or hooks | Projectile, treesit 'prompt, sole LSP policy owner. |
 | =test-runner= | C/L | eager command entry | Test keymap and project-scoped state. |
 | =vc-config= | C/P | eager command entry | Magit/git keymap; clone command hardening separate. |
 | =flycheck-config= | C/P | hooks | General linting. |
@@ -320,7 +321,6 @@ Category key:
 | =prog-c= | D/P | mode-loaded | C hooks and compile command. |
 | =prog-go= | D/P | mode-loaded | Go hooks/LSP. |
 | =prog-lisp= | D/P | mode-loaded | Lisp package config. |
-| =prog-lsp= | C/P | package policy owner | Should consolidate generic LSP policy. |
 | =prog-shell= | D/P/S | mode-loaded | after-save executable hook should be opt-in or scoped. |
 | =prog-python= | D/P | mode-loaded | Python hooks/LSP. |
 | =prog-webdev= | D/P | mode-loaded | Webdev modes/LSP. |
@@ -603,15 +603,20 @@ Programming target:
 
 - Keep generic programming defaults and F-key command entry points available.
 - Load language-specific modules by major mode.
-- Consolidate generic LSP policy under =prog-lsp=.
-  - Move to =prog-lsp=: global LSP toggles such as =lsp-idle-delay=,
-    =lsp-log-io=, =lsp-enable-folding=, =lsp-enable-snippet=,
-    =lsp-headerline-breadcrumb-enable=, and file-watch ignore lists.
-  - Keep per-language: server client settings such as
-    =lsp-clients-clangd-args= and =lsp-pyright-*=, plus language-mode hook
-    wiring.
-- Tree-sitter grammar auto-install is always on; the project policy is global
-  allow. =treesit-auto-install= is =t= without per-language conditionals.
+- Generic LSP policy is consolidated under =prog-general= (done 2026-07-10, commit
+  dfdb3580). The original plan named =prog-lsp= as owner, but that module was
+  required by nothing and never loaded, so its config was dead; folding it into the
+  module that actually loads (=prog-general=) and deleting it was the working fix.
+  - In =prog-general=: global LSP toggles such as =lsp-idle-delay=, =lsp-log-io=,
+    =lsp-enable-folding=, =lsp-enable-snippet=, the quiet-UI toggles, and the
+    file-watch ignore list.
+  - Kept per-language: server client settings such as =lsp-clients-clangd-args= and
+    =lsp-pyright-*=, plus the =lsp-deferred= language-mode hook wiring.
+  - Remaining: several language modules call =lsp-deferred= from both a local setup
+    function and a package hook; collapse each to one hook path per language.
+- Tree-sitter grammar auto-install is gated to ='prompt= (done). Batch/test runs never
+  auto-install, and =cj/install-treesit-grammars= is the explicit bootstrap for a new
+  machine.
 
 Org target:
 
@@ -625,9 +630,10 @@ Org target:
   =cj-cache.el= extraction is owned by utility-consolidation Phase 5 and may
   follow.
 
-The =prog-lsp= consolidation and tree-sitter policy decisions are owned by this
-load-graph project. Utility consolidation owns reusable helper extraction, not
-programming policy.
+The LSP consolidation and tree-sitter policy decisions are owned by this
+load-graph project. Both landed 2026-07-10 (LSP under =prog-general=, tree-sitter at
+='prompt=). Utility consolidation owns reusable helper extraction, not programming
+policy.
 
 Exit criteria:
 
