@@ -41,7 +41,9 @@
   (vertico-cycle t)                ; Cycle through candidates
   (vertico-count 10)               ; Number of candidates to display
   (vertico-resize nil)             ; Don't resize the minibuffer
-  (vertico-sort-function #'vertico-sort-history-alpha) ; History first, then alphabetical
+  ;; Sorting is owned by `vertico-prescient-mode' (frecency).  A
+  ;; `vertico-sort-function' set here is overridden inside every vertico
+  ;; session, so it is omitted rather than left as dead config.
   :bind (:map vertico-map
               ("C-j"    . vertico-next)
               ("C-k"    . vertico-previous)
