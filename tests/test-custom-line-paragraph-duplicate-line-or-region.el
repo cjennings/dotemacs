@@ -327,6 +327,40 @@
         (should (> (length (buffer-string)) (length "line one\nline two\nline three"))))
     (test-duplicate-line-or-region-teardown)))
 
+(ert-deftest test-duplicate-line-or-region-mid-line-bounds-duplicate-whole-lines ()
+  "A region ending mid-line duplicates every whole line it touches, no splits.
+The old open-line loop split the mid-line-ending line instead."
+  (test-duplicate-line-or-region-setup)
+  (unwind-protect
+      (with-temp-buffer
+        (insert "aaa\nbbb\nccc")
+        (transient-mark-mode 1)
+        (goto-char (point-min))
+        (forward-char 1)                ; mid first line
+        (set-mark (point))
+        (forward-line 1)
+        (forward-char 2)                ; mid second line
+        (activate-mark)
+        (cj/duplicate-line-or-region)
+        (should (string= "aaa\nbbb\naaa\nbbb\nccc" (buffer-string))))
+    (test-duplicate-line-or-region-teardown)))
+
+(ert-deftest test-duplicate-line-or-region-ends-at-bol-no-extra-empty-line ()
+  "A region ending at beginning-of-line duplicates only the fully-included lines.
+The old open-line loop duplicated a stray empty line here."
+  (test-duplicate-line-or-region-setup)
+  (unwind-protect
+      (with-temp-buffer
+        (insert "aaa\nbbb\nccc")
+        (transient-mark-mode 1)
+        (goto-char (point-min))
+        (set-mark (point))
+        (forward-line 2)                ; region "aaa\nbbb\n", ends at bol of ccc
+        (activate-mark)
+        (cj/duplicate-line-or-region)
+        (should (string= "aaa\nbbb\naaa\nbbb\nccc" (buffer-string))))
+    (test-duplicate-line-or-region-teardown)))
+
 (ert-deftest test-duplicate-line-or-region-trailing-whitespace ()
   "Should preserve trailing whitespace."
   (test-duplicate-line-or-region-setup)

@@ -46,7 +46,10 @@
     (when (> (line-number-at-pos) 1)
       (join-line))
     (end-of-line)
-    (newline)))
+    ;; Only add a newline at end of buffer.  Doing it unconditionally left a
+    ;; stray blank line when joining a line in the middle of the buffer.
+    (when (eobp)
+      (newline))))
 
 (defun cj/join-paragraph ()
   "Join all lines in the current paragraph using `cj/join-line-or-region'."
@@ -67,18 +70,27 @@ produce malformed output silently."
                                 (> (length comment-start) 0))))
     (user-error
      "Cannot comment in %s: no comment syntax defined" major-mode))
-  (let* ((b (if (region-active-p) (region-beginning) (line-beginning-position)))
-         (e (if (region-active-p) (region-end) (line-end-position)))
-         (lines (split-string (buffer-substring-no-properties b e) "\n")))
+  ;; Normalize the bounds to whole lines: extend to the start of the first
+  ;; line and the end of the last line the region touches.  The old open-line
+  ;; loop mishandled a region ending mid-line or at beginning-of-line, either
+  ;; splitting a line or duplicating a stray empty line.
+  (let* ((rb (if (region-active-p) (region-beginning) (point)))
+         (re (if (region-active-p) (region-end) (point)))
+         (beg (save-excursion (goto-char rb) (line-beginning-position)))
+         (end (save-excursion
+                (goto-char re)
+                ;; A region ending exactly at beginning-of-line does not
+                ;; include that line, so step back to the previous line's end.
+                (when (and (> re rb) (bolp))
+                  (backward-char))
+                (line-end-position)))
+         (text (buffer-substring-no-properties beg end)))
     (save-excursion
-      (goto-char e)
-      (dolist (line lines)
-        (open-line 1)
-        (forward-line 1)
-        (insert line)
-        ;; If the COMMENT prefix argument is non-nil, comment the inserted text
-        (when comment
-          (comment-region (line-beginning-position) (line-end-position)))))))
+      (goto-char end)
+      (insert "\n" text)
+      ;; Comment the freshly-inserted copy when the COMMENT prefix arg is set.
+      (when comment
+        (comment-region (1+ end) (point))))))
 
 (defun cj/remove-duplicate-lines-region-or-buffer ()
   "Remove duplicate lines in the region or buffer, keeping the first occurrence.
@@ -175,9 +187,9 @@ If not on a delimiter, show a message. Respects the current syntax table."
 		 (cb (char-before))
 		 ;; Check if on opening paren
 		 (open-p (and ca (eq (char-syntax ca) ?\()))
-		 ;; Check if on or just after closing paren
-		 (close-p (or (and ca (eq (char-syntax ca) ?\)))
-					  (and cb (eq (char-syntax cb) ?\))))))
+		 ;; On a closing paren (point sits on it) vs just after one.
+		 (on-close-p (and ca (eq (char-syntax ca) ?\))))
+		 (after-close-p (and cb (eq (char-syntax cb) ?\)))))
 	(cond
 	 ;; Jump forward from opening
 	 (open-p
@@ -185,12 +197,19 @@ If not on a delimiter, show a message. Respects the current syntax table."
 		  (forward-sexp)
 		(scan-error
 		 (message "No matching delimiter: %s" (error-message-string err)))))
-	 ;; Jump backward from closing
-	 (close-p
-	  (condition-case err
-		  (backward-sexp)
-		(scan-error
-		 (message "No matching delimiter: %s" (error-message-string err)))))
+	 ;; Jump backward from closing to its matching opener.  When point is ON
+	 ;; the closer, step past it first so `backward-sexp' spans the whole
+	 ;; expression to the opener rather than the last inner sexp.  Restore
+	 ;; point if the delimiter is unmatched.
+	 ((or on-close-p after-close-p)
+	  (let ((start (point)))
+		(condition-case err
+			(progn
+			  (when on-close-p (forward-char))
+			  (backward-sexp))
+		  (scan-error
+		   (goto-char start)
+		   (message "No matching delimiter: %s" (error-message-string err))))))
 	 ;; Not on delimiter
 	 (t
 	  (message "Point is not on a delimiter.")))))

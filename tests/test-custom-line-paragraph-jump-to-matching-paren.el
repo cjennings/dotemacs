@@ -83,11 +83,11 @@ POINT-POSITION is 1-indexed (1 = first character)."
 ;;; Normal Cases - Backward Jump (Closing to Opening)
 
 (ert-deftest test-jump-paren-backward-simple ()
-  "Should jump backward from closing paren to opening paren."
+  "Should jump from a closing paren to its matching opening paren."
   ;; Text: "(hello)"
   ;; Start at position 7 (on closing paren)
-  ;; Should end at position 2 (after opening paren)
-  (should (= 2 (test-jump-to-matching-paren "(hello)" 7))))
+  ;; Should end at position 1 (the matching opening paren)
+  (should (= 1 (test-jump-to-matching-paren "(hello)" 7))))
 
 (ert-deftest test-jump-paren-backward-nested ()
   "Should jump backward over nested parens from after outer closing."
@@ -97,11 +97,11 @@ POINT-POSITION is 1-indexed (1 = first character)."
   (should (= 1 (test-jump-to-matching-paren "(foo (bar))" 12))))
 
 (ert-deftest test-jump-paren-backward-inner-nested ()
-  "Should jump backward from inner closing paren."
+  "Should jump from an inner closing paren to its matching inner opener."
   ;; Text: "(foo (bar))"
   ;; Start at position 10 (on inner closing paren)
-  ;; Should end at position 7 (after inner opening paren)
-  (should (= 7 (test-jump-to-matching-paren "(foo (bar))" 10))))
+  ;; Should end at position 6 (the matching inner opening paren)
+  (should (= 6 (test-jump-to-matching-paren "(foo (bar))" 10))))
 
 (ert-deftest test-jump-bracket-backward ()
   "Should jump backward from after closing bracket."
@@ -145,11 +145,11 @@ POINT-POSITION is 1-indexed (1 = first character)."
   (should (= 1 (test-jump-to-matching-paren "(hello" 1))))
 
 (ert-deftest test-jump-paren-unmatched-closing ()
-  "Should move to beginning from unmatched closing paren."
+  "Should stay put on an unmatched closing paren (no matching opener)."
   ;; Text: "hello)"
   ;; Start at position 6 (on closing paren with no opening)
-  ;; backward-sexp with unmatched closing paren goes to beginning
-  (should (= 1 (test-jump-to-matching-paren "hello)" 6))))
+  ;; There is no matching opener, so point is restored and stays at 6
+  (should (= 6 (test-jump-to-matching-paren "hello)" 6))))
 
 ;;; Boundary Cases - Empty Delimiters
 
@@ -161,11 +161,11 @@ POINT-POSITION is 1-indexed (1 = first character)."
   (should (= 3 (test-jump-to-matching-paren "()" 1))))
 
 (ert-deftest test-jump-paren-empty-backward ()
-  "Should stay put when on closing paren of empty parens."
+  "Should jump from the closing paren of empty parens to its opener."
   ;; Text: "()"
   ;; Start at position 2 (on closing paren)
-  ;; backward-sexp from closing of empty parens gives an error, so stays at 2
-  (should (= 2 (test-jump-to-matching-paren "()" 2))))
+  ;; Should end at position 1 (the matching opening paren)
+  (should (= 1 (test-jump-to-matching-paren "()" 2))))
 
 ;;; Boundary Cases - Multiple Delimiter Types
 

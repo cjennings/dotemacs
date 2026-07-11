@@ -62,8 +62,8 @@
         (should (string-match-p "line one line two" (buffer-string))))
     (test-join-line-or-region-teardown)))
 
-(ert-deftest test-join-line-or-region-no-region-adds-newline-after-join ()
-  "Without region, should add newline after joining."
+(ert-deftest test-join-line-or-region-no-region-adds-newline-at-end-of-buffer ()
+  "Without region, joining the last line adds a trailing newline at end of buffer."
   (test-join-line-or-region-setup)
   (unwind-protect
       (with-temp-buffer
@@ -71,6 +71,20 @@
         (goto-char (point-max))
         (cj/join-line-or-region)
         (should (string-suffix-p "\n" (buffer-string))))
+    (test-join-line-or-region-teardown)))
+
+(ert-deftest test-join-line-or-region-no-region-mid-buffer-no-blank-line ()
+  "Without region, joining a non-last line must not insert a blank line.
+The trailing newline belongs only at end of buffer; adding it unconditionally
+left a stray blank line between the joined line and the rest of the buffer."
+  (test-join-line-or-region-setup)
+  (unwind-protect
+      (with-temp-buffer
+        (insert "line one\nline two\nline three")
+        (goto-char (point-min))
+        (forward-line 1)                ; point on "line two", not the last line
+        (cj/join-line-or-region)
+        (should (string= "line one line two\nline three" (buffer-string))))
     (test-join-line-or-region-teardown)))
 
 (ert-deftest test-join-line-or-region-with-region-joins-all-lines ()
