@@ -66,8 +66,9 @@
 
 ;;; Boundary Cases
 
-(ert-deftest test-kill-other-window-single-window-should-only-kill-buffer ()
-  "With single window, should only kill the current buffer."
+(ert-deftest test-kill-other-window-single-window-signals-no-other-window ()
+  "Error: with a single window, signal `user-error' and kill nothing.
+There is no other window, so acting would kill the buffer being viewed."
   (test-kill-other-window-setup)
   (unwind-protect
       (let ((buf (generate-new-buffer "*test-single-other*")))
@@ -75,9 +76,9 @@
             (progn
               (switch-to-buffer buf)
               (should (one-window-p))
-              (cj/kill-other-window)
+              (should-error (cj/kill-other-window) :type 'user-error)
               (should (one-window-p))
-              (should-not (buffer-live-p buf)))
+              (should (buffer-live-p buf)))
           (when (buffer-live-p buf) (kill-buffer buf))))
     (test-kill-other-window-teardown)))
 

@@ -65,7 +65,10 @@ regexp in `cj/undead-buffer-regexps'."
                      cj/undead-buffer-regexps))))
 
 (defun cj/kill-buffer-or-bury-alive (buffer)
-  "Kill BUFFER or bury it if it's in `cj/undead-buffer-list'."
+  "Kill BUFFER, or bury it when it is in `cj/undead-buffer-list'.
+With a prefix argument (e.g. \\`C-u'), instead add BUFFER's name to
+`cj/undead-buffer-list' and report it, so the buffer is buried rather than
+killed on later kill attempts."
   (interactive "bBuffer to kill or bury: ")
   (with-current-buffer buffer
 	(if current-prefix-arg
@@ -97,12 +100,15 @@ Undead-buffers are buffers in `cj/undead-buffer-list'."
 ;; Keybinding moved to custom-buffer-file.el (C-; b k)
 
 (defun cj/kill-other-window ()
-  "Delete the next window and kill or bury its buffer."
+  "Delete the next window and kill or bury its buffer.
+Signal a `user-error' in a single-window frame, where there is no other
+window and acting would kill the buffer being viewed."
   (interactive)
+  (when (one-window-p)
+	(user-error "No other window"))
   (other-window 1)
   (let ((buf (current-buffer)))
-	(unless (one-window-p)
-	  (delete-window))
+	(delete-window)
 	(cj/kill-buffer-or-bury-alive buf)))
 (keymap-global-set "M-S-o" #'cj/kill-other-window)
 
