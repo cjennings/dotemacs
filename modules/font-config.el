@@ -210,6 +210,15 @@ the fontset repeatedly is harmless, so it can be called from
 ;; ---------------------------------- Emojify ----------------------------------
 ;; converts emoji identifiers into emojis; allows for easy emoji entry.
 
+(defvar emojify-display-style)          ;; emojify's, forward-declared for the helper
+
+(defun cj/set-emojify-display-style ()
+  "Set `emojify-display-style' to `image' on a graphical frame, else `unicode'.
+Image emoji only render on a GUI frame.  In daemon mode no GUI frame exists when
+emojify loads, so this runs per-frame from `server-after-make-frame-hook';
+otherwise the value would latch to `unicode' and GUI frames never get images."
+  (setq emojify-display-style (if (env-gui-p) 'image 'unicode)))
+
 (use-package emojify
   :defer 1
   :hook ((erc-mode . emojify-mode))
@@ -221,7 +230,11 @@ the fontset repeatedly is harmless, so it can be called from
   :config
   (setq emojify-show-help nil)
   (setq emojify-point-entered-behaviour 'uncover)
-  (setq emojify-display-style (if (env-gui-p) 'image 'unicode))
+  ;; In daemon mode `env-gui-p' is nil at :config time (no GUI frame yet), so
+  ;; recompute the display style per-frame; otherwise set it now.
+  (if (daemonp)
+      (add-hook 'server-after-make-frame-hook #'cj/set-emojify-display-style)
+    (cj/set-emojify-display-style))
   (setq emojify-emoji-styles '(ascii unicode github))
 
   ;; Disable emojify in programming modes
@@ -242,21 +255,24 @@ the fontset repeatedly is harmless, so it can be called from
   (let ((font-list (font-family-list)))
 	(setq font-list (cl-remove-duplicates (cl-sort font-list 'string-lessp :key 'downcase)))
 	(with-current-buffer "*Available Fonts*"
-	  (erase-buffer)
-	  (dolist (font-family font-list)
-		(insert (propertize (concat font-family) 'face '(font-lock-keyword-face (:weight bold))))
-		(insert (concat "\n"(propertize "Regular: ")))
-		(insert (propertize (concat "The quick brown fox jumps over the lazy dog I 1 l ! : ; . , 0 O o [ { ( ) } ] ?")
-							'face `((:family, font-family))))
-		(insert (concat "\n" (propertize "Bold: ")))
-		(insert (propertize (concat "The quick brown fox jumps over the lazy dog I 1 l ! : ; . , 0 O o [ { ( ) } ] ?")
-							'face `((:family, font-family :weight bold))))
-		(insert (concat "\n" (propertize "Italic: ")))
-		(insert (propertize (concat "The quick brown fox jumps over the lazy dog I 1 l ! : ; . , 0 O o [ { ( ) } ] ?")
-							'face `((:family, font-family :slant italic))))
-		(insert (concat "\n\n"))))
-	(move-to-window-line 0)
-	(special-mode)))
+	  ;; The buffer is left in `special-mode' (read-only) after the first call,
+	  ;; so re-running must relax read-only to erase and rewrite it.
+	  (let ((inhibit-read-only t))
+		(erase-buffer)
+		(dolist (font-family font-list)
+		  (insert (propertize (concat font-family) 'face '(font-lock-keyword-face (:weight bold))))
+		  (insert (concat "\n"(propertize "Regular: ")))
+		  (insert (propertize (concat "The quick brown fox jumps over the lazy dog I 1 l ! : ; . , 0 O o [ { ( ) } ] ?")
+							  'face `((:family, font-family))))
+		  (insert (concat "\n" (propertize "Bold: ")))
+		  (insert (propertize (concat "The quick brown fox jumps over the lazy dog I 1 l ! : ; . , 0 O o [ { ( ) } ] ?")
+							  'face `((:family, font-family :weight bold))))
+		  (insert (concat "\n" (propertize "Italic: ")))
+		  (insert (propertize (concat "The quick brown fox jumps over the lazy dog I 1 l ! : ; . , 0 O o [ { ( ) } ] ?")
+							  'face `((:family, font-family :slant italic))))
+		  (insert (concat "\n\n"))))
+	  (move-to-window-line 0)
+	  (special-mode))))
 
 (keymap-global-set "C-z F" #'cj/display-available-fonts)
 

@@ -93,5 +93,47 @@
             ((symbol-function 'set-fontset-font) (lambda (&rest _) t)))
     (should (progn (cj/setup-emoji-fontset) t))))
 
+;;; cj/set-emojify-display-style
+
+(defvar emojify-display-style)
+
+(ert-deftest test-font-config-emojify-display-style-image-on-gui ()
+  "Normal: on a GUI frame the emoji display style is `image'."
+  (skip-unless test-font-config--available)
+  (require 'font-config)
+  (let ((emojify-display-style nil))
+    (cl-letf (((symbol-function 'env-gui-p) (lambda (&rest _) t)))
+      (cj/set-emojify-display-style)
+      (should (eq emojify-display-style 'image)))))
+
+(ert-deftest test-font-config-emojify-display-style-unicode-without-gui ()
+  "Boundary: without a GUI the emoji display style is `unicode'."
+  (skip-unless test-font-config--available)
+  (require 'font-config)
+  (let ((emojify-display-style nil))
+    (cl-letf (((symbol-function 'env-gui-p) (lambda (&rest _) nil)))
+      (cj/set-emojify-display-style)
+      (should (eq emojify-display-style 'unicode)))))
+
+;;; cj/display-available-fonts
+
+(ert-deftest test-font-config-display-available-fonts-second-call-no-error ()
+  "Error: a second invocation does not signal on the read-only buffer."
+  (skip-unless test-font-config--available)
+  (require 'font-config)
+  (cl-letf (((symbol-function 'font-family-list)
+             (lambda (&rest _) '("Fixture Font A" "Fixture Font B"))))
+    (unwind-protect
+        (progn
+          (cj/display-available-fonts)
+          ;; The first call ends in `special-mode' (read-only); the second must
+          ;; not signal when it erases and rewrites the buffer.
+          (cj/display-available-fonts)
+          (with-current-buffer "*Available Fonts*"
+            (should (> (buffer-size) 0))
+            (should buffer-read-only)))
+      (when (get-buffer "*Available Fonts*")
+        (kill-buffer "*Available Fonts*")))))
+
 (provide 'test-font-config)
 ;;; test-font-config.el ends here
