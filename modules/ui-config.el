@@ -29,9 +29,6 @@
 ;;     (i.e., read-only, overwrite, normal)
 ;;   – Option to customize cursor shape with 'cj/set-cursor-type'
 
-;; • Icons
-;;   – Load and enable 'nerd-icons' for UI glyphs
-
 ;; Customize the transparency and cursor color options at the top of this file.
 
 ;;; Code:
@@ -115,12 +112,6 @@ When `cj/enable-transparency' is nil, reset alpha to fully opaque."
 ;; Keep the cursor a solid block -- no blinking (including the initial blink
 ;; burst when entering read-only buffers like EPUBs or vterm).
 (blink-cursor-mode -1)
-
-;; --------------------------------- Nerd Icons --------------------------------
-;; use icons from nerd fonts in the Emacs UI
-
-(use-package nerd-icons
-  :defer t)
 
 (provide 'ui-config)
 ;;; ui-config.el ends here
