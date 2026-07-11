@@ -35,19 +35,19 @@
 ;; ------------------------------ Comment Reformat -----------------------------
 
 (defun cj/comment-reformat ()
-  "Reformat commented text into a single paragraph."
+  "Reformat the commented text in the active region into a single paragraph.
+Signal a `user-error' when no region is active."
   (interactive)
-  (if mark-active
-      (let ((beg (region-beginning))
-            (end (copy-marker (region-end)))
-            (orig-fill-column fill-column))
-        (uncomment-region beg end)
-        (setq fill-column (- fill-column 3))
-        (cj/join-line-or-region)
-        (comment-region beg end)
-        (setq fill-column orig-fill-column )))
-  ;; if no region
-  (message "No region was selected. Select the comment lines to reformat."))
+  (unless (use-region-p)
+    (user-error "No region selected: select the comment lines to reformat"))
+  (let ((beg (region-beginning))
+        (end (copy-marker (region-end)))
+        ;; Dynamically narrow the fill target for the join, then let it
+        ;; restore itself -- an error mid-join no longer strands fill-column.
+        (fill-column (- fill-column 3)))
+    (uncomment-region beg end)
+    (cj/join-line-or-region)
+    (comment-region beg end)))
 
 ;; ======================== Comment Generation Functions =======================
 
@@ -95,6 +95,14 @@ LENGTH is the total width of the line."
                                   text-length
                                   (if (> text-length 0) 2 0))  ; spaces around text
                                2))
+         ;; The right side fills the exact remaining width so the line always
+         ;; reaches LENGTH.  Keying this off text-length parity (as before) left
+         ;; even-length and empty text two columns short, misaligning stacked
+         ;; dividers of differing text lengths.
+         (right-space (- available-width
+                         text-length
+                         (if (> text-length 0) 2 0)
+                         space-on-each-side))
          (min-space 2))
     ;; Validate we have enough space
     (when (< space-on-each-side min-space)
@@ -108,10 +116,8 @@ LENGTH is the total width of the line."
     ;; Text with spaces
     (when (> text-length 0)
       (insert " " text " "))
-    ;; Right decoration (handle odd-length text)
-    (dotimes (_ (if (= (% text-length 2) 0)
-                    (- space-on-each-side 1)
-                  space-on-each-side))
+    ;; Right decoration -- fills the exact remaining width so the line reaches LENGTH.
+    (dotimes (_ right-space)
       (insert decoration-char))
     ;; Comment end
     (when (not (string-empty-p cmt-end))

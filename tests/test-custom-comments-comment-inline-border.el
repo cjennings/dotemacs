@@ -120,6 +120,16 @@ Returns the buffer string for assertions."
   (let ((result (test-inline-border-at-column 0 ";;" "" "=" "" 10)))
     (should (string-match-p ";" result))))
 
+(ert-deftest test-inline-border-elisp-fills-exact-width-all-parities ()
+  "Boundary: even, odd, and empty text all fill LENGTH exactly.
+Even-length and empty text used to come out two columns short because the
+right decoration count keyed off text-length parity instead of the remaining
+width, so stacked dividers of differing text lengths misaligned."
+  (dolist (text '("" "X" "EVEN" "ODD" "Header"))
+    (let* ((result (test-inline-border-at-column 0 ";;" "" "=" text 50))
+           (line (string-trim-right result "\n")))
+      (should (= 50 (length line))))))
+
 (ert-deftest test-inline-border-elisp-text-centering-even ()
   "Should center text properly with even length."
   (let ((result (test-inline-border-at-column 0 ";;" "" "=" "EVEN" 70)))

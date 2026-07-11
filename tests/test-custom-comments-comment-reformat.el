@@ -146,19 +146,12 @@ Insert CONTENT-BEFORE, select all, run cj/comment-reformat, verify EXPECTED-AFTE
     (should (string-match-p ";; Start line 1.*Start line 2" (buffer-string)))))
 
 (ert-deftest test-comment-reformat-elisp-no-region-active ()
-  "Should show message when no region selected."
+  "Should signal `user-error' when no region is selected."
   (with-temp-buffer
     (emacs-lisp-mode)
     (insert ";; Comment line")
     (deactivate-mark)
-    (let ((message-log-max nil)
-          (messages '()))
-      ;; Capture messages
-      (cl-letf (((symbol-function 'message)
-                 (lambda (format-string &rest args)
-                   (push (apply #'format format-string args) messages))))
-        (cj/comment-reformat)
-        (should (string-match-p "No region was selected" (car messages)))))))
+    (should-error (cj/comment-reformat) :type 'user-error)))
 
 (ert-deftest test-comment-reformat-elisp-read-only-buffer ()
   "Should signal error in read-only buffer."
