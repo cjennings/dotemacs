@@ -50,10 +50,10 @@
   :demand t
   :config
   (setq org-agenda-prefix-format '((agenda   . " %i %-25:c%?-12t% s")
-                                   (timeline . "  % s")
                                    (todo     . " %i %-25:c")
                                    (tags     . " %i %-12:c")
                                    (search   . " %i %-12:c")))
+  (setq org-agenda-timegrid-use-ampm t)  ;; show the agenda time grid in 12-hour am/pm
   (setq org-agenda-dim-blocked-tasks 'invisible)
   (setq org-agenda-skip-scheduled-if-done nil)
   (setq org-agenda-remove-tags t)

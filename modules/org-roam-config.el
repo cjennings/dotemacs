@@ -34,7 +34,6 @@
 
 ;; External variables, declared special so byte-compilation doesn't treat them
 ;; as free references/assignments. Owned by org and org-roam-dailies.
-(defvar org-agenda-timegrid-use-ampm)
 (defvar org-roam-dailies-map)
 (defvar org-last-state)
 
@@ -98,7 +97,6 @@ FILETAGS and TITLE must sit on separate lines so Org parses the
          ("C-M-i" . completion-at-point))
   :config
   ;; org-log-done is set once in org-config.el (cj/org-todo-settings).
-  (setq org-agenda-timegrid-use-ampm t)
 
   ;; Don't build the org-refile targets cache here.  org-refile-config.el
   ;; already schedules it on a 5s idle timer; doing it in org-roam's :config
