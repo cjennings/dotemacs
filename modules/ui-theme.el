@@ -88,8 +88,14 @@ If FILENAME isn't readable, return nil."
       (string-trim (buffer-string)))))
 
 (defun cj/theme-write-file-contents (content filename)
-  "Write CONTENT to FILENAME.
-If FILENAME isn't writeable, return nil. If successful, return t."
+  "Write CONTENT to FILENAME, creating its parent directory if absent.
+On a fresh machine the `persist/' directory doesn't exist yet, and
+`file-writable-p' returns nil for a file inside a missing directory, so the
+write would silently fail.  If FILENAME still isn't writeable, return nil.
+If successful, return t."
+  (let ((dir (file-name-directory filename)))
+    (when (and dir (not (file-directory-p dir)))
+      (ignore-errors (make-directory dir t))))
   (when (file-writable-p filename)
     (condition-case err
         (progn

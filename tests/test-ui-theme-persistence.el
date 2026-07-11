@@ -32,6 +32,19 @@
                          "modus-vivendi")))
       (delete-file file))))
 
+(ert-deftest test-ui-theme-write-file-contents-creates-missing-parent-dir ()
+  "Boundary: writing into a not-yet-existing directory creates it first.
+On a fresh machine `persist/' does not exist, and `file-writable-p' returns nil
+for a file inside a missing directory, so the write must create the parent."
+  (let* ((sandbox (make-temp-file "ui-theme-sandbox-" t))
+         (file (expand-file-name "persist/emacs-theme" sandbox)))
+    (unwind-protect
+        (progn
+          (should-not (file-directory-p (file-name-directory file)))
+          (should (cj/theme-write-file-contents "modus-vivendi" file))
+          (should (equal (cj/theme-read-file-contents file) "modus-vivendi")))
+      (delete-directory sandbox t))))
+
 (ert-deftest test-ui-theme-write-file-contents-uses-write-region ()
   "Theme persistence should write directly instead of visiting the file."
   (let ((file (make-temp-file "ui-theme-write-region-"))
