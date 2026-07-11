@@ -13,6 +13,7 @@
 ;;; Code:
 
 (require 'ert)
+(require 'cl-lib)
 (require 'testutil-general)
 (require 'custom-buffer-file)
 
@@ -230,6 +231,25 @@ Note: shr may insert newlines between words for wrapping."
       (let ((eml-file (test-email--create-eml-file test-email--image-only)))
         (with-current-buffer (find-file-noselect eml-file)
           (should-error (cj/view-email-in-buffer) :type 'user-error)
+          (kill-buffer)))
+    (test-email--teardown)))
+
+(ert-deftest test-custom-buffer-file--view-email-no-displayable-destroys-handle ()
+  "Error: the MIME handle is destroyed even when no displayable part is found.
+The `user-error' fires before cleanup, so without `unwind-protect' the dissected
+handle leaks."
+  (test-email--setup)
+  (unwind-protect
+      (let ((eml-file (test-email--create-eml-file test-email--image-only))
+            (destroy-called nil))
+        (with-current-buffer (find-file-noselect eml-file)
+          (let ((real (symbol-function 'mm-destroy-parts)))
+            (cl-letf (((symbol-function 'mm-destroy-parts)
+                       (lambda (handle)
+                         (setq destroy-called t)
+                         (funcall real handle))))
+              (should-error (cj/view-email-in-buffer) :type 'user-error)))
+          (should destroy-called)
           (kill-buffer)))
     (test-email--teardown)))
 

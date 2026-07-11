@@ -51,8 +51,13 @@
 (declare-function ps-print-buffer-with-faces "ps-print")
 (declare-function ps-print-region-with-faces "ps-print")
 
-;; mm-decode for email viewing (mm-handle-type is a macro, needs early require)
-(require 'mm-decode)
+;; mm-handle-type is a macro used in `cj/--email-handle-is-type-p', so mm-decode
+;; is only needed at compile time here; `cj/view-email-in-buffer' requires it at
+;; runtime before any mm-* call, so the eager startup require is unnecessary.
+(eval-when-compile (require 'mm-decode))
+(declare-function mm-dissect-buffer "mm-decode")
+(declare-function mm-insert-part "mm-decode")
+(declare-function mm-destroy-parts "mm-decode")
 (require 'external-open) ;; for cj/xdg-open, cj/open-this-file-with
 (require 'system-lib)   ;; cj/confirm-strong (overwrite confirms), used below
 
@@ -941,19 +946,24 @@ Signals an error if:
   (let* ((handle (mm-dissect-buffer t))
          (displayable-part (cj/--email-find-displayable-part handle))
          (buffer-name (format "*Email: %s*" (file-name-nondirectory buffer-file-name))))
-    (unless displayable-part
-      (user-error "No displayable content found in email"))
-    (with-current-buffer (get-buffer-create buffer-name)
-      (let ((inhibit-read-only t))
-        (erase-buffer)
-        (mm-insert-part displayable-part)
-        (goto-char (point-min))
-        (when (cj/--email-handle-is-type-p displayable-part "text/html")
-          (shr-render-region (point-min) (point-max)))
-        (goto-char (point-min))
-        (special-mode)))
-    (mm-destroy-parts handle)
-    (switch-to-buffer buffer-name)))
+    ;; `mm-dissect-buffer' allocates handles that must be freed even when we
+    ;; bail out early (no displayable part), so destroy them from the cleanup
+    ;; form rather than after the body.
+    (unwind-protect
+        (progn
+          (unless displayable-part
+            (user-error "No displayable content found in email"))
+          (with-current-buffer (get-buffer-create buffer-name)
+            (let ((inhibit-read-only t))
+              (erase-buffer)
+              (mm-insert-part displayable-part)
+              (goto-char (point-min))
+              (when (cj/--email-handle-is-type-p displayable-part "text/html")
+                (shr-render-region (point-min) (point-max)))
+              (goto-char (point-min))
+              (special-mode)))
+          (switch-to-buffer buffer-name))
+      (mm-destroy-parts handle))))
 
 ;; --------------------------- Buffer And File Keymap --------------------------
 
