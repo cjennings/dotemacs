@@ -4,7 +4,8 @@
 ;; Tests for the cj/copy-link-to-buffer-file function from custom-buffer-file.el
 ;;
 ;; This function copies the full file:// path of the current buffer's file to
-;; the kill ring. For non-file buffers, it does nothing (no error).
+;; the kill ring. For non-file buffers, it signals a user-error, matching its
+;; sibling copy commands.
 
 ;;; Code:
 
@@ -58,12 +59,12 @@
     (test-copy-link-teardown)))
 
 (ert-deftest test-copy-link-non-file-buffer ()
-  "Should do nothing for non-file buffer without error."
+  "Error: a non-file buffer signals `user-error' and leaves the kill ring alone."
   (test-copy-link-setup)
   (unwind-protect
       (with-temp-buffer
         (setq kill-ring nil)
-        (cj/copy-link-to-buffer-file)
+        (should-error (cj/copy-link-to-buffer-file) :type 'user-error)
         (should (null kill-ring)))
     (test-copy-link-teardown)))
 
@@ -195,13 +196,13 @@
     (test-copy-link-teardown)))
 
 (ert-deftest test-copy-link-scratch-buffer ()
-  "Should do nothing for *scratch* buffer."
+  "Error: the *scratch* buffer (no file) signals `user-error'."
   (test-copy-link-setup)
   (unwind-protect
       (progn
         (setq kill-ring nil)
         (with-current-buffer "*scratch*"
-          (cj/copy-link-to-buffer-file)
+          (should-error (cj/copy-link-to-buffer-file) :type 'user-error)
           (should (null kill-ring))))
     (test-copy-link-teardown)))
 

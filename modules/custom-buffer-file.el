@@ -241,13 +241,16 @@ blast-radius operation on this map.  The VC path is not double-prompted:
           (cj/--delete-buffer-and-file))))))
 
 (defun cj/copy-link-to-buffer-file ()
-  "Copy the full file:// path of the current buffer's source file to the kill ring."
+  "Copy the full file:// path of the current buffer's source file to the kill ring.
+Signal a `user-error' when the buffer is not visiting a file, matching the
+other copy commands in this module."
   (interactive)
   (let ((file-path (buffer-file-name)))
-    (when file-path
-      (setq file-path (concat "file://" file-path))
-      (kill-new file-path)
-      (message "Copied file link to kill ring: %s" file-path))))
+    (unless file-path
+      (user-error "Buffer is not visiting a file"))
+    (setq file-path (concat "file://" file-path))
+    (kill-new file-path)
+    (message "Copied file link to kill ring: %s" file-path)))
 
 (defvar cj/buffer-source-functions
   '((eww-mode         . (lambda () (eww-current-url)))
