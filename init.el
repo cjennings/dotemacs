@@ -162,6 +162,7 @@
 ;; their own commands via package.el; games-config only supplies malyon's config,
 ;; so load it when malyon loads rather than requiring it at startup.
 (with-eval-after-load 'malyon (require 'games-config))
+(require 'takuzu-config) ;; Takuzu (Binairo) puzzle on M-x takuzu; package in ~/code/takuzu
 
 ;; ------------------------------- Misc Modules --------------------------------
 
