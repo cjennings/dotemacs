@@ -98,8 +98,7 @@ Meta+Shift+letter triggers M-S-letter keybindings."
     (define-key key-translation-map (kbd "M-D") (kbd "M-S-d"))
     (define-key key-translation-map (kbd "M-I") (kbd "M-S-i"))
     (define-key key-translation-map (kbd "M-C") (kbd "M-S-c"))
-    (define-key key-translation-map (kbd "M-B") (kbd "M-S-b"))
-    (define-key key-translation-map (kbd "M-K") (kbd "M-S-k"))))
+    (define-key key-translation-map (kbd "M-B") (kbd "M-S-b"))))
 
 ;; In daemon mode, no frame exists at startup so env-gui-p returns nil.
 ;; Use server-after-make-frame-hook to set up translations when the first

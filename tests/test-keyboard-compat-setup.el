@@ -79,18 +79,20 @@ without the arrow-key decodings.  The GUI half already frame-scopes itself."
        ,@body)))
 
 (defconst test-kbc--meta-shift-letters
-  '(?o ?m ?y ?f ?w ?e ?l ?r ?v ?h ?t ?z ?u ?d ?i ?c ?b ?k)
-  "The 18 letters whose M-<UPPER> form is translated to M-S-<lower> in GUI mode.")
+  '(?o ?m ?y ?f ?w ?e ?l ?r ?v ?h ?t ?z ?u ?d ?i ?c ?b)
+  "The 17 letters whose M-<UPPER> form is translated to M-S-<lower> in GUI mode.")
 
 (ert-deftest test-keyboard-compat-gui-setup-translates-spot-checks ()
-  "Normal: in GUI mode, M-O -> M-S-o and M-K -> M-S-k (sampled)."
+  "Normal: in GUI mode, M-O -> M-S-o and M-B -> M-S-b (sampled).
+M-K is no longer translated: show-kill-ring, its only consumer, was retired."
   (test-kbc--gui t
     (cj/keyboard-compat-gui-setup)
     (should (equal (lookup-key key-translation-map (kbd "M-O")) (kbd "M-S-o")))
-    (should (equal (lookup-key key-translation-map (kbd "M-K")) (kbd "M-S-k")))
-    (should (equal (lookup-key key-translation-map (kbd "M-D")) (kbd "M-S-d")))))
+    (should (equal (lookup-key key-translation-map (kbd "M-B")) (kbd "M-S-b")))
+    (should (equal (lookup-key key-translation-map (kbd "M-D")) (kbd "M-S-d")))
+    (should-not (lookup-key key-translation-map (kbd "M-K")))))
 
-(ert-deftest test-keyboard-compat-gui-setup-translates-all-eighteen ()
+(ert-deftest test-keyboard-compat-gui-setup-translates-all-seventeen ()
   "Normal: every documented M-<UPPER> maps to its M-S-<lower> form."
   (test-kbc--gui t
     (cj/keyboard-compat-gui-setup)
