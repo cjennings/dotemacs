@@ -170,29 +170,40 @@ Added: %U"
 
 (require 'system-lib)
 
+(defun cj/--org-contacts-collect (buffer)
+  "Return an alist of (NAME POSITION INFO) for the contact headings in BUFFER.
+NAME is the heading text, POSITION its buffer position, and INFO the
+EMAIL or PHONE property value (or nil)."
+  (with-current-buffer buffer
+    (org-map-entries
+     (lambda ()
+       (list (nth 4 (org-heading-components))
+             (point)
+             (or (org-entry-get nil "EMAIL")
+                 (org-entry-get nil "PHONE"))))
+     nil nil)))
+
 (defun cj/org-contacts-find ()
-  "Find and open a contact."
+  "Find a contact and jump to its heading.
+Collect the contact headings before prompting, so cancelling the prompt
+leaves point where it was, and jump to the selected heading's stored
+position instead of a text search that could land inside another entry."
   (interactive)
-  (find-file contacts-file)
-  (goto-char (point-min))
-  (let* ((alist (org-map-entries
-                 (lambda ()
-                   (cons (nth 4 (org-heading-components))
-                         (or (org-entry-get nil "EMAIL")
-                             (org-entry-get nil "PHONE"))))
-                 nil (list contacts-file)))
+  (let* ((buf (find-file-noselect contacts-file))
+         (alist (cj/--org-contacts-collect buf))
          (contact (completing-read
                    "Find contact: "
                    (cj/completion-table-annotated
                     'contact
                     (lambda (cand)
-                      (let ((info (cdr (assoc cand alist))))
+                      (let ((info (nth 2 (assoc cand alist))))
                         (when (and info (> (length info) 0))
                           (concat "  " (propertize info 'face
                                                    'completions-annotations)))))
-                    alist))))
-    (goto-char (point-min))
-    (search-forward contact)
+                    alist)
+                   nil t)))
+    (switch-to-buffer buf)
+    (goto-char (nth 1 (assoc contact alist)))
     (org-fold-show-entry)
     (org-reveal)))
 
