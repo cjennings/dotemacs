@@ -134,25 +134,42 @@ With a prefix arg OTHER-DIR, prompt for the directory instead of `drill-dir'."
 
 ;; --------------------------------- Org Drill ---------------------------------
 
-(use-package org-drill
-  ;; :vc (:url "git@cjennings.net:org-drill.git"
-  ;;      :branch "main"
-  ;;      :rev :newest)
-  :load-path "~/code/org-drill"  ;; local dev checkout — switch back to :vc above when done
-  :after (org org-capture)
-  :demand t
-  :commands (org-drill org-drill-resume)
-  :custom
-  (org-drill-leech-failure-threshold 50 "leech cards = 50 wrong answers")
-  (org-drill-leech-method 'warn "leech cards show warnings")
-  (org-drill-use-visible-cloze-face-p t "cloze text shows up in a different font")
-  (org-drill-hide-item-headings-p t "don't show heading text")
-  (org-drill-maximum-items-per-session 100 "drill sessions end after 100 cards")
-  (org-drill-maximum-duration 30 "each drill session can last up to 30 mins")
-  (org-drill-add-random-noise-to-intervals-p t "vary the days to repetition slightly")
-  (org-drill-text-size-during-session 24 "24-point font for comfortable reading")
-  (org-drill-use-variable-pitch t "variable-pitch font for readability")
-  (org-drill-hide-modeline-during-session t "hide the modeline for a cleaner display"))
+(defconst cj/org-drill-dev-checkout (expand-file-name "org-drill" "~/code/")
+  "Local org-drill development checkout, preferred when it exists.")
+
+(defun cj/--org-drill-source-keywords (&optional checkout)
+  "Return the use-package source keywords for org-drill.
+With CHECKOUT (default `cj/org-drill-dev-checkout') an existing directory,
+load from it via :load-path.  Otherwise install from upstream via :vc, so
+drill still loads on a machine without the dev checkout (bare :load-path +
+:demand t would fail to load there)."
+  (let ((dir (or checkout cj/org-drill-dev-checkout)))
+    (if (file-directory-p dir)
+        (list :load-path dir)
+      (list :vc '(:url "git@cjennings.net:org-drill.git"
+                       :branch "main"
+                       :rev :newest)))))
+
+;; `use-package' keywords must be literals at macro-expansion, so the
+;; source keyword is spliced in through `eval' at load time (same idiom as
+;; the computed flycheck checker path elsewhere in the config).
+(eval
+ `(use-package org-drill
+    ,@(cj/--org-drill-source-keywords)
+    :after (org org-capture)
+    :demand t
+    :commands (org-drill org-drill-resume)
+    :custom
+    (org-drill-leech-failure-threshold 50 "leech cards = 50 wrong answers")
+    (org-drill-leech-method 'warn "leech cards show warnings")
+    (org-drill-use-visible-cloze-face-p t "cloze text shows up in a different font")
+    (org-drill-hide-item-headings-p t "don't show heading text")
+    (org-drill-maximum-items-per-session 100 "drill sessions end after 100 cards")
+    (org-drill-maximum-duration 30 "each drill session can last up to 30 mins")
+    (org-drill-add-random-noise-to-intervals-p t "vary the days to repetition slightly")
+    (org-drill-text-size-during-session 24 "24-point font for comfortable reading")
+    (org-drill-use-variable-pitch t "variable-pitch font for readability")
+    (org-drill-hide-modeline-during-session t "hide the modeline for a cleaner display")))
 
 (provide 'org-drill-config)
 ;;; org-drill-config.el ends here.
