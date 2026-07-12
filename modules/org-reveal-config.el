@@ -8,9 +8,10 @@
 ;; Load shape: eager.
 ;; Eager reason: none; presentation export is a command-loaded deferral
 ;;   candidate for Phase 4.
-;; Top-level side effects: package configuration via use-package.
-;; Runtime requires: none (configures packages via use-package).
-;; Direct test load: yes.
+;; Top-level side effects: registers a presentation prefix keymap under
+;;   cj/custom-keymap; package configuration via use-package.
+;; Runtime requires: keybindings.
+;; Direct test load: yes (requires keybindings explicitly).
 ;;
 ;; Integrates ox-reveal for creating reveal.js presentations from Org files.
 ;;
@@ -27,6 +28,8 @@
 ;; - C-; p n : Create new presentation file (prompts for title and location)
 
 ;;; Code:
+
+(require 'keybindings)                   ;; cj/register-prefix-map, cj/custom-keymap
 
 ;; Forward declarations for byte-compiler (ox-reveal loaded via use-package)
 (defvar org-reveal-root)
@@ -238,17 +241,25 @@ reveal.js headers pre-filled."
 
 ;; -------------------------------- Keybindings --------------------------------
 
-(global-set-key (kbd "C-; p SPC") #'cj/reveal-present)
-(global-set-key (kbd "C-; p e") #'cj/reveal-export)
-(global-set-key (kbd "C-; p p") #'cj/reveal-preview-start)
-(global-set-key (kbd "C-; p s") #'cj/reveal-preview-stop)
-(global-set-key (kbd "C-; p h") #'cj/reveal-insert-header)
-(global-set-key (kbd "C-; p H") #'cj/reveal-remove-headers)
-(global-set-key (kbd "C-; p n") #'cj/reveal-new)
+;; A registered prefix keymap, not raw `global-set-key' chains: binding
+;; "C-; p ..." directly depends on keybindings.el having already made "C-;"
+;; a live prefix (otherwise "non-prefix key" errors), while
+;; `cj/register-prefix-map' binds into `cj/custom-keymap' with no load-order
+;; dependency beyond requiring keybindings.
+(defvar-keymap cj/reveal-map
+  :doc "Keymap for reveal.js presentation commands."
+  "SPC" #'cj/reveal-present
+  "e"   #'cj/reveal-export
+  "p"   #'cj/reveal-preview-start
+  "s"   #'cj/reveal-preview-stop
+  "h"   #'cj/reveal-insert-header
+  "H"   #'cj/reveal-remove-headers
+  "n"   #'cj/reveal-new)
+
+(cj/register-prefix-map "p" cj/reveal-map "presentations")
 
 (with-eval-after-load 'which-key
   (which-key-add-key-based-replacements
-    "C-; p" "presentations"
     "C-; p SPC" "present current buffer"
     "C-; p e" "export & open"
     "C-; p p" "start live preview"
