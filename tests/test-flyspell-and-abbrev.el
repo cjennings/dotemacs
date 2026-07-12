@@ -97,5 +97,27 @@
         (cj/flyspell-on-for-buffer-type)))
     (should mode-called)))
 
+;; --------------------------- cj/flyspell-then-abbrev -------------------------
+
+(ert-deftest test-flyspell-then-abbrev-enables-mode-not-bare-rescan ()
+  "Regression: cj/flyspell-then-abbrev routes the initial scan through
+cj/flyspell-on-for-buffer-type, which enables flyspell-mode so it sticks.
+The bare flyspell-buffer it replaced never turned the mode on, so the guard
+never tripped and every C-' press re-scanned the whole buffer (O(buffer) per
+keypress in large files)."
+  (let (on-called scan-called)
+    (cl-letf (((symbol-function 'cj/--require-spell-checker) #'ignore)
+              ((symbol-function 'cj/flyspell-on-for-buffer-type)
+               (lambda () (setq on-called t)))
+              ((symbol-function 'flyspell-buffer)
+               (lambda (&rest _) (setq scan-called t)))
+              ((symbol-function 'cj/flyspell-goto-previous-misspelling)
+               (lambda (&rest _) nil)))
+      (with-temp-buffer
+        (text-mode)
+        (cj/flyspell-then-abbrev nil)))
+    (should on-called)
+    (should-not scan-called)))
+
 (provide 'test-flyspell-and-abbrev)
 ;;; test-flyspell-and-abbrev.el ends here

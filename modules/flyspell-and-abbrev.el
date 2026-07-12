@@ -197,9 +197,10 @@ Without prefix argument, it's created in the global abbrev table.
 Press C-' repeatedly to step through misspellings one at a time."
   (interactive "P")
   (cj/--require-spell-checker)
-  ;; Run flyspell-buffer only if buffer hasn't been checked yet
-  (unless (bound-and-true-p flyspell-mode)
-    (flyspell-buffer))
+  ;; Enable Flyspell for the buffer type so the mode sticks and the buffer is
+  ;; scanned once.  A bare flyspell-buffer here never turned the mode on, so
+  ;; the guard never tripped and every C-' press re-scanned the whole buffer.
+  (cj/flyspell-on-for-buffer-type)
 
   (let ((misspelled-word (cj/flyspell-goto-previous-misspelling (point))))
     (if (not misspelled-word)
