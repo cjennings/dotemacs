@@ -186,22 +186,6 @@ Return the yanked content as a string so templates can insert it."
     ;; extract the webpage content from the kill ring
     (car kill-ring)))
 
-;; ----------------------------- Webclipper Keymap -----------------------------
-
-;; keymaps shouldn't be required for webclipper
-;; Setup keymaps
-;;
-;; (defun cj/webclipper-setup-keymaps ()
-;;   "Setup webclipper keymaps."
-;;   (define-prefix-command 'cj/webclipper-map nil
-;;                          "Keymap for weblipper operations.")
-;;   (define-key cj/custom-keymap "c" 'cj/webclipper-map)
-;;   (define-key cj/webclipper-map "n" 'cj/move-org-branch-to-roam))
-
-;; ;; Call keymap setup if cj/custom-keymap is already defined
-;; (when (boundp 'cj/custom-keymap)
-;;   (cj/webclipper-setup-keymaps))
-
 ;; Register protocol handler early for external calls
 (with-eval-after-load 'org-protocol
   (unless (assoc "webclip" org-protocol-protocol-alist)
@@ -210,10 +194,6 @@ Return the yanked content as a string so templates can insert it."
                    :protocol "webclip"
                    :function cj/org-protocol-webclip
                    :kill-client t))))
-
-;; (with-eval-after-load 'cj/custom-keymap
-;;   (require 'org-webclipper)
-;;   (cj/webclipper-setup-keymaps))
 
 (provide 'org-webclipper)
 ;;; org-webclipper.el ends here
