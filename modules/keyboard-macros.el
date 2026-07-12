@@ -43,7 +43,7 @@
 ;;; Code:
 
 (require 'subr-x) ;; for string-trim
-(eval-when-compile (require 'user-constants))
+(require 'user-constants) ;; for macros-file, read at runtime
 
 (defvar cj/macros-loaded nil
   "Whether saved keyboard macros have been loaded from file.")
@@ -130,15 +130,7 @@ With prefix arg, open the macros file for editing after saving."
   (keymap-global-set "C-<f3>" #'cj/kbd-macro-start-or-end)
   (keymap-global-set "<f3>"   #'call-last-kbd-macro)
   (keymap-global-set "M-<f3>" #'cj/save-maybe-edit-macro)
-  (keymap-global-set "s-<f3>" #'cj/open-macros-file)
-  (add-hook 'kill-emacs-hook #'cj/save-last-kbd-macro-on-exit))
-
-;; Add hook to save any unnamed macros on exit if desired
-(defun cj/save-last-kbd-macro-on-exit ()
-  "Save the last keyboard macro before exiting Emacs if it's not saved."
-  (when last-kbd-macro
-    (when (y-or-n-p "Save last keyboard macro before exiting? ")
-      (call-interactively #'cj/save-maybe-edit-macro))))
+  (keymap-global-set "s-<f3>" #'cj/open-macros-file))
 
 ;; Auto-call setup after init
 (if after-init-time
