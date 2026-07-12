@@ -253,5 +253,26 @@ an empty string, not an error."
   (let ((cj/lipsum-chain (cj/markov-chain-create)))
     (should (equal "" (cj/lipsum-title)))))
 
+;;; cj/lipsum entry point
+
+(ert-deftest test-lipsum-returns-string-with-populated-chain ()
+  "Normal: cj/lipsum returns a non-empty string when the chain is trained."
+  (let ((cj/lipsum-chain
+         (test-learn "Lorem ipsum dolor sit amet consectetur adipiscing elit")))
+    (let ((result (cj/lipsum 5)))
+      (should (stringp result))
+      (should (> (length result) 0)))))
+
+(ert-deftest test-lipsum-empty-chain-signals-user-error ()
+  "Error: cj/lipsum on an empty chain signals a user-error naming the fix,
+rather than returning nil and letting cj/lipsum-insert do (insert nil),
+which raises a cryptic wrong-type error far from the cause."
+  (let ((cj/lipsum-chain (cj/markov-chain-create)))
+    (should-error (cj/lipsum 5) :type 'user-error)))
+
+(ert-deftest test-lipsum-is-interactive-command ()
+  "Normal: cj/lipsum is a command, as its Commentary (M-x cj/lipsum) advertises."
+  (should (commandp 'cj/lipsum)))
+
 (provide 'test-lorem-optimum)
 ;;; test-lorem-optimum.el ends here

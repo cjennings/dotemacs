@@ -219,8 +219,22 @@ Builds and caches the keys list lazily if not already cached."
   (message "Lorem-optimum learned from file: %s" file))
 
 (defun cj/lipsum (n)
-  "Return N words of lorem ipsum."
-  (cj/markov-generate cj/lipsum-chain n '("Lorem" "ipsum")))
+  "Return N words of lorem ipsum.
+Interactively, prompt for N and echo the generated words.
+
+Signal a `user-error' when the Markov chain is empty (for example when the
+training file `cj/lipsum-default-file' is missing).  Without this, callers
+such as `cj/lipsum-insert' would insert nil and raise a cryptic wrong-type
+error far from the cause.  Train the chain with `cj/lipsum-learn-file',
+`cj/lipsum-learn-buffer', or `cj/lipsum-learn-region', or restore the file."
+  (interactive "nNumber of words: ")
+  (let ((text (cj/markov-generate cj/lipsum-chain n '("Lorem" "ipsum"))))
+    (unless (and (stringp text) (not (string-empty-p text)))
+      (user-error "Lorem-optimum chain is empty; train it with cj/lipsum-learn-file or restore %s"
+                  cj/lipsum-default-file))
+    (when (called-interactively-p 'any)
+      (message "%s" text))
+    text))
 
 (defun cj/lipsum-insert (n)
   "Insert N words of lorem ipsum at point."
