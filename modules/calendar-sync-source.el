@@ -138,39 +138,25 @@ Checks `cj/debug-modules' for symbol `calendar-sync' or t (all)."
 
 ;;; .ics Fetch
 
-(defun calendar-sync--fetch-ics (url callback)
-  "Fetch .ics file from URL asynchronously using curl.
-Calls CALLBACK with the .ics content as string (normalized to Unix line endings)
-or nil on error. CALLBACK signature: (lambda (content) ...).
-
-The fetch happens asynchronously and doesn't block Emacs. The callback is
-invoked when the fetch completes, either successfully or with an error."
-  (condition-case err
-      (let ((buffer (generate-new-buffer " *calendar-sync-curl*")))
-        (make-process
-         :name "calendar-sync-curl"
-         :buffer buffer
-         :command (list "curl" "-s" "-L" "--fail"
-                        "--connect-timeout" "10"
-                        "--max-time" (number-to-string calendar-sync-fetch-timeout)
-                        url)
-         :sentinel
-         (lambda (process event)
-           (when (memq (process-status process) '(exit signal))
-             (let ((buf (process-buffer process)))
-               (when (buffer-live-p buf)
-                 (let ((content
-                        (with-current-buffer buf
-                          (if (and (eq (process-status process) 'exit)
-                                   (= (process-exit-status process) 0))
-                              (calendar-sync--normalize-line-endings (buffer-string))
-                            (calendar-sync--log-silently "calendar-sync: Fetch error: curl failed: %s" (string-trim event))
-                            nil))))
-                   (kill-buffer buf)
-                   (funcall callback content))))))))
-    (error
-     (calendar-sync--log-silently "calendar-sync: Fetch error: %s" (error-message-string err))
-     (funcall callback nil))))
+(defun calendar-sync--fetch-sentinel-finish (success event temp-file buffer callback)
+  "Finish an async .ics fetch.
+SUCCESS is non-nil when curl exited cleanly, EVENT the process event
+string, TEMP-FILE the curl output path, BUFFER the process buffer, and
+CALLBACK the continuation.  On success CALLBACK receives TEMP-FILE (the
+caller owns deleting it); on failure the error is logged, TEMP-FILE is
+removed, and CALLBACK receives nil.  Extracted from the sentinel so the
+success, failure, and cleanup branches are unit-testable without a live
+curl process."
+  (when (buffer-live-p buffer)
+    (unless success
+      (calendar-sync--log-silently "calendar-sync: Fetch error: curl failed: %s"
+                                   (string-trim event)))
+    (kill-buffer buffer))
+  (if success
+      (funcall callback temp-file)
+    (when (file-exists-p temp-file)
+      (delete-file temp-file))
+    (funcall callback nil)))
 
 (defun calendar-sync--fetch-ics-file (url callback)
   "Fetch .ics from URL to a temp file asynchronously.
@@ -190,19 +176,10 @@ owns deleting the temp file after a successful callback."
          :sentinel
          (lambda (process event)
            (when (memq (process-status process) '(exit signal))
-             (let ((buf (process-buffer process))
-                   (success (and (eq (process-status process) 'exit)
-                                 (= (process-exit-status process) 0))))
-               (when (buffer-live-p buf)
-                 (unless success
-                   (calendar-sync--log-silently "calendar-sync: Fetch error: curl failed: %s"
-                                                (string-trim event)))
-                 (kill-buffer buf))
-               (if success
-                   (funcall callback temp-file)
-                 (when (file-exists-p temp-file)
-                   (delete-file temp-file))
-                 (funcall callback nil)))))))
+             (calendar-sync--fetch-sentinel-finish
+              (and (eq (process-status process) 'exit)
+                   (= (process-exit-status process) 0))
+              event temp-file (process-buffer process) callback)))))
     (error
      (calendar-sync--log-silently "calendar-sync: Fetch error: %s" (error-message-string err))
      (funcall callback nil))))
