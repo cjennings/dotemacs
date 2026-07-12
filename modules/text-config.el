@@ -69,7 +69,7 @@
 ;; edit selection in new buffer, C-c to finish; replaces with modifications
 
 (use-package edit-indirect
-  :bind ("M-S-i" . edit-indirect-region))  ;; was M-I
+  :bind ("M-I" . edit-indirect-region))
 
 ;; ------------------------------ Prettify Symbols -----------------------------
 ;; replacing the word l-a-m-b-d-a with a symbol, just because
@@ -118,8 +118,8 @@ everything else, such as `lambda', use the standard boundary check."
 ;; an easy way to enter diacritical marks
 
 (use-package accent
-  :commands accent-company
-  :bind ("C-`" . accent-company))
+  :commands accent-menu
+  :bind ("C-`" . accent-menu))
 
 (provide 'text-config)
 ;;; text-config.el ends here

@@ -37,5 +37,18 @@ standard boundary check."
       (should (eq (cj/prettify-compose-block-markers-p start end "lambda")
                   (prettify-symbols-default-compose-p start end "lambda"))))))
 
+(ert-deftest test-text-config-edit-indirect-bound-on-reachable-key ()
+  "Error/regression: edit-indirect-region is bound on M-I -- the event
+Meta+Shift+i actually produces -- not the unreachable M-S-i, which no
+keypress generates so it silently fell through to M-i tab-to-tab-stop."
+  (should (eq (key-binding (kbd "M-I")) #'edit-indirect-region))
+  (should-not (eq (key-binding (kbd "M-S-i")) #'edit-indirect-region)))
+
+(ert-deftest test-text-config-accent-uses-completion-agnostic-backend ()
+  "Regression: C-` invokes accent-menu, which reads through the minibuffer
+and so survives a Company->Corfu migration, rather than accent-company,
+whose company backend would break silently once Company is gone."
+  (should (eq (key-binding (kbd "C-`")) #'accent-menu)))
+
 (provide 'test-text-config)
 ;;; test-text-config.el ends here
