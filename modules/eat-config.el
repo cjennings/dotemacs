@@ -110,6 +110,102 @@ not recognize (which would later trip (cl-assert charset) on write)."
 (with-eval-after-load 'eat
   (advice-add 'eat--t-set-charset :filter-args #'cj/--eat-charset-never-nil))
 
+;; EAT 0.9.4 XTWINOPS gap.  tmux 3.7b has native Sixel but refuses to emit it
+;; until it learns the client's cell pixel size, which it asks for with the
+;; XTWINOPS window-size requests CSI 14 t (text area in pixels), CSI 16 t (cell
+;; size in pixels) and CSI 18 t (text area in characters).  EAT's parser
+;; (eat--t-handle-output) has no `t' case, so it silently drops these -- tmux
+;; never learns the geometry and images never render.  We can't add the parser
+;; clause without forking the vendored 541-line pcase (see the charset note
+;; above), so answer the query from a `:before' advice instead: eat--t-handle-output
+;; is called inside (eat--t-with-env terminal ...), which dynamically binds
+;; eat--t-term, so the advice can read the live display + cell dimensions and
+;; write the report back through the terminal's own input function.  The reply
+;; format matches EAT's existing XTSMGRAPHICS reply (same char-width/height and
+;; display fields).  Verified live on ratio 2026-07-13: images render and
+;; persist across window switches, scrolling, and resizing.  An upstream-shaped
+;; patch (a real parser clause) is kept locally for a PR to akib/emacs-eat.
+;; The advice does NOT become a no-op when upstream
+;; ships that clause: it runs :before the parser and scans raw output, so
+;; queries always survive to it, and two answerers means tmux gets a double
+;; reply -- it treats the second as unrequested input and forwards the raw
+;; escape bytes into the pane as keystrokes (this killed an agent session on
+;; 2026-07-13 when a second patched parser was live in the daemon).  The
+;; advice-add is therefore guarded: it installs only while EAT itself cannot
+;; answer, and stays out the day the upstream clause (which defines
+;; eat--t-send-window-size-report) lands.
+
+(declare-function eat--t-handle-output "eat")
+(declare-function eat--t-term-display "eat")
+(declare-function eat--t-term-input-fn "eat")
+(declare-function eat--t-term-char-width "eat")
+(declare-function eat--t-term-char-height "eat")
+(declare-function eat--t-disp-width "eat")
+(declare-function eat--t-disp-height "eat")
+(defvar eat--t-term)
+
+(defun cj/--eat-xtwinops-report (n cols rows char-width char-height)
+  "Return the XTWINOPS reply string for window-size request N, or nil.
+COLS and ROWS are the display size in characters; CHAR-WIDTH and
+CHAR-HEIGHT are the pixel size of one cell.  N is 14 (text area in
+pixels), 16 (cell size in pixels), or 18 (text area in characters); any
+other N returns nil so the request goes unanswered."
+  (pcase n
+    (14 (format "\e[4;%d;%dt" (* rows char-height) (* cols char-width)))
+    (16 (format "\e[6;%d;%dt" char-height char-width))
+    (18 (format "\e[8;%d;%dt" rows cols))))
+
+(defun cj/--eat-xtwinops-queries (output)
+  "Return the XTWINOPS request numbers found in terminal OUTPUT, in order.
+Matches only the bare CSI 14/16/18 t window-size requests EAT drops -- a
+parametrized form (e.g. CSI 3 ; 14 t) or a different CSI t op (e.g. the
+CSI 24 t resize) is not one we answer and is left alone.  Returns nil
+when OUTPUT carries no such request.  OUTPUT is one pty chunk, so a
+query split across two reads would be missed; in practice tmux writes
+the few-byte query atomically, so it arrives whole."
+  (let ((start 0) (found '()))
+    (while (string-match "\e\\[\\(14\\|16\\|18\\)t" output start)
+      (push (string-to-number (match-string 1 output)) found)
+      (setq start (match-end 0)))
+    (nreverse found)))
+
+(defun cj/--eat-send-window-size-report (n)
+  "Answer XTWINOPS window-size request N on the current EAT terminal.
+Runs with `eat--t-term' dynamically bound (inside `eat--t-with-env'),
+reads the live display and cell dimensions, and writes the report back
+through the terminal's own input function.  A request number EAT does
+not report on (`cj/--eat-xtwinops-report' returns nil) is ignored."
+  (let* ((disp (eat--t-term-display eat--t-term))
+         (reply (cj/--eat-xtwinops-report
+                 n
+                 (eat--t-disp-width disp)
+                 (eat--t-disp-height disp)
+                 (eat--t-term-char-width eat--t-term)
+                 (eat--t-term-char-height eat--t-term))))
+    (when reply
+      (funcall (eat--t-term-input-fn eat--t-term) eat--t-term reply))))
+
+(defun cj/--eat-answer-xtwinops (output)
+  "`:before' advice for `eat--t-handle-output'.
+Answer every XTWINOPS window-size request in OUTPUT that EAT 0.9.4 would
+otherwise drop, so tmux learns the cell pixel size it needs before it
+will emit Sixel.  Runs inside `eat--t-with-env', so `eat--t-term' is
+bound for the responder."
+  (mapc #'cj/--eat-send-window-size-report (cj/--eat-xtwinops-queries output)))
+
+(defun cj/--eat-xtwinops-advice-needed-p ()
+  "Return non-nil when EAT itself cannot answer XTWINOPS window-size queries.
+EAT 0.9.4 has no CSI t parser clause, so the advice must answer them.
+An EAT that ships the clause defines `eat--t-send-window-size-report'
+(the function the upstream-shaped parser patch adds); with that present
+the advice must stay out, or every query gets two replies and tmux
+types the second one's raw bytes into the pane."
+  (not (fboundp 'eat--t-send-window-size-report)))
+
+(with-eval-after-load 'eat
+  (when (cj/--eat-xtwinops-advice-needed-p)
+    (advice-add 'eat--t-handle-output :before #'cj/--eat-answer-xtwinops)))
+
 ;; ------------------------------- eat package ---------------------------------
 
 (defun cj/--eat-clear-mode-line-process ()
