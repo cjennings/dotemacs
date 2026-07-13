@@ -195,10 +195,16 @@ Handles both simple values and values with parameters like TZID."
           (pos 0))
       ;; Find all EXDATE lines.  One line may carry several comma-separated
       ;; datetimes (RFC 5545); split them so each is excluded individually.
+      ;; Capture the match end BEFORE split-string: its internal matching
+      ;; clobbers the match data, and reading (match-end 0) afterwards made
+      ;; pos jump backwards to a comma offset inside the value -- re-matching
+      ;; the same line forever and growing the list until the OOM killer
+      ;; intervened (took two agent sessions down on 2026-07-13).
       (while (string-match "^EXDATE[^:\n]*:\\([^\n]+\\)" event-str pos)
-        (dolist (val (split-string (match-string 1 event-str) "," t))
-          (push val exdates))
-        (setq pos (match-end 0)))
+        (let ((line-end (match-end 0)))
+          (dolist (val (split-string (match-string 1 event-str) "," t))
+            (push val exdates))
+          (setq pos line-end)))
       (nreverse exdates))))
 
 (defun calendar-sync--get-exdate-line (event-str exdate-value)
