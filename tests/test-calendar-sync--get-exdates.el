@@ -103,6 +103,35 @@ END:VEVENT"))
       (should (= 1 (length result)))
       (should (string= "20260210T130000" (car result))))))
 
+(ert-deftest test-calendar-sync--get-exdates-boundary-comma-separated-returns-all ()
+  "Boundary: comma-separated EXDATE values on one line are each returned.
+RFC 5545 permits multiple datetimes per EXDATE line; missing the split
+drops those exclusions, so cancelled instances resurrect in the agenda."
+  (let ((event "BEGIN:VEVENT
+DTSTART:20260203T130000
+RRULE:FREQ=WEEKLY;BYDAY=TU
+EXDATE:20260210T130000,20260217T130000,20260224T130000
+SUMMARY:Weekly Meeting
+END:VEVENT"))
+    (let ((result (calendar-sync--get-exdates event)))
+      (should (= 3 (length result)))
+      (should (member "20260210T130000" result))
+      (should (member "20260217T130000" result))
+      (should (member "20260224T130000" result)))))
+
+(ert-deftest test-calendar-sync--get-exdates-boundary-comma-separated-with-tzid ()
+  "Boundary: comma-separated EXDATE values sharing a TZID are each returned."
+  (let ((event "BEGIN:VEVENT
+DTSTART;TZID=America/New_York:20260203T130000
+RRULE:FREQ=WEEKLY;BYDAY=TU
+EXDATE;TZID=America/New_York:20260210T130000,20260217T130000
+SUMMARY:Weekly Meeting
+END:VEVENT"))
+    (let ((result (calendar-sync--get-exdates event)))
+      (should (= 2 (length result)))
+      (should (member "20260210T130000" result))
+      (should (member "20260217T130000" result)))))
+
 ;;; Error Cases
 
 (ert-deftest test-calendar-sync--get-exdates-error-empty-string-returns-nil ()

@@ -193,21 +193,24 @@ Handles both simple values and values with parameters like TZID."
   (when (and event-str (stringp event-str) (not (string-empty-p event-str)))
     (let ((exdates '())
           (pos 0))
-      ;; Find all EXDATE lines
+      ;; Find all EXDATE lines.  One line may carry several comma-separated
+      ;; datetimes (RFC 5545); split them so each is excluded individually.
       (while (string-match "^EXDATE[^:\n]*:\\([^\n]+\\)" event-str pos)
-        (push (match-string 1 event-str) exdates)
+        (dolist (val (split-string (match-string 1 event-str) "," t))
+          (push val exdates))
         (setq pos (match-end 0)))
       (nreverse exdates))))
 
 (defun calendar-sync--get-exdate-line (event-str exdate-value)
   "Find the full EXDATE line containing EXDATE-VALUE from EVENT-STR.
 Returns the complete line like
-`EXDATE;TZID=America/New_York:20260210T130000'.
-Returns nil if not found."
+`EXDATE;TZID=America/New_York:20260210T130000'.  Matches the value anywhere
+in the value list, so a comma-separated line's shared TZID reaches every
+value on it.  Returns nil if not found."
   (when (and event-str (stringp event-str) exdate-value)
-    (let ((pattern (format "^\\(EXDATE[^:]*:%s\\)" (regexp-quote exdate-value))))
+    (let ((pattern (format "^EXDATE[^:\n]*:[^\n]*%s" (regexp-quote exdate-value))))
       (when (string-match pattern event-str)
-        (match-string 1 event-str)))))
+        (match-string 0 event-str)))))
 
 (defalias 'calendar-sync--parse-exdate #'calendar-sync--parse-ics-datetime
   "Parse EXDATE value. See `calendar-sync--parse-ics-datetime'.")
