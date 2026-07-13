@@ -437,6 +437,55 @@ never split the small floating frame."
              '(cj/org-capture--popup-display-condition
                cj/org-capture--display-sole-window))
 
+;; A fresh "org-capture" popup opens showing the daemon's last buffer (see the
+;; comment above), and only the capture UI + the reap-on-finalize hook clear it.
+;; If a capture aborts before its UI paints (a C-g, an erroring template, a path
+;; that skips `cj/quick-capture'), the popup lingers showing whatever was current
+;; -- and if that was a live terminal (an eat/vterm Claude Code buffer), eat
+;; sizes the terminal to that small popup window and clamps the real frame down
+;; to the popup's rows.  These two guards keep the popup from ever holding a
+;; size-sensitive live buffer: it only ever shows capture UI or *scratch*.
+
+(defun cj/org-capture--neutralize-frame (frame)
+  "Point every non-capture-UI window of the \"org-capture\" popup FRAME at
+*scratch*.  Capture UI (the *Org Select* menu, a CAPTURE-* buffer) is spared, so
+this never disturbs a live capture; it only evicts a stray live buffer (the
+daemon's last buffer on open, or a buffer restored on abort) that would
+otherwise mirror the popup's size onto its source buffer.  Idempotent: a window
+already on *scratch* is left alone, so it can't loop through the
+`window-buffer-change-functions' it fires."
+  (when (and (frame-live-p frame)
+             (equal (frame-parameter frame 'name) "org-capture"))
+    (dolist (w (window-list frame 'no-minibuf))
+      (let ((name (buffer-name (window-buffer w))))
+        (unless (or (cj/org-capture--popup-sole-window-p "org-capture" name)
+                    (equal name "*scratch*"))
+          (set-window-buffer w (get-buffer-create "*scratch*")))))))
+
+;; Guard 1 (root cause): neutralize the popup the instant it is created, before
+;; any capture UI paints, so it never opens mirroring the daemon's last buffer.
+(defun cj/org-capture--neutralize-new-frame (frame)
+  "Neutralize a freshly-made \"org-capture\" popup FRAME on creation.
+See `cj/org-capture--neutralize-frame'."
+  (cj/org-capture--neutralize-frame frame))
+
+(add-hook 'after-make-frame-functions #'cj/org-capture--neutralize-new-frame)
+
+;; Guard 2 (safety net): catch any path the finalize reap misses.  If a live
+;; buffer is displayed in the popup after creation (an aborted capture restoring
+;; the previous buffer, a stray `switch-to-buffer'), evict it at once.
+(defun cj/org-capture--neutralize-on-buffer-change (frame-or-window)
+  "Neutralize the \"org-capture\" popup after any buffer change in FRAME-OR-WINDOW.
+`window-buffer-change-functions' passes a frame (global hook) or a window
+(buffer-local); handle both."
+  (let ((frame (if (windowp frame-or-window)
+                   (window-frame frame-or-window)
+                 frame-or-window)))
+    (cj/org-capture--neutralize-frame frame)))
+
+(add-hook 'window-buffer-change-functions
+          #'cj/org-capture--neutralize-on-buffer-change)
+
 ;; The desktop quick-capture popup is launched globally (no browser selection,
 ;; no mu4e message, no pdf/epub buffer), so the context-dependent templates make
 ;; no sense there.  `cj/quick-capture' captures a single Task straight into the
