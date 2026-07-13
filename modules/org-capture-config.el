@@ -157,6 +157,8 @@ re-scanning large target files after the first successful lookup."
   (interactive)
   (user-error "Key disabled during capture -- finalize with C-c C-c or abort with C-c C-k"))
 
+(defvar org-capture-mode-map)
+
 (with-eval-after-load 'org-capture
   (dolist (key '("<f1>" "<f10>" "<f11>" "<f12>" "M-SPC"))
     (keymap-set org-capture-mode-map key #'cj/--org-capture-blocked-key)))
@@ -381,10 +383,10 @@ A popup still mid-capture has capture UI and is not reapable, so it is spared."
 (defun cj/org-capture-reap-popup-frames ()
   "Delete every quick-capture popup frame that no longer shows capture UI.
 Reaps across ALL frames, not just the selected one: a capture that finalizes,
-aborts, or errors while the daemon's selected frame is something else (the common
-multi-frame case) still cleans up its \"org-capture\" popup, while a popup
-mid-capture is spared.  Never deletes the last remaining frame.  Safe to call
-anytime — bound to nothing, run via M-x when a stray popup needs clearing."
+aborts, or errors while the daemon's selected frame is something else (the
+common multi-frame case) still cleans up its \"org-capture\" popup, while a
+popup mid-capture is spared.  Never deletes the last remaining frame.  Safe to
+call anytime — bound to nothing, run via M-x when a stray popup needs clearing."
   (interactive)
   (dolist (f (frame-list))
     (when (and (frame-live-p f)
@@ -395,9 +397,7 @@ anytime — bound to nothing, run via M-x when a stray popup needs clearing."
                         (window-list f 'no-minibuf))))
       (delete-frame f))))
 
-;; Reap on every capture exit.  `remove-hook' first so a live module reload swaps
-;; the retired narrow (selected-frame) handler for this one without leaving both.
-(remove-hook 'org-capture-after-finalize-hook #'cj/org-capture--delete-popup-frame)
+;; Reap on every capture exit.
 (add-hook 'org-capture-after-finalize-hook #'cj/org-capture-reap-popup-frames)
 
 ;; The popup opens a fresh emacsclient frame still showing the daemon's last
