@@ -119,8 +119,12 @@
 (use-package package-lint
   :commands (package-lint-current-buffer package-lint-batch-and-exit))
 
+;; Load when flycheck does.  The old `:after (flycheck package-lint)' never
+;; fired: nothing loads package-lint on its own (it is flycheck-package's
+;; dependency, pulled in by its require), so the setup silently never ran
+;; and elisp buffers never got the package-lint checker.
 (use-package flycheck-package
-  :after (flycheck package-lint)
+  :after flycheck
   :config
   (flycheck-package-setup))
 
