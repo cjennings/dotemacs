@@ -62,9 +62,14 @@ back to the built-in `json-pretty-print-buffer-ordered'."
 ;; interactive jq queries against JSON buffers
 
 (use-package jq-mode
-  :defer t
-  :bind (:map json-ts-mode-map
-              ("C-c C-q" . jq-interactively)))
+  :defer t)
+
+;; Bind on json-ts-mode's own map, keyed to its load.  The old
+;; :bind (:map json-ts-mode-map ...) inside the jq-mode use-package deferred
+;; the binding to jq-mode's load -- which nothing triggered, so the key was
+;; dead.  jq-interactively is autoloaded, so pressing the key loads jq-mode.
+(with-eval-after-load 'json-ts-mode
+  (keymap-set json-ts-mode-map "C-c C-q" #'jq-interactively))
 
 (provide 'prog-json)
 ;;; prog-json.el ends here.
