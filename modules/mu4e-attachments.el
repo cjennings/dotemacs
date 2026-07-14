@@ -100,10 +100,20 @@ size; an unknown candidate annotates as nil so marginalia shows nothing."
     (require 'mu4e-mime-parts)))
 
 (defun cj/mu4e--save-attachment-part (part directory)
-  "Save attachment PART to DIRECTORY and return the final path."
+  "Save attachment PART to DIRECTORY and return the final path.
+Signals a `user-error' when PART's MIME handle is stale: a handle's car
+is the buffer holding the part's bytes, and viewing another message kills
+it, so saving through it would error deep in mm-decode or write another
+message's content.  The staleness check runs before
+`cj/mu4e--ensure-attachment-save-functions', like the no-handle check."
   (let ((handle (plist-get part :handle)))
     (unless handle
       (user-error "Attachment has no MIME handle: %s"
+                  (or (plist-get part :filename) "<unnamed>")))
+    (when (and (consp handle)
+               (bufferp (car handle))
+               (not (buffer-live-p (car handle))))
+      (user-error "Attachment %s is stale (the message view changed) -- reopen the message and save again"
                   (or (plist-get part :filename) "<unnamed>")))
     (cj/mu4e--ensure-attachment-save-functions)
     (let* ((path (funcall mu4e-uniquify-save-file-name-function

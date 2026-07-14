@@ -75,6 +75,56 @@ so this fails the same way whether or not mu4e's MIME support is loadable."
     (should-error (cj/mu4e--save-attachment-part part "/downloads")
                   :type 'user-error)))
 
+(ert-deftest test-mu4e-attachments-save-part-errors-on-stale-handle ()
+  "Error: a handle whose MIME buffer was killed fails with a clear error.
+The selection buffer captures handles when it opens; a real MIME handle's
+car is the buffer holding the part's bytes, and viewing another message
+kills it.  Saving through it must signal a `user-error' naming the file,
+not die in `mm-save-part-to-file' (or save another message's bytes)."
+  (let* ((dead (generate-new-buffer "stale-mime-part"))
+         (part (test-mu4e-attachments--part "invoice.pdf" 3 (list dead))))
+    (kill-buffer dead)
+    (should-error (cj/mu4e--save-attachment-part part "/downloads")
+                  :type 'user-error)
+    (condition-case err
+        (cj/mu4e--save-attachment-part part "/downloads")
+      (user-error (should (string-match-p "invoice\\.pdf" (cadr err)))))))
+
+(ert-deftest test-mu4e-attachments-save-part-live-buffer-handle-saves ()
+  "Normal: a handle whose MIME buffer is alive saves normally."
+  (let* ((live (generate-new-buffer "live-mime-part"))
+         (part (test-mu4e-attachments--part "invoice.pdf" 3 (list live)))
+         (mu4e-uniquify-save-file-name-function #'identity)
+         saved)
+    (unwind-protect
+        (cl-letf (((symbol-function 'mu4e-join-paths)
+                   (lambda (&rest pieces) (mapconcat #'identity pieces "/")))
+                  ((symbol-function 'mm-save-part-to-file)
+                   (lambda (_handle path) (setq saved path))))
+          (should (equal (cj/mu4e--save-attachment-part part "/downloads")
+                         "/downloads/invoice.pdf"))
+          (should (equal saved "/downloads/invoice.pdf")))
+      (kill-buffer live))))
+
+(ert-deftest test-mu4e-attachments-save-parts-mid-batch-failure-propagates ()
+  "Error: a mid-batch save failure propagates; earlier parts stay saved.
+Characterizes the batch path: no silent skip of the failing part, and the
+files already written are not rolled back."
+  (let ((parts (list (test-mu4e-attachments--part "a.pdf" 1)
+                     (test-mu4e-attachments--part "b.pdf" 2)
+                     (test-mu4e-attachments--part "c.pdf" 3)))
+        (saved '()))
+    (cl-letf (((symbol-function 'cj/mu4e--save-attachment-part)
+               (lambda (part _dir)
+                 (let ((name (plist-get part :filename)))
+                   (when (equal name "b.pdf")
+                     (user-error "Stale handle: %s" name))
+                   (push name saved)
+                   name))))
+      (should-error (cj/mu4e--save-attachment-parts parts "/downloads")
+                    :type 'user-error))
+    (should (equal (nreverse saved) '("a.pdf")))))
+
 (ert-deftest test-mu4e-attachments-save-all-prompts-once ()
   "Normal: the save-all command prompts for a directory once and saves all parts."
   (let ((parts (list (test-mu4e-attachments--part "a.pdf" 1)
