@@ -17,6 +17,7 @@
 
 ;;; Code:
 
+(defvar code-dir)  ;; user-constants.el; read lazily in leetcode's :config
 
 ;; ----------------------------- Exercism ----------------------------
 
@@ -33,9 +34,9 @@
   :defer t
   :commands (leetcode)
   :bind ("C-h L" . leetcode)
-  :custom
-  (url-debug t)
   :config
+  ;; No (url-debug t) here: that was a debugging leftover, and it turned on
+  ;; GLOBAL url.el request logging for the whole session once leetcode loaded.
   (setq leetcode-prefer-language "golang")
   (setq leetcode-directory (concat code-dir "/leetcode"))
   (setq leetcode-save-solutions t))
