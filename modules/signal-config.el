@@ -143,6 +143,9 @@ BODY is formatted by `cj/signal--format-notify-body'.  Installed as
       (if script
           (apply #'start-process "signel-notify" nil script "info" title text
                  (unless cj/signel-notify-sound (list "--silent")))
+        ;; notifications.el is not autoloaded; load it on the first fallback.
+        (unless (fboundp 'notifications-notify)
+          (require 'notifications))
         (notifications-notify :title title :body text)))))
 
 ;;; signel — fork integration
