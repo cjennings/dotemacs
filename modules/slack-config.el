@@ -52,6 +52,7 @@
 (defvar slack-message-custom-notifier)
 (defvar slack-teams)
 
+(declare-function notifications-notify "notifications")
 (declare-function slack-buffer-add-reaction-to-message "slack-buffer")
 (declare-function slack-buffer-latest-ts "slack-buffer")
 (declare-function slack-buffer-team "slack-buffer")
@@ -207,6 +208,46 @@ Errors if called outside a Slack message buffer."
               :around #'cj/slack--safe-reaction-echo-description))
 
 ;; ----------------------------- Notifications ---------------------------------
+;; Mirrors signel's notification hardening (body truncation, sound gating,
+;; script-with-fallback delivery).  The shared cj/messenger-notify extraction
+;; that collapses the two copies belongs to the messenger-unification task.
+
+(defcustom cj/slack-notify-sound nil
+  "When non-nil, Slack notifications play the notify script's sound.
+Nil (the default) passes --silent so the toast is visual only."
+  :type 'boolean
+  :group 'slack)
+
+(defconst cj/slack--notify-body-max 120
+  "Maximum character length of a desktop-notification body.
+Longer message text truncates to this length ending in an ellipsis;
+the full text is always in the Slack buffer.")
+
+(defun cj/slack--format-notify-body (text)
+  "Collapse whitespace in TEXT and truncate it for a notification body.
+Whitespace runs (including newlines) become single spaces, the result
+is trimmed, and anything over `cj/slack--notify-body-max' characters
+truncates to that length with a trailing ellipsis."
+  (let ((flat (string-trim (replace-regexp-in-string "[ \t\n\r]+" " " text))))
+    (if (<= (length flat) cj/slack--notify-body-max)
+        flat
+      (concat (substring flat 0 (1- cj/slack--notify-body-max)) "…"))))
+
+(defun cj/slack--send-notification (title body)
+  "Deliver a desktop notification with TITLE and BODY.
+Routes through the external notify script when it is on PATH (type
+info, sound gated by `cj/slack-notify-sound'), falling back to
+`notifications-notify' otherwise.  Previously a missing script made
+`start-process' error inside the caller's condition-case, so the
+notification silently vanished."
+  (let ((script (executable-find "notify")))
+    (if script
+        (apply #'start-process "slack-notify" nil script "info" title body
+               (unless cj/slack-notify-sound (list "--silent")))
+      ;; notifications.el is not autoloaded; load it on the first fallback.
+      (unless (fboundp 'notifications-notify)
+        (require 'notifications))
+      (notifications-notify :title title :body body))))
 
 (defun cj/slack-notify (message room team)
   "Send desktop notification for DMs and @mentions only.
@@ -218,18 +259,17 @@ swallows exceptions via `websocket-try-callback'."
       (when (and (not (slack-message-minep message team))
                  (or (slack-im-p room)
                      (slack-message-mentioned-p message team)))
-        (let ((title (format "Slack: %s" (slack-room-display-name room team)))
-              (body (or (slack-message-body message team) "")))
-          (start-process "slack-notify" nil
-                         "notify" "info" title body)))
+        (cj/slack--send-notification
+         (format "Slack: %s" (slack-room-display-name room team))
+         (cj/slack--format-notify-body
+          (or (slack-message-body message team) ""))))
     (error (message "cj/slack-notify error: %S" err))))
 
 (defun cj/slack-test-notify ()
   "Send a test desktop notification to verify the notify pipeline works."
   (interactive)
   (condition-case err
-      (start-process "slack-notify-test" nil
-                     "notify" "info" "Slack: Test" "Notification pipeline works")
+      (cj/slack--send-notification "Slack: Test" "Notification pipeline works")
     (error (message "cj/slack-test-notify error: %S" err))))
 
 (defun cj/slack-mark-read-and-bury ()
