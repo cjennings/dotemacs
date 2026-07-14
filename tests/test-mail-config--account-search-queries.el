@@ -38,9 +38,12 @@
 
 (ert-deftest test-mail-make-account-map-closures-capture-distinct-queries ()
   "Normal: each binding runs its own account-scoped search (no closure leak).
-mu4e-search is mocked to capture the query each command passes."
+mu4e-search is mocked to capture the query each command passes; require is
+mocked so the commands' mu4e load never pulls the real package in batch."
   (let ((searched '()))
-    (cl-letf (((symbol-function 'mu4e-search)
+    (cl-letf (((symbol-function 'require)
+               (lambda (feature &rest _) feature))
+              ((symbol-function 'mu4e-search)
                (lambda (q) (push q searched))))
       (let ((map (cj/--mail-make-account-map "dmail")))
         (funcall (keymap-lookup map "i"))
@@ -48,6 +51,21 @@ mu4e-search is mocked to capture the query each command passes."
     (should (member "maildir:/dmail/INBOX" searched))
     (should (member "maildir:/dmail/INBOX AND flag:unread AND NOT flag:trashed"
                     searched))))
+
+(ert-deftest test-mail-make-account-map-loads-mu4e-before-search ()
+  "Error: a nav command loads mu4e before it calls `mu4e-search'.
+The C-; e maps register eagerly at startup, but `mu4e-search' carries no
+autoload cookie, so a nav key pressed before mu4e's first launch signaled
+void-function.  The command must require mu4e first, then search."
+  (let ((events '()))
+    (cl-letf (((symbol-function 'require)
+               (lambda (feature &rest _) (push (list :require feature) events) feature))
+              ((symbol-function 'mu4e-search)
+               (lambda (q) (push (list :search q) events))))
+      (funcall (keymap-lookup (cj/--mail-make-account-map "cmail") "i")))
+    (should (equal (nreverse events)
+                   '((:require mu4e)
+                     (:search "maildir:/cmail/INBOX"))))))
 
 (provide 'test-mail-config--account-search-queries)
 ;;; test-mail-config--account-search-queries.el ends here

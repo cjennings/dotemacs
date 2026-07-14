@@ -127,8 +127,17 @@ transport details in debug buffers."
                       "mbsync" "mu4e mail synchronization" 'mail-config)))
     (concat (shell-quote-argument mbsync) " -a")))
 
+(defun cj/mail--send-mail-unavailable (&rest _)
+  "Signal a descriptive error: no mail transport is configured.
+Installed as the send function when msmtp is absent, so a send attempt
+explains itself instead of dying with \"invalid function: nil\" (the
+top-level defvar pre-empts message.el's default)."
+  (user-error "Cannot send mail: msmtp not found -- install msmtp to enable sending"))
+
 (defun cj/mail-configure-smtpmail ()
-  "Configure SMTP mail transport when msmtp is available."
+  "Configure SMTP mail transport when msmtp is available.
+With msmtp absent, install `cj/mail--send-mail-unavailable' on both send
+variables so the failure at send time names the missing transport."
   (setq smtpmail-debug-info cj/smtpmail-debug-enabled)
   (if-let ((msmtp (cj/executable-find-or-warn
                    "msmtp" "SMTP mail sending" 'mail-config)))
@@ -136,7 +145,9 @@ transport details in debug buffers."
             send-mail-function 'message-send-mail-with-sendmail
             message-send-mail-function 'message-send-mail-with-sendmail
             message-sendmail-envelope-from 'header)
-    (setq sendmail-program nil)))
+    (setq sendmail-program nil
+          send-mail-function #'cj/mail--send-mail-unavailable
+          message-send-mail-function #'cj/mail--send-mail-unavailable)))
 
 ;; -------------------- HarfBuzz Crash Fix: Disable Composition ---------------
 ;; Disable auto-composition in mu4e headers to prevent SIGSEGV from HarfBuzz
@@ -229,9 +240,6 @@ Prompts user for the action when executing."
   (setq mu4e-context-policy 'pick-first)                                  ;; start with the first (default) context
   (setq mu4e-headers-auto-update nil)                                     ;; updating headers buffer on email is too jarring
   (setq mu4e-root-maildir mail-dir)                                       ;; root directory for all email accounts
-  (with-suppressed-warnings ((obsolete mu4e-maildir)
-                             (free-vars mu4e-maildir))
-    (setq mu4e-maildir mail-dir))                                         ;; same as above (for newer mu4e)
   (setq mu4e-sent-messages-behavior 'delete)                              ;; don't save to "Sent", IMAP does this already
   (setq mu4e-show-images t)                                               ;; show embedded images
   ;; (setq mu4e-update-interval 600)                                      ;; check for new mail every 10 minutes (600 seconds)
@@ -243,9 +251,6 @@ Prompts user for the action when executing."
   ;; This will be automatically disabled when org-msg is active
   (setq mu4e-compose-format-flowed t)
 
-  (with-suppressed-warnings ((obsolete mu4e-html2text-command)
-                             (free-vars mu4e-html2text-command))
-    (setq mu4e-html2text-command 'mu4e-shr2text))  ;; email conversion to html via shr2text
   (setq mu4e-mu-binary (executable-find "mu"))
   (setq mu4e-get-mail-command (cj/mail--mbsync-command))                  ;; command to sync mail
   (with-suppressed-warnings ((obsolete mu4e-user-mail-address-list)
@@ -257,21 +262,14 @@ Prompts user for the action when executing."
 
   ;; ------------------------------ Mu4e Contexts ------------------------------
 
+  ;; cmail (cjennings.net) is listed first deliberately: `pick-first' makes it
+  ;; the startup context, matching cmail's primary role everywhere else in the
+  ;; config (shortcuts, bookmarks, refile).  Gmail-first here made gmail the
+  ;; silent default for the first compose.  (mu4e-starred-folder was dropped:
+  ;; it isn't a mu4e variable, so it never had an effect -- flagged searches
+  ;; use flag:flagged.)
   (setq mu4e-contexts
         (list
-         (make-mu4e-context
-          :name "gmail.com"
-          :match-func
-          (lambda (msg)
-            (when msg
-              (string-prefix-p "/gmail" (mu4e-message-field msg :maildir))))
-          :vars '((user-mail-address        . "craigmartinjennings@gmail.com")
-                  (user-full-name           . "Craig Jennings")
-                  (mu4e-drafts-folder       . "/gmail/Drafts")
-                  (mu4e-sent-folder         . "/gmail/Sent")
-                  (mu4e-starred-folder      . "/gmail/Starred")
-                  (mu4e-trash-folder        . "/gmail/Trash")))
-
          (make-mu4e-context
           :name "cjennings.net"
           :match-func
@@ -285,6 +283,18 @@ Prompts user for the action when executing."
                   (mu4e-trash-folder    . "/cmail/Trash")))
 
          (make-mu4e-context
+          :name "gmail.com"
+          :match-func
+          (lambda (msg)
+            (when msg
+              (string-prefix-p "/gmail" (mu4e-message-field msg :maildir))))
+          :vars '((user-mail-address        . "craigmartinjennings@gmail.com")
+                  (user-full-name           . "Craig Jennings")
+                  (mu4e-drafts-folder       . "/gmail/Drafts")
+                  (mu4e-sent-folder         . "/gmail/Sent")
+                  (mu4e-trash-folder        . "/gmail/Trash")))
+
+         (make-mu4e-context
           :name "deepsat.com"
           :match-func
           (lambda (msg)
@@ -294,7 +304,6 @@ Prompts user for the action when executing."
                   (user-full-name           . "Craig Jennings")
                   (mu4e-drafts-folder       . "/dmail/Drafts")
                   (mu4e-sent-folder         . "/dmail/Sent")
-                  (mu4e-starred-folder      . "/dmail/Starred")
                   (mu4e-trash-folder        . "/dmail/Trash")))))
 
   ;; Refile target is computed per message (see `cj/mu4e--refile-folder'), not
@@ -348,25 +357,11 @@ Prompts user for the action when executing."
 
   ;; ------------------------------ HTML Settings ------------------------------
   ;; also see org-msg below
-
-  ;; Prefer HTML over plain text when both are available
-  (with-suppressed-warnings ((obsolete mu4e-view-prefer-html)
-                             (free-vars mu4e-view-prefer-html))
-    (setq mu4e-view-prefer-html t))
-
-  ;; Use a better HTML renderer with more control
-  (with-suppressed-warnings ((obsolete mu4e-html2text-command)
-                             (free-vars mu4e-html2text-command))
-    (setq mu4e-html2text-command
-		  (cond
-		   ;; Best option: pandoc (if available)
-		   ((executable-find "pandoc")
-		    "pandoc -f html -t plain --reference-links")
-		   ;; Good option: w3m (better tables/formatting)
-		   ((executable-find "w3m")
-		    "w3m -dump -T text/html -cols 72 -o display_link_number=true")
-		   ;; Fallback: built-in shr
-		   (t 'mu4e-shr2text))))
+  ;;
+  ;; The view is shr-based since mu4e 1.7; the old knobs
+  ;; (mu4e-view-prefer-html, mu4e-html2text-command and its pandoc/w3m
+  ;; renderer selection) are obsolete and ignored on 1.14, so they were
+  ;; dropped.  HTML display is governed by the shr settings below.
 
   ;; Configure shr (built-in HTML renderer) for better display
   (setq shr-use-colors nil)          ; Don't use colors in terminal
@@ -407,10 +402,12 @@ Echoes the effective state so there's no guessing what a refresh did."
 	(message "Remote images: %s (this message only)"
 			 (if (equal gnus-blocked-images "http") "blocked" "shown")))
 
-  ;; first letter is the keybinding
+  ;; first letter is the keybinding.  No save-attachment action here:
+  ;; mu4e-view-save-attachments reads MIME parts from the view buffer (and
+  ;; takes no message argument), so it cannot work from headers -- open the
+  ;; message and save from the view instead.
   (setq mu4e-headers-actions
-		'(("asave attachment"   . mu4e-view-save-attachments)
-		  ("csave contact"      . mu4e-action-add-org-contact)
+		'(("csave contact"      . mu4e-action-add-org-contact)
 		  ("ssearch for sender" . cj/search-for-sender)
 		  ("tshow this thread"  . mu4e-action-show-thread)
 		  ("vview in browser"   . mu4e-action-view-in-browser)))
@@ -483,12 +480,18 @@ INBOX maildir."
   (defun cj/--mail-make-account-map (account)
     "Build a mu4e navigation keymap for ACCOUNT (a maildir account name).
 Keys i/u/s/l run the inbox/unread/flagged/large searches from
-`cj/--mail-account-search-queries', each scoped to ACCOUNT."
+`cj/--mail-account-search-queries', each scoped to ACCOUNT.  Each command
+requires mu4e first: these maps register eagerly at startup, but
+`mu4e-search' has no autoload cookie, so a nav key pressed before mu4e's
+first launch would otherwise signal void-function.  With the feature
+loaded, mu4e itself starts the server on demand."
     (let ((map (make-sparse-keymap)))
       (dolist (entry (cj/--mail-account-search-queries account) map)
         (let ((query (cdr entry)))
           (keymap-set map (car entry)
-                      (lambda () (interactive) (mu4e-search query))))))))
+                      (lambda () (interactive)
+                        (require 'mu4e)
+                        (mu4e-search query))))))))
 
 ;; ---------------------------------- Org-Msg ----------------------------------
 ;; user composes org mode; recipient receives html
@@ -577,10 +580,12 @@ Keys i/u/s/l run the inbox/unread/flagged/large searches from
   ;; turn on org-msg in all compose buffers
   (org-msg-mode +1))
 
-(advice-add #'mu4e-compose-reply
-			:after (lambda (&rest _) (org-msg-edit-mode)))
-(advice-add #'mu4e-compose-wide-reply
-			:after (lambda (&rest _) (org-msg-edit-mode)))
+;; No reply advice here: org-msg-post-setup runs on mu4e-compose-mode-hook for
+;; every compose (replies included) and applies `org-msg-default-alternatives'
+;; itself.  The old unconditional org-msg-edit-mode :after advice on the two
+;; reply commands forced org-msg onto text-only replies, defeating the
+;; (reply-to-text . (text)) alternative above and re-running a major mode
+;; org-msg had already set up.
 
 ;; which-key labels
 (with-eval-after-load 'which-key

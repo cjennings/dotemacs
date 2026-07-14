@@ -66,6 +66,23 @@ EXECUTABLES is an alist of program name strings to executable paths."
       (should (equal test-mail-config--warnings
                      '((mail-config . "msmtp not found; SMTP mail sending unavailable")))))))
 
+(ert-deftest test-mail-config-transport-msmtp-missing-sets-descriptive-fallback ()
+  "Error: with msmtp absent, the send functions get a descriptive fallback.
+The old behavior left `message-send-mail-function' nil (the top-level defvar
+pre-empts message.el's default), so the first send died with \"invalid
+function: nil\".  The fallback must be installed on both send variables and
+must signal a `user-error' that names msmtp."
+  (test-mail-config--with-executables nil
+    (let (send-mail-function message-send-mail-function)
+      (cj/mail-configure-smtpmail)
+      (should (eq send-mail-function #'cj/mail--send-mail-unavailable))
+      (should (eq message-send-mail-function #'cj/mail--send-mail-unavailable))
+      (should-error (cj/mail--send-mail-unavailable) :type 'user-error)
+      (condition-case err
+          (cj/mail--send-mail-unavailable)
+        (user-error
+         (should (string-match-p "msmtp" (cadr err))))))))
+
 (ert-deftest test-mail-config-transport-mbsync-present-builds-command ()
   "When mbsync exists, build the mu4e sync command."
   (test-mail-config--with-executables '(("mbsync" . "/usr/bin/mbsync"))
