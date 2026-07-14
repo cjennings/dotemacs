@@ -3,10 +3,11 @@
 #+TODO: TODO | DONE
 #+TODO: DRAFT READY DOING | IMPLEMENTED SUPERSEDED CANCELLED
 
-* DOING Design: Signal client in Emacs (forked signel)
+* IMPLEMENTED Design: Signal client in Emacs (forked signel)
 :PROPERTIES:
 :ID:       0cabd6ee-c458-47b5-a8af-3ee054b25821
 :END:
+- 2026-07-14 Tue @ 01:01:32 -0500 — IMPLEMENTED (Craig's call): v1 is shipped and in daily use — forked signel engine, contact picker with cached contacts (lifecycle hardened 703b4841 / 1296cc45), notifications with sound gating and script-with-fallback delivery, bottom-30% window rule. Next-generation client work belongs to the smoke project (~/code/smoke, its own architecture spec), which the messenger-unification spec designates as the ground-up replacement; signal-config.el stays the running reference until smoke reaches parity.
 - 2026-07-04 Sat @ 15:30:41 -0500 — retrofitted to status-heading convention; keyword DOING from existing :STATUS: doing
 
 * Problem
