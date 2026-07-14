@@ -22,6 +22,7 @@
 ;; isolation doesn't warn about free variables / undefined functions; the
 ;; actual definitions live where named.
 (eval-when-compile (defvar contacts-file))         ; user-constants.el
+(defvar mu4e-compose-complete-addresses)           ; mu4e-compose.el (lazy)
 (declare-function cj/get-all-contact-emails        ; org-contacts-config.el
                   "org-contacts-config" ())
 
@@ -157,10 +158,10 @@ This bypasses the completion-at-point system for direct selection."
   ;; Setup hooks for org-msg-edit-mode (HTML email composition)
   (with-eval-after-load 'org-msg
     (add-hook 'org-msg-edit-mode-hook #'cj/mu4e-org-contacts-compose-setup))
-  
-  ;; Remove any existing mu4e completion setup
-  (remove-hook 'mu4e-compose-mode-hook #'mu4e--compose-setup-completion)
-  
+
+  ;; No hook surgery on mu4e--compose-setup-completion: mu4e 1.14 calls it
+  ;; directly during compose setup (never via this hook), and it is already
+  ;; gated by the `mu4e-compose-complete-addresses' nil above.
   (message "mu4e org-contacts integration activated"))
 
 (defun cj/deactivate-mu4e-org-contacts-integration ()
@@ -170,11 +171,11 @@ This bypasses the completion-at-point system for direct selection."
   ;; Remove our hooks
   (remove-hook 'mu4e-compose-mode-hook #'cj/mu4e-org-contacts-compose-setup)
   (remove-hook 'org-msg-edit-mode-hook #'cj/mu4e-org-contacts-compose-setup)
-  
-  ;; Re-enable mu4e's built-in completion if desired
+
+  ;; Re-enable mu4e's built-in completion: the var is enough, since mu4e's
+  ;; compose setup calls its completion function directly, gated on this.
   (setq mu4e-compose-complete-addresses t)
-  (add-hook 'mu4e-compose-mode-hook #'mu4e--compose-setup-completion)
-  
+
   (message "mu4e org-contacts integration deactivated"))
 
 (provide 'mu4e-org-contacts-integration)
