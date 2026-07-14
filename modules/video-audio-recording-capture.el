@@ -76,9 +76,13 @@ is killed externally."
                  (cj/recording--start-failed-p (- (float-time) start)
                                                cj/recording-start-fail-threshold))
             ;; Died almost immediately and the user didn't stop it: wf-recorder
-            ;; couldn't grab the screen. Say so instead of silently clearing,
-            ;; so Craig isn't left blind-retrying (which bursts fragment files).
-            (message "Video recording failed to start (wf-recorder couldn't grab the screen). Try again.")
+            ;; couldn't grab the screen. Delete the ~0.5s stub file the failed
+            ;; start wrote (it would otherwise litter the recordings directory
+            ;; and get swept up by *.mkv globs downstream), then say so instead
+            ;; of silently clearing, so Craig isn't left blind-retrying.
+            (progn
+              (cj/recording--delete-failed-start-stub process)
+              (message "Video recording failed to start (wf-recorder couldn't grab the screen). Try again."))
           (message "Video recording stopped: %s" (string-trim event))))))
     (force-mode-line-update t)))
 
@@ -128,6 +132,15 @@ launching too soon loses the grab and produces a ~0.5s fragment file."
   "Return non-nil when ELAPSED seconds since start is below THRESHOLD.
 A failed wf-recorder start exits almost immediately; a real recording does not."
   (< elapsed threshold))
+
+(defun cj/recording--delete-failed-start-stub (process)
+  "Delete the stub output file a failed video start left behind.
+Reads the output path from PROCESS's `cj-output-file' property (stamped
+by `cj/ffmpeg-record-video').  A no-op when the property is absent (a
+process started before the property existed) or the file never hit disk."
+  (let ((file (process-get process 'cj-output-file)))
+    (when (and file (file-exists-p file))
+      (delete-file file))))
 
 ;;; Dependency Checks
 
@@ -332,8 +345,10 @@ Uses wf-recorder on Wayland, x11grab on X11."
       (set-process-query-on-exit-flag cj/video-recording-ffmpeg-process nil)
       (set-process-sentinel cj/video-recording-ffmpeg-process #'cj/recording-process-sentinel)
       ;; Stamp the start time so the sentinel can tell a ~0.5s failed start
-      ;; (wf-recorder couldn't grab the screen) from a normal recording.
+      ;; (wf-recorder couldn't grab the screen) from a normal recording, and
+      ;; the output path so the failed-start branch can delete the stub file.
       (process-put cj/video-recording-ffmpeg-process 'cj-start-time (float-time))
+      (process-put cj/video-recording-ffmpeg-process 'cj-output-file filename)
       (force-mode-line-update t)
       (message "Started video recording to %s (%s, mic: %.1fx, system: %.1fx)."
                filename

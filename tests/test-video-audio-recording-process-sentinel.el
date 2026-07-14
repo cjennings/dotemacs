@@ -190,5 +190,157 @@
           (should (null cj/audio-recording-ffmpeg-process))))
     (test-sentinel-teardown)))
 
+;;; Failed-Start Stub Deletion
+;;
+;; On Wayland a wf-recorder that fails to grab the compositor capture
+;; still writes a ~500KB, ~0.5s stub .mkv before dying.  The sentinel
+;; detects the failed start (exit sooner than
+;; `cj/recording-start-fail-threshold' without a user stop); these tests
+;; pin that it also deletes the stub file stamped on the process as the
+;; `cj-output-file' property — and that normal stops and user stops
+;; never delete anything.
+
+(defun test-sentinel--make-exited-process ()
+  "Return a real process that has already exited.
+Drives the sentinel with a genuinely dead process so `process-status'
+and the process plist behave for real instead of through mocks."
+  (let ((proc (make-process :name "test-sentinel-exited"
+                            :command '("true")
+                            :sentinel #'ignore)))
+    (while (process-live-p proc)
+      (accept-process-output proc 0.05))
+    proc))
+
+(defun test-sentinel--make-stub-file ()
+  "Create and return a temp file standing in for the stub .mkv."
+  (make-temp-file "test-sentinel-stub-" nil ".mkv" "stub-content"))
+
+(ert-deftest test-video-audio-recording-process-sentinel-normal-failed-start-deletes-stub ()
+  "Normal: a failed video start deletes the stub output file."
+  (test-sentinel-setup)
+  (unwind-protect
+      (let ((proc (test-sentinel--make-exited-process))
+            (stub (test-sentinel--make-stub-file)))
+        (unwind-protect
+            (progn
+              (setq cj/video-recording-ffmpeg-process proc)
+              ;; Exited immediately after its start time — a failed start.
+              (process-put proc 'cj-start-time (float-time))
+              (process-put proc 'cj-output-file stub)
+              (cj/recording-process-sentinel proc "exited abnormally\n")
+              (should-not (file-exists-p stub)))
+          (when (file-exists-p stub) (delete-file stub))))
+    (test-sentinel-teardown)))
+
+(ert-deftest test-video-audio-recording-process-sentinel-normal-failed-start-still-messages ()
+  "Normal: the failed-start branch still reports the failure to the user."
+  (test-sentinel-setup)
+  (unwind-protect
+      (let ((proc (test-sentinel--make-exited-process))
+            (stub (test-sentinel--make-stub-file))
+            (failure-messaged nil))
+        (unwind-protect
+            (progn
+              (setq cj/video-recording-ffmpeg-process proc)
+              (process-put proc 'cj-start-time (float-time))
+              (process-put proc 'cj-output-file stub)
+              (cl-letf (((symbol-function 'message)
+                         (lambda (fmt &rest args)
+                           (let ((msg (apply #'format fmt args)))
+                             (when (string-match-p "failed to start" msg)
+                               (setq failure-messaged t))))))
+                (cj/recording-process-sentinel proc "exited abnormally\n"))
+              (should failure-messaged))
+          (when (file-exists-p stub) (delete-file stub))))
+    (test-sentinel-teardown)))
+
+(ert-deftest test-video-audio-recording-process-sentinel-normal-long-run-keeps-file ()
+  "Normal: a recording that ran past the threshold keeps its output file."
+  (test-sentinel-setup)
+  (unwind-protect
+      (let ((proc (test-sentinel--make-exited-process))
+            (stub (test-sentinel--make-stub-file)))
+        (unwind-protect
+            (progn
+              (setq cj/video-recording-ffmpeg-process proc)
+              ;; Ran well past the fail threshold — a real recording.
+              (process-put proc 'cj-start-time
+                           (- (float-time)
+                              (* 10 cj/recording-start-fail-threshold)))
+              (process-put proc 'cj-output-file stub)
+              (cj/recording-process-sentinel proc "finished\n")
+              (should (file-exists-p stub)))
+          (when (file-exists-p stub) (delete-file stub))))
+    (test-sentinel-teardown)))
+
+(ert-deftest test-video-audio-recording-process-sentinel-boundary-user-stop-keeps-file ()
+  "Boundary: a quick user stop (cj-stopping) never deletes the file."
+  (test-sentinel-setup)
+  (unwind-protect
+      (let ((proc (test-sentinel--make-exited-process))
+            (stub (test-sentinel--make-stub-file)))
+        (unwind-protect
+            (progn
+              (setq cj/video-recording-ffmpeg-process proc)
+              ;; Quick exit, but the user asked for it.
+              (process-put proc 'cj-start-time (float-time))
+              (process-put proc 'cj-stopping t)
+              (process-put proc 'cj-output-file stub)
+              (cj/recording-process-sentinel proc "finished\n")
+              (should (file-exists-p stub)))
+          (when (file-exists-p stub) (delete-file stub))))
+    (test-sentinel-teardown)))
+
+(ert-deftest test-video-audio-recording-process-sentinel-boundary-missing-stub-no-error ()
+  "Boundary: failed start whose stub never hit disk signals no error."
+  (test-sentinel-setup)
+  (unwind-protect
+      (let ((proc (test-sentinel--make-exited-process)))
+        (setq cj/video-recording-ffmpeg-process proc)
+        (process-put proc 'cj-start-time (float-time))
+        (process-put proc 'cj-output-file "/nonexistent/dir/never-written.mkv")
+        ;; Must not signal even though the file is absent.
+        (cj/recording-process-sentinel proc "exited abnormally\n")
+        (should (null cj/video-recording-ffmpeg-process)))
+    (test-sentinel-teardown)))
+
+(ert-deftest test-video-audio-recording-process-sentinel-error-nil-output-property-no-error ()
+  "Error: failed start with no cj-output-file property signals no error.
+Covers processes started before the property existed (a live daemon
+mid-upgrade) — the sentinel degrades to the old message-only path."
+  (test-sentinel-setup)
+  (unwind-protect
+      (let ((proc (test-sentinel--make-exited-process)))
+        (setq cj/video-recording-ffmpeg-process proc)
+        (process-put proc 'cj-start-time (float-time))
+        ;; No cj-output-file property at all.
+        (cj/recording-process-sentinel proc "exited abnormally\n")
+        (should (null cj/video-recording-ffmpeg-process)))
+    (test-sentinel-teardown)))
+
+(ert-deftest test-video-audio-recording-process-sentinel-normal-start-stamps-output-file ()
+  "Normal: `cj/ffmpeg-record-video' stamps cj-output-file on the process."
+  (test-sentinel-setup)
+  (unwind-protect
+      (let ((cj/recording-mic-device "test-mic-device")
+            (cj/recording-system-device "test-monitor-device")
+            (cj/recording-mic-boost 2.0)
+            (cj/recording-system-volume 1.0))
+        (cl-letf (((symbol-function 'cj/recording--wayland-p) (lambda () nil))
+                  ((symbol-function 'cj/recording--validate-system-audio)
+                   (lambda () nil))
+                  ((symbol-function 'start-process-shell-command)
+                   (lambda (_name _buffer _command)
+                     (make-process :name "fake-video" :command '("sleep" "1000")))))
+          (cj/ffmpeg-record-video "/tmp/video-recordings/")
+          (let ((output-file (process-get cj/video-recording-ffmpeg-process
+                                          'cj-output-file)))
+            (should (stringp output-file))
+            (should (string-suffix-p ".mkv" output-file))
+            (should (string-prefix-p "/tmp/video-recordings/" output-file))))
+        (when cj/video-recording-ffmpeg-process
+          (ignore-errors (delete-process cj/video-recording-ffmpeg-process))))
+    (test-sentinel-teardown)))
+
 (provide 'test-video-audio-recording-process-sentinel)
 ;;; test-video-audio-recording-process-sentinel.el ends here
