@@ -199,10 +199,27 @@ time."
 (declare-function signel--send-rpc "signel" (method params &optional target-buffer success-callback))
 
 (defvar cj/signel--contact-cache nil
-  "Cached `(LABEL . RECIPIENT)' alist for the contact picker.
+  "Contact-picker cache: nil (cold), `empty', or a `(LABEL . RECIPIENT)' alist.
 Populated by `cj/signel--fetch-contacts' on first invocation (or after a
-`cj/signel-refresh-contacts'), and cleared on `signel-stop' / restart so
-a stale list can't survive a reconnect.  In-memory only.")
+`cj/signel-refresh-contacts').  A fetched-and-empty account caches the
+symbol `empty' rather than nil, so it reads as warm and the picker does
+not re-run its blocking fetch on every open -- read through
+`cj/signel--cached-contacts'.  Cleared back to cold by
+`cj/signel--clear-contact-cache', advised onto `signel-stop' so a stale
+list can't survive a reconnect.  In-memory only.")
+
+(defun cj/signel--clear-contact-cache (&rest _)
+  "Return the contact cache to cold (nil) so the next picker refetches.
+Advised `:after' `signel-stop': a relink or reconnect may change the
+contact list, so a cache from the previous connection must not survive."
+  (setq cj/signel--contact-cache nil))
+
+(advice-add 'signel-stop :after #'cj/signel--clear-contact-cache)
+
+(defun cj/signel--cached-contacts ()
+  "Return the cached contact alist, treating the `empty' sentinel as none."
+  (unless (eq cj/signel--contact-cache 'empty)
+    cj/signel--contact-cache))
 
 (defcustom cj/signel-fetch-timeout 3.0
   "Seconds the picker blocks on `accept-process-output' for a cold-cache fetch.
@@ -249,8 +266,10 @@ fires a void-variable error before the autoload would trigger."
 Issues a `listContacts' RPC and registers a success callback that runs
 the result through `cj/signal--parse-contacts' (the verified parser) and
 stores the resulting `(LABEL . RECIPIENT)' alist in the cache.  An empty
-result populates the cache as nil; a failure goes through the dispatch
-error path and never invokes the callback, so the prior cache survives.
+result caches the `empty' sentinel -- nil would read as a cold cache and
+re-run the picker's blocking fetch on every open.  A failure goes
+through the dispatch error path and never invokes the callback, so the
+prior cache survives.
 
 AFTER-CALLBACK, when non-nil, is invoked with no arguments after the
 cache has been populated -- the picker uses this to unblock its
@@ -258,7 +277,8 @@ bounded-wait on cold caches."
   (signel--send-rpc
    "listContacts" nil nil
    (lambda (result)
-     (setq cj/signel--contact-cache (cj/signal--parse-contacts result))
+     (setq cj/signel--contact-cache
+           (or (cj/signal--parse-contacts result) 'empty))
      (when after-callback (funcall after-callback)))))
 
 (defun cj/signel-refresh-contacts ()
@@ -306,7 +326,7 @@ opens the chosen recipient in `signel-chat'."
          "Signal contact fetch timed out after %.1fs; try again or run M-x cj/signel-refresh-contacts (see *signel-log* for detail)"
          cj/signel-fetch-timeout))))
   (let* ((note-self (cons "Note to Self" signel-account))
-         (candidates (cons note-self cj/signel--contact-cache))
+         (candidates (cons note-self (cj/signel--cached-contacts)))
          (table (lambda (string pred action)
                   (if (eq action 'metadata)
                       `(metadata

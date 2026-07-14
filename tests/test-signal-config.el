@@ -251,9 +251,12 @@ and stores the (LABEL . RECIPIENT) alist in `cj/signel--contact-cache'."
     (should (equal cj/signel--contact-cache
                    '(("Alice (+15555550100)" . "+15555550100"))))))
 
-(ert-deftest test-signal-config-fetch-contacts-empty-result-clears-cache ()
-  "Boundary: an empty listContacts result populates the cache as nil,
-distinct from a failure path (which never invokes the success callback)."
+(ert-deftest test-signal-config-fetch-contacts-empty-result-caches-sentinel ()
+  "Boundary: an empty listContacts result caches the `empty' sentinel.
+nil would read as a cold cache and re-run the picker's blocking fetch on
+every open; the sentinel marks warm-but-empty.  Still distinct from a
+failure path, which never invokes the success callback.  (This test
+formerly pinned the nil behavior -- the 2026-06 audit's F2 bug.)"
   (let (sent-callback)
     (cl-letf (((symbol-function 'signel--send-rpc)
                (lambda (_method _params _target callback)
@@ -261,7 +264,7 @@ distinct from a failure path (which never invokes the success callback)."
       (setq cj/signel--contact-cache '(("stale" . "+10000000000")))
       (cj/signel--fetch-contacts)
       (funcall sent-callback []))
-    (should-not cj/signel--contact-cache)))
+    (should (eq cj/signel--contact-cache 'empty))))
 
 ;;; cj/signel-refresh-contacts
 
