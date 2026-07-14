@@ -157,7 +157,7 @@ looked up in SESSIONS, so the lossy whitespace->hyphen transform in
 `cj/--ai-term-tmux-session-name' never needs reversing."
   (and (member (cj/--ai-term-tmux-session-name dir) sessions) t))
 
-(defun cj/--ai-term-launch-command (dir)
+(defun cj/--ai-term-launch-command (dir &optional agent-command)
   "Return the shell command line that runs the AI tool in a project tmux session.
 
 Uses `tmux new-session -A' so a second toggle on the same project reattaches
@@ -167,9 +167,12 @@ comes from `cj/--ai-term-tmux-session-name'; the first window is named
 window auto-names after its command and the two read distinctly.
 
 The shell command run on first creation is
-  <cj/ai-term-agent-command>; exec bash
+  <agent command>; exec bash
 so the tmux window survives the AI command exiting -- the session stays
-alive with a bare bash prompt for recovery, and reattach works the same way."
+alive with a bare bash prompt for recovery, and reattach works the same way.
+AGENT-COMMAND overrides `cj/ai-term-agent-command' for the fresh-session
+case (the multi-backend picker passes the chosen runtime's command); on a
+reattach `tmux new-session -A' ignores the command either way."
   (let ((session (cj/--ai-term-tmux-session-name dir))
         (start-dir (expand-file-name dir)))
     ;; Pass the inner shell-command-string through `shell-quote-argument'
@@ -184,7 +187,8 @@ alive with a bare bash prompt for recovery, and reattach works the same way."
             (shell-quote-argument cj/ai-term-tmux-window-name)
             (shell-quote-argument start-dir)
             (shell-quote-argument
-             (concat cj/ai-term-agent-command "; exec bash")))))
+             (concat (or agent-command cj/ai-term-agent-command)
+                     "; exec bash")))))
 
 (defun cj/--ai-term-kill-tmux-session (session)
   "Kill the tmux SESSION via `tmux kill-session -t SESSION'.

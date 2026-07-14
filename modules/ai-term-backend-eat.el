@@ -100,7 +100,7 @@ typed into a bare shell.  Returns the poll timer."
                (cancel-timer timer))))))
     timer))
 
-(defun cj/--ai-term-show-or-create (dir name)
+(defun cj/--ai-term-show-or-create (dir name &optional agent-command)
   "Show or create the AI-term buffer for project DIR with buffer NAME.
 
 If a buffer named NAME exists with a live process, display it.  If
@@ -108,6 +108,10 @@ the buffer exists but its process is dead, kill it and recreate.  If
 no such buffer exists, create a new EAT terminal in DIR and send
 the project's tmux launch command (see `cj/--ai-term-launch-command') so
 the same project basename reattaches across Emacs restarts.
+AGENT-COMMAND, when non-nil, is the full agent launch command for a
+fresh session (the multi-backend picker's choice); nil falls back to
+`cj/ai-term-agent-command'.  A reattach ignores it (`tmux new-session
+-A' attaches without running the command).
 
 EAT runs a plain shell with no auto-tmux hook, so the named
 `tmux new-session -A' launch command is the only thing that starts the
@@ -148,7 +152,7 @@ buffer."
           (with-current-buffer buf
             (cj/--ai-term-apply-accent buf)
             (cj/--ai-term-send-string
-             buf (concat (cj/--ai-term-launch-command dir) "\n")))
+             buf (concat (cj/--ai-term-launch-command dir agent-command) "\n")))
           (when fresh
             (cj/--ai-term-schedule-color buf (cj/--ai-term-project-color dir)))
           (display-buffer buf)

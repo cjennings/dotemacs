@@ -46,10 +46,24 @@
 
 (defcustom cj/ai-term-agent-command
   "claude \"Read .ai/protocols.org and follow all instructions.\""
-  "Shell command sent to a fresh AI-term to start the agent.
+  "Shell command for the default (\"claude\") agent runtime.
 
-The default invokes the Claude Code CLI; set it to whatever terminal
-agent you run (aider, an open-source LLM TUI, etc.)."
+Sent to a fresh AI-term when no other runtime is picked; also the
+fallback when launch paths bypass the runtime picker (e.g. attaching a
+detached session, where the command is ignored anyway).  Non-Claude
+runtimes compose their commands from `cj/ai-term-agent-prompt' instead
+-- see `cj/--ai-term-runtime-command'."
+  :type 'string
+  :group 'ai-term)
+
+(defcustom cj/ai-term-agent-prompt
+  "Read .ai/protocols.org and follow all instructions."
+  "Opening instructions passed to non-Claude agent runtimes.
+
+Claude, Codex, and codex --oss all take the opening instructions as a
+positional prompt, so this one string serves every runtime; only the
+command in front of it varies (the \"claude\" runtime carries its full
+line in `cj/ai-term-agent-command' for backward compatibility)."
   :type 'string
   :group 'ai-term)
 
@@ -240,6 +254,80 @@ without firing real `display-buffer' or `quit-window' calls."
                   (car buffers))))
          (t '(pick-project))))))))
 
+;; ------------------------- Agent runtime selection ---------------------------
+;; A fresh session can run Claude, Codex (ChatGPT), or a local model through
+;; codex --oss (ollama).  Runtime names and launch strings mirror the rulesets
+;; bin/ai launcher so the two launchers stay one mental model: "claude",
+;; "codex", "local:<model>".  The choice list itself comes from
+;; `ai --print-runtimes' when that launcher is installed (single source of
+;; truth, including the live ollama model scan with its own timeout); without
+;; it a static claude/codex list stands in.
+
+(defun cj/--ai-term-runtime-command (runtime)
+  "Return the full agent shell command for RUNTIME.
+RUNTIME is \"claude\" (or nil, both meaning `cj/ai-term-agent-command'
+verbatim), \"codex\", or \"local:<model>\" for an ollama model via
+codex --oss.  The non-Claude commands append `cj/ai-term-agent-prompt'
+as the positional opening prompt.  An unknown RUNTIME signals a
+`user-error' rather than launching something half-formed.  The explicit
+--local-provider flag is deliberate: setting the provider through
+config.toml silently does nothing (rulesets, 2026-07-13)."
+  (cond
+   ((or (null runtime) (equal runtime "claude"))
+    cj/ai-term-agent-command)
+   ((equal runtime "codex")
+    (concat "codex " (shell-quote-argument cj/ai-term-agent-prompt)))
+   ((string-prefix-p "local:" runtime)
+    (let ((model (substring runtime (length "local:"))))
+      (when (string-empty-p model)
+        (user-error "Agent runtime %s names no ollama model" runtime))
+      (concat "codex --oss --local-provider=ollama -m "
+              (shell-quote-argument model) " "
+              (shell-quote-argument cj/ai-term-agent-prompt))))
+   (t (user-error "Unknown agent runtime: %s" runtime))))
+
+(defun cj/--ai-term-parse-runtime-lines (output)
+  "Parse `ai --print-runtimes' OUTPUT into an alist of (NAME . LABEL).
+Each line is \"NAME — LABEL\"; blank lines and lines without the
+separator are dropped, so a stray warning in the output degrades to a
+shorter list instead of a parse error."
+  (delq nil
+        (mapcar (lambda (line)
+                  (when (string-match "\\`\\(.+?\\) — \\(.+\\)\\'" line)
+                    (cons (match-string 1 line) (match-string 2 line))))
+                (split-string output "\n" t))))
+
+(defun cj/--ai-term-runtime-choices ()
+  "Return the agent runtime choices as an alist of (NAME . LABEL).
+Shells out to `ai --print-runtimes' when the launcher is installed --
+that keeps the two launchers' lists identical and reuses its live
+ollama scan (which carries its own dead-server timeout).  When the
+launcher is absent, errors, or prints nothing parseable, a static
+claude-first list stands in."
+  (or (when-let* ((ai (executable-find "ai")))
+        (with-temp-buffer
+          (when (eq 0 (ignore-errors
+                        (process-file ai nil t nil "--print-runtimes")))
+            (cj/--ai-term-parse-runtime-lines (buffer-string)))))
+      '(("claude" . "Claude Code")
+        ("codex" . "ChatGPT (Codex CLI)"))))
+
+(defun cj/--ai-term-pick-runtime ()
+  "Prompt for the agent runtime of a fresh session; RET picks the first.
+The first choice is claude, so launching a project stays Enter-Enter
+for the common case.  Labels annotate the candidates."
+  (let* ((choices (cj/--ai-term-runtime-choices))
+         (default (caar choices)))
+    (completing-read
+     (format "Agent runtime (default %s): " default)
+     (cj/completion-table-annotated
+      'ai-term-runtime
+      (lambda (cand)
+        (when-let* ((label (cdr (assoc cand choices))))
+          (format "  %s" label)))
+      choices)
+     nil t nil nil default)))
+
 (defun cj/ai-term-pick-project (&optional arg)
   "Pick an AI-agent project and open or reuse its EAT terminal.
 
@@ -254,12 +342,25 @@ With prefix ARG, display the buffer without selecting its window.
 Bound to C-; a s -- always shows the project picker, even when an agent
 buffer is currently displayed.
 
+A genuinely fresh launch (no live agent buffer AND no surviving tmux
+session) also asks which agent runtime to run -- claude, codex, or a
+local model; RET keeps claude, so the common case stays Enter-Enter.
+Reattaches and redisplays never ask: the session already runs whatever
+it runs.
+
 EAT renders in terminal frames as well as GUI frames, so this
 launches from either."
   (interactive "P")
   (let* ((dir (cj/--ai-term-pick-project))
          (name (cj/--ai-term-buffer-name dir))
-         (buf (cj/--ai-term-show-or-create dir name)))
+         (existing (get-buffer name))
+         (fresh (and (not (and existing
+                               (cj/--ai-term-process-live-p existing)))
+                     (not (cj/--ai-term-session-active-p
+                           dir (cj/--ai-term-live-tmux-sessions)))))
+         (command (when fresh
+                    (cj/--ai-term-runtime-command (cj/--ai-term-pick-runtime))))
+         (buf (cj/--ai-term-show-or-create dir name command)))
     (unless arg
       (let ((win (get-buffer-window buf)))
         (when win (select-window win))))
