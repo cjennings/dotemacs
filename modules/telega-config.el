@@ -54,7 +54,14 @@
   :ensure nil
   :commands (telega)
   :custom
-  (telega-use-docker t))
+  (telega-use-docker t)
+  :config
+  ;; Without this, incoming Telegram messages are invisible unless their
+  ;; buffer is on screen -- telega ships desktop notifications but leaves
+  ;; the mode off by default.  Runs at telega load (M-x telega), respects
+  ;; telega's own per-chat mute settings.  From the 2026-06 config audit;
+  ;; routing through a shared messenger notifier is the unification task.
+  (telega-notifications-mode 1))
 
 (defun cj/telega ()
   "Launch telega.el with a helpful message when it isn't installed yet.
