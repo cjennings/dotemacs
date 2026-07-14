@@ -68,7 +68,6 @@
 (declare-function cj/erc-switch-to-buffer-with-completion "erc-config")
 (declare-function cj/telega "telega-config")
 (declare-function cj/slack-start "slack-config")
-(declare-function cj/signel-message "signal-config")
 (declare-function cj/kill-all-other-buffers-and-windows "undead-buffers")
 
 ;; External package commands invoked by launchers.
@@ -149,15 +148,15 @@ Adjust this if the title doesn't appear centered under the banner image.")
    (list "i" #'nerd-icons-faicon  "nf-fa-comments"     "IRC"        "Emacs Relay Chat"       (lambda () (cj/erc-switch-to-buffer-with-completion)))
    (list "G" #'nerd-icons-faicon  "nf-fa-telegram"     "Telegram"   "Telega Telegram Client" (lambda () (cj/telega)))
    (list "s" #'nerd-icons-faicon  "nf-fa-slack"        "Slack"      "Slack Client"           (lambda () (cj/slack-start)))
-   (list "l" #'nerd-icons-octicon "nf-oct-issue_tracks" "Linear"    "Linear Issue Tracker"   (lambda () (pearl-list-issues)))
-   (list "S" #'nerd-icons-mdicon  "nf-md-message"      "Signal"     "Signal Messenger"       (lambda () (cj/signel-message))))
+   (list "l" #'nerd-icons-octicon "nf-oct-issue_tracks" "Linear"    "Linear Issue Tracker"   (lambda () (pearl-list-issues))))
   "Dashboard launcher table: (KEY ICON-FN ICON-NAME LABEL TOOLTIP ACTION).
 Drives both `dashboard-navigator-buttons' and the dashboard-mode-map keys.")
 
-(defconst cj/dashboard--row-sizes '(5 4 3 3)
+(defconst cj/dashboard--row-sizes '(5 4 3 2)
   "Navigator row lengths.  Must sum to the number of `cj/dashboard--launchers'.
-The top row carries Weather alongside the core tools; the last row groups
-Slack, Linear, and Signal together.")
+The top row carries Weather alongside the core tools; the last row pairs
+Slack and Linear.  (Signal left the table when the signel client was
+retired to archive/ -- agents drive Signal via signal-cli.)")
 
 (defun cj/dashboard--navigator-button (l)
   "Build a `dashboard-navigator-buttons' entry from launcher L."

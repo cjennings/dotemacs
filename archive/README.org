@@ -46,6 +46,13 @@ Retired files keep their origin directory so a restore is a straight move back:
 - =mu4e-org-contacts-setup.el= — nothing requires it; its featurep gate would
   be nil at init in any case. The live mu4e contacts wiring lives in
   =mu4e-org-contacts-integration.el=.
+- =signal-config.el= — the in-Emacs Signal client (forked signel at
+  =~/code/signel= + signal-cli), retired whole on Craig's call 2026-07-14:
+  agents drive Signal via signal-cli / signal-mcp, so the interactive Emacs
+  client earns no keep. The fork repo itself is untouched. Its seven test
+  files moved to =archive/tests/= with it (=test-signal-config*.el=,
+  =test-signel-*.el=). The spec record is
+  =docs/specs/signal-client-spec.org= (IMPLEMENTED, then retired).
 
 ** archive/custom/
 

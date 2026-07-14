@@ -8,6 +8,7 @@
 :PROPERTIES:
 :ID:       4bfc2011-8ffc-4765-8886-91df12141171
 :END:
+- 2026-07-14 Tue @ 01:10:00 -0500 — premise shift: the signel client was retired to archive/ (agents drive Signal via signal-cli), so the registry example, the "signel remains the running reference" language, and the backend list all need a rewrite before this leaves DRAFT — the live in-Emacs backends are now telega and Slack, with smoke (~/code/smoke) still the future native adopter. Also landed since the 06-11 survey: slack-config gained signel-shape notification hardening (c69f2f56) and telega notifications are on (5bc5ef7a), so the shared cj/messenger-notify extraction has two live call sites ready.
 - 2026-07-04 Sat @ 15:30:41 -0500 — retrofitted to status-heading convention; keyword DRAFT from existing :STATUS: not-started (held open for more ideas)
 
 * Problem

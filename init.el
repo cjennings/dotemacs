@@ -78,7 +78,6 @@
 (require 'slack-config)          ;; slack client via emacs-slack
 (require 'pearl-config)          ;; Linear.app issue tracking via pearl (deepsat + craigjennings)
 (require 'telega-config)         ;; telegram client via telega.el (TDLib in docker)
-(require 'signal-config)         ;; signal client via forked signel + signal-cli
 (require 'eshell-config)         ;; emacs shell configuration
 (require 'eat-config)            ;; EAT terminal + the F12 dock-and-remember toggle
 (require 'ai-term)               ;; in-Emacs Claude launcher (vertical-split EAT terminal)

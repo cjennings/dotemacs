@@ -28,20 +28,21 @@
 ;; Telegram moved from "g" to "G" so "g" is free for dashboard refresh.
 ;; Signal ("S") added as the 14th launcher.
 ;; Weather ("w") added after Agenda as the 15th launcher (top-row daily glance).
-(defconst test-dash--keys '("c" "d" "t" "a" "w" "r" "b" "f" "m" "e" "i" "G" "s" "l" "S"))
+(defconst test-dash--keys '("c" "d" "t" "a" "w" "r" "b" "f" "m" "e" "i" "G" "s" "l"))
 
 ;; ----------------------------- launcher table --------------------------------
 
 (ert-deftest test-dashboard-launchers-keys-in-order ()
-  "Normal: 15 launchers with the expected keys in display order."
-  (should (= 15 (length cj/dashboard--launchers)))
+  "Normal: 14 launchers with the expected keys in display order.
+(Signal left the table when the signel client was retired to archive/.)"
+  (should (= 14 (length cj/dashboard--launchers)))
   (should (equal test-dash--keys (mapcar (lambda (l) (nth 0 l)) cj/dashboard--launchers))))
 
 (ert-deftest test-dashboard-launchers-labels-in-order ()
   "Normal: labels in display order (Telegram and Slack reordered so Slack sits
 next to Linear on the last navigator row)."
   (should (equal '("Code" "Files" "Terminal" "Agenda" "Weather" "Feeds" "Books"
-                   "Flashcards" "Music" "Email" "IRC" "Telegram" "Slack" "Linear" "Signal")
+                   "Flashcards" "Music" "Email" "IRC" "Telegram" "Slack" "Linear")
                  (mapcar (lambda (l) (nth 3 l)) cj/dashboard--launchers))))
 
 (ert-deftest test-dashboard-row-sizes-cover-all-launchers ()
@@ -51,9 +52,9 @@ next to Linear on the last navigator row)."
 
 ;; --------------------------- navigator rows ----------------------------------
 
-(ert-deftest test-dashboard-navigator-rows-grouped-5-4-3-3 ()
-  "Normal: navigator derives rows per `cj/dashboard--row-sizes' (5 4 3 3), with
-Weather joining the top row and Slack, Linear, and Signal sharing the last row."
+(ert-deftest test-dashboard-navigator-rows-grouped-5-4-3-2 ()
+  "Normal: navigator derives rows per `cj/dashboard--row-sizes' (5 4 3 2), with
+Weather joining the top row and Slack and Linear pairing on the last row."
   (cl-letf (((symbol-function 'nerd-icons-faicon)  (lambda (n &rest _) (concat "I:" n)))
             ((symbol-function 'nerd-icons-devicon) (lambda (n &rest _) (concat "I:" n)))
             ((symbol-function 'nerd-icons-mdicon)  (lambda (n &rest _) (concat "I:" n)))
@@ -62,10 +63,10 @@ Weather joining the top row and Slack, Linear, and Signal sharing the last row."
             ((symbol-function 'nerd-icons-wicon)   (lambda (n &rest _) (concat "I:" n))))
     (let ((rows (cj/dashboard--navigator-rows)))
       (should (= 4 (length rows)))
-      (should (equal '(5 4 3 3) (mapcar #'length rows)))
+      (should (equal '(5 4 3 2) (mapcar #'length rows)))
       (should (equal '("Code" "Files" "Terminal" "Agenda" "Weather")
                      (mapcar (lambda (b) (nth 1 b)) (nth 0 rows))))
-      (should (equal '("Slack" "Linear" "Signal")
+      (should (equal '("Slack" "Linear")
                      (mapcar (lambda (b) (nth 1 b)) (nth 3 rows))))
       (let ((btn (car (car rows))))            ; (icon label tooltip action nil " " "")
         (should (string= "I:nf-fa-code" (nth 0 btn)))
@@ -100,7 +101,6 @@ Weather joining the top row and Slack, Linear, and Signal sharing the last row."
               ((symbol-function 'cj/slack-start) (lambda (&rest _) (push 'slack calls)))
               ((symbol-function 'cj/telega) (lambda (&rest _) (push 'tg calls)))
               ((symbol-function 'pearl-list-issues) (lambda (&rest _) (push 'linear calls)))
-              ((symbol-function 'cj/signel-message) (lambda (&rest _) (push 'signal calls)))
               ;; wttrin is invoked via `call-interactively', so the stub must be
               ;; a command -- a plain variadic lambda masked the real arity bug.
               ((symbol-function 'wttrin) (lambda (&rest _) (interactive) (push 'weather calls))))
@@ -112,9 +112,8 @@ Weather joining the top row and Slack, Linear, and Signal sharing the last row."
       (should (memq 'linear calls))
       (should (memq 'm-toggle calls))
       (should (memq 'm-load calls))
-      (should (memq 'signal calls))
       (should (memq 'weather calls))
-      (should (= 16 (length calls))))))   ; 15 keys, Music fires two
+      (should (= 15 (length calls))))))   ; 14 keys, Music fires two
 
 (provide 'test-dashboard-config-launchers)
 ;;; test-dashboard-config-launchers.el ends here
