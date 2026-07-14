@@ -69,9 +69,12 @@ Install with: pip install mypy")
   (setq-local indent-tabs-mode nil)   ;; disable tab characters
   (electric-pair-local-mode t)        ;; match delimiters automatically (buffer-local)
 
-  ;; Enable LSP if available
+  ;; Enable LSP if available.  lsp-pyright is required here, inside the
+  ;; guard, so a pyright-less machine never loads it and never sees the
+  ;; LSP attach prompt the guard exists to prevent.
   (when (and (fboundp 'lsp-deferred)
              (executable-find pyright-path))
+    (require 'lsp-pyright nil t)
     (lsp-deferred)))
 
 (defun cj/--python-mypy-command (target)
@@ -111,8 +114,12 @@ Overrides default prog-mode keybindings with Python-specific commands."
 (use-package python
   :ensure nil ;; built-in
   :hook
+  ;; Both variants: treesit-auto falls back to classic python-mode when the
+  ;; grammar is unavailable, and that fallback should keep the same setup.
   ((python-ts-mode . cj/python-setup)
-   (python-ts-mode . cj/python-mode-keybindings))
+   (python-ts-mode . cj/python-mode-keybindings)
+   (python-mode . cj/python-setup)
+   (python-mode . cj/python-mode-keybindings))
   :custom
   (python-shell-interpreter "python3")
   :config
@@ -126,10 +133,12 @@ Overrides default prog-mode keybindings with Python-specific commands."
 ;; Python-specific LSP configuration via pyright
 ;; Core LSP setup is in prog-general.el
 
+;; No :hook here: the old unguarded (require 'lsp-pyright) + (lsp-deferred)
+;; lambda ran on every python-ts buffer, so pyright-less machines got the
+;; LSP attach prompt cj/python-setup's guard exists to prevent.  The guarded
+;; branch in cj/python-setup owns the require and the attach.
 (use-package lsp-pyright
-  :hook (python-ts-mode . (lambda ()
-                            (require 'lsp-pyright)
-                            (lsp-deferred))))
+  :defer t)
 
 ;; ----------------------------------- Poetry ----------------------------------
 ;; virtual environments and dependencies
