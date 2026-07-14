@@ -53,10 +53,12 @@
    (:map cj/custom-keymap
 			  ("?" . cj/flycheck-list-errors))
   :custom
-  ;; Only disable these two Checkdoc warnings; leave all others intact.
-  (checkdoc-arguments
-   '(("sentence-end-double-space" nil)
-     ("warn-escape"               nil)))
+  ;; No checkdoc suppression here: the old `checkdoc-arguments' entry named a
+  ;; variable that doesn't exist (checkdoc has no such option and this
+  ;; flycheck runs checkdoc via a fixed subprocess form), so it never
+  ;; suppressed anything.  Removing it changes no behavior; if specific
+  ;; checkdoc warnings need silencing, that's a new feature against
+  ;; `flycheck-emacs-lisp-checkdoc-form'.
   ;; Modeline customization (rendered via mode-line-format in modeline-config.el).
   ;; The count portion picks up `error' / `warning' faces because
   ;; `flycheck-mode-line-color' stays t (the default).
