@@ -26,6 +26,7 @@
 ;; Silence byte-compiler "assignment to free variable" warnings for vars
 ;; defined by lazily-loaded packages (tramp, dirtrack, magit). These are
 ;; only set inside the use-package :config block, after the package loads.
+(defvar ange-ftp-try-passive-mode)
 (defvar tramp-copy-size-limit)
 (defvar tramp-use-ssh-controlmaster-options)
 (defvar tramp-cleanup-idle-time)
@@ -146,6 +147,12 @@
   ;; Cleanup settings
   ;; Cleanup TRAMP buffers when idle (every 15 min)
   (setq tramp-cleanup-idle-time 900))
+
+;; FTP (ange-ftp) settings — TRAMP's /ftp: method delegates to ange-ftp.
+;; Passive mode is required for servers that can't open a data connection
+;; back to this machine (NAT, phone FTP servers); active mode hangs on LIST.
+(with-eval-after-load 'ange-ftp
+  (setq ange-ftp-try-passive-mode t))
 
 (provide 'tramp-config)
 ;;; tramp-config.el ends here

@@ -589,6 +589,7 @@ no popup frame is live."
      ("ps" ,(concat pix-dir "/screenshots/")                "pictures screenshots")
      ("px" ,pix-dir                                         "pictures directory")
      ("wp" ,(concat pix-dir "/wallpaper/")                  "pictures wallpaper")
+     ("fp" "/ftp:android@192.168.86.13#2221:/"              "phone ftp (android)")
      ("rcj" "/sshx:cjennings@cjennings.net:~"               "remote c@cjennings.net")
      ("rtl" "/sshx:cjennings@truenas.local:~"               "remote cjennings@truenas.local")
      ("rtt" "/sshx:cjennings@truenas:~"                      "remote cjennings@truenas (tailscale)")
