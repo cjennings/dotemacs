@@ -108,8 +108,21 @@ Starts the simple-httpd listener automatically when it isn't already running."
 ;; stub doesn't collide with this file's own definition of the command
 ;; (that collision is the "defined multiple times" byte-compile warning).
 ;; Same key as compile, for consistency.
+(defun cj/markdown-toggle-view ()
+  "Toggle the current Markdown buffer between edit and read-only view.
+Handles the gfm variants too.  The cond checks the most-derived mode
+first, since the view modes derive from their edit modes."
+  (interactive)
+  (cond
+   ((derived-mode-p 'markdown-view-mode) (markdown-mode))
+   ((derived-mode-p 'gfm-view-mode)      (gfm-mode))
+   ((derived-mode-p 'gfm-mode)           (gfm-view-mode))
+   ((derived-mode-p 'markdown-mode)      (markdown-view-mode))))
+
 (with-eval-after-load 'markdown-mode
-  (keymap-set markdown-mode-map "<f2>" #'cj/markdown-preview))
+  (keymap-set markdown-mode-map      "<f2>"      #'cj/markdown-preview)
+  (keymap-set markdown-mode-map      "C-c C-x v" #'cj/markdown-toggle-view)
+  (keymap-set markdown-view-mode-map "C-c C-x v" #'cj/markdown-toggle-view))
 
 (provide 'markdown-config)
 ;;; markdown-config.el ends here
