@@ -383,11 +383,14 @@ The agenda is rebuilt from all sources before display, including:
 ;; ------------------------- Add Timestamp To Org Entry ------------------------
 ;; simply adds a timestamp to put the org entry on an agenda
 
+(defvar cj/timeformat "%Y-%m-%d %a"
+  "Date format for the stamp `cj/add-timestamp-to-org-entry' inserts.
+Must stay an org-readable date so the stamped line reaches the agenda.")
+
 (defun cj/add-timestamp-to-org-entry (s)
   "Add an event with time S to appear underneath the line-at-point.
 This allows a line to show in an agenda without being scheduled or a deadline."
   (interactive "sTime: ")
-  (defvar cj/timeformat "%Y-%m-%d %a")
   (org-end-of-line)
   (save-excursion
     (open-line 1)

@@ -176,5 +176,89 @@ large), so the standalone OVERDUE section was redundant."
       (should (string-match-p "<[0-9]\\{4\\}-[0-9]\\{2\\}-[0-9]\\{2\\} [A-Za-z]\\{3\\} 09:00>"
                               text)))))
 
+(ert-deftest test-org-agenda-add-timestamp-preserves-point-and-following-line ()
+  "Normal: the stamp lands between the entry and the next line, point unmoved.
+The docstring promises the event appears \"underneath the line-at-point\",
+so neither the entry nor whatever follows it may be disturbed."
+  (with-temp-buffer
+    (insert "* First\n* Second")
+    (goto-char (point-min))
+    (let ((start (progn (org-end-of-line) (point))))
+      (goto-char (point-min))
+      (cj/add-timestamp-to-org-entry "09:00")
+      ;; Point is left at the end of the entry it stamped.
+      (should (= (point) start)))
+    (let ((lines (split-string (buffer-string) "\n")))
+      (should (equal (nth 0 lines) "* First"))
+      (should (string-match-p "\\`<[0-9]\\{4\\}-[0-9]\\{2\\}-[0-9]\\{2\\} [A-Za-z]\\{3\\} 09:00>\\'"
+                              (nth 1 lines)))
+      (should (equal (nth 2 lines) "* Second")))))
+
+(ert-deftest test-org-agenda-add-timestamp-empty-time-string ()
+  "Boundary: an empty time yields a bare date stamp with a trailing space.
+Characterizes current behavior -- the separator space is unconditional, so
+an empty S produces `<DATE >' rather than `<DATE>'.  Harmless in an agenda
+\(org reads the date\), and pinned here so a future format change is a
+deliberate one."
+  (with-temp-buffer
+    (insert "* Heading here")
+    (goto-char (point-min))
+    (cj/add-timestamp-to-org-entry "")
+    (should (string-match-p "<[0-9]\\{4\\}-[0-9]\\{2\\}-[0-9]\\{2\\} [A-Za-z]\\{3\\} >"
+                            (buffer-string)))))
+
+(ert-deftest test-org-agenda-add-timestamp-unicode-time-string ()
+  "Boundary: non-ASCII in S survives into the stamp uncorrupted."
+  (with-temp-buffer
+    (insert "* Heading here")
+    (goto-char (point-min))
+    (cj/add-timestamp-to-org-entry "09:00 café ☕")
+    (should (string-match-p "09:00 café ☕>" (buffer-string)))))
+
+(ert-deftest test-org-agenda-add-timestamp-empty-buffer ()
+  "Boundary: an empty buffer still gets a stamp rather than signalling.
+`org-end-of-line' and `open-line' both no-op safely at point-min."
+  (with-temp-buffer
+    (cj/add-timestamp-to-org-entry "09:00")
+    (should (string-match-p "<[0-9]\\{4\\}-[0-9]\\{2\\}-[0-9]\\{2\\} [A-Za-z]\\{3\\} 09:00>"
+                            (buffer-string)))))
+
+(ert-deftest test-org-agenda-add-timestamp-read-only-buffer-signals ()
+  "Error: a read-only buffer signals rather than silently dropping the stamp."
+  (with-temp-buffer
+    (insert "* Heading")
+    (goto-char (point-min))
+    (setq buffer-read-only t)
+    (should-error (cj/add-timestamp-to-org-entry "09:00") :type 'buffer-read-only)))
+
+(defconst test-org-agenda--timeformat-special-at-load
+  (special-variable-p 'cj/timeformat)
+  "Whether `cj/timeformat' was special immediately after loading the module.
+Captured here at load, before any test body runs, because the fact under
+test is destroyed by observing it late: calling
+`cj/add-timestamp-to-org-entry' once would execute a `defvar' nested in the
+defun and make the symbol special retroactively.  ERT runs tests
+alphabetically, so an in-test `special-variable-p' check passes on the
+strength of whichever test ran first -- green in a full-file run, red in
+isolation.  Snapshotting at load makes the guard order-independent.")
+
+(ert-deftest test-org-agenda-timeformat-is-a-top-level-special-variable ()
+  "Normal: `cj/timeformat' is special and bound at load, not first call.
+It used to be `defvar'd inside `cj/add-timestamp-to-org-entry', so it was
+unbound until the command ran once and a `let' around the call bound it
+lexically instead of dynamically.  Pinning both halves of the fix: the
+symbol is special at load time, and rebinding it actually reaches the
+command."
+  (should test-org-agenda--timeformat-special-at-load)
+  (should (equal (default-value 'cj/timeformat) "%Y-%m-%d %a"))
+  ;; The dynamic binding must reach the insertion.
+  (with-temp-buffer
+    (insert "* Heading")
+    (goto-char (point-min))
+    (let ((cj/timeformat "%Y"))
+      (cj/add-timestamp-to-org-entry "09:00"))
+    (should (string-match-p "\\`<[0-9]\\{4\\} 09:00>\\'"
+                            (nth 1 (split-string (buffer-string) "\n"))))))
+
 (provide 'test-org-agenda-config-commands)
 ;;; test-org-agenda-config-commands.el ends here
