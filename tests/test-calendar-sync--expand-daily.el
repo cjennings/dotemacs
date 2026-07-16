@@ -176,5 +176,52 @@
          (occurrences (calendar-sync--expand-daily base-event rrule range)))
     (should (= (length occurrences) 5))))
 
+;;; UNTIL is inclusive (RFC 5545 3.3.10)
+
+(ert-deftest test-calendar-sync--expand-daily-until-includes-the-until-date ()
+  "Boundary: an occurrence falling ON the UNTIL date is kept.
+RFC 5545 3.3.10: UNTIL bounds the recurrence \"in an inclusive manner\", and
+when it lines up with the recurrence that date \"becomes the last instance\".
+A strict before-comparison drops it, so the last meeting of every bounded
+series silently vanishes from the agenda."
+  (let* ((start-date (test-calendar-sync-time-days-from-now 1 10 0))
+         (until-date (test-calendar-sync-time-date-only 5))
+         (base-event (list :summary "Bounded Standup" :start start-date))
+         (rrule (list :freq 'daily :interval 1 :until until-date))
+         (range (test-calendar-sync-wide-range))
+         (occurrences (calendar-sync--expand-daily base-event rrule range))
+         (last-start (plist-get (car (last occurrences)) :start)))
+    ;; day+1 through day+5 inclusive = 5 occurrences.
+    (should (= (length occurrences) 5))
+    ;; The final occurrence is the UNTIL date itself.
+    (should (equal (seq-take last-start 3) until-date))))
+
+(ert-deftest test-calendar-sync--expand-daily-until-excludes-dates-after-it ()
+  "Boundary: inclusivity stops at UNTIL; the next day is not generated.
+Guards the fix against over-correcting into an off-by-one the other way."
+  (let* ((start-date (test-calendar-sync-time-days-from-now 1 10 0))
+         (until-date (test-calendar-sync-time-date-only 5))
+         (day-after (test-calendar-sync-time-date-only 6))
+         (base-event (list :summary "Bounded Standup" :start start-date))
+         (rrule (list :freq 'daily :interval 1 :until until-date))
+         (range (test-calendar-sync-wide-range))
+         (occurrences (calendar-sync--expand-daily base-event rrule range))
+         (dates (mapcar (lambda (o) (seq-take (plist-get o :start) 3)) occurrences)))
+    (should (member until-date dates))
+    (should-not (member day-after dates))))
+
+(ert-deftest test-calendar-sync--expand-daily-until-on-start-date-yields-one ()
+  "Boundary: UNTIL equal to the start date yields exactly that one occurrence.
+The degenerate single-instance series -- a strict comparison returns nothing
+at all here, which is the same defect at its smallest."
+  (let* ((start-date (test-calendar-sync-time-days-from-now 1 10 0))
+         (until-date (test-calendar-sync-time-date-only 1))
+         (base-event (list :summary "One Shot" :start start-date))
+         (rrule (list :freq 'daily :interval 1 :until until-date))
+         (range (test-calendar-sync-wide-range))
+         (occurrences (calendar-sync--expand-daily base-event rrule range)))
+    (should (= (length occurrences) 1))
+    (should (equal (seq-take (plist-get (car occurrences) :start) 3) until-date))))
+
 (provide 'test-calendar-sync--expand-daily)
 ;;; test-calendar-sync--expand-daily.el ends here

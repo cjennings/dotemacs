@@ -270,5 +270,33 @@
         (should (= (length occurrences) 0)))
     (test-calendar-sync--expand-weekly-teardown)))
 
+;;; UNTIL is inclusive (RFC 5545 3.3.10)
+
+(ert-deftest test-calendar-sync--expand-weekly-until-includes-the-until-date ()
+  "Boundary: a weekly occurrence landing ON the UNTIL date is kept.
+The weekly loop checks UNTIL in two places -- the outer week-stepping guard
+and the per-weekday check inside it -- so it needs its own guard rather than
+inheriting the daily one.  Fixing the loop without this test left weekly
+silently unprotected: reverting the fix failed three daily tests and zero
+weekly ones."
+  (test-calendar-sync--expand-weekly-setup)
+  (unwind-protect
+      ;; Omitting :byday makes the series recur on the start date's own weekday,
+      ;; which anchors UNTIL exactly on an occurrence without hardcoding a date.
+      (let* ((start-date (test-calendar-sync-time-days-from-now 1 9 0))
+             (week-2 (test-calendar-sync-time-date-only 8))
+             (until-date (test-calendar-sync-time-date-only 15))
+             (week-4 (test-calendar-sync-time-date-only 22))
+             (base-event (list :summary "Bounded Weekly" :start start-date))
+             (rrule (list :freq 'weekly :interval 1 :until until-date))
+             (range (test-calendar-sync-wide-range))
+             (occurrences (calendar-sync--expand-weekly base-event rrule range))
+             (dates (mapcar (lambda (o) (seq-take (plist-get o :start) 3)) occurrences)))
+        ;; day+1, +8, +15 are consecutive same-weekday dates; UNTIL is the third.
+        (should (equal dates (list (seq-take start-date 3) week-2 until-date)))
+        ;; Inclusivity stops at UNTIL -- the following week is not generated.
+        (should-not (member week-4 dates)))
+    (test-calendar-sync--expand-weekly-teardown)))
+
 (provide 'test-calendar-sync--expand-weekly)
 ;;; test-calendar-sync--expand-weekly.el ends here

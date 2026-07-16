@@ -77,12 +77,21 @@ For any COUNT value N, expansion never produces more than N occurrences."
 
 ;;; Property 2: UNTIL Boundary
 
+;; These two asserted the wrong invariant until 2026-07-16: they required every
+;; occurrence to fall strictly BEFORE UNTIL, which is the exclusive reading RFC
+;; 5545 3.3.10 contradicts ("bounds the recurrence rule in an inclusive manner";
+;; a UNTIL synchronized with the recurrence "becomes the last instance").  They
+;; were written against the expansion loop's strict `before-date-p' guard and so
+;; pinned the very defect that dropped the last instance of every bounded series.
+;; The property is on-or-before; the upper bound is what UNTIL is for.
+
 (ert-deftest test-calendar-sync-property-until-bounds-daily ()
-  "Property: No daily occurrence starts on or after UNTIL date."
+  "Property: no daily occurrence starts after the UNTIL date.
+UNTIL is an inclusive bound (RFC 5545 3.3.10), so landing exactly on it is
+correct and only a later date violates the property."
   (dotimes (_ test-calendar-sync-property-trials)
     (let* ((start-date (test-calendar-sync-time-days-from-now 1 10 0))
            (until-days (+ 10 (random 60)))
-           ;; UNTIL must be date-only (3 elements) for calendar-sync--before-date-p
            (until-date (test-calendar-sync-time-date-only until-days))
            (base-event (list :summary "Until Test" :start start-date))
            (rrule (list :freq 'daily :interval 1 :until until-date))
@@ -90,16 +99,35 @@ For any COUNT value N, expansion never produces more than N occurrences."
            (occurrences (calendar-sync--expand-daily base-event rrule range)))
       (dolist (occ occurrences)
         (let ((occ-start (plist-get occ :start)))
-          (should (calendar-sync--before-date-p
+          (should (calendar-sync--date-on-or-before-p
                    (list (nth 0 occ-start) (nth 1 occ-start) (nth 2 occ-start))
                    until-date)))))))
 
+(ert-deftest test-calendar-sync-property-until-bounds-daily-reaches-until ()
+  "Property: a daily series stepping by one day always reaches its UNTIL date.
+With interval 1 the recurrence is synchronized with any UNTIL, so the last
+instance must be UNTIL itself.  This is the half the old exclusive property
+could never have caught -- it only bounded from above, so silently dropping
+the final occurrence satisfied it."
+  (dotimes (_ test-calendar-sync-property-trials)
+    (let* ((start-date (test-calendar-sync-time-days-from-now 1 10 0))
+           (until-days (+ 10 (random 60)))
+           (until-date (test-calendar-sync-time-date-only until-days))
+           (base-event (list :summary "Until Test" :start start-date))
+           (rrule (list :freq 'daily :interval 1 :until until-date))
+           (range (test-calendar-sync-wide-range))
+           (occurrences (calendar-sync--expand-daily base-event rrule range))
+           (last-start (plist-get (car (last occurrences)) :start)))
+      (should occurrences)
+      (should (equal (seq-take last-start 3) until-date)))))
+
 (ert-deftest test-calendar-sync-property-until-bounds-weekly ()
-  "Property: No weekly occurrence starts on or after UNTIL date."
+  "Property: no weekly occurrence starts after the UNTIL date.
+UNTIL is an inclusive bound (RFC 5545 3.3.10), so landing exactly on it is
+correct and only a later date violates the property."
   (dotimes (_ test-calendar-sync-property-trials)
     (let* ((start-date (test-calendar-sync-time-days-from-now 1 10 0))
            (until-days (+ 14 (random 60)))
-           ;; UNTIL must be date-only (3 elements) for calendar-sync--before-date-p
            (until-date (test-calendar-sync-time-date-only until-days))
            (weekdays (test-calendar-sync-random-weekday-subset))
            (base-event (list :summary "Until Test" :start start-date))
@@ -108,7 +136,7 @@ For any COUNT value N, expansion never produces more than N occurrences."
            (occurrences (calendar-sync--expand-weekly base-event rrule range)))
       (dolist (occ occurrences)
         (let ((occ-start (plist-get occ :start)))
-          (should (calendar-sync--before-date-p
+          (should (calendar-sync--date-on-or-before-p
                    (list (nth 0 occ-start) (nth 1 occ-start) (nth 2 occ-start))
                    until-date)))))))
 

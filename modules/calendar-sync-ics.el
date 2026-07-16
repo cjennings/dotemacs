@@ -218,6 +218,18 @@ Both dates should be lists like (year month day)."
   (time-less-p (calendar-sync--date-to-time date1)
                (calendar-sync--date-to-time date2)))
 
+(defun calendar-sync--date-on-or-before-p (date1 date2)
+  "Return t if DATE1 falls on or before DATE2.
+Both dates should be lists like (year month day); like
+`calendar-sync--date-to-time', only the first three elements are compared,
+so any hour/minute tail is ignored.
+
+This is the comparison RRULE UNTIL needs.  RFC 5545 3.3.10 bounds a
+recurrence \"in an inclusive manner\": when UNTIL lines up with the
+recurrence, that date is the last instance.  A strict
+`calendar-sync--before-date-p' drops it."
+  (not (calendar-sync--before-date-p date2 date1)))
+
 ;;; Datetime Parsing
 
 (defun calendar-sync--parse-ics-datetime (value)

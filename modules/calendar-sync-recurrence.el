@@ -322,7 +322,8 @@ ADVANCE-FN takes (current-date interval) and returns the next date."
          (num-generated 0)
          (range-end-time (cadr range)))
     (while (and (or count until (time-less-p (calendar-sync--date-to-time current-date) range-end-time))
-                (or (not until) (calendar-sync--before-date-p current-date until))
+                ;; UNTIL is inclusive (RFC 5545 3.3.10) -- on-or-before, not before.
+                (or (not until) (calendar-sync--date-on-or-before-p current-date until))
                 (or (not count) (< num-generated count)))
       (let ((occurrence-datetime (append current-date (nthcdr 3 start))))
         (setq num-generated (1+ num-generated))
@@ -364,7 +365,8 @@ BASE-EVENT is the event plist, RRULE is parsed rrule, RANGE is date range."
     (while (and (< iterations max-iterations)
                 (or count until (time-less-p (calendar-sync--date-to-time current-date) range-end-time))
                 (or (not count) (< num-generated count))
-                (or (not until) (calendar-sync--before-date-p current-date until)))
+                ;; UNTIL is inclusive (RFC 5545 3.3.10) -- on-or-before, not before.
+                (or (not until) (calendar-sync--date-on-or-before-p current-date until)))
       (setq iterations (1+ iterations))
       ;; Generate occurrences for each weekday in this week
       (dolist (weekday weekdays)
@@ -372,8 +374,8 @@ BASE-EVENT is the event plist, RRULE is parsed rrule, RANGE is date range."
                (days-ahead (mod (- weekday current-weekday) 7))
                (occurrence-date (calendar-sync--add-days current-date days-ahead))
                (occurrence-datetime (append occurrence-date (nthcdr 3 start))))
-          ;; Check UNTIL date first
-          (when (or (not until) (calendar-sync--before-date-p occurrence-date until))
+          ;; Check UNTIL date first -- inclusive per RFC 5545 3.3.10.
+          (when (or (not until) (calendar-sync--date-on-or-before-p occurrence-date until))
             ;; Check COUNT - increment BEFORE range check so COUNT is absolute from start
             (when (or (not count) (< num-generated count))
               (setq num-generated (1+ num-generated))
