@@ -32,8 +32,13 @@ EMACS_HOME = $(HOME)/.emacs.d
 OUT ?= themes
 
 # Test files
+# NOTE: filter-out takes make patterns, where % is the wildcard; $(wildcard ...)
+# takes a shell glob, where % is a literal character and * is the wildcard.  The
+# two are not interchangeable.  INTEGRATION_TESTS used a % here and so expanded
+# to nothing, which silently skipped every integration test in `make test' while
+# it still printed ALL TESTS COMPLETE.
 UNIT_TESTS = $(filter-out $(TEST_DIR)/test-integration-%.el, $(wildcard $(TEST_DIR)/test-*.el))
-INTEGRATION_TESTS = $(wildcard $(TEST_DIR)/test-integration-%.el)
+INTEGRATION_TESTS = $(wildcard $(TEST_DIR)/test-integration-*.el)
 ALL_TESTS = $(UNIT_TESTS) $(INTEGRATION_TESTS)
 BASH_TESTS = $(wildcard $(TEST_DIR)/*.bats)
 

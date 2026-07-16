@@ -187,12 +187,21 @@ Components integrated:
 
 Validates:
 - Org timestamp format is correct (<YYYY-MM-DD Day HH:MM-HH:MM>)
-- Hour in timestamp is the converted local hour"
-  (let* ((source-time (list 2026 2 2 19 0))
+- Hour in timestamp is the converted local hour
+
+The date is generated relative to now because `calendar-sync--parse-ics'
+drops events outside `calendar-sync--get-date-range' (today minus
+`calendar-sync-past-months', plus `calendar-sync-future-months').  This test
+used a hardcoded 2026-02-02, which sat inside that window when it was written
+and fell out of it once three months had passed -- the event was filtered
+before rendering and the assertion failed against an empty org buffer.  The
+sibling tests survived hardcoded dates only because they call
+`calendar-sync--parse-event' directly, which applies no range filter."
+  (let* ((source-time (test-calendar-sync-time-days-from-now 7 19 0))
          (ics (test-integration-tz--make-ics-with-tzid-event
                "Test Event" source-time "Europe/Lisbon"))
-         (expected-local (test-calendar-sync-convert-tz-via-date
-                          2026 2 2 19 0 "Europe/Lisbon"))
+         (expected-local (apply #'test-calendar-sync-convert-tz-via-date
+                                (append source-time (list "Europe/Lisbon"))))
          (expected-hour (nth 3 expected-local))
          (org-output (calendar-sync--parse-ics ics)))
     (should org-output)

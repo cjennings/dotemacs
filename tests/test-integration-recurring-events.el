@@ -34,6 +34,65 @@
 
 ;;; Test Data
 
+;; Fixtures that reach `calendar-sync--parse-ics' must carry dates relative to
+;; now.  That entry point drops any event outside
+;; `calendar-sync--get-date-range' (today minus `calendar-sync-past-months',
+;; plus `calendar-sync-future-months'), so a hardcoded DTSTART works only until
+;; the rolling window moves past it.  Three tests here rotted exactly that way:
+;; their November-2025 fixtures aged out of the window, the events were filtered
+;; before rendering, and the assertions failed against an empty org buffer.  The
+;; weekly fixtures survived only because an unbounded RRULE keeps generating
+;; occurrences into the window no matter how old its DTSTART is.
+;;
+;; Fixtures given straight to `calendar-sync--parse-event' can stay static --
+;; that path applies no range filter.
+
+(defun test-integration-recurring-events--ics-stamp (offset-days hour minute)
+  "Return an ICS UTC datetime OFFSET-DAYS from today at HOUR:MINUTE."
+  (let ((d (test-calendar-sync-time-days-from-now offset-days hour minute)))
+    (format "%04d%02d%02dT%02d%02d00Z" (nth 0 d) (nth 1 d) (nth 2 d) hour minute)))
+
+(defun test-integration-recurring-events--daily-with-count-ics ()
+  "ICS with a COUNT=5 daily series starting inside the sync window."
+  (format "BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//Test//Test//EN
+BEGIN:VEVENT
+DTSTART:%s
+DTEND:%s
+RRULE:FREQ=DAILY;COUNT=5
+SUMMARY:Daily Standup
+UID:test-daily@example.com
+END:VEVENT
+END:VCALENDAR"
+          (test-integration-recurring-events--ics-stamp 2 9 0)
+          (test-integration-recurring-events--ics-stamp 2 10 0)))
+
+(defun test-integration-recurring-events--mixed-ics ()
+  "ICS mixing a one-time event and a recurring one, both inside the window."
+  (format "BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//Test//Test//EN
+BEGIN:VEVENT
+DTSTART:%s
+DTEND:%s
+SUMMARY:One-time Meeting
+UID:test-onetime@example.com
+END:VEVENT
+BEGIN:VEVENT
+DTSTART;TZID=America/Chicago:%s
+DTEND;TZID=America/Chicago:%s
+RRULE:FREQ=WEEKLY;BYDAY=MO,WE,FR
+SUMMARY:Recurring Standup
+UID:test-recurring@example.com
+END:VEVENT
+END:VCALENDAR"
+          (test-integration-recurring-events--ics-stamp 3 14 0)
+          (test-integration-recurring-events--ics-stamp 3 15 0)
+          ;; TZID form carries no Z suffix.
+          (string-remove-suffix "Z" (test-integration-recurring-events--ics-stamp 5 9 30))
+          (string-remove-suffix "Z" (test-integration-recurring-events--ics-stamp 5 10 30))))
+
 (defconst test-integration-recurring-events--weekly-ics
   "BEGIN:VCALENDAR
 VERSION:2.0
@@ -47,40 +106,6 @@ UID:test-weekly@example.com
 END:VEVENT
 END:VCALENDAR"
   "Test ICS with weekly recurring event (GTFO use case).")
-
-(defconst test-integration-recurring-events--daily-with-count-ics
-  "BEGIN:VCALENDAR
-VERSION:2.0
-PRODID:-//Test//Test//EN
-BEGIN:VEVENT
-DTSTART:20251120T090000Z
-DTEND:20251120T100000Z
-RRULE:FREQ=DAILY;COUNT=5
-SUMMARY:Daily Standup
-UID:test-daily@example.com
-END:VEVENT
-END:VCALENDAR"
-  "Test ICS with daily recurring event limited by COUNT.")
-
-(defconst test-integration-recurring-events--mixed-ics
-  "BEGIN:VCALENDAR
-VERSION:2.0
-PRODID:-//Test//Test//EN
-BEGIN:VEVENT
-DTSTART:20251125T140000Z
-DTEND:20251125T150000Z
-SUMMARY:One-time Meeting
-UID:test-onetime@example.com
-END:VEVENT
-BEGIN:VEVENT
-DTSTART;TZID=America/Chicago:20251201T093000
-DTEND;TZID=America/Chicago:20251201T103000
-RRULE:FREQ=WEEKLY;BYDAY=MO,WE,FR
-SUMMARY:Recurring Standup
-UID:test-recurring@example.com
-END:VEVENT
-END:VCALENDAR"
-  "Test ICS with mix of recurring and non-recurring events.")
 
 ;;; Normal Cases - Complete Workflow
 
@@ -133,7 +158,7 @@ Validates:
 - Exactly 5 occurrences created"
   (test-integration-recurring-events-setup)
   (unwind-protect
-      (let ((org-output (calendar-sync--parse-ics test-integration-recurring-events--daily-with-count-ics)))
+      (let ((org-output (calendar-sync--parse-ics (test-integration-recurring-events--daily-with-count-ics))))
         (should (stringp org-output))
 
         ;; Should generate exactly 5 Daily Standup entries
@@ -160,7 +185,7 @@ Validates:
 - Events are sorted chronologically"
   (test-integration-recurring-events-setup)
   (unwind-protect
-      (let ((org-output (calendar-sync--parse-ics test-integration-recurring-events--mixed-ics)))
+      (let ((org-output (calendar-sync--parse-ics (test-integration-recurring-events--mixed-ics))))
         (should (stringp org-output))
 
         ;; Should have one-time meeting
@@ -291,18 +316,21 @@ Validates:
 - Valid events still processed"
   (test-integration-recurring-events-setup)
   (unwind-protect
-      (let* ((incomplete-ics "BEGIN:VCALENDAR
+      (let* ((incomplete-ics (format "BEGIN:VCALENDAR
 VERSION:2.0
 BEGIN:VEVENT
-DTSTART:20251201T100000Z
+DTSTART:%s
 RRULE:FREQ=DAILY;COUNT=2
 END:VEVENT
 BEGIN:VEVENT
 SUMMARY:Valid Event
-DTSTART:20251201T110000Z
-DTEND:20251201T120000Z
+DTSTART:%s
+DTEND:%s
 END:VEVENT
-END:VCALENDAR")
+END:VCALENDAR"
+                                     (test-integration-recurring-events--ics-stamp 4 10 0)
+                                     (test-integration-recurring-events--ics-stamp 4 11 0)
+                                     (test-integration-recurring-events--ics-stamp 4 12 0)))
              (org-output (calendar-sync--parse-ics incomplete-ics)))
         ;; Should still generate output (for valid event)
         (should (stringp org-output))

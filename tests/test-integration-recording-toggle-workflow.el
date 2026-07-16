@@ -43,6 +43,24 @@
 
 ;;; Setup and Teardown
 
+(defun test-integration-toggle--fake-pactl (cmd &rest _)
+  "Answer pactl queries for CMD from fixture devices, never the real machine.
+
+`cj/recording-get-devices' runs `cj/recording--validate-system-audio', which
+shells out to pactl, decides a fixture device name is not a real source, and
+\"auto-fixes\" the configured device to the default sink's monitor.  Left
+unmocked that clobbers the test's device with whatever hardware the developer
+has plugged in, so the assertions compare against a JDS Labs DAC rather than
+the fixture.  Answering at the shell boundary keeps the real validation logic
+under test while the machine stays out of it."
+  (cond
+   ((string-match-p "get-default-sink" cmd) "fixture-sink\n")
+   ((string-match-p "list sources short" cmd)
+    "0\ttest-monitor\tmodule-x\ts16le 2ch 44100Hz\tIDLE\n1\tcached-monitor\tmodule-x\ts16le 2ch 44100Hz\tIDLE\n")
+   ((string-match-p "list sinks short" cmd)
+    "0\tfixture-sink\tmodule-x\ts16le 2ch 44100Hz\tRUNNING\n")
+   (t "")))
+
 (defun test-integration-toggle-setup ()
   "Reset all variables before each test."
   (setq cj/video-recording-ffmpeg-process nil)
@@ -102,6 +120,8 @@ Validates:
                      (setq setup-called t)
                      (setq cj/recording-mic-device "test-mic")
                      (setq cj/recording-system-device "test-monitor")))
+                  ((symbol-function 'shell-command-to-string)
+                   #'test-integration-toggle--fake-pactl)
                   ((symbol-function 'file-directory-p)
                    (lambda (_dir) t))
                   ((symbol-function 'start-process-shell-command)
@@ -168,6 +188,8 @@ Validates:
               (ffmpeg-cmd nil))
           (cl-letf (((symbol-function 'cj/recording-quick-setup)
                      (lambda () (setq setup-called t)))
+                    ((symbol-function 'shell-command-to-string)
+                     #'test-integration-toggle--fake-pactl)
                     ((symbol-function 'file-directory-p)
                      (lambda (_dir) t))
                     ((symbol-function 'start-process-shell-command)
