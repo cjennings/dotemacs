@@ -504,24 +504,63 @@ Returns nil if parsing fails."
           (string-to-number (match-string 3 timestamp-str))))
    (t nil)))
 
+(defun calendar-sync--format-stamp (date &optional time-str)
+  "Return one org timestamp for DATE, with TIME-STR appended when non-nil.
+DATE is a (year month day) list; TIME-STR is a preformatted leading-space
+string such as \" 14:00\" or \" 14:00-15:30\".  Produces
+`<2025-11-16 Sun 14:00>' or `<2025-11-16 Sun>'.  Both the compact same-day
+form and each half of a multi-day range are built from this."
+  (concat (format-time-string
+           "<%Y-%m-%d %a"
+           (encode-time 0 0 0 (nth 2 date) (nth 1 date) (nth 0 date)))
+          time-str
+          ">"))
+
+(defun calendar-sync--format-hhmm (hour minute)
+  "Return \" HH:MM\" for HOUR and MINUTE, or nil unless both are non-nil."
+  (when (and hour minute) (format " %02d:%02d" hour minute)))
+
 (defun calendar-sync--format-timestamp (start end)
-  "Format START and END timestamps as org timestamp.
+  "Format START and END timestamps as an org timestamp.
 START and END are lists from `calendar-sync--parse-timestamp'.
-Returns string like '<2025-11-16 Sun 14:00-15:00>' or '<2025-11-16 Sun>'."
-  (let* ((year (nth 0 start))
-         (month (nth 1 start))
-         (day (nth 2 start))
+
+Same-day events keep the compact form: `<2025-11-16 Sun 14:00-15:00>' when
+timed, `<2025-11-16 Sun>' when all-day.  An event whose last day is later
+than its start renders as an org range, `<start>--<end>', so the agenda shows
+it on every day it covers rather than only the first.
+
+DTEND is the non-inclusive end of the event (RFC 5545 3.6.1).  For an all-day
+event that makes DTEND the day AFTER the last day, so the last day is
+DTEND-1 and a one-day all-day event (DTEND = start+1) stays a single stamp.
+For a timed event DTEND is the end instant, so its date is already the last
+day.  The decrement is therefore gated on both ends being date-only; a
+date-only start with a timed end is malformed, and treating it as all-day
+would push the last day BEFORE the start and emit a backwards range."
+  (let* ((start-date (list (nth 0 start) (nth 1 start) (nth 2 start)))
          (start-hour (nth 3 start))
          (start-min (nth 4 start))
          (end-hour (and end (nth 3 end)))
          (end-min (and end (nth 4 end)))
-         (date-str (format-time-string
-                    "<%Y-%m-%d %a"
-                    (encode-time 0 0 0 day month year)))
-         (time-str (when (and start-hour end-hour)
-                     (format " %02d:%02d-%02d:%02d"
-                             start-hour start-min end-hour end-min))))
-    (concat date-str time-str ">")))
+         (all-day-span (and end (null start-hour) (null end-hour)))
+         (last-date (when end
+                      (let ((end-date (list (nth 0 end) (nth 1 end) (nth 2 end))))
+                        (if all-day-span
+                            (calendar-sync--add-days end-date -1)
+                          end-date))))
+         (spans-days (and last-date
+                          (calendar-sync--before-date-p start-date last-date))))
+    (if spans-days
+        (concat (calendar-sync--format-stamp
+                 start-date (calendar-sync--format-hhmm start-hour start-min))
+                "--"
+                (calendar-sync--format-stamp
+                 last-date (calendar-sync--format-hhmm end-hour end-min)))
+      ;; Same-day: the compact HH:MM-HH:MM range lives inside one stamp.
+      (calendar-sync--format-stamp
+       start-date
+       (when (and start-hour end-hour)
+         (format " %02d:%02d-%02d:%02d"
+                 start-hour start-min end-hour end-min))))))
 
 ;;; Single Event Parsing
 
