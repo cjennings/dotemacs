@@ -70,9 +70,10 @@ silently does nothing."
   (should-not (boundp 'cj/--music-playlist-width))
   (should-not (fboundp 'cj/--music-playlist-side)))
 
-(ert-deftest test-music-config-playlist-default-height-is-a-third ()
-  "Normal: the dock opens at a third of the frame height by default."
-  (should (= cj/music-playlist-window-height 0.33)))
+(ert-deftest test-music-config-playlist-default-height-is-half ()
+  "Normal: the dock opens at half the frame height by default (Craig,
+2026-07-18 -- a third still read too short for a real playlist)."
+  (should (= cj/music-playlist-window-height 0.5)))
 
 (ert-deftest test-music-config-playlist-toggle-off-discards-shrunk-height ()
   "Error: a captured height below the default is discarded.  Window churn

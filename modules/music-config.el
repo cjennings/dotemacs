@@ -898,13 +898,13 @@ Intended for use on `emms-player-finished-hook'."
 )
 
 
-(defvar cj/music-playlist-window-height 0.33
+(defvar cj/music-playlist-window-height 0.5
   "Default fraction of frame height for the F10 music playlist side window.
-A third of the frame, so a playlist of real length shows enough rows.
-Used when the playlist hasn't been resized and toggled off this session;
-after that, the toggled-off height is remembered in
-`cj/--music-playlist-height' -- but only when it's at least this default
-\(see the discard in `cj/music-playlist-toggle').")
+Half the frame, so a playlist of real length shows enough rows (a third
+still read too short in practice).  Used when the playlist hasn't been
+resized and toggled off this session; after that, the toggled-off height
+is remembered in `cj/--music-playlist-height' -- but only when it's at
+least this default (see the discard in `cj/music-playlist-toggle').")
 
 (defvar cj/--music-playlist-height nil
   "Last height fraction the playlist was toggled off at.
