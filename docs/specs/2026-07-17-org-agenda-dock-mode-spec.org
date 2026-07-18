@@ -1,0 +1,181 @@
+#+TITLE: org-agenda sticky dock mode — Spec
+#+AUTHOR: Craig Jennings
+#+DATE: 2026-07-17
+#+TODO: TODO | DONE
+#+TODO: DRAFT READY DOING | IMPLEMENTED SUPERSEDED CANCELLED
+
+* DRAFT org-agenda dock mode
+:PROPERTIES:
+:ID:       7705c94b-9bb7-47d8-9828-e9584172c54f
+:END:
+- 2026-07-17 Fri @ 19:34:07 -0500 — drafted.
+
+* Metadata
+| Status   | draft                                          |
+|----------+------------------------------------------------|
+| Owner    | Craig Jennings                                 |
+|----------+------------------------------------------------|
+| Reviewer | Craig Jennings                                 |
+|----------+------------------------------------------------|
+| Related  | [[file:../../todo.org][dock-mode task (Emacs Open Work)]] |
+|----------+------------------------------------------------|
+
+* Summary
+
+A persistent right-side agenda dock: one key launches org-agenda as a full-height panel pinned to the right of the frame, showing the task list and schedule, refreshing itself every few minutes. The point is to always have the day's work visible and one keystroke from action, without the agenda stealing the whole frame the way the normal below-selected view does.
+
+* Problem / Context
+
+The normal agenda (=<f8>=, =cj/main-agenda-display=) opens below-selected at 75% of the frame (=cj/org-agenda-window-height=, applied through =cj/--org-agenda-display-rule=). That's a modal, take-over-the-frame view: you summon it, read it, dismiss it, and go back to work. There's no way to keep the schedule and task list glanceable while working in the same frame, and no live refresh, so an agenda left open drifts stale (the now-line and freshly-synced calendar events don't move).
+
+Craig wants a second, non-modal display: the agenda living on the right of the screen as a reference panel, current, ready to engage when something needs doing. This is a distinct mode from the existing full-view agenda, not a replacement for it.
+
+* Goals and Non-Goals
+
+** Goals
+- A right-side, full-height dock showing the task list and schedule, that does not consume the working area.
+- Live: the dock refreshes on a few-minute cadence so the now-line and synced events stay current.
+- Non-modal and durable: it survives =delete-other-windows= and ordinary window churn, staying available until explicitly dismissed.
+- One key to toggle it; engaging a task from it opens the file in the working area, not over the dock.
+
+** Non-Goals
+- Not a replacement for the existing =<f8>= full-view agenda — that stays as is.
+- Not a capture/scratch surface in v1. Whether the dock should double as a scratchpad is a separate exploration (see the [#D] task); v1 is read + engage only.
+- Not a cross-frame or persistent-across-restart panel in v1 (side windows are per-frame; startup auto-open is the only persistence considered).
+- Not a redesign of agenda content or faces — it reuses org-agenda's rendering.
+
+** Scope tiers
+- v1: toggle command + right side-window display (full height, ignores the 0.75 rule); a dock composite view; a dock-scoped refresh timer; jump-to-task opens in the main window; keybinding move.
+- Out of scope: the scratchpad surface; multi-frame sync; persisting dock state across Emacs restarts beyond a startup auto-open flag.
+- vNext: scratchpad exploration (its own task); richer dock view tuning once the mode is in daily use.
+
+* Design
+
+The dock is a dedicated side window on the right, created by =display-buffer-in-side-window= with =side = right= and a fixed width. Side windows are the correct primitive here for three reasons the below-selected rule can't give: they're persistent (org's own window-management leaves them alone), they're protected from =delete-other-windows= (=C-x 1= in the working area won't destroy the dock), and they don't participate in normal buffer display, so a file the user opens lands in the working area rather than the dock. The mode overrides =cj/--org-agenda-display-rule= for the agenda buffer while the dock is active, so the 75% below-selected behavior no longer applies to it.
+
+For the user, the interface is one key. =S-<f8>= toggles the dock: open it if closed, close it if open. The current occupant of =S-<f8>= (=cj/org-agenda-refresh-files=, the manual force-rescan shipped in 17ae3e2a) moves to =C-M-<f8>=, keeping the whole force-refresh idea in the F8 family. Engaging a task (=RET=/=TAB= on an agenda line) opens the target file in the working window; the dock stays put.
+
+For the implementer, three pieces compose:
+
+1. A toggle command that shows or hides the dock. Showing it runs the dock's agenda command into a side window; hiding it deletes that window (and stops the timer). The dock's window carries parameters marking it a side window and protecting it from deletion.
+
+2. A dock agenda view, defined as an =org-agenda-custom-commands= entry, that composes the day/next-few-days schedule with a prioritized TODO block — "task list and schedule" as one view. It uses a narrower =org-agenda-prefix-format= than the full view so lines don't wrap at dock width, and runs with =org-agenda-sticky= on so the dock buffer persists and re-runs (redo) are instant and don't re-prompt.
+
+3. A refresh timer scoped to the dock: an =org-agenda-redo= on the dock buffer every 5 minutes, aligned to the wall-clock 5-minute mark. It starts when the dock opens and cancels when the dock closes, so there's no timer churn when the dock isn't up. =redo= re-reads the agenda files' contents (calendar sync, task edits) but not the file list — a newly-created project's todo.org still needs the manual force-rescan, consistent with the just-raised 24h cache TTL.
+
+** Not a prototype-pipeline UI
+
+=ui-prototyping.md='s research → five-prototype → iterate process governs bespoke visual surfaces (panels, multi-control widgets, SVG faceplates). This dock is org-agenda's existing text rendering placed in a side window; the layout question ("where does it go?") is answered in a sentence (full-height, right). So the prototype pipeline is intentionally skipped. The open questions here are behavioral (width, view shape, focus, auto-open), not visual-layout, and they're settled in the Decisions below, not against prototypes.
+
+* Alternatives Considered
+
+** Side window (chosen)
+- Good, because it's persistent, protected from =delete-other-windows=, and naturally keeps opened files out of the dock.
+- Good, because org-mode already understands side windows in its window management, so the dock coexists with org's own window juggling.
+- Neutral, because it's per-frame — a second frame doesn't get the dock for free (acceptable for v1).
+
+** A dedicated agenda frame
+- Good, because it's fully isolated and survives everything in the main frame.
+- Bad, because it's a separate window the WM has to place and manage, and it defeats the "on the right of the screen I'm working in" use case — the dock wants to share the frame, not float beside it.
+
+** A normal split window (what the current view nearly is)
+- Good, because it's the least new machinery.
+- Bad, because it isn't protected: =C-x 1= kills it, opening a file can reuse it, and there's no clean "this is a dock" identity to hang a scoped timer or width on. This is exactly what the current 0.75 rule gives and what the dock needs to be different from.
+
+** Global "refresh any visible agenda" timer
+- Good, because it would also refresh the =<f8>= full view when left open.
+- Bad, because it has no clean lifecycle — it has to poll for visible agenda buffers and decide when to stop. The dock-scoped timer starts and stops with the dock, which is simpler and matches the feature's boundary.
+
+* Decisions [4/8]
+
+** DONE Side window as the display mechanism
+- Context: needs to be persistent, glanceable, and survive =delete-other-windows=; the below-selected 0.75 rule gives none of that.
+- Decision: We will display the dock with =display-buffer-in-side-window= (=side = right=, fixed width), overriding =cj/--org-agenda-display-rule= for the dock's agenda buffer.
+- Consequences: easier — persistence, protection, and opened-file routing come for free. Harder — it's per-frame, and side-window width/protection parameters have to be set explicitly.
+
+** DONE Dock-scoped refresh via org-agenda-redo, wall-clock aligned
+- Context: the dock must stay current (now-line, synced events) without re-scanning the file list or churning a timer when it's closed.
+- Decision: We will run =org-agenda-redo= on the dock buffer every 5 minutes aligned to the :00/:05/:10 mark, started on open and cancelled on close. Not a file-list rebuild — that's the manual force-rescan.
+- Consequences: easier — cheap, self-scoped, picks up content changes. Harder — a brand-new project's todo.org won't appear until a manual force-rescan or the 24h cache TTL lapses.
+
+** DONE Jump-to-task opens in the working window, not the dock
+- Context: engaging a task from a side-window agenda must not replace the dock with the target file.
+- Decision: We will configure display so =RET=/=TAB= on an agenda line opens the file in the main working window and leaves the dock intact.
+- Consequences: easier — the dock is genuinely "ready to engage." Harder — needs deliberate =display-buffer= / =org-agenda-window-setup= handling so the side window is never chosen as the jump target.
+
+** DONE Keybinding: S-<f8> toggles the dock; force-refresh moves to C-M-<f8>
+- Context: =S-<f8>= currently runs =cj/org-agenda-refresh-files= (shipped 17ae3e2a); Craig wants =S-<f8>= for the dock.
+- Decision: We will bind =S-<f8>= to the dock toggle and rebind =cj/org-agenda-refresh-files= to =C-M-<f8>=, keeping both in the F8 agenda family.
+- Consequences: easier — the primary new gesture is the shifted F8, next to the other agenda keys. Harder — one existing binding moves; the docstring/family comment needs updating.
+
+** TODO Dock width
+- Owner / by-when: Craig / before Phase 1
+- Context: the dock needs a width that fits the composite view without wrapping, but doesn't crowd the working area on a normal-width frame.
+- Decision: We will set the dock width to <fixed columns or a frame fraction — TBD>.
+- Consequences: easier once fixed — the prefix format can be tuned to it. Harder — too narrow wraps lines, too wide steals working space.
+
+** TODO Dock composite view shape
+- Owner / by-when: Craig / before Phase 2
+- Context: "task list and schedule" is a composite — how many days of agenda, which TODO block, what sort.
+- Decision: We will define the dock view as <day vs next-N-days agenda + which TODO/priority block — TBD>.
+- Consequences: easier once fixed — one =org-agenda-custom-commands= entry. Harder — the wrong composition makes the dock either too noisy or too sparse to be worth the screen space.
+
+** TODO Focus-on-open behavior
+- Owner / by-when: Craig / before Phase 1
+- Context: opening the dock either keeps focus in the working window (reference panel) or moves point into the dock (act immediately).
+- Decision: We will <keep focus in the working window, second press enters / move focus into the dock — TBD>.
+- Consequences: easier once fixed — the toggle command is unambiguous. Harder — the wrong default adds a keystroke to the common path.
+
+** TODO Auto-open at startup
+- Owner / by-when: Craig / before Phase 4
+- Context: the dock could open automatically on Emacs start so it's always there.
+- Decision: We will add a defcustom controlling startup auto-open, defaulting <on / off — TBD>.
+- Consequences: easier once fixed — a single defcustom. Harder — auto-open on a small or single-window startup frame could be unwelcome; default matters.
+
+* Implementation phases
+
+** Phase 1 — Dock toggle + side-window display
+The =S-<f8>= toggle command: open the dock (agenda into a right side window, full height, fixed width, protected from deletion, overriding the 0.75 rule) or close it. Move =cj/org-agenda-refresh-files= to =C-M-<f8>=. Configure jump-to-task to open in the working window. Leaves a working dock showing the plain daily agenda; refresh and custom view come later. Depends on the width and focus-on-open decisions.
+
+** Phase 2 — Dock composite view
+Define the =org-agenda-custom-commands= dock view (schedule + TODO block) with a narrow prefix format and =org-agenda-sticky= on, and point the toggle at it. Depends on the view-shape decision.
+
+** Phase 3 — Dock-scoped refresh timer
+A wall-clock-aligned 5-minute =org-agenda-redo= on the dock buffer, started on open, cancelled on close, preserving point and any active filters across the redo.
+
+** Phase 4 — Optional startup auto-open
+A defcustom that opens the dock on Emacs start. Depends on the auto-open decision.
+
+* Acceptance criteria
+- [ ] =S-<f8>= opens a full-height agenda in a right side window; pressing it again closes it.
+- [ ] =C-M-<f8>= runs the force-rescan (=cj/org-agenda-refresh-files=); =S-<f8>= no longer does.
+- [ ] =C-x 1= in the working area leaves the dock in place.
+- [ ] Opening a file from a dock agenda line (=RET=) shows the file in the working window; the dock remains.
+- [ ] The dock refreshes on the wall-clock 5-minute mark while open, and no dock timer runs after it's closed.
+- [ ] The dock shows the composite schedule + task view without lines wrapping at the chosen width.
+- [ ] The normal =<f8>= full-view agenda is unchanged.
+
+* Readiness dimensions
+- Data model & ownership: N/A — the dock reads existing agenda files; it authors nothing. Refresh is display-only.
+- Errors, empty states & failure: an empty agenda renders as org's normal empty agenda inside the dock. A dead dock buffer (killed out from under the timer) must cancel the timer rather than error on the next tick — a live-buffer guard in the timer callback.
+- Security & privacy: N/A — no credentials, no new data surface.
+- Observability: the dock is its own visible state; the timer is silent by design. No progress/log surface needed.
+- Performance & scale: =redo= is cheap and already the manual-refresh path; a 5-minute cadence on one buffer is negligible. The file-list scan (the expensive path) is deliberately not on the tick.
+- Reuse & lost opportunities: reuses =display-buffer-in-side-window=, =org-agenda-custom-commands=, =org-agenda-sticky=, =org-agenda-redo=, and the existing F8 family. No new rendering.
+- Architecture fit & weak points: integrates at =display-buffer-alist= / the dock's own display call and the F8 keymap. Weak point: the dock's display rule must not fight the existing =cj/--org-agenda-display-rule= — the dock overrides it only for its own buffer/window. Timer lifecycle tied to window close is the other watch point.
+- Config surface: dock width, the startup auto-open flag, and (implicitly) the custom-command view are the public knobs. Defaults set by the open decisions.
+- Documentation plan: an entry in the keybinding/agenda notes; docstrings on the toggle command and the defcustoms. No user-facing README beyond that.
+- Dev tooling: existing =make test= / byte-compile / live-reload; agenda display and timer behavior get live-daemon verification (window management and timers aren't cleanly unit-testable), with the pure helpers (view definition, width calc) unit-tested where extractable.
+- Rollout, compatibility & rollback: additive. The one compatibility touch is the =S-<f8>= rebind (force-refresh moves to =C-M-<f8>=). Rollback is removing the mode and the binding; nothing persisted changes.
+- External APIs & deps: N/A — all built-in Emacs/org.
+
+* Risks, Rabbit Holes, and Drawbacks
+- Jump-to-task display routing is the likeliest rabbit hole: getting =RET= to reliably open in the working window across =org-agenda-window-setup= values and single-window frames can take fiddling. Dodge: pin =org-agenda-window-setup= behavior for the dock explicitly rather than relying on the global default.
+- Side-window width vs the composite view: if the view is wider than the dock, lines wrap and the dock looks broken. Dodge: settle width and prefix format together in Phase 2.
+- Timer-on-a-dead-buffer: closing the dock must cancel the timer; a killed buffer must not error on tick. Dodge: guard the callback and hang cancellation off window/buffer-kill.
+
+* Review and iteration history
+** 2026-07-17 Fri @ 19:34:07 -0500 — Craig Jennings — author
+- What: initial draft.
+- Why: dock mode has four-plus open design questions and real trade-offs (side-window vs frame, keep-focus vs jump, view shape); settling them on paper before code.
+- Artifacts: dock-mode task in todo.org (Emacs Open Work); supersedes the folded "auto-refresh every 5 min" roam item.
