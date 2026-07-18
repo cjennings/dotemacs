@@ -471,7 +471,10 @@ inserts or kills into one renumber pass."
       ;; motion walks the header's screen lines, which all map back to the
       ;; same buffer position, so arrows look dead).  Rows are one logical
       ;; line each; visual movement buys nothing here.
-      (setq-local line-move-visual nil))
+      (setq-local line-move-visual nil)
+      ;; Sticky header: re-anchor the header block at the window start on
+      ;; every scroll, so it stays frozen while the list scrolls under it.
+      (add-hook 'window-scroll-functions #'cj/music--stick-header nil t))
     (cj/music--renumber-rows buffer)
     ;; Set this as the current EMMS playlist buffer
     (setq emms-playlist-buffer buffer)
@@ -1392,14 +1395,45 @@ the controls."
       (cj/music--fancy-header)
     (cj/music--text-header)))
 
+(defun cj/music--header-anchor-position ()
+  "Return the position the header overlay should anchor at right now.
+The start of the displaying window when the playlist is shown (so the
+header stays at the top of the window while the list scrolls under it),
+else the top of the buffer.  Searches all frames -- the refresh timer can
+run with any frame selected, and missing a window on another frame would
+anchor at the buffer top and yank a scrolled header back."
+  (if-let ((win (get-buffer-window (current-buffer) t)))
+      (max (point-min) (min (window-start win) (point-max)))
+    (point-min)))
+
+(defun cj/music--stick-header (win start)
+  "Re-anchor the header overlay at START, WIN's new display start.
+Runs on the buffer-local `window-scroll-functions', so every scroll pins
+the header block to the top of the window and the track list scrolls
+beneath it.  Converges: an already-anchored header is a no-op, so the
+redisplay this move triggers doesn't loop.  Always returns nil."
+  (with-current-buffer (window-buffer win)
+    (when (and (overlayp cj/music--header-overlay)
+               (overlay-buffer cj/music--header-overlay)
+               (integer-or-marker-p start))
+      (let ((pos (max (point-min) (min start (point-max)))))
+        (unless (= (overlay-start cj/music--header-overlay) pos)
+          (move-overlay cj/music--header-overlay pos pos))))
+    nil))
+
 (defun cj/music--update-header ()
-  "Insert or update the multi-line header overlay in the playlist buffer."
+  "Insert or update the multi-line header overlay in the playlist buffer.
+Anchors at the displaying window's start (see
+`cj/music--header-anchor-position') -- the refresh timer calls this every
+second, and re-anchoring at the buffer top would yank the sticky header
+away whenever the list is scrolled."
   (when-let ((buf (get-buffer cj/music-playlist-buffer-name)))
     (with-current-buffer buf
       (unless cj/music--header-overlay
         (setq cj/music--header-overlay (make-overlay (point-min) (point-min)))
         (overlay-put cj/music--header-overlay 'priority 100))
-      (move-overlay cj/music--header-overlay (point-min) (point-min))
+      (let ((pos (cj/music--header-anchor-position)))
+        (move-overlay cj/music--header-overlay pos pos))
       (overlay-put cj/music--header-overlay 'before-string
                    (cj/music--header-text)))))
 

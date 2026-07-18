@@ -165,6 +165,56 @@ selected -- the dock is glanced at from other windows constantly."
             (should (buffer-local-value 'hl-line-sticky-flag created)))
         (when (buffer-live-p created) (kill-buffer created))))))
 
+;;; Sticky header
+
+(ert-deftest test-music-stick-header-moves-overlay-to-window-start ()
+  "Normal: a scroll re-anchors the header overlay at the new window start,
+so the header block stays at the top of the window while the list scrolls."
+  (with-temp-buffer
+    (insert "track one\ntrack two\ntrack three\ntrack four\n")
+    (setq cj/music--header-overlay (make-overlay (point-min) (point-min)))
+    (save-window-excursion
+      (set-window-buffer (selected-window) (current-buffer))
+      (let ((start (save-excursion (goto-char (point-min)) (forward-line 2) (point))))
+        (cj/music--stick-header (selected-window) start)
+        (should (= (overlay-start cj/music--header-overlay) start))
+        ;; Converges: the same start again is a no-op, not a loop.
+        (cj/music--stick-header (selected-window) start)
+        (should (= (overlay-start cj/music--header-overlay) start))))))
+
+(ert-deftest test-music-stick-header-no-overlay-noop ()
+  "Boundary: no header overlay yet -- the scroll handler is a silent no-op."
+  (with-temp-buffer
+    (insert "track one\n")
+    (setq cj/music--header-overlay nil)
+    (save-window-excursion
+      (set-window-buffer (selected-window) (current-buffer))
+      (should-not (cj/music--stick-header (selected-window) (point-min))))))
+
+(ert-deftest test-music-header-anchor-position-displayed-vs-not ()
+  "Normal: the header anchors at the displaying window's start; an
+undisplayed buffer anchors at the top."
+  (with-temp-buffer
+    (insert "track one\ntrack two\ntrack three\ntrack four\n")
+    (save-window-excursion
+      (set-window-buffer (selected-window) (current-buffer))
+      (let ((start (save-excursion (goto-char (point-min)) (forward-line 2) (point))))
+        (set-window-start (selected-window) start)
+        (should (= (cj/music--header-anchor-position) start))))
+    ;; Not displayed after the excursion restores the old config.
+    (should (= (cj/music--header-anchor-position) (point-min)))))
+
+(ert-deftest test-music-ensure-playlist-buffer-wires-scroll-hook ()
+  "Normal: the playlist buffer re-sticks its header on every window scroll."
+  (let (created)
+    (cl-letf (((symbol-function 'emms-playlist-mode) #'ignore))
+      (unwind-protect
+          (progn
+            (setq created (cj/music--ensure-playlist-buffer))
+            (with-current-buffer created
+              (should (member #'cj/music--stick-header window-scroll-functions))))
+        (when (buffer-live-p created) (kill-buffer created))))))
+
 ;;; Hook wiring
 
 (ert-deftest test-music-renumber-ensure-playlist-buffer-wires-hook ()
