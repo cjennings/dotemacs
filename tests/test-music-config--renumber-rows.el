@@ -83,6 +83,33 @@ can fire after the playlist buffer is gone)."
     (kill-buffer buf)
     (should-not (cj/music--renumber-rows buf))))
 
+(ert-deftest test-music-renumber-rows-number-outranks-header-overlay ()
+  "Normal: number overlays carry a priority above the header overlay's 100.
+The header block is a same-position overlay string at the buffer start;
+without the higher priority, row 1's number renders above the header
+instead of next to its own track."
+  (with-temp-buffer
+    (insert "track one\n")
+    (cj/music--renumber-rows (current-buffer))
+    (let ((ov (car (seq-filter (lambda (o) (overlay-get o 'cj-music-row-number))
+                               (overlays-in (point-min) (point-max))))))
+      (should (> (or (overlay-get ov 'priority) 0) 100)))))
+
+(ert-deftest test-music-ensure-playlist-buffer-logical-line-motion ()
+  "Normal: the playlist moves by logical lines, not screen lines.  The
+multi-line header overlay string at position 1 otherwise absorbs every
+next-line from the top row -- vertical motion steps through the header's
+display and maps back to the same buffer position, so arrows look dead."
+  (let (created)
+    (cl-letf (((symbol-function 'emms-playlist-mode) #'ignore))
+      (unwind-protect
+          (progn
+            (setq created (cj/music--ensure-playlist-buffer))
+            (with-current-buffer created
+              (should (local-variable-p 'line-move-visual))
+              (should-not line-move-visual)))
+        (when (buffer-live-p created) (kill-buffer created))))))
+
 ;;; Current-row indicator
 
 (ert-deftest test-music-highlight-current-number-marks-current-row ()

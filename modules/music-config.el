@@ -394,6 +394,11 @@ debounce timer can outlive the playlist buffer."
                 (let ((ov (make-overlay (line-beginning-position)
                                         (1+ (line-beginning-position)))))
                   (overlay-put ov 'cj-music-row-number t)
+                  ;; Outrank the header overlay (priority 100): both anchor
+                  ;; strings at position 1 on row 1, and without this the
+                  ;; row's number renders above the header block instead of
+                  ;; beside its own track.
+                  (overlay-put ov 'priority 200)
                   ;; The cursor property makes redisplay draw the cursor ON
                   ;; the number when point sits at the row start; without it
                   ;; the cursor lands after the before-string, on the
@@ -460,7 +465,13 @@ inserts or kills into one renumber pass."
       ;; album art (pairs with the row-number prefixes).
       (hl-line-mode 1)
       ;; Gutter cursor: point lives at the row start (the number column).
-      (add-hook 'post-command-hook #'cj/music--pin-point-to-bol nil t))
+      (add-hook 'post-command-hook #'cj/music--pin-point-to-bol nil t)
+      ;; Logical-line motion: the multi-line header overlay string at
+      ;; position 1 otherwise absorbs next-line from the top row (vertical
+      ;; motion walks the header's screen lines, which all map back to the
+      ;; same buffer position, so arrows look dead).  Rows are one logical
+      ;; line each; visual movement buys nothing here.
+      (setq-local line-move-visual nil))
     (cj/music--renumber-rows buffer)
     ;; Set this as the current EMMS playlist buffer
     (setq emms-playlist-buffer buffer)
