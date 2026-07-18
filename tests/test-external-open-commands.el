@@ -64,19 +64,28 @@
     (should-error (cj/open-this-file-with "vlc") :type 'user-error)))
 
 (ert-deftest test-external-open-open-this-file-with-spawns-detached-process ()
-  "Normal: posix path invokes `call-process-shell-command' with nohup + bg."
-  (let ((cmd nil))
+  "Normal: posix path launches an argv `call-process' with DESTINATION 0."
+  (let ((captured nil))
     (with-temp-buffer
-      (setq buffer-file-name "/tmp/foo.mp4")
+      (setq buffer-file-name "/tmp/my file.mp4")
       (cl-letf (((symbol-function 'env-windows-p) (lambda () nil))
-                ((symbol-function 'call-process-shell-command)
-                 (lambda (c _infile _buf &rest _)
-                   (setq cmd c))))
-        (cj/open-this-file-with "vlc"))
+                ((symbol-function 'executable-find)
+                 (lambda (&rest _) "/usr/bin/vlc"))
+                ((symbol-function 'call-process)
+                 (lambda (&rest args) (setq captured args) 0)))
+        (cj/open-this-file-with "vlc --fs"))
       (setq buffer-file-name nil))
-    (should (string-match-p "^nohup vlc " cmd))
-    (should (string-match-p "&$" cmd))
-    (should (string-match-p ">/dev/null" cmd))))
+    (should (equal captured '("vlc" nil 0 nil "--fs" "/tmp/my file.mp4")))))
+
+(ert-deftest test-external-open-open-this-file-with-errors-missing-program ()
+  "Error: a program not on PATH signals user-error before launching."
+  (with-temp-buffer
+    (setq buffer-file-name "/tmp/foo.mp4")
+    (cl-letf (((symbol-function 'env-windows-p) (lambda () nil))
+              ((symbol-function 'executable-find) (lambda (&rest _) nil)))
+      (should-error (cj/open-this-file-with "no-such-program")
+                    :type 'user-error))
+    (setq buffer-file-name nil)))
 
 ;;; cj/find-file-auto
 

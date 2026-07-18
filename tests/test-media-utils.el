@@ -38,34 +38,41 @@
 ;; ----------------------------- cj/media-play-it ------------------------------
 
 (ert-deftest test-media-play-it-direct-playback-command ()
-  "Normal: a player that needs no stream URL gets a plain command, no yt-dlp."
+  "Normal: a player that needs no stream URL launches an argv process, no yt-dlp."
   (let (captured cj/default-media-player)
     (setq cj/default-media-player 'mpv)
     (cl-letf (((symbol-function 'executable-find) (lambda (_ &rest _) "/usr/bin/mpv"))
-              ((symbol-function 'start-process-shell-command)
-               (lambda (_n _b cmd) (setq captured cmd) 'proc))
+              ((symbol-function 'start-process)
+               (lambda (&rest args) (setq captured args) 'proc))
               ((symbol-function 'set-process-sentinel) #'ignore)
               ((symbol-function 'message) #'ignore)
               ((symbol-function 'cj/log-silently) #'ignore))
       (cj/media-play-it "https://example.com/v"))
-    (should (string-match-p "mpv" captured))
-    (should (string-match-p "example\\.com" captured))
-    (should-not (string-match-p "yt-dlp" captured))))
+    ;; (NAME BUFFER PROGRAM . ARGS) -- program + args are the argv.
+    (should (equal (nthcdr 2 captured) '("mpv" "https://example.com/v")))
+    (should-not (member "yt-dlp" captured))))
 
-(ert-deftest test-media-play-it-stream-url-wraps-yt-dlp ()
-  "Normal: a player needing a stream URL wraps the URL in a yt-dlp -g call."
-  (let (captured cj/default-media-player)
+(ert-deftest test-media-play-it-stream-url-resolves-via-yt-dlp ()
+  "Normal: a stream-URL player resolves through a yt-dlp -g capture, then
+launches the player with the resolved URL as argv -- no shell either step."
+  (let (yt-argv captured cj/default-media-player)
     (setq cj/default-media-player 'vlc)
-    (cl-letf (((symbol-function 'executable-find) (lambda (_ &rest _) "/usr/bin/vlc"))
-              ((symbol-function 'start-process-shell-command)
-               (lambda (_n _b cmd) (setq captured cmd) 'proc))
+    (cl-letf (((symbol-function 'executable-find) (lambda (_ &rest _) "/usr/bin/x"))
+              ((symbol-function 'call-process)
+               (lambda (program _infile _dest _display &rest args)
+                 (setq yt-argv (cons program args))
+                 (insert "https://stream.example.com/resolved\n")
+                 0))
+              ((symbol-function 'start-process)
+               (lambda (&rest args) (setq captured args) 'proc))
               ((symbol-function 'set-process-sentinel) #'ignore)
               ((symbol-function 'message) #'ignore)
               ((symbol-function 'cj/log-silently) #'ignore))
       (cj/media-play-it "https://example.com/v"))
-    (should (string-match-p "yt-dlp" captured))
-    (should (string-match-p "-g" captured))
-    (should (string-match-p "-f 22/18/best" captured))))
+    (should (equal yt-argv
+                   '("yt-dlp" "-f" "22/18/best" "-g" "https://example.com/v")))
+    (should (equal (nthcdr 2 captured)
+                   '("vlc" "https://stream.example.com/resolved")))))
 
 (ert-deftest test-media-play-it-missing-player-errors ()
   "Error: an unavailable player command signals an error before launching."
@@ -73,6 +80,39 @@
     (setq cj/default-media-player 'mpv)
     (cl-letf (((symbol-function 'executable-find) (lambda (_ &rest _) nil)))
       (should-error (cj/media-play-it "https://example.com/v")))))
+
+(ert-deftest test-media-play-it-missing-yt-dlp-errors ()
+  "Error: a stream-URL player with no yt-dlp on PATH aborts before resolving."
+  (let (cj/default-media-player)
+    (setq cj/default-media-player 'vlc)
+    (cl-letf (((symbol-function 'executable-find)
+               (lambda (cmd &rest _) (and (equal cmd "vlc") "/usr/bin/vlc"))))
+      (should-error (cj/media-play-it "https://example.com/v")))))
+
+(ert-deftest test-media-play-it-yt-dlp-failure-errors ()
+  "Error: a non-zero yt-dlp exit surfaces as an error, player never launches."
+  (let (launched cj/default-media-player)
+    (setq cj/default-media-player 'vlc)
+    (cl-letf (((symbol-function 'executable-find) (lambda (_ &rest _) "/usr/bin/x"))
+              ((symbol-function 'call-process)
+               (lambda (&rest _) (insert "ERROR: no video\n") 1))
+              ((symbol-function 'start-process)
+               (lambda (&rest _) (setq launched t) 'proc))
+              ((symbol-function 'message) #'ignore))
+      (should-error (cj/media-play-it "https://example.com/v")))
+    (should-not launched)))
+
+(ert-deftest test-media-play-it-yt-dlp-empty-output-errors ()
+  "Error: a zero-exit yt-dlp with no output still errors, player never launches."
+  (let (launched cj/default-media-player)
+    (setq cj/default-media-player 'vlc)
+    (cl-letf (((symbol-function 'executable-find) (lambda (_ &rest _) "/usr/bin/x"))
+              ((symbol-function 'call-process) (lambda (&rest _) 0))
+              ((symbol-function 'start-process)
+               (lambda (&rest _) (setq launched t) 'proc))
+              ((symbol-function 'message) #'ignore))
+      (should-error (cj/media-play-it "https://example.com/v")))
+    (should-not launched)))
 
 ;; ------------------------------- cj/yt-dl-it ---------------------------------
 

@@ -119,8 +119,54 @@ stream URL (see the :needs-stream-url flag in `cj/media-players')."
 
 ;; ---------------------- Playing Via Default Media Player ---------------------
 
+(defun cj/media--yt-dlp-argv (url formats)
+  "The argv to resolve URL's stream address: yt-dlp [-f FORMATS] -g URL.
+FORMATS is a prioritized list of yt-dlp format codes, or nil for the
+default.  URL stays one verbatim argv element, so it never meets a shell."
+  (append (list "yt-dlp")
+		  (when formats (list "-f" (string-join formats "/")))
+		  (list "-g" url)))
+
+(defun cj/media--stream-urls (output)
+  "The non-empty lines of yt-dlp -g OUTPUT, surrounding whitespace trimmed."
+  (split-string output "\n" t "[ \t\r]+"))
+
+(defun cj/media--play-argv (command args urls)
+  "The argv to play URLS with COMMAND.
+ARGS is the player's raw option string from `cj/media-players' (nil for
+none); it splits with `split-string-and-unquote' so a quoted option
+survives as one word."
+  (append (list command)
+		  (and args (split-string-and-unquote args))
+		  urls))
+
+(defun cj/media--resolve-stream-urls (url formats)
+  "Resolve URL to direct stream URLs with a synchronous yt-dlp -g capture.
+FORMATS is the player's format-preference list.  Only stdout is parsed
+for URLs -- yt-dlp's warnings go to stderr, captured separately for the
+error message.  Signals an error when yt-dlp exits non-zero or resolves
+nothing."
+  (let ((err-file (make-temp-file "yt-dlp-stderr")))
+	(unwind-protect
+		(with-temp-buffer
+		  (let* ((argv (cj/media--yt-dlp-argv url formats))
+				 (exit (apply #'call-process (car argv) nil
+							  (list t err-file) nil (cdr argv))))
+			(unless (and (integerp exit) (zerop exit))
+			  (error "yt-dlp failed (exit %s): %s" exit
+					 (string-trim
+					  (with-temp-buffer
+						(insert-file-contents err-file)
+						(buffer-string)))))
+			(or (cj/media--stream-urls (buffer-string))
+				(error "yt-dlp resolved no stream URL for %s" url))))
+	  (delete-file err-file))))
+
 (defun cj/media-play-it (url)
-  "Play the URL with the configured media player in an async process."
+  "Play the URL with the configured media player in an async process.
+A player flagged :needs-stream-url gets the URL resolved first via a
+synchronous yt-dlp -g capture (blocks briefly); the player then launches
+with a plain argv list -- no shell anywhere in the pipeline."
   (let* ((player-config (alist-get cj/default-media-player cj/media-players))
 		 (command (plist-get player-config :command))
 		 (args (plist-get player-config :args))
@@ -131,36 +177,22 @@ stream URL (see the :needs-stream-url flag in `cj/media-players')."
 
 	(unless (executable-find command)
 	  (error "%s is not installed or not in PATH" player-name))
+	(when needs-stream-url
+	  (unless (executable-find "yt-dlp")
+		(error "The program yt-dlp is not installed or not in PATH")))
 
-	(let* ((buffer-name (format "*%s: %s*" player-name url-display))
-		   (shell-command
-			(if needs-stream-url
-				;; Use shell substitution with yt-dlp
-				(let ((format-string (if yt-dlp-formats
-										 (format "-f %s"
-												 (mapconcat #'shell-quote-argument
-															yt-dlp-formats
-															"/"))
-									   "")))
-				  (format "%s %s $(%s %s -g %s)"
-						  command
-						  (or args "")
-						  "yt-dlp"
-						  format-string
-						  (shell-quote-argument url)))
-			  ;; Direct playback without yt-dlp
-			  (format "%s %s %s"
-					  command
-					  (or args "")
-					  (shell-quote-argument url)))))
+	(let* ((urls (if needs-stream-url
+					 (progn
+					   (message "Resolving stream URL: %s" url-display)
+					   (cj/media--resolve-stream-urls url yt-dlp-formats))
+				   (list url)))
+		   (argv (cj/media--play-argv command args urls))
+		   (buffer-name (format "*%s: %s*" player-name url-display)))
 
 	  (message "Playing with %s: %s" player-name url-display)
-	  (cj/log-silently "DEBUG: Executing: %s" shell-command)
+	  (cj/log-silently "DEBUG: Executing: %s" (string-join argv " "))
 
-	  (let ((process (start-process-shell-command
-					  player-name
-					  buffer-name
-					  shell-command)))
+	  (let ((process (apply #'start-process player-name buffer-name argv)))
 		(set-process-sentinel
 		 process
 		 (lambda (proc event)
@@ -168,14 +200,7 @@ stream URL (see the :needs-stream-url flag in `cj/media-players')."
 			((string-match-p "finished" event)
 			 (message "✓ Finished playing: %s" url-display))
 			((string-match-p "exited abnormally" event)
-			 (message "✗ Playback failed: %s" url-display)
-			 (with-current-buffer (process-buffer proc)
-			   (goto-char (point-min))
-			   (when (re-search-forward "ERROR:" nil t)
-				 (cj/log-silently "DEBUG: yt-dlp error: %s"
-								  (buffer-substring-no-properties
-								   (line-beginning-position)
-								   (line-end-position)))))))
+			 (message "✗ Playback failed: %s" url-display)))
 		   (when (string-match-p "finished\\|exited" event)
 			 (kill-buffer (process-buffer proc)))))))))
 

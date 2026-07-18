@@ -142,6 +142,18 @@ Logs output and exit code to buffer *external-open.log*."
 
 ;; ------------------------------- Open File With ------------------------------
 
+(defun cj/--open-with-argv (command file)
+  "The argv list to open FILE with the user-typed COMMAND.
+COMMAND may carry arguments (\"mpv --fs\"); `split-string-and-unquote'
+splits it so a double-quoted argument survives as one word.  FILE is
+appended as the final element, so paths with spaces or shell
+metacharacters never meet a shell.  Signals a `user-error' when COMMAND
+is empty or whitespace."
+  (let ((argv (split-string-and-unquote command)))
+	(unless argv
+	  (user-error "No program given"))
+	(append argv (list file))))
+
 (defun cj/open-this-file-with (command)
   "Open this buffer's file with COMMAND, detached from Emacs."
   (interactive "MOpen with program: ")
@@ -152,12 +164,12 @@ Logs output and exit code to buffer *external-open.log*."
 	 ;; Windows: launch via ShellExecute so the child isn't tied to Emacs.
 	 ((env-windows-p)
 	  (w32-shell-execute "open" command (format "\"%s\"" file)))
-	 ;; POSIX: disown with nohup + background. No child remains.
+	 ;; POSIX: argv launch, DESTINATION 0 detaches with no shell in between.
 	 (t
-	  (call-process-shell-command
-	   (format "nohup %s %s >/dev/null 2>&1 &"
-			   command (shell-quote-argument file))
-	   nil 0)))))
+	  (let ((argv (cj/--open-with-argv command file)))
+		(unless (executable-find (car argv))
+		  (user-error "Program not found: %s" (car argv)))
+		(apply #'call-process (car argv) nil 0 nil (cdr argv)))))))
 
 
 ;; -------------------------- Open Videos On Repeat ----------------------------
