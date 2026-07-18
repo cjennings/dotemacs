@@ -322,6 +322,38 @@ modification date so marginalia can show them."
             (completion-ignore-case . t))
         (complete-with-action action candidates string pred)))))
 
+(defun cj/music--playlist-open-position (buffer)
+  "Return where point should land when the playlist BUFFER is displayed.
+The beginning of the playing track's line when a song is playing (during
+playback the selected track is the playing one), else the top of the
+list.  Keying off the selected track alone is wrong: EMMS keeps a stale
+selection while stopped, which used to open the playlist deep in the list
+at whatever played last."
+  (with-current-buffer buffer
+    (if (and (boundp 'emms-player-playing-p) emms-player-playing-p
+             (boundp 'emms-playlist-selected-marker)
+             (markerp emms-playlist-selected-marker)
+             (marker-position emms-playlist-selected-marker)
+             (eq (marker-buffer emms-playlist-selected-marker) (current-buffer)))
+        (save-excursion
+          (goto-char emms-playlist-selected-marker)
+          (line-beginning-position))
+      (point-min))))
+
+(defun cj/music--playlist-land-point (win buffer)
+  "Move WIN's point in BUFFER per the open-position rule and settle the view.
+When a song is playing its row lands in the window's upper third, so the
+upcoming tracks fill the space below it.  When stopped, the view starts at
+the top of the list.  Point sits at the beginning of its line either way,
+so the row reads left-to-right from its number."
+  (let ((pos (cj/music--playlist-open-position buffer)))
+    (set-window-point win pos)
+    (if (> pos (with-current-buffer buffer (point-min)))
+        (with-selected-window win
+          (with-current-buffer buffer
+            (recenter (max 1 (/ (window-body-height) 3)))))
+      (set-window-start win pos))))
+
 (defvar-local cj/music--renumber-timer nil
   "Pending idle timer for the playlist row renumber, or nil.")
 
@@ -372,14 +404,21 @@ inserts or kills into one renumber pass."
         (emms-playlist-mode))
       (setq emms-playlist-buffer-p t)
       ;; Row numbering: renumber after every playlist change, debounced.
-      (add-hook 'after-change-functions #'cj/music--schedule-renumber nil t))
+      (add-hook 'after-change-functions #'cj/music--schedule-renumber nil t)
+      ;; The highlighted row stays findable even when the cursor sits on
+      ;; album art (pairs with the row-number prefixes).
+      (hl-line-mode 1))
     (cj/music--renumber-rows buffer)
     ;; Set this as the current EMMS playlist buffer
     (setq emms-playlist-buffer buffer)
     buffer))
 
 (defun cj/music--m3u-file-tracks (m3u-file)
-  "Return list of absolute track paths from M3U-FILE. Ignore # comment lines."
+  "Return list of absolute track paths from M3U-FILE. Ignore # comment lines.
+Stream URLs pass through untouched; a local path must carry an accepted
+music extension (`cj/music--valid-file-p') -- old playlists saved before
+directory adds were filtered can carry cover.jpg lines, and loading one
+would put the cover right back in the playlist."
   (when (and m3u-file (file-exists-p m3u-file))
     (with-temp-buffer
       (insert-file-contents m3u-file)
@@ -389,11 +428,12 @@ inserts or kills into one renumber pass."
         (while (re-search-forward "^[^#].*$" nil t)
           (let ((line (string-trim (match-string 0))))
             (unless (string-empty-p line)
-              (push (if (or (file-name-absolute-p line)
-                            (string-match-p "\\`\\(https?\\|mms\\)://" line))
-                        line
-                      (expand-file-name line dir))
-                    tracks))))
+              (let* ((url-p (string-match-p "\\`\\(https?\\|mms\\)://" line))
+                     (path (cond (url-p line)
+                                 ((file-name-absolute-p line) line)
+                                 (t (expand-file-name line dir)))))
+                (when (or url-p (cj/music--valid-file-p path))
+                  (push path tracks))))))
         (nreverse tracks)))))
 
 (defun cj/music--playlist-track-objects ()
@@ -482,15 +522,34 @@ Returns the full path to the selected file, or nil if cancelled."
 
 ;;; Commands: add/select
 
+(defun cj/music--music-files-recursive (directory)
+  "Return sorted absolute paths of the music files under DIRECTORY.
+Only files passing `cj/music--valid-file-p' (the accepted extensions in
+`cj/music-file-extensions') come back; hidden files and hidden
+directories are skipped.  This is the filter the directory-add commands
+route through -- handing the raw tree to EMMS added every file it found,
+so cover art and liner notes ended up as playlist rows."
+  (sort (seq-filter #'cj/music--valid-file-p
+                    (directory-files-recursively
+                     directory "\\`[^.]" nil
+                     (lambda (dir)
+                       (not (string-prefix-p "." (file-name-nondirectory dir))))))
+        #'string-lessp))
+
 (defun cj/music-add-directory-recursive (directory)
-  "Add all music files under DIRECTORY recursively to the EMMS playlist."
+  "Add all music files under DIRECTORY recursively to the EMMS playlist.
+Only files with accepted music extensions are added; cover art and other
+non-music files in album directories stay out."
   (interactive
    (list (read-directory-name "Add directory recursively: " cj/music-root nil t)))
   (unless (file-directory-p directory)
     (user-error "Not a directory: %s" directory))
   (cj/music--ensure-playlist-buffer)
-  (emms-add-directory-tree directory)
-  (message "Added recursively: %s" directory))
+  (let ((files (cj/music--music-files-recursive directory)))
+    (dolist (f files)
+      (emms-add-file f))
+    (message "Added %d music file%s from %s"
+             (length files) (if (= (length files) 1) "" "s") directory)))
 
 
 (defun cj/music-fuzzy-select-and-add ()
@@ -856,11 +915,7 @@ resized and toggled off this session, it reopens at that remembered height."
                    buffer 'bottom 'cj/--music-playlist-height
                    cj/music-playlist-window-height))
         (select-window win)
-        (with-current-buffer buffer
-          (if (and (fboundp 'emms-playlist-current-selected-track)
-                   (emms-playlist-current-selected-track))
-              (emms-playlist-mode-center-current)
-            (goto-char (point-min))))
+        (cj/music--playlist-land-point win buffer)
         (let ((count (with-current-buffer buffer
                        (count-lines (point-min) (point-max)))))
           (message (if (> count 0)
@@ -878,7 +933,9 @@ Initializes EMMS if needed."
     (when buffer-exists
       (with-current-buffer cj/music-playlist-buffer-name
         (setq has-content (> (point-max) (point-min)))))
-    (switch-to-buffer (cj/music--ensure-playlist-buffer))
+    (let ((buffer (cj/music--ensure-playlist-buffer)))
+      (switch-to-buffer buffer)
+      (cj/music--playlist-land-point (selected-window) buffer))
     (cond
      ((not emms-was-loaded) (message "EMMS started. Current playlist empty"))
      ((and buffer-exists has-content) (message "EMMS running. Displaying current playlist"))

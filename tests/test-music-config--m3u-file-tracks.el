@@ -189,5 +189,23 @@
   "Parse nil input returns nil gracefully."
   (should (null (cj/music--m3u-file-tracks nil))))
 
+;;; Non-music filtering
+
+(ert-deftest test-music-config--m3u-file-tracks-filters-non-music-local-files ()
+  "Normal: a local non-music path (a saved cover.jpg line) is dropped;
+music files and stream URLs pass through."
+  (test-music-config--m3u-file-tracks-setup)
+  (unwind-protect
+      (let* ((content (concat "/home/user/music/track1.mp3\n"
+                              "/home/user/music/album/cover.jpg\n"
+                              "https://somafm.com/stream\n"
+                              "/home/user/music/track2.flac\n"))
+             (m3u-file (cj/create-temp-test-file-with-content content "test.m3u"))
+             (tracks (cj/music--m3u-file-tracks m3u-file)))
+        (should (equal tracks '("/home/user/music/track1.mp3"
+                                "https://somafm.com/stream"
+                                "/home/user/music/track2.flac"))))
+    (test-music-config--m3u-file-tracks-teardown)))
+
 (provide 'test-music-config--m3u-file-tracks)
 ;;; test-music-config--m3u-file-tracks.el ends here

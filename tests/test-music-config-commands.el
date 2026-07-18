@@ -30,17 +30,21 @@
 ;;; cj/music-add-directory-recursive
 
 (ert-deftest test-music-add-directory-recursive-passes-dir-to-emms ()
-  "Normal: add-directory-recursive routes through emms-add-directory-tree."
+  "Normal: add-directory-recursive feeds the directory's music files (and
+only those) to emms-add-file -- the raw-tree path added cover art too."
   (let* ((tmp (file-name-as-directory (make-temp-file "cj-music-add-" t)))
-         called)
+         added)
     (unwind-protect
-        (cl-letf (((symbol-function 'cj/music--ensure-playlist-buffer) #'ignore)
-                  ((symbol-function 'emms-add-directory-tree)
-                   (lambda (dir) (setq called dir)))
-                  ((symbol-function 'message) #'ignore))
-          (cj/music-add-directory-recursive tmp))
+        (progn
+          (write-region "" nil (expand-file-name "song.mp3" tmp))
+          (write-region "" nil (expand-file-name "cover.jpg" tmp))
+          (cl-letf (((symbol-function 'cj/music--ensure-playlist-buffer) #'ignore)
+                    ((symbol-function 'emms-add-file)
+                     (lambda (f) (push f added)))
+                    ((symbol-function 'message) #'ignore))
+            (cj/music-add-directory-recursive tmp)))
       (delete-directory tmp t))
-    (should (equal called tmp))))
+    (should (equal (mapcar #'file-name-nondirectory added) '("song.mp3")))))
 
 (ert-deftest test-music-add-directory-recursive-errors-on-non-directory ()
   "Error: passing a regular file (not a directory) signals user-error."

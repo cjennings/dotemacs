@@ -154,17 +154,18 @@ test prelude inserts filler with `inhibit-read-only' bound."
 ;;; ---------- cj/music-add-directory-recursive ----------
 
 (ert-deftest test-mc-add-directory-recursive-normal-calls-emms ()
-  "Normal: with an existing directory, the recursive add reaches emms."
+  "Normal: with an existing directory, the recursive add reaches emms with
+each music file individually (the filtered walk, not the raw tree)."
   (test-mc-untested--setup)
   (unwind-protect
       (let* ((dir cj/test-base-dir)
-             (called-with nil))
-        (cl-letf (((symbol-function 'emms-add-directory-tree)
-                   (lambda (d) (setq called-with d)))
+             (added nil))
+        (write-region "" nil (expand-file-name "one.mp3" dir))
+        (cl-letf (((symbol-function 'emms-add-file)
+                   (lambda (f) (push f added)))
                   ((symbol-function 'message) #'ignore))
           (cj/music-add-directory-recursive dir))
-        (should (equal (file-name-as-directory called-with)
-                       (file-name-as-directory dir))))
+        (should (member "one.mp3" (mapcar #'file-name-nondirectory added))))
     (test-mc-untested--teardown)))
 
 (ert-deftest test-mc-add-directory-recursive-error-not-a-directory ()
