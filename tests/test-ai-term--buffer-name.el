@@ -38,5 +38,26 @@
   (should (equal (cj/--ai-term-buffer-name "/a/b/c/d/e/leaf")
                  "agent [leaf]")))
 
+;;; Basename extraction (inverse transform)
+
+(ert-deftest test-ai-term--buffer-basename-normal-round-trip ()
+  "Normal: extracts the basename embedded in an agent buffer's name."
+  (let ((buf (get-buffer-create "agent [proj]")))
+    (unwind-protect
+        (should (equal (cj/--ai-term-buffer-basename buf) "proj"))
+      (kill-buffer buf))))
+
+(ert-deftest test-ai-term--buffer-basename-boundary-dotted ()
+  "Boundary: dotted basenames (.emacs.d) survive extraction intact."
+  (let ((buf (get-buffer-create "agent [.emacs.d]")))
+    (unwind-protect
+        (should (equal (cj/--ai-term-buffer-basename buf) ".emacs.d"))
+      (kill-buffer buf))))
+
+(ert-deftest test-ai-term--buffer-basename-error-non-agent-nil ()
+  "Error: a non-agent buffer yields nil."
+  (with-temp-buffer
+    (should (null (cj/--ai-term-buffer-basename (current-buffer))))))
+
 (provide 'test-ai-term--buffer-name)
 ;;; test-ai-term--buffer-name.el ends here

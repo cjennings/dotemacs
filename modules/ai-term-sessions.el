@@ -65,6 +65,20 @@ the start so names like \"foo agent [bar]\" do not match."
        (buffer-live-p buffer)
        (string-prefix-p cj/--ai-term-name-prefix (buffer-name buffer))))
 
+(defun cj/--ai-term-buffer-basename (buffer)
+  "Return the project basename embedded in BUFFER's AI-term name, or nil.
+
+The buffer name is \"agent [<basename>]\" (see
+`cj/--ai-term-buffer-name') and never changes for the buffer's life,
+unlike `default-directory', which ghostel retargets via OSC 7 every time
+the shell cds.  Teardown paths must key tmux-session lookups off this,
+not the directory, or a close after a cd kills the wrong aiv- session.
+Returns nil when BUFFER is not a live AI-term buffer."
+  (when (cj/--ai-term-buffer-p buffer)
+    (let ((name (buffer-name buffer)))
+      (when (string-suffix-p "]" name)
+        (substring name (length cj/--ai-term-name-prefix) -1)))))
+
 (defun cj/--ai-term-agent-buffers ()
   "Return the live AI-term buffers in `buffer-list' order.
 

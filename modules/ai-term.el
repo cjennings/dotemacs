@@ -400,18 +400,22 @@ C-; a k closes an agent via `cj/ai-term-close'."
 (defun cj/--ai-term-close-buffer (buffer)
   "Gracefully tear down AI-term BUFFER: tmux session, then buffer.
 
-Derives the tmux session name from BUFFER's `default-directory' (the
-project dir the terminal was created in) and kills it so the agent
-process stops.  When BUFFER is shown, swaps its window to a non-agent
-buffer (the working file) rather than deleting the window -- closing an
-agent must not collapse the user's window layout; the hide toggle is
-what collapses the split.  Then kills BUFFER (suppressing the
+Derives the tmux session name from BUFFER's immutable name (\"agent
+[<basename>]\") and kills it so the agent process stops.  The name, not
+`default-directory', is the reliable key: ghostel retargets the
+directory via OSC 7 as the shell cds, so a directory-derived name after
+a cd misses the real session (orphaning the agent) or collides with a
+different aiv- session.  When BUFFER is shown, swaps its window to a
+non-agent buffer (the working file) rather than deleting the window --
+closing an agent must not collapse the user's window layout; the hide
+toggle is what collapses the split.  Then kills BUFFER (suppressing the
 process-still-running prompt -- the session is already down).  No-op
 when BUFFER isn't an AI-term buffer."
   (when (cj/--ai-term-buffer-p buffer)
     (cj/--ai-term-kill-tmux-session
      (cj/--ai-term-tmux-session-name
-      (buffer-local-value 'default-directory buffer)))
+      (or (cj/--ai-term-buffer-basename buffer)
+          (buffer-local-value 'default-directory buffer))))
     (let ((win (get-buffer-window buffer)))
       (when (window-live-p win)
         (cj/--ai-term-swap-to-working-buffer win)))
@@ -547,11 +551,16 @@ A defcustom so development and tests can stub it instead of powering off
 (defun cj/ai-term-quit (&optional project)
   "Tear down PROJECT's AI-term: kill its tmux session, buffer, and restore layout.
 PROJECT is a project basename (as the rulesets Stop hook passes) or a directory;
-nil means the current project (`default-directory').  Kills the `aiv-<name>'
-tmux session (taking the agent process with it), then, when the agent buffer is
-live, swaps its window back to the working buffer and kills it.  Idempotent and
-safe headless: a session or buffer already gone is a no-op, not an error."
-  (let* ((key (or project default-directory))
+nil means the current project -- the current agent buffer's embedded basename
+when called from inside one (immune to the OSC 7 `default-directory' drift a
+cd in the agent shell causes), else `default-directory'.  Kills the
+`aiv-<name>' tmux session (taking the agent process with it), then, when the
+agent buffer is live, swaps its window back to the working buffer and kills
+it.  Idempotent and safe headless: a session or buffer already gone is a
+no-op, not an error."
+  (let* ((key (or project
+                 (cj/--ai-term-buffer-basename (current-buffer))
+                 default-directory))
          (session (cj/--ai-term-tmux-session-name key))
          (buffer (get-buffer (cj/--ai-term-buffer-name key))))
     (cj/--ai-term-kill-tmux-session session)

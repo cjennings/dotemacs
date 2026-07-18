@@ -36,8 +36,22 @@
              (lambda (&rest _) (error "no tmux"))))
     (should (null (cj/--ai-term-kill-tmux-session "aiv-foo")))))
 
+(ert-deftest test-ai-term--close-buffer-session-from-name-after-cd ()
+  "Regression: the session name comes from the immutable buffer name.
+ghostel retargets `default-directory' via OSC 7 as the shell cds, so
+deriving from it after a cd kills the wrong aiv- session (or misses,
+orphaning the agent).  The buffer name's basename never changes."
+  (let ((buf (get-buffer-create "agent [proj]"))
+        captured-session)
+    (with-current-buffer buf (setq-local default-directory "/tmp/elsewhere/"))
+    (cl-letf (((symbol-function 'cj/--ai-term-kill-tmux-session)
+               (lambda (s) (setq captured-session s) 0)))
+      (cj/--ai-term-close-buffer buf))
+    (should (equal captured-session "aiv-proj"))
+    (should-not (buffer-live-p buf))))
+
 (ert-deftest test-ai-term--close-buffer-kills-session-and-buffer ()
-  "Normal: derives the session from default-directory, kills it and the buffer."
+  "Normal: derives the session from the buffer name, kills it and the buffer."
   (let ((buf (get-buffer-create "agent [foo]"))
         captured-session)
     (with-current-buffer buf (setq-local default-directory "/tmp/foo/"))

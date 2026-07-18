@@ -43,6 +43,22 @@
           (should-not (buffer-live-p buf)))
       (when (buffer-live-p buf) (kill-buffer buf)))))
 
+(ert-deftest test-ai-term-quit-nil-project-from-drifted-agent-buffer ()
+  "Regression: nil PROJECT inside an agent buffer keys off the buffer name.
+After a cd in the agent shell, ghostel's OSC 7 tracking moves the buffer's
+`default-directory' away from the project, so keying off it would kill the
+wrong session and miss the buffer."
+  (let ((buf (get-buffer-create "agent [realproj]"))
+        (calls nil))
+    (unwind-protect
+        (test-ai-term-quit--with-tmux calls
+          (with-current-buffer buf
+            (setq-local default-directory "/tmp/elsewhere/")
+            (cj/ai-term-quit))
+          (should (member '("kill-session" "-t" "aiv-realproj") calls))
+          (should-not (buffer-live-p buf)))
+      (when (buffer-live-p buf) (kill-buffer buf)))))
+
 (ert-deftest test-ai-term-quit-idempotent-when-gone ()
   "Error/Boundary: a second quit (session + buffer already gone) does not error."
   (let ((calls nil))
