@@ -123,8 +123,15 @@ the file keeps precedence."
 ;; Cache agenda file list to avoid expensive directory scanning on every view.
 ;; The TTL+building cache lifecycle is provided by `cj-cache.el'.
 
-(defvar cj/--org-agenda-files-cache (cj/cache-make :ttl 3600)
-  "Cache state for the agenda files list.  See `cj-cache.el'.")
+(defvar cj/--org-agenda-files-cache (cj/cache-make :ttl 86400)
+  "Cache state for the agenda files list.  See `cj-cache.el'.
+
+TTL is 24h.  The cache holds only the file *list* (which files are agenda
+files), never their contents -- task edits and completions are re-read on
+every agenda build/redo regardless of cache age.  The list only changes when
+a project directory with a todo.org is created or removed, which is rare, so a
+long TTL costs little; use `cj/org-agenda-refresh-files' (S-<f8>) to force a
+re-scan the moment a new project is added.")
 
 ;; ------------------------ Add Files To Org Agenda List -----------------------
 ;; Checks immediate subdirectories of DIRECTORY for todo.org files and adds
@@ -216,9 +223,13 @@ improves performance from several seconds to instant."
   "Force rebuild of agenda files cache.
 
 Use this after adding new projects or todo.org files.
-Bypasses cache and scans directories from scratch."
+Bypasses cache and scans directories from scratch.
+
+Bound to S-<f8>, the force-rebuild sibling of the F8 agenda family
+\(<f8> display, s-<f8> all files, C-<f8> single project, M-<f8> this buffer)."
   (interactive)
   (cj/build-org-agenda-list 'force-rebuild))
+(global-set-key (kbd "S-<f8>") #'cj/org-agenda-refresh-files)
 
 (defun cj/todo-list-all-agenda-files ()
   "Displays an \\='org-agenda\\=' todo list.
