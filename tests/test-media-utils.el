@@ -114,6 +114,40 @@ launches the player with the resolved URL as argv -- no shell either step."
       (should-error (cj/media-play-it "https://example.com/v")))
     (should-not launched)))
 
+;; -------------------------- cj/media--play-sentinel --------------------------
+
+(ert-deftest test-media-utils--play-sentinel-normal-finished-kills-buffer ()
+  "Normal: a finished event reports success and reaps the process buffer."
+  (let ((buf (generate-new-buffer " *sentinel-test*"))
+        (said nil))
+    (cl-letf (((symbol-function 'process-buffer) (lambda (_p) buf))
+              ((symbol-function 'message)
+               (lambda (fmt &rest args) (setq said (apply #'format fmt args)))))
+      (funcall (cj/media--play-sentinel "https://a/v") 'proc "finished\n"))
+    (should (string-match-p "Finished" said))
+    (should-not (buffer-live-p buf))))
+
+(ert-deftest test-media-utils--play-sentinel-normal-abnormal-exit-kills-buffer ()
+  "Normal: an abnormal exit reports failure and reaps the process buffer."
+  (let ((buf (generate-new-buffer " *sentinel-test*"))
+        (said nil))
+    (cl-letf (((symbol-function 'process-buffer) (lambda (_p) buf))
+              ((symbol-function 'message)
+               (lambda (fmt &rest args) (setq said (apply #'format fmt args)))))
+      (funcall (cj/media--play-sentinel "https://a/v") 'proc "exited abnormally with code 2\n"))
+    (should (string-match-p "failed" said))
+    (should-not (buffer-live-p buf))))
+
+(ert-deftest test-media-utils--play-sentinel-boundary-other-event-keeps-buffer ()
+  "Boundary: a non-terminal event (e.g. stop) leaves the buffer alone."
+  (let ((buf (generate-new-buffer " *sentinel-test*")))
+    (unwind-protect
+        (cl-letf (((symbol-function 'process-buffer) (lambda (_p) buf))
+                  ((symbol-function 'message) #'ignore))
+          (funcall (cj/media--play-sentinel "https://a/v") 'proc "stopped\n")
+          (should (buffer-live-p buf)))
+      (when (buffer-live-p buf) (kill-buffer buf)))))
+
 ;; ------------------------------- cj/yt-dl-it ---------------------------------
 
 (ert-deftest test-media-yt-dl-it-errors-without-yt-dlp ()

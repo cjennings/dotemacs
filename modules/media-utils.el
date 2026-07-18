@@ -162,6 +162,19 @@ nothing."
 				(error "yt-dlp resolved no stream URL for %s" url))))
 	  (delete-file err-file))))
 
+(defun cj/media--play-sentinel (url-display)
+  "A process sentinel reporting playback of URL-DISPLAY.
+Messages success or failure and reaps the process buffer once the
+player finishes or exits."
+  (lambda (proc event)
+	(cond
+	 ((string-match-p "finished" event)
+	  (message "✓ Finished playing: %s" url-display))
+	 ((string-match-p "exited abnormally" event)
+	  (message "✗ Playback failed: %s" url-display)))
+	(when (string-match-p "finished\\|exited" event)
+	  (kill-buffer (process-buffer proc)))))
+
 (defun cj/media-play-it (url)
   "Play the URL with the configured media player in an async process.
 A player flagged :needs-stream-url gets the URL resolved first via a
@@ -193,16 +206,7 @@ with a plain argv list -- no shell anywhere in the pipeline."
 	  (cj/log-silently "DEBUG: Executing: %s" (string-join argv " "))
 
 	  (let ((process (apply #'start-process player-name buffer-name argv)))
-		(set-process-sentinel
-		 process
-		 (lambda (proc event)
-		   (cond
-			((string-match-p "finished" event)
-			 (message "✓ Finished playing: %s" url-display))
-			((string-match-p "exited abnormally" event)
-			 (message "✗ Playback failed: %s" url-display)))
-		   (when (string-match-p "finished\\|exited" event)
-			 (kill-buffer (process-buffer proc)))))))))
+		(set-process-sentinel process (cj/media--play-sentinel url-display))))))
 
 ;; ------------------------- Media-Download Via yt-dlp -------------------------
 
