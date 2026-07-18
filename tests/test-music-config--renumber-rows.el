@@ -83,6 +83,61 @@ can fire after the playlist buffer is gone)."
     (kill-buffer buf)
     (should-not (cj/music--renumber-rows buf))))
 
+;;; Current-row indicator
+
+(ert-deftest test-music-highlight-current-number-marks-current-row ()
+  "Normal: the current row's number renders inverse-video; moving to another
+row restores the old one and marks the new one.  The block cursor only
+draws in the selected window, so the number itself carries the mark."
+  (with-temp-buffer
+    (insert "track one\ntrack two\ntrack three\n")
+    (cj/music--renumber-rows (current-buffer))
+    (goto-char (point-min))
+    (forward-line 1)
+    (cj/music--highlight-current-number)
+    (let ((numbers (test-music-renumber--numbers (current-buffer))))
+      (should-not (plist-get (get-text-property 0 'face (nth 0 numbers)) :inverse-video))
+      (should (plist-get (get-text-property 0 'face (nth 1 numbers)) :inverse-video)))
+    (forward-line 1)
+    (cj/music--highlight-current-number)
+    (let ((numbers (test-music-renumber--numbers (current-buffer))))
+      (should-not (plist-get (get-text-property 0 'face (nth 1 numbers)) :inverse-video))
+      (should (plist-get (get-text-property 0 'face (nth 2 numbers)) :inverse-video)))))
+
+(ert-deftest test-music-highlight-current-number-survives-renumber ()
+  "Boundary: a renumber rebuilds the overlays; the highlight re-applies to
+the current row rather than pointing at a dead overlay."
+  (with-temp-buffer
+    (insert "track one\ntrack two\n")
+    (cj/music--renumber-rows (current-buffer))
+    (goto-char (point-min))
+    (forward-line 1)
+    (cj/music--highlight-current-number)
+    (cj/music--renumber-rows (current-buffer))
+    (let ((numbers (test-music-renumber--numbers (current-buffer))))
+      (should (plist-get (get-text-property 0 'face (nth 1 numbers)) :inverse-video)))))
+
+(ert-deftest test-music-highlight-current-number-keeps-cursor-property ()
+  "Boundary: re-facing a number keeps the cursor property intact."
+  (with-temp-buffer
+    (insert "track one\n")
+    (cj/music--renumber-rows (current-buffer))
+    (goto-char (point-min))
+    (cj/music--highlight-current-number)
+    (let ((s (car (test-music-renumber--numbers (current-buffer)))))
+      (should (get-text-property 0 'cursor s)))))
+
+(ert-deftest test-music-ensure-playlist-buffer-sticky-hl-line ()
+  "Normal: hl-line in the playlist stays visible when the window isn't
+selected -- the dock is glanced at from other windows constantly."
+  (let (created)
+    (cl-letf (((symbol-function 'emms-playlist-mode) #'ignore))
+      (unwind-protect
+          (progn
+            (setq created (cj/music--ensure-playlist-buffer))
+            (should (buffer-local-value 'hl-line-sticky-flag created)))
+        (when (buffer-live-p created) (kill-buffer created))))))
+
 ;;; Hook wiring
 
 (ert-deftest test-music-renumber-ensure-playlist-buffer-wires-hook ()
