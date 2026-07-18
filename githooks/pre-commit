@@ -9,11 +9,23 @@ cd "$REPO_ROOT"
 
 # --- 1. Secret scan ---
 # Patterns for common credentials. Scans only added lines in the staged diff.
-SECRET_PATTERNS='(AKIA[0-9A-Z]{16}|sk-[a-zA-Z0-9_-]{20,}|-----BEGIN (RSA|DSA|EC|OPENSSH|PGP)( PRIVATE)?( KEY| KEY BLOCK)?-----|(api[_-]?key|api[_-]?secret|auth[_-]?token|secret[_-]?key|bearer[_-]?token|access[_-]?token|password)[[:space:]]*[:=][[:space:]]*["'"'"'][^"'"'"']{16,}["'"'"'])'
+#
+# Two passes because case-sensitivity differs. AWS keys are uppercase, sk- keys
+# lowercase, PEM headers fixed, so those match case-SENSITIVELY: under -i,
+# AKIA[0-9A-Z]{16} matches any mixed-case 20-char run, which random base64 in an
+# embedded image blob hits ~6% of the time per 100KB and blocks real commits.
+# Only the keyword=value patterns need -i.
+SECRET_PATTERNS_CS='(AKIA[0-9A-Z]{16}|sk-[a-zA-Z0-9_-]{20,}|-----BEGIN (RSA|DSA|EC|OPENSSH|PGP)( PRIVATE)?( KEY| KEY BLOCK)?-----)'
+SECRET_PATTERNS_CI='(api[_-]?key|api[_-]?secret|auth[_-]?token|secret[_-]?key|bearer[_-]?token|access[_-]?token|password)[[:space:]]*[:=][[:space:]]*["'"'"'][^"'"'"']{16,}["'"'"']'
 
-secret_hits="$(git diff --cached -U0 --diff-filter=AM \
-  | grep '^+' | grep -v '^+++' \
-  | grep -iEn "$SECRET_PATTERNS" || true)"
+added_lines="$(git diff --cached -U0 --diff-filter=AM \
+  | grep '^+' | grep -v '^+++' || true)"
+
+cs_hits="$(printf '%s\n' "$added_lines" | grep -nE  "$SECRET_PATTERNS_CS" || true)"
+ci_hits="$(printf '%s\n' "$added_lines" | grep -niE "$SECRET_PATTERNS_CI" || true)"
+# awk dedupes lines both passes matched, keeping first-seen order.
+secret_hits="$(printf '%s\n%s' "$cs_hits" "$ci_hits" \
+  | grep -v '^[[:space:]]*$' | awk '!seen[$0]++' || true)"
 
 if [ -n "$secret_hits" ]; then
   echo "pre-commit: potential secret in staged changes:" >&2
