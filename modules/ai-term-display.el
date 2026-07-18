@@ -248,10 +248,13 @@ or a layout split on the other axis), so the chain falls through to
 nil when the edge window is dedicated -- those are not ours to replace.
 
 Records the displaced buffer through `display-buffer-record-window'
-\(type `reuse') before swapping, so the native `quit-restore-window'
-called at toggle-off puts that buffer back into the slot instead of
-deleting the window -- toggling swaps the slot's buffer between the
-displaced buffer and the agent, never changing the window count.
+\(type `reuse') before swapping.  Toggle-off does NOT put that buffer
+back: `cj/--ai-term-toggle-off' deletes the agent's window outright in
+multi-window layouts, because the slot's `quit-restore' parameter goes
+stale when several agents share it (see its docstring).  The displaced
+buffer stays alive and reachable through normal buffer switching; the
+record call just keeps the window's `quit-restore' parameter accurate
+for native `quit-window' paths outside the toggle.
 
 Runs after `cj/--ai-term-reuse-existing-agent', so an agent already on
 screen has been handled already; the window reused here always holds a
