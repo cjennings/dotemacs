@@ -322,13 +322,58 @@ modification date so marginalia can show them."
             (completion-ignore-case . t))
         (complete-with-action action candidates string pred)))))
 
+(defvar-local cj/music--renumber-timer nil
+  "Pending idle timer for the playlist row renumber, or nil.")
+
+(defun cj/music--renumber-rows (&optional buffer)
+  "Number every playlist row in BUFFER (default: current buffer) via overlays.
+Each non-blank line gets an \"NNN \" before-string so the cursor stays
+visible when it sits on a cover-art thumbnail and the row's position in
+the list is readable at a glance.  Overlays rebuild from scratch, so the
+numbering survives kills, inserts, and reorders; the buffer text itself is
+untouched (EMMS owns it).  A dead BUFFER is a silent no-op, since the
+debounce timer can outlive the playlist buffer."
+  (let ((buf (or buffer (current-buffer))))
+    (when (buffer-live-p buf)
+      (with-current-buffer buf
+        (remove-overlays (point-min) (point-max) 'cj-music-row-number t)
+        (save-excursion
+          (goto-char (point-min))
+          (let ((n 0))
+            (while (not (eobp))
+              (unless (looking-at-p "[ \t]*$")
+                (setq n (1+ n))
+                ;; Span one char rather than zero: `overlays-in' (and so
+                ;; `remove-overlays') can miss an empty overlay sitting
+                ;; exactly at the region start.
+                (let ((ov (make-overlay (line-beginning-position)
+                                        (1+ (line-beginning-position)))))
+                  (overlay-put ov 'cj-music-row-number t)
+                  (overlay-put ov 'before-string
+                               (propertize (format "%3d " n)
+                                           'face 'cj/music-keyhint-face))))
+              (forward-line 1))))))))
+
+(defun cj/music--schedule-renumber (&rest _)
+  "Debounced renumber of the current playlist buffer after a text change.
+Wired buffer-locally into `after-change-functions' by
+`cj/music--ensure-playlist-buffer'; the idle delay coalesces a burst of
+inserts or kills into one renumber pass."
+  (when (timerp cj/music--renumber-timer)
+    (cancel-timer cj/music--renumber-timer))
+  (setq cj/music--renumber-timer
+        (run-with-idle-timer 0.2 nil #'cj/music--renumber-rows (current-buffer))))
+
 (defun cj/music--ensure-playlist-buffer ()
   "Ensure EMMS playlist buffer exists and is in playlist mode. Return buffer."
   (let ((buffer (get-buffer-create cj/music-playlist-buffer-name)))
     (with-current-buffer buffer
       (unless (eq major-mode 'emms-playlist-mode)
         (emms-playlist-mode))
-      (setq emms-playlist-buffer-p t))
+      (setq emms-playlist-buffer-p t)
+      ;; Row numbering: renumber after every playlist change, debounced.
+      (add-hook 'after-change-functions #'cj/music--schedule-renumber nil t))
+    (cj/music--renumber-rows buffer)
     ;; Set this as the current EMMS playlist buffer
     (setq emms-playlist-buffer buffer)
     buffer))
@@ -1434,6 +1479,15 @@ On a connection failure the client falls back to a host from /json/servers.")
   "User-Agent sent with radio-browser requests.
 The project asks clients to identify themselves.")
 
+(defvar cj/music-radio-tag-limit 500
+  "Maximum number of tags fetched from radio-browser for tag completion.
+The /json/tags endpoint is fetched ordered by station count, so the limit
+keeps the popular tags and drops the long tail of one-station noise tags.")
+
+(defvar cj/music-radio--tags-cache nil
+  "Session cache of radio-browser tag names, or nil before the first fetch.
+A failed fetch leaves it nil so the next tag search retries.")
+
 (defvar cj/music-radio-search-limit 30
   "Maximum number of stations a radio-browser search returns.")
 
@@ -1504,14 +1558,16 @@ TAGS is a comma-separated string or nil; nil or empty yields the empty string."
 
 (defun cj/music-radio--format-candidate (st)
   "Marginalia annotation for station ST.
-Variant B: codec, bitrate, country, votes, and the first few tags."
+Variant B: codec, bitrate, country, votes, and the first few tags.  Every
+field pads to a fixed width (votes included) so the listing reads as
+aligned columns across stations."
   (let ((codec (or (plist-get st :codec) ""))
         (bitrate (let ((b (plist-get st :bitrate)))
                    (if (and (integerp b) (> b 0)) (format "%dk" b) "")))
         (cc (or (plist-get st :countrycode) ""))
         (votes (or (plist-get st :votes) 0))
         (tags (cj/music-radio--tags-snippet (plist-get st :tags) 3)))
-    (format "%-4s %-5s %-2s ♥%d  %s" codec bitrate cc votes tags)))
+    (format "%-4s %-5s %-2s %-7s %s" codec bitrate cc (format "♥%d" votes) tags)))
 
 (defun cj/music-radio--search-url (server query &optional field)
   "Build the radio-browser station-search URL for QUERY against SERVER.
@@ -1570,6 +1626,24 @@ to one station.  Pure helper."
         (puthash disp t seen)
         (push (cons disp st) out)))))
 
+(defun cj/music-radio--affixate (cands candidates)
+  "Affixation triples for CANDS with annotations aligned to one column.
+CANDIDATES is the (DISPLAY . STATION) alist.  Station names vary in width,
+so each suffix pads out to the widest candidate plus a gutter; with the
+fixed-width fields in `cj/music-radio--format-candidate' the listing reads
+as aligned columns.  The \"[done]\" sentinel has no station and gets no
+annotation rather than a bogus zero row."
+  (let ((width (apply #'max 0 (mapcar #'string-width cands))))
+    (mapcar (lambda (c)
+              (let ((st (cdr (assoc c candidates))))
+                (list c ""
+                      (if st
+                          (concat (make-string (+ 3 (- width (string-width c))) ?\s)
+                                  (propertize (cj/music-radio--format-candidate st)
+                                              'face 'completions-annotations))
+                        ""))))
+            cands)))
+
 (defun cj/music-radio--completion-table (candidates)
   "Completion table over CANDIDATES carrying the Variant-B marginalia affix."
   (lambda (string pred action)
@@ -1577,17 +1651,7 @@ to one station.  Pure helper."
         `(metadata
           (category . cj-radio-station)
           (affixation-function
-           . ,(lambda (cands)
-                (mapcar (lambda (c)
-                          (let ((st (cdr (assoc c candidates))))
-                            ;; The "[done]" sentinel has no station, so it gets
-                            ;; no annotation rather than a bogus "0" row.
-                            (list c "" (if st
-                                           (concat "   "
-                                                   (propertize (cj/music-radio--format-candidate st)
-                                                               'face 'completions-annotations))
-                                         ""))))
-                        cands))))
+           . ,(lambda (cands) (cj/music-radio--affixate cands candidates))))
       (complete-with-action action (mapcar #'car candidates) string pred))))
 
 (defun cj/music-radio--pick-loop (candidates)
@@ -1617,8 +1681,10 @@ bitrate, country, votes, and tags), lets you pick several one at a time, adds
 each to the playlist as a url track carrying its station metadata, and plays
 the first pick (interrupting whatever was playing).  Nothing is written to
 disk; save the queue with the normal playlist save, where the station name
-pre-fills the prompt."
-  (when (string-empty-p (string-trim query))
+pre-fills the prompt.  QUERY is trimmed of surrounding whitespace first --
+a stray trailing space otherwise reaches the API as %20 and matches nothing."
+  (setq query (string-trim query))
+  (when (string-empty-p query)
     (user-error "Empty search"))
   (cj/emms--setup)
   (let* ((stations (cj/music-radio--search query field))
@@ -1650,9 +1716,44 @@ pre-fills the prompt."
   (interactive "sRadio search (name): ")
   (cj/music-radio--search-and-play query "name"))
 
+(defun cj/music-radio--tags-url (server)
+  "Build the radio-browser tag-list URL against SERVER.
+Ordered by station count descending so the limit keeps the popular tags."
+  (format "https://%s/json/tags?order=stationcount&reverse=true&limit=%d"
+          server cj/music-radio-tag-limit))
+
+(defun cj/music-radio--parse-tags (json-text)
+  "Parse a radio-browser JSON-TEXT tag array into a clean list of tag names.
+Names come back whitespace-trimmed with empties and duplicates dropped --
+the source data is user-generated and carries all three.  Signals
+`user-error' on unreadable JSON (via `cj/music-radio--parse-search')."
+  (let ((names '()))
+    (dolist (tag (cj/music-radio--parse-search json-text))
+      (let ((name (string-trim (or (plist-get tag :name) ""))))
+        (unless (or (string-empty-p name) (member name names))
+          (push name names))))
+    (nreverse names)))
+
+(defun cj/music-radio--available-tags ()
+  "Return cached radio-browser tag names, fetching once per session.
+Returns nil when the fetch or parse fails, leaving the cache empty so a
+later call retries; the tag prompt then falls back to free-form input."
+  (or cj/music-radio--tags-cache
+      (setq cj/music-radio--tags-cache
+            (ignore-errors
+              (when-let ((body (cj/music-radio--http-get
+                                (cj/music-radio--tags-url cj/music-radio-server))))
+                (cj/music-radio--parse-tags body))))))
+
 (defun cj/music-radio-search-by-tag (tag)
-  "Search radio-browser.info by tag/genre, then queue and play a selection."
-  (interactive "sRadio search (tag): ")
+  "Search radio-browser.info by tag/genre, then queue and play a selection.
+The prompt completes over the popular tags fetched from radio-browser
+\(cached per session), so you pick from tags that exist instead of
+guessing.  Free-form input still works for an unlisted tag, and the prompt
+degrades to plain input when the tag fetch fails."
+  (interactive
+   (list (completing-read "Radio search (tag): "
+                          (cj/music-radio--available-tags))))
   (cj/music-radio--search-and-play tag "tag"))
 
 ;; ------------------------------- Cover art -----------------------------------

@@ -134,5 +134,64 @@
     (should (= (length cands) 2))
     (should (= (length (delete-dups (copy-sequence keys))) 2))))
 
+;;; --------------------------- query whitespace --------------------------------
+
+(ert-deftest test-music-radio-search-and-play-trims-query ()
+  "Normal: surrounding whitespace on the query is stripped before the search.
+A trailing space in the minibuffer otherwise reaches the API as %20 and
+matches nothing."
+  (let (captured)
+    (cl-letf (((symbol-function 'cj/emms--setup) #'ignore)
+              ((symbol-function 'cj/music-radio--search)
+               (lambda (query _field) (setq captured query) nil)))
+      (should-error (cj/music-radio--search-and-play "  jazz  " "tag")
+                    :type 'user-error))
+    (should (equal captured "jazz"))))
+
+(ert-deftest test-music-radio-search-and-play-whitespace-only-no-search ()
+  "Error: a whitespace-only query errors out before any network search."
+  (let (searched)
+    (cl-letf (((symbol-function 'cj/emms--setup) #'ignore)
+              ((symbol-function 'cj/music-radio--search)
+               (lambda (&rest _) (setq searched t) nil)))
+      (should-error (cj/music-radio--search-and-play "   " "tag")
+                    :type 'user-error))
+    (should-not searched)))
+
+;;; --------------------------- column alignment --------------------------------
+
+(ert-deftest test-music-radio-format-candidate-votes-column-fixed-width ()
+  "Normal: the votes field pads to a fixed width so the tags column aligns
+across stations with different vote counts."
+  (let* ((low (cj/music-radio--format-candidate
+               '(:codec "MP3" :bitrate 128 :countrycode "US" :votes 7 :tags "jazz")))
+         (high (cj/music-radio--format-candidate
+                '(:codec "MP3" :bitrate 128 :countrycode "US" :votes 174208 :tags "jazz"))))
+    (should (= (string-match "jazz" low) (string-match "jazz" high)))))
+
+(ert-deftest test-music-radio-affixate-aligns-annotation-column ()
+  "Normal: every annotation starts at the same display column regardless of
+how long the station name is."
+  (let* ((candidates '(("Short" . (:codec "MP3" :bitrate 128 :countrycode "US"
+                                   :votes 5 :tags "a"))
+                       ("A Much Longer Station Name" . (:codec "AAC" :bitrate 64
+                                                        :countrycode "FR" :votes 9 :tags "b"))))
+         (triples (cj/music-radio--affixate (mapcar #'car candidates) candidates))
+         (cols (mapcar (lambda (triple)
+                         (let ((cand (nth 0 triple))
+                               (suffix (nth 2 triple)))
+                           (string-match "[^ ]" suffix)
+                           (+ (string-width cand) (match-beginning 0))))
+                       triples)))
+    (should (= (length triples) 2))
+    (should (apply #'= cols))))
+
+(ert-deftest test-music-radio-affixate-done-sentinel-no-annotation ()
+  "Boundary: the [done] sentinel has no station and gets an empty suffix."
+  (let* ((candidates '(("[done]") ("Station" . (:codec "MP3" :bitrate 128
+                                                :countrycode "US" :votes 1 :tags "x"))))
+         (triples (cj/music-radio--affixate (mapcar #'car candidates) candidates)))
+    (should (equal (nth 2 (car triples)) ""))))
+
 (provide 'test-music-config--radio)
 ;;; test-music-config--radio.el ends here
