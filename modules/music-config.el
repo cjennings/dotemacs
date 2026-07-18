@@ -354,6 +354,18 @@ so the row reads left-to-right from its number."
             (recenter (max 1 (/ (window-body-height) 3)))))
       (set-window-start win pos))))
 
+(defun cj/music--pin-point-to-bol ()
+  "Keep the playlist cursor in the number gutter (column 0).
+The rows are rendered track lines, not editable text: the cursor's home is
+the number, and operations on a track (kill, shift, play) act on its row
+wherever point sits.  Vertical motion over thumbnails and the stretch-space
+that right-aligns the metadata drifts point to arbitrary visual columns
+(usually line end), so this runs on the buffer-local `post-command-hook'
+and snaps every landing back to the row start.  An active isearch owns
+point until it ends; the snap lands when the search exits."
+  (unless (or (bolp) (bound-and-true-p isearch-mode))
+    (beginning-of-line)))
+
 (defvar-local cj/music--renumber-timer nil
   "Pending idle timer for the playlist row renumber, or nil.")
 
@@ -407,7 +419,9 @@ inserts or kills into one renumber pass."
       (add-hook 'after-change-functions #'cj/music--schedule-renumber nil t)
       ;; The highlighted row stays findable even when the cursor sits on
       ;; album art (pairs with the row-number prefixes).
-      (hl-line-mode 1))
+      (hl-line-mode 1)
+      ;; Gutter cursor: point lives at the row start (the number column).
+      (add-hook 'post-command-hook #'cj/music--pin-point-to-bol nil t))
     (cj/music--renumber-rows buffer)
     ;; Set this as the current EMMS playlist buffer
     (setq emms-playlist-buffer buffer)
