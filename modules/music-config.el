@@ -393,9 +393,14 @@ debounce timer can outlive the playlist buffer."
                 (let ((ov (make-overlay (line-beginning-position)
                                         (1+ (line-beginning-position)))))
                   (overlay-put ov 'cj-music-row-number t)
+                  ;; The cursor property makes redisplay draw the cursor ON
+                  ;; the number when point sits at the row start; without it
+                  ;; the cursor lands after the before-string, on the
+                  ;; album-art thumbnail, where it's invisible.
                   (overlay-put ov 'before-string
                                (propertize (format "%3d " n)
-                                           'face 'cj/music-keyhint-face))))
+                                           'face 'cj/music-keyhint-face
+                                           'cursor t))))
               (forward-line 1))))))))
 
 (defun cj/music--schedule-renumber (&rest _)
@@ -893,11 +898,13 @@ Intended for use on `emms-player-finished-hook'."
 )
 
 
-(defvar cj/music-playlist-window-height 0.3
+(defvar cj/music-playlist-window-height 0.33
   "Default fraction of frame height for the F10 music playlist side window.
+A third of the frame, so a playlist of real length shows enough rows.
 Used when the playlist hasn't been resized and toggled off this session;
 after that, the toggled-off height is remembered in
-`cj/--music-playlist-height'.")
+`cj/--music-playlist-height' -- but only when it's at least this default
+\(see the discard in `cj/music-playlist-toggle').")
 
 (defvar cj/--music-playlist-height nil
   "Last height fraction the playlist was toggled off at.
@@ -920,6 +927,13 @@ resized and toggled off this session, it reopens at that remembered height."
     (if win
         (progn
           (cj/side-window-capture-size win 'bottom 'cj/--music-playlist-height)
+          ;; Remember enlargements only.  Window churn (another side window
+          ;; opening) squeezes the dock, and remembering the squeeze reopens
+          ;; it too short on every later toggle.  A deliberate shrink is the
+          ;; rare case; losing it costs one resize.
+          (when (and (numberp cj/--music-playlist-height)
+                     (< cj/--music-playlist-height cj/music-playlist-window-height))
+            (setq cj/--music-playlist-height nil))
           (delete-window win)
           (message "Playlist window closed"))
       (progn

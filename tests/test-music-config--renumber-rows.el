@@ -47,6 +47,16 @@
     (cj/music--renumber-rows (current-buffer))
     (should (= 2 (length (test-music-renumber--numbers (current-buffer)))))))
 
+(ert-deftest test-music-renumber-rows-number-carries-cursor-property ()
+  "Normal: the number string carries a cursor property.  Point is pinned at
+the row start, and without the property redisplay draws the cursor after
+the before-string -- on the album-art thumbnail, where it's invisible."
+  (with-temp-buffer
+    (insert "track one\n")
+    (cj/music--renumber-rows (current-buffer))
+    (let ((s (car (test-music-renumber--numbers (current-buffer)))))
+      (should (get-text-property 0 'cursor s)))))
+
 ;;; Boundary Cases
 
 (ert-deftest test-music-renumber-rows-skips-blank-lines ()

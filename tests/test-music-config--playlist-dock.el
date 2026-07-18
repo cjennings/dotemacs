@@ -70,5 +70,44 @@ silently does nothing."
   (should-not (boundp 'cj/--music-playlist-width))
   (should-not (fboundp 'cj/--music-playlist-side)))
 
+(ert-deftest test-music-config-playlist-default-height-is-a-third ()
+  "Normal: the dock opens at a third of the frame height by default."
+  (should (= cj/music-playlist-window-height 0.33)))
+
+(ert-deftest test-music-config-playlist-toggle-off-discards-shrunk-height ()
+  "Error: a captured height below the default is discarded.  Window churn
+squeezes the dock, and remembering the squeeze reopens it too short on
+every later toggle."
+  (let ((buffer (generate-new-buffer " *test-playlist-shrink*"))
+        (cj/--music-playlist-height nil))
+    (unwind-protect
+        (save-window-excursion
+          (set-window-buffer (selected-window) buffer)
+          (let ((cj/music-playlist-buffer-name (buffer-name buffer)))
+            (cl-letf (((symbol-function 'cj/side-window-capture-size)
+                       (lambda (_w _side var) (set var 0.2)))
+                      ((symbol-function 'delete-window) #'ignore)
+                      ((symbol-function 'message) #'ignore))
+              (cj/music-playlist-toggle)))
+          (should (null cj/--music-playlist-height)))
+      (kill-buffer buffer))))
+
+(ert-deftest test-music-config-playlist-toggle-off-keeps-enlarged-height ()
+  "Normal: a captured height at or above the default is remembered, so a
+deliberate enlargement sticks for the session."
+  (let ((buffer (generate-new-buffer " *test-playlist-grow*"))
+        (cj/--music-playlist-height nil))
+    (unwind-protect
+        (save-window-excursion
+          (set-window-buffer (selected-window) buffer)
+          (let ((cj/music-playlist-buffer-name (buffer-name buffer)))
+            (cl-letf (((symbol-function 'cj/side-window-capture-size)
+                       (lambda (_w _side var) (set var 0.5)))
+                      ((symbol-function 'delete-window) #'ignore)
+                      ((symbol-function 'message) #'ignore))
+              (cj/music-playlist-toggle)))
+          (should (= 0.5 cj/--music-playlist-height)))
+      (kill-buffer buffer))))
+
 (provide 'test-music-config--playlist-dock)
 ;;; test-music-config--playlist-dock.el ends here
