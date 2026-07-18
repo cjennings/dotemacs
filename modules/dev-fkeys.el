@@ -82,13 +82,25 @@ recognized markers both return nil."
 
 ;; ---------- Action handlers ----------
 
+(defun cj/--f4-install-once-hook (buffer then-fn)
+  "Install a one-shot buffer-local compilation finish hook in BUFFER.
+Installing in the compilation buffer itself (rather than globally)
+means a quit before the compile starts, or an unrelated concurrent
+compile, can never fire the chained THEN-FN.  No-op when BUFFER is not
+a live buffer."
+  (when (buffer-live-p buffer)
+    (with-current-buffer buffer
+      (add-hook 'compilation-finish-functions
+                (cj/--f4-make-once-hook then-fn) nil t))))
+
 (defun cj/--f4-compile-and-run-impl ()
   "Run `projectile-compile-project', then `projectile-run-project' on success.
-Installs a one-shot `compilation-finish-functions' hook to chain the run."
-  (add-hook 'compilation-finish-functions
-            (cj/--f4-make-once-hook
-             (lambda () (projectile-run-project nil))))
-  (projectile-compile-project nil))
+Chains the run via a one-shot finish hook installed buffer-locally in
+the compilation buffer projectile returns."
+  (let ((result (projectile-compile-project nil)))
+    (cj/--f4-install-once-hook
+     (cj/--projectile-compilation-buffer result)
+     (lambda () (projectile-run-project nil)))))
 
 (defun cj/--f4-dispatch (action)
   "Route ACTION (a symbol from `cj/--f4-candidates') to its handler.
@@ -109,24 +121,26 @@ command (prompted-and-cached by projectile) drives the build."
   (let ((clean-cmd (cj/--f4-derive-clean-cmd root)))
     (unless clean-cmd
       (user-error "Clean + Rebuild: no clean command for this project type"))
-    (add-hook 'compilation-finish-functions
-              (cj/--f4-make-once-hook
-               (lambda () (projectile-compile-project nil))))
-    (let ((default-directory root))
-      (compile clean-cmd))))
+    (let* ((default-directory root)
+           (buffer (compile clean-cmd)))
+      (cj/--f4-install-once-hook
+       buffer (lambda () (projectile-compile-project nil))))))
 
 ;; ---------- One-shot compilation-finish hook ----------
 
 (defun cj/--f4-make-once-hook (then-fn)
   "Build a one-shot `compilation-finish-functions' hook that chains THEN-FN.
 The returned lambda removes itself from `compilation-finish-functions' on
-first invocation regardless of status, then calls THEN-FN only if the
-status string starts with \"finished\" (the convention used by compile.el
-for a successful compile)."
+first invocation regardless of status — from both the global value and
+the running buffer's local value, so it is one-shot wherever it was
+installed — then calls THEN-FN only if the status string starts with
+\"finished\" (the convention used by compile.el for a successful
+compile)."
   (let (hook)
     (setq hook
           (lambda (_buf status)
             (remove-hook 'compilation-finish-functions hook)
+            (remove-hook 'compilation-finish-functions hook t)
             (when (and (stringp status)
                        (string-prefix-p "finished" status))
               (funcall then-fn))))

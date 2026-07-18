@@ -139,9 +139,11 @@ if not found or not in a project."
 		 (t cj/test-global-directory))))))
 
 (defun cj/test--get-test-files ()
-  "Return list of test file names (without path) in test directory."
+  "Return list of test file names (without path) in test directory.
+Returns nil when no test directory is available (outside a project
+with `cj/test-global-directory' unset)."
   (let ((dir (cj/test--get-test-directory)))
-	(when (file-directory-p dir)
+	(when (and dir (file-directory-p dir))
 	  (mapcar #'file-name-nondirectory
 			  (directory-files dir t "^test-.*\\.el$")))))
 
@@ -169,6 +171,8 @@ Returns: (cons \\='success loaded-count) on success,
   (interactive)
   (cj/test--ensure-test-dir-in-load-path)
   (let ((dir (cj/test--get-test-directory)))
+	(unless dir
+	  (user-error "No test directory: not in a project and cj/test-global-directory is unset"))
 	(unless (file-directory-p dir)
 	  (user-error "Test directory %s does not exist" dir))
 	(let ((test-files (directory-files dir t "^test-.*\\.el$")))
@@ -200,11 +204,12 @@ Returns: \\='success if added successfully,
   (cj/test--ensure-test-dir-in-load-path)
   (let* ((focused-files (cj/test--current-focused-files))
          (dir (cj/test--get-test-directory))
-		 (available-files (when (file-directory-p dir)
+		 (available-files (when (and dir (file-directory-p dir))
 							(mapcar #'file-name-nondirectory
 									(directory-files dir t "^test-.*\\.el$")))))
 	(if (null available-files)
-		(user-error "No test files found in %s" dir)
+		(user-error "No test files found in %s"
+					(or dir "any test directory (not in a project)"))
 	  (let* ((unfocused-files (cl-set-difference available-files
 												 focused-files
 												 :test #'string=))

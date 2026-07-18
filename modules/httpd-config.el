@@ -5,8 +5,9 @@
 ;;
 ;; Layer: 4 (Optional).
 ;; Category: O/D/P.
-;; Load shape: eager.
-;; Eager reason: none; local web server, a command-loaded deferral candidate.
+;; Load shape: deferred.
+;; Defer reason: impatient-mode requires simple-httpd on demand; nothing
+;; needs the server (or its www/ root) at startup.
 ;; Top-level side effects: package configuration via use-package.
 ;; Runtime requires: none.
 ;; Direct test load: yes.
@@ -17,14 +18,15 @@
 ;;;; -------------------------- Simple-Httpd -------------------------
 
 (use-package simple-httpd
-  :defer 1
+  :defer t
   :preface
   (defconst cj/httpd-wwwdir (concat user-emacs-directory "www"))
   (defun cj/httpd-check-or-create-wwwdir ()
     (unless (file-exists-p cj/httpd-wwwdir)
       (make-directory cj/httpd-wwwdir)))
-  :init (cj/httpd-check-or-create-wwwdir)
   :config
+  ;; Create the doc root only when the server package actually loads.
+  (cj/httpd-check-or-create-wwwdir)
   (setq httpd-root cj/httpd-wwwdir)
   (setq httpd-show-backtrace-when-error t)
   (setq httpd-serve-files t))

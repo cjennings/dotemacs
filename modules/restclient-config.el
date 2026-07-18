@@ -8,7 +8,7 @@
 ;; Load shape: eager.
 ;; Eager reason: none; API exploration, a command-loaded deferral candidate.
 ;; Top-level side effects: package configuration via use-package.
-;; Runtime requires: none (configures packages via use-package).
+;; Runtime requires: keybindings (C-; R prefix registration).
 ;; Direct test load: yes.
 ;;
 ;; Integrates restclient.el for interactive API exploration from within Emacs.
@@ -22,6 +22,8 @@
 ;; - C-; R o : Open a .rest file (defaults to data/)
 
 ;;; Code:
+
+(require 'keybindings)  ;; cj/register-prefix-map
 
 ;; --------------------------------- Constants ---------------------------------
 
@@ -61,12 +63,15 @@
 
 ;; -------------------------------- Keybindings --------------------------------
 
-(global-set-key (kbd "C-; R n") #'cj/restclient-new-buffer)
-(global-set-key (kbd "C-; R o") #'cj/restclient-open-file)
+(defvar-keymap cj/restclient-map
+  :doc "Keymap for restclient operations"
+  "n" #'cj/restclient-new-buffer
+  "o" #'cj/restclient-open-file)
+
+(cj/register-prefix-map "R" cj/restclient-map "REST client")
 
 (with-eval-after-load 'which-key
   (which-key-add-key-based-replacements
-    "C-; R" "REST client"
     "C-; R n" "new scratch buffer"
     "C-; R o" "open .rest file"))
 

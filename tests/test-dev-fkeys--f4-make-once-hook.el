@@ -95,6 +95,21 @@ hook exactly once per compile, so the practical contract is one-shot."
       (funcall hook nil "interrupt\n"))
     (should (= called 0))))
 
+(ert-deftest test-dev-fkeys-make-once-hook-removes-itself-buffer-locally ()
+  "Boundary: a hook installed buffer-locally removes its local entry when
+run in that buffer — the shape used by the F4 chained-compile handlers."
+  (let ((buf (generate-new-buffer " *test-once-hook*"))
+        (called 0))
+    (unwind-protect
+        (let ((hook (cj/--f4-make-once-hook (lambda () (cl-incf called)))))
+          (with-current-buffer buf
+            (add-hook 'compilation-finish-functions hook nil t)
+            (funcall hook buf "finished\n")
+            (should-not (memq hook (buffer-local-value
+                                    'compilation-finish-functions buf))))
+          (should (= called 1)))
+      (kill-buffer buf))))
+
 ;;; Error Cases
 
 (ert-deftest test-dev-fkeys-make-once-hook-then-fn-error-still-removes-hook ()

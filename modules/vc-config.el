@@ -37,9 +37,13 @@
 (defvar forge-pull-notifications)
 (defvar forge-topic-list-limit)
 
+;; External package variables (buffer-local hunk list from git-gutter).
+(defvar git-gutter:diffinfos)
+
 ;; External package functions (from lazily-loaded packages).
 (declare-function git-gutter:next-hunk "git-gutter")
 (declare-function git-gutter:previous-hunk "git-gutter")
+(declare-function git-gutter-hunk-start-line "git-gutter")
 (declare-function git-timemachine--start "git-timemachine")
 (declare-function git-timemachine--revisions "git-timemachine")
 (declare-function git-timemachine-show-revision "git-timemachine")
@@ -100,8 +104,7 @@
 
 (use-package git-timemachine
   :commands (git-timemachine
-			 git-timemachine-show-revision
-			 git-timemachine-show-selected-revision)
+			 git-timemachine-show-revision)
   :init
   (defun cj/git-timemachine-show-selected-revision ()
   "Displays git revisions of file in chronological order adding metadata."
@@ -157,13 +160,33 @@
 	  (forge-create-issue)
 	(user-error "Not in a forge repository")))
 
+(defun cj/--git-gutter-hunk-candidates (start-lines)
+  "Build completion candidates for hunk START-LINES in the current buffer.
+Each candidate is a cons of a \"LINE: text\" label and the line number."
+  (mapcar (lambda (line)
+            (cons (format "%4d: %s" line
+                          (save-excursion
+                            (goto-char (point-min))
+                            (forward-line (1- line))
+                            (buffer-substring-no-properties
+                             (line-beginning-position) (line-end-position))))
+                  line))
+          start-lines))
+
 (defun cj/goto-git-gutter-diff-hunks ()
-  "Jump to git-gutter diff hunks using consult.
-Searches for lines starting with + or - (diff markers) and allows
-interactive selection to jump to any changed line in the buffer."
+  "Jump to a git-gutter hunk in the current buffer chosen with completion."
   (interactive)
   (require 'git-gutter)
-  (consult-line "^[+\\-]"))
+  (let ((candidates (cj/--git-gutter-hunk-candidates
+                     (mapcar #'git-gutter-hunk-start-line
+                             (and (boundp 'git-gutter:diffinfos)
+                                  git-gutter:diffinfos)))))
+    (unless candidates
+      (user-error "No git-gutter hunks in this buffer"))
+    (let ((line (cdr (assoc (completing-read "Hunk: " candidates nil t)
+                            candidates))))
+      (goto-char (point-min))
+      (forward-line (1- line)))))
 
 ;; ------------------------------ Git Clone Clipboard -----------------------------
 ;; Quick git clone from clipboard URL
@@ -180,6 +203,33 @@ scp form."
          (last (car (last (split-string trimmed "[/:]" t)))))
     (and last (file-name-sans-extension last))))
 
+(defun cj/--git-clone-open (clone-dir)
+  "Open CLONE-DIR's README when one exists, else `dired' the directory."
+  (let ((readme (seq-find
+                 (lambda (file)
+                   (string-match-p "\\`README" (upcase file)))
+                 (directory-files clone-dir))))
+    (if readme
+        (find-file (expand-file-name readme clone-dir))
+      (dired clone-dir))))
+
+(defun cj/--git-clone-make-sentinel (url clone-dir)
+  "Return a sentinel reporting the git clone of URL into CLONE-DIR.
+On a zero exit the sentinel announces success and opens the clone; on
+any other exit or a signal it surfaces the process buffer."
+  (lambda (process _event)
+    (when (memq (process-status process) '(exit signal))
+      (if (and (eq (process-status process) 'exit)
+               (zerop (process-exit-status process)))
+          (progn
+            (message "Cloned %s into %s" url clone-dir)
+            (cj/--git-clone-open clone-dir))
+        (let ((buf (process-buffer process)))
+          (when (buffer-live-p buf)
+            (pop-to-buffer buf))
+          (message "git clone of %s failed (status %s)"
+                   url (process-exit-status process)))))))
+
 (defun cj/git-clone-clipboard-url (url target-dir)
   "Clone git repository from clipboard URL to TARGET-DIR.
 
@@ -187,11 +237,13 @@ With no prefix argument: uses first directory in `cj/git-clone-dirs'.
 With \\[universal-argument]: choose from `cj/git-clone-dirs'.
 With \\[universal-argument] \\[universal-argument]: choose any directory.
 
-Clones with a direct `git' process (no shell), into a path derived
-robustly from URL.  Aborts with a clear message when the clipboard is
-empty, the target is not a writable directory, the destination already
-exists, or `git' exits non-zero.  After a successful clone, opens the
-repository's README if found, else `dired's the clone."
+Clones with a direct asynchronous `git' process (no shell, no frozen
+frames), into a path derived robustly from URL.  Aborts with a clear
+message when the clipboard is empty, the target is not a writable
+directory, or the destination already exists.  The process sentinel
+reports the result: on success it opens the repository's README if
+found (else `dired's the clone); on failure it surfaces the process
+buffer."
   (interactive
    (list (current-kill 0)  ;; Get URL from clipboard
          (cond
@@ -219,21 +271,14 @@ repository's README if found, else `dired's the clone."
       (when (file-exists-p clone-dir)
         (user-error "Clone destination already exists: %s" clone-dir))
       (message "Cloning %s into %s..." url clone-dir)
-      ;; Direct process, no shell.  `--' stops option parsing so a URL
-      ;; beginning with `-' can't be read as a git flag.
-      (let ((status (call-process "git" nil "*git-clone*" nil
-                                  "clone" "--" url clone-dir)))
-        (unless (zerop status)
-          (pop-to-buffer "*git-clone*")
-          (user-error "git clone failed (exit %d); see *git-clone*" status)))
-      ;; Find and open README
-      (let ((readme (seq-find
-                     (lambda (file)
-                       (string-match-p "\\`README" (upcase file)))
-                     (directory-files clone-dir))))
-        (if readme
-            (find-file (expand-file-name readme clone-dir))
-          (dired clone-dir))))))
+      ;; Direct async process, no shell, so no emacsclient frame blocks
+      ;; for the duration of the clone.  `--' stops option parsing so a
+      ;; URL beginning with `-' can't be read as a git flag.
+      (make-process
+       :name "git-clone"
+       :buffer "*git-clone*"
+       :command (list "git" "clone" "--" url clone-dir)
+       :sentinel (cj/--git-clone-make-sentinel url clone-dir)))))
 
 ;; -------------------------------- Difftastic ---------------------------------
 ;; Structural diffs for better git change visualization
@@ -243,7 +288,7 @@ repository's README if found, else `dired's the clone."
   :defer t
   :commands (difftastic-magit-diff difftastic-magit-show)
   :bind (:map magit-blame-read-only-mode-map
-              ("D" . difftastic-magit-show)
+              ("D" . difftastic-magit-diff)
               ("S" . difftastic-magit-show))
   :config
   (eval-after-load 'magit-diff
