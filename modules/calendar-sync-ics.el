@@ -188,6 +188,22 @@ Monday = 1, Sunday = 7."
          (dow (nth 6 decoded)))  ; 0 = Sunday, 1 = Monday, etc.
     (if (= dow 0) 7 dow)))
 
+(defun calendar-sync--nth-weekday-of-month (year month weekday n)
+  "Return the day-of-month of the Nth WEEKDAY in YEAR/MONTH, or nil.
+WEEKDAY is 1-7 (Monday = 1), matching `calendar-sync--date-weekday'.
+Positive N counts from the start of the month (1 = first); negative N
+counts from the end (-1 = last).  Returns nil when the month has no such
+occurrence (a 5th Friday most months), or when N is zero."
+  (when (and (integerp n) (not (zerop n)))
+    (let* ((first-dow (calendar-sync--date-weekday (list year month 1)))
+           (first-day (1+ (mod (- weekday first-dow) 7)))
+           (next-month (calendar-sync--add-months (list year month 1) 1))
+           (last-day (nth 2 (calendar-sync--add-days next-month -1)))
+           (total (1+ (/ (- last-day first-day) 7)))
+           (index (if (> n 0) n (+ total n 1))))
+      (when (and (>= index 1) (<= index total))
+        (+ first-day (* 7 (1- index)))))))
+
 (defun calendar-sync--add-days (date days)
   "Add DAYS to DATE (year month day).
 Returns new (year month day).
@@ -564,18 +580,30 @@ would push the last day BEFORE the start and emit a backwards range."
 
 ;;; Single Event Parsing
 
+(defun calendar-sync--event-cancelled-p (event-str)
+  "Return non-nil when EVENT-STR carries STATUS:CANCELLED.
+This is the VEVENT's own STATUS property (RFC 5545 3.8.1.11), not the
+user's attendee PARTSTAT.  Matching is case-insensitive."
+  (let ((status (calendar-sync--get-property event-str "STATUS")))
+    (and status (string= (upcase status) "CANCELLED"))))
+
 (defun calendar-sync--parse-event (event-str)
   "Parse single VEVENT string EVENT-STR into plist.
 Returns plist with :uid :summary :description :location :start :end
 :attendees :organizer :url :status.
 Returns nil if event lacks required fields (DTSTART, SUMMARY).
 Skips events with RECURRENCE-ID (individual instances of recurring events
-are handled separately via exception collection).
+are handled separately via exception collection) and events whose own
+STATUS is CANCELLED -- a cancelled meeting must not render, and a
+cancelled series master kills its whole series because RRULE expansion
+builds its base event through this function.
 Handles TZID-qualified timestamps by converting to local time.
 Cleans text fields (description, location, summary) via
 `calendar-sync--clean-text'."
-  ;; Skip individual instances of recurring events (they're collected as exceptions)
-  (unless (calendar-sync--get-property event-str "RECURRENCE-ID")
+  ;; Skip individual instances of recurring events (they're collected as
+  ;; exceptions) and cancelled events (they must not render).
+  (unless (or (calendar-sync--get-property event-str "RECURRENCE-ID")
+              (calendar-sync--event-cancelled-p event-str))
     (let* ((uid (calendar-sync--get-property event-str "UID"))
            (summary (calendar-sync--clean-text
                      (calendar-sync--get-property event-str "SUMMARY")))

@@ -175,5 +175,31 @@
          (occurrences (calendar-sync--expand-yearly base-event rrule range)))
     (should (= (length occurrences) 2))))
 
+;;; BYMONTH + BYDAY (nth weekday) Cases
+;;
+;; Fixed dates are deterministic here: the expansion range is an explicit
+;; parameter, not derived from the current time.
+
+(ert-deftest test-calendar-sync--expand-yearly-bymonth-byday-nth-weekday ()
+  "Normal: FREQ=YEARLY;BYMONTH=3;BYDAY=2SU tracks the 2nd Sunday of March
+each year (the DST clock-change shape), not DTSTART's calendar date."
+  (let* ((base-event (list :summary "Clocks change"
+                           :start '(2026 3 8 2 0)
+                           :end '(2026 3 8 3 0)))
+         (rrule (list :freq 'yearly :interval 1 :bymonth 3 :byday '("2SU")))
+         (range (list (encode-time 0 0 0 1 1 2026)
+                      (encode-time 0 0 0 31 12 2027)))
+         (occurrences (calendar-sync--expand-yearly base-event rrule range))
+         (days (mapcar (lambda (occ)
+                         (let ((s (plist-get occ :start)))
+                           (list (nth 0 s) (nth 1 s) (nth 2 s))))
+                       occurrences)))
+    ;; 2nd Sunday of March: 2026-03-08, 2027-03-14 -- different day-of-month.
+    (should (equal days '((2026 3 8) (2027 3 14))))
+    (dolist (occ occurrences)
+      (let ((s (plist-get occ :start)))
+        (should (= 7 (calendar-sync--date-weekday
+                      (list (nth 0 s) (nth 1 s) (nth 2 s)))))))))
+
 (provide 'test-calendar-sync--expand-yearly)
 ;;; test-calendar-sync--expand-yearly.el ends here

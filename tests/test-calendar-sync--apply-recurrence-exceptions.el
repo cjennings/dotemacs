@@ -153,5 +153,36 @@ NEW-* values are the rescheduled time."
                   (and (= 1 (length result))
                        (= 9 (nth 3 (plist-get (car result) :start)))))))))
 
+;;; STATUS:CANCELLED Cases
+
+(ert-deftest test-calendar-sync--apply-recurrence-exceptions-normal-cancelled-removes ()
+  "Normal: a cancelled exception removes its occurrence instead of overriding it."
+  (let* ((occurrences (list (test-make-occurrence 2026 2 3 9 0 "Weekly Meeting")
+                            (test-make-occurrence 2026 2 10 9 0 "Weekly Meeting")
+                            (test-make-occurrence 2026 2 17 9 0 "Weekly Meeting")))
+         (exceptions (make-hash-table :test 'equal)))
+    ;; Feb 10 is cancelled.
+    (puthash "test-event@google.com"
+             (list (append (test-make-exception-data 2026 2 10 9 0  2026 2 10 9 0)
+                           '(:cancelled t)))
+             exceptions)
+    (let ((result (calendar-sync--apply-recurrence-exceptions occurrences exceptions)))
+      (should (= 2 (length result)))
+      ;; Feb 3 and Feb 17 remain; Feb 10 is gone.
+      (should (equal '(3 17)
+                     (mapcar (lambda (occ) (nth 2 (plist-get occ :start))) result))))))
+
+(ert-deftest test-calendar-sync--apply-recurrence-exceptions-boundary-cancelled-no-match-keeps-all ()
+  "Boundary: a cancelled exception that matches nothing removes nothing."
+  (let* ((occurrences (list (test-make-occurrence 2026 2 3 9 0 "Weekly Meeting")))
+         (exceptions (make-hash-table :test 'equal)))
+    ;; Cancelled exception targets a different date.
+    (puthash "test-event@google.com"
+             (list (append (test-make-exception-data 2026 3 3 9 0  2026 3 3 9 0)
+                           '(:cancelled t)))
+             exceptions)
+    (let ((result (calendar-sync--apply-recurrence-exceptions occurrences exceptions)))
+      (should (= 1 (length result))))))
+
 (provide 'test-calendar-sync--apply-recurrence-exceptions)
 ;;; test-calendar-sync--apply-recurrence-exceptions.el ends here

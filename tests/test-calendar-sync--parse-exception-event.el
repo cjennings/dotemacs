@@ -82,5 +82,33 @@ than a half-built plist."
                        "END:VEVENT")))
     (should-not (calendar-sync--parse-exception-event event))))
 
+;;; STATUS:CANCELLED Cases
+
+(ert-deftest test-calendar-sync--parse-exception-event-normal-cancelled-flag ()
+  "Normal: a STATUS:CANCELLED override carries :cancelled t, so the
+matching occurrence can be removed rather than overridden."
+  (let* ((start (test-calendar-sync-time-days-from-now 7 10 0))
+         (end (test-calendar-sync-time-days-from-now 7 11 0))
+         (event (concat "BEGIN:VEVENT\n"
+                        "UID:override@google.com\n"
+                        "RECURRENCE-ID:20260203T090000Z\n"
+                        "SUMMARY:Craig / Ryan\n"
+                        "STATUS:CANCELLED\n"
+                        "DTSTART:" (test-calendar-sync-ics-datetime start) "\n"
+                        "DTEND:" (test-calendar-sync-ics-datetime end) "\n"
+                        "END:VEVENT"))
+         (plist (calendar-sync--parse-exception-event event)))
+    (should plist)
+    (should (plist-get plist :cancelled))))
+
+(ert-deftest test-calendar-sync--parse-exception-event-boundary-no-status-not-cancelled ()
+  "Boundary: an override without STATUS is not cancelled."
+  (let* ((start (test-calendar-sync-time-days-from-now 7 10 0))
+         (end (test-calendar-sync-time-days-from-now 7 11 0))
+         (plist (calendar-sync--parse-exception-event
+                 (test-cs-parse-exc--override-event start end))))
+    (should plist)
+    (should-not (plist-get plist :cancelled))))
+
 (provide 'test-calendar-sync--parse-exception-event)
 ;;; test-calendar-sync--parse-exception-event.el ends here

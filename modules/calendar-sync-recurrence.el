@@ -90,6 +90,9 @@ dropped by `calendar-sync--filter-declined'."
           (list :recurrence-id (calendar-sync--localize-parsed-datetime
                                 recurrence-id-parsed recurrence-id-is-utc recurrence-id-tzid)
                 :recurrence-id-raw recurrence-id
+                ;; A cancelled override removes its occurrence downstream
+                ;; rather than rescheduling it.
+                :cancelled (calendar-sync--event-cancelled-p event-str)
                 :start start-parsed
                 :end end-parsed
                 :summary summary
@@ -164,24 +167,30 @@ Compares year, month, day, hour, minute."
   "Apply EXCEPTIONS to OCCURRENCES list.
 OCCURRENCES is list of event plists from RRULE expansion.
 EXCEPTIONS is hash table from `calendar-sync--collect-recurrence-exceptions'.
-Returns new list with matching occurrences replaced by exception times."
+Returns new list with matching occurrences replaced by exception times.
+A cancelled exception (STATUS:CANCELLED override) removes its occurrence
+from the list instead of overriding it."
   (if (or (null occurrences) (null exceptions))
       occurrences
-    (mapcar
-     (lambda (occurrence)
-       (let* ((uid (plist-get occurrence :uid))
-              (uid-exceptions (and uid (gethash uid exceptions))))
-         (if (null uid-exceptions)
-             occurrence
-           ;; Check if any exception matches this occurrence
-           (let ((matching-exception
-                  (cl-find-if (lambda (exc)
-                                (calendar-sync--occurrence-matches-exception-p occurrence exc))
-                              uid-exceptions)))
-             (if matching-exception
-                 (calendar-sync--apply-single-exception occurrence matching-exception)
-               occurrence)))))
-     occurrences)))
+    (delq nil
+          (mapcar
+           (lambda (occurrence)
+             (let* ((uid (plist-get occurrence :uid))
+                    (uid-exceptions (and uid (gethash uid exceptions))))
+               (if (null uid-exceptions)
+                   occurrence
+                 ;; Check if any exception matches this occurrence
+                 (let ((matching-exception
+                        (cl-find-if (lambda (exc)
+                                      (calendar-sync--occurrence-matches-exception-p occurrence exc))
+                                    uid-exceptions)))
+                   (cond
+                    ((null matching-exception) occurrence)
+                    ;; Cancelled instance: drop it entirely.
+                    ((plist-get matching-exception :cancelled) nil)
+                    (t (calendar-sync--apply-single-exception
+                        occurrence matching-exception)))))))
+           occurrences))))
 
 ;;; EXDATE (Excluded Date) Handling
 
@@ -291,7 +300,9 @@ OCCURRENCE-DATE should be a list (year month day hour minute second)."
 
 (defun calendar-sync--parse-rrule (rrule-str)
   "Parse RRULE string into plist.
-Returns plist with :freq :interval :byday :until :count."
+Returns plist with :freq :interval :byday :bysetpos :bymonth :until :count.
+BYMONTH keeps only the first value of a comma-separated list -- feeds in
+practice emit a single month there."
   (let ((parts (split-string rrule-str ";"))
         (result '()))
     (dolist (part parts)
@@ -302,6 +313,8 @@ Returns plist with :freq :interval :byday :until :count."
             ("FREQ" (setq result (plist-put result :freq (intern (downcase value)))))
             ("INTERVAL" (setq result (plist-put result :interval (string-to-number value))))
             ("BYDAY" (setq result (plist-put result :byday (split-string value ","))))
+            ("BYSETPOS" (setq result (plist-put result :bysetpos (string-to-number value))))
+            ("BYMONTH" (setq result (plist-put result :bymonth (string-to-number value))))
             ("UNTIL" (setq result (plist-put result :until (calendar-sync--parse-timestamp value))))
             ("COUNT" (setq result (plist-put result :count (string-to-number value))))))))
     ;; Set defaults
@@ -389,18 +402,133 @@ BASE-EVENT is the event plist, RRULE is parsed rrule, RANGE is date range."
       (calendar-sync--log-silently "calendar-sync: WARNING: Hit max iterations (%d) expanding weekly event" max-iterations))
     (nreverse occurrences)))
 
+(defun calendar-sync--parse-byday-entry (entry)
+  "Parse a single RRULE BYDAY ENTRY into a cons (ORDINAL . WEEKDAY).
+ENTRY is a string like \"2WE\" (2nd Wednesday), \"-1TU\" (last Tuesday),
+or \"SU\" (bare weekday).  ORDINAL is nil for a bare weekday.  WEEKDAY is
+1-7 (Monday = 1).  Returns nil for unparseable input."
+  (when (and (stringp entry)
+             (string-match "\\`\\(-?[0-9]+\\)?\\([A-Z][A-Z]\\)\\'" entry))
+    (let ((ordinal (match-string 1 entry))
+          (weekday (calendar-sync--weekday-to-number (match-string 2 entry))))
+      (when weekday
+        (cons (and ordinal (string-to-number ordinal)) weekday)))))
+
+(defun calendar-sync--byday-days-in-month (year month byday-entries bysetpos)
+  "Return the sorted day-of-month list BYDAY-ENTRIES select in YEAR/MONTH.
+An entry with an ordinal (\"2WE\") resolves directly via
+`calendar-sync--nth-weekday-of-month'.  A bare entry (\"SU\") expands to
+every matching weekday in the month.  When BYSETPOS is non-nil it then
+selects one day from the combined set (1-based; negative counts from the
+end), per RFC 5545 3.8.5.3.  Months with no match return nil."
+  (let ((days '()))
+    (dolist (entry byday-entries)
+      (let ((parsed (calendar-sync--parse-byday-entry entry)))
+        (when parsed
+          (let ((ordinal (car parsed))
+                (weekday (cdr parsed)))
+            (if ordinal
+                (let ((day (calendar-sync--nth-weekday-of-month year month weekday ordinal)))
+                  (when day (push day days)))
+              (let ((n 1) day)
+                (while (setq day (calendar-sync--nth-weekday-of-month year month weekday n))
+                  (push day days)
+                  (setq n (1+ n)))))))))
+    (setq days (sort (delete-dups days) #'<))
+    (if (and bysetpos days)
+        (let* ((total (length days))
+               (index (if (> bysetpos 0) bysetpos (+ total bysetpos 1))))
+          (if (and (>= index 1) (<= index total))
+              (list (nth (1- index) days))
+            '()))
+      days)))
+
+(defun calendar-sync--expand-monthly-byday (base-event rrule range)
+  "Expand a monthly nth-weekday (BYDAY) recurring event.
+BASE-EVENT is the event plist, RRULE is parsed rrule (carrying :byday and
+optionally :bysetpos), RANGE is date range.  Steps month by month from
+DTSTART's month, landing each occurrence on the day its BYDAY rule selects
+-- never on DTSTART's day-of-month."
+  (let* ((start (plist-get base-event :start))
+         (interval (plist-get rrule :interval))
+         (byday (plist-get rrule :byday))
+         (bysetpos (plist-get rrule :bysetpos))
+         (until (plist-get rrule :until))
+         (count (plist-get rrule :count))
+         (occurrences '())
+         (month-anchor (list (nth 0 start) (nth 1 start) 1))
+         (start-day (nth 2 start))
+         (first-month t)
+         (num-generated 0)
+         (range-end-time (cadr range))
+         (max-iterations 1000)
+         (iterations 0))
+    (when (<= interval 0)
+      (error "Invalid RRULE interval: %s (must be > 0)" interval))
+    (while (and (< iterations max-iterations)
+                (or count until
+                    (time-less-p (calendar-sync--date-to-time month-anchor) range-end-time))
+                (or (not count) (< num-generated count))
+                ;; A month starting after UNTIL can't contain an occurrence
+                ;; on-or-before it (UNTIL is inclusive, RFC 5545 3.3.10).
+                (or (not until) (calendar-sync--date-on-or-before-p month-anchor until)))
+      (setq iterations (1+ iterations))
+      (dolist (day (calendar-sync--byday-days-in-month
+                    (nth 0 month-anchor) (nth 1 month-anchor) byday bysetpos))
+        (let* ((occurrence-date (list (nth 0 month-anchor) (nth 1 month-anchor) day))
+               (occurrence-datetime (append occurrence-date (nthcdr 3 start))))
+          ;; The series starts at DTSTART: skip earlier days in the first month.
+          (unless (and first-month (< day start-day))
+            (when (or (not until) (calendar-sync--date-on-or-before-p occurrence-date until))
+              (when (or (not count) (< num-generated count))
+                (setq num-generated (1+ num-generated))
+                (when (calendar-sync--date-in-range-p occurrence-datetime range)
+                  (push (calendar-sync--create-occurrence base-event occurrence-datetime)
+                        occurrences)))))))
+      (setq first-month nil)
+      (setq month-anchor (calendar-sync--add-months month-anchor interval)))
+    (when (>= iterations max-iterations)
+      (calendar-sync--log-silently
+       "calendar-sync: WARNING: Hit max iterations (%d) expanding monthly BYDAY event"
+       max-iterations))
+    (nreverse occurrences)))
+
 (defun calendar-sync--expand-monthly (base-event rrule range)
   "Expand monthly recurring event.
-BASE-EVENT is the event plist, RRULE is parsed rrule, RANGE is date range."
-  (calendar-sync--expand-simple-recurrence
-   base-event rrule range #'calendar-sync--add-months))
+BASE-EVENT is the event plist, RRULE is parsed rrule, RANGE is date range.
+A rule with BYDAY (nth weekday, e.g. 2WE, -1TU, or SU with BYSETPOS)
+expands via `calendar-sync--expand-monthly-byday'; a plain rule steps
+DTSTART's day-of-month."
+  (if (plist-get rrule :byday)
+      (calendar-sync--expand-monthly-byday base-event rrule range)
+    (calendar-sync--expand-simple-recurrence
+     base-event rrule range #'calendar-sync--add-months)))
+
+(defun calendar-sync--expand-yearly-byday (base-event rrule range)
+  "Expand a yearly nth-weekday event (e.g. BYMONTH=3;BYDAY=2SU).
+BASE-EVENT is the event plist, RRULE is parsed rrule, RANGE is date range.
+Reuses the monthly BYDAY expander with a 12-month step, anchored on
+:bymonth (falling back to DTSTART's month)."
+  (let* ((start (plist-get base-event :start))
+         (month (or (plist-get rrule :bymonth) (nth 1 start)))
+         (sched-event (plist-put (copy-sequence base-event) :start
+                                 (append (list (nth 0 start) month (nth 2 start))
+                                         (nthcdr 3 start))))
+         (sched-rrule (plist-put (copy-sequence rrule) :interval
+                                 (* 12 (or (plist-get rrule :interval) 1)))))
+    (calendar-sync--expand-monthly-byday sched-event sched-rrule range)))
 
 (defun calendar-sync--expand-yearly (base-event rrule range)
   "Expand yearly recurring event.
-BASE-EVENT is the event plist, RRULE is parsed rrule, RANGE is date range."
-  (calendar-sync--expand-simple-recurrence
-   base-event rrule range
-   (lambda (date interval) (calendar-sync--add-months date (* 12 interval)))))
+BASE-EVENT is the event plist, RRULE is parsed rrule, RANGE is date range.
+A rule with BYDAY (the DST clock-change shape, BYMONTH=n;BYDAY=nWD)
+expands via `calendar-sync--expand-yearly-byday'; a plain rule repeats
+DTSTART's calendar date."
+  (if (plist-get rrule :byday)
+      (calendar-sync--expand-yearly-byday base-event rrule range)
+    (calendar-sync--expand-simple-recurrence
+     base-event rrule range
+     (lambda (date interval) (calendar-sync--add-months date (* 12 interval))))))
 
 (defun calendar-sync--expand-recurring-event (event-str range)
   "Expand recurring event EVENT-STR into individual occurrences within RANGE.

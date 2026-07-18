@@ -170,5 +170,104 @@
          (occurrences (calendar-sync--expand-monthly base-event rrule range)))
     (should (= (length occurrences) 3))))
 
+;;; BYDAY (nth weekday) Cases
+;;
+;; Fixed dates are deterministic here: the expansion range is an explicit
+;; parameter, not derived from the current time, so these never age out.
+
+(defun test-calendar-sync--expand-monthly-range-2026 ()
+  "Fixed expansion range covering calendar year 2026."
+  (list (encode-time 0 0 0 1 1 2026) (encode-time 0 0 0 31 12 2026)))
+
+(ert-deftest test-calendar-sync--expand-monthly-byday-second-wednesday ()
+  "Normal: BYDAY=2WE lands on the 2nd Wednesday of each month, not the
+day-of-month of DTSTART. This is the live Craig/Ryan series shape."
+  (let* ((base-event (list :summary "2nd Wednesday"
+                           :start '(2026 1 14 10 0)
+                           :end '(2026 1 14 11 0)))
+         (rrule (list :freq 'monthly :interval 1 :byday '("2WE")))
+         (range (test-calendar-sync--expand-monthly-range-2026))
+         (occurrences (calendar-sync--expand-monthly base-event rrule range))
+         (days (mapcar (lambda (occ)
+                         (let ((s (plist-get occ :start)))
+                           (list (nth 1 s) (nth 2 s))))
+                       occurrences)))
+    (should (equal days '((1 14) (2 11) (3 11) (4 8) (5 13) (6 10)
+                          (7 8) (8 12) (9 9) (10 14) (11 11) (12 9))))
+    ;; Every occurrence is a Wednesday (weekday 3), never a fixed day-of-month.
+    (dolist (occ occurrences)
+      (let ((s (plist-get occ :start)))
+        (should (= 3 (calendar-sync--date-weekday
+                      (list (nth 0 s) (nth 1 s) (nth 2 s)))))))))
+
+(ert-deftest test-calendar-sync--expand-monthly-byday-last-tuesday ()
+  "Normal: BYDAY=-1TU lands on the last Tuesday of each month."
+  (let* ((base-event (list :summary "Last Tuesday"
+                           :start '(2026 1 27 9 0)
+                           :end '(2026 1 27 10 0)))
+         (rrule (list :freq 'monthly :interval 1 :byday '("-1TU") :count 3))
+         (range (test-calendar-sync--expand-monthly-range-2026))
+         (occurrences (calendar-sync--expand-monthly base-event rrule range))
+         (days (mapcar (lambda (occ)
+                         (let ((s (plist-get occ :start)))
+                           (list (nth 1 s) (nth 2 s))))
+                       occurrences)))
+    (should (equal days '((1 27) (2 24) (3 31))))))
+
+(ert-deftest test-calendar-sync--expand-monthly-byday-bysetpos-second-sunday ()
+  "Normal: BYDAY=SU with BYSETPOS=2 lands on the 2nd Sunday (Proton shape)."
+  (let* ((base-event (list :summary "2nd Sunday"
+                           :start '(2026 1 11 8 0)
+                           :end '(2026 1 11 9 0)))
+         (rrule (list :freq 'monthly :interval 1 :byday '("SU") :bysetpos 2 :count 3))
+         (range (test-calendar-sync--expand-monthly-range-2026))
+         (occurrences (calendar-sync--expand-monthly base-event rrule range))
+         (days (mapcar (lambda (occ)
+                         (let ((s (plist-get occ :start)))
+                           (list (nth 1 s) (nth 2 s))))
+                       occurrences)))
+    (should (equal days '((1 11) (2 8) (3 8))))))
+
+(ert-deftest test-calendar-sync--expand-monthly-byday-until-inclusive-and-reached ()
+  "Boundary: with BYDAY, UNTIL is inclusive and the series reaches it.
+Upper bound alone can't catch a dropped final occurrence -- assert both."
+  (let* ((base-event (list :summary "Bounded"
+                           :start '(2026 1 14 10 0)
+                           :end '(2026 1 14 11 0)))
+         (rrule (list :freq 'monthly :interval 1 :byday '("2WE")
+                      :until '(2026 5 13)))
+         (range (test-calendar-sync--expand-monthly-range-2026))
+         (occurrences (calendar-sync--expand-monthly base-event rrule range))
+         (last-start (plist-get (car (last occurrences)) :start)))
+    (should (= (length occurrences) 5))
+    ;; Reach: the occurrence landing exactly on UNTIL is kept.
+    (should (equal (list (nth 0 last-start) (nth 1 last-start) (nth 2 last-start))
+                   '(2026 5 13)))))
+
+(ert-deftest test-calendar-sync--expand-monthly-byday-count-limits ()
+  "Boundary: COUNT caps a BYDAY series."
+  (let* ((base-event (list :summary "Counted"
+                           :start '(2026 1 14 10 0)
+                           :end '(2026 1 14 11 0)))
+         (rrule (list :freq 'monthly :interval 1 :byday '("2WE") :count 4))
+         (range (test-calendar-sync--expand-monthly-range-2026))
+         (occurrences (calendar-sync--expand-monthly base-event rrule range)))
+    (should (= (length occurrences) 4))))
+
+(ert-deftest test-calendar-sync--expand-monthly-byday-fifth-weekday-skips-short-months ()
+  "Boundary: BYDAY=5WE only lands in months that have a 5th Wednesday."
+  (let* ((base-event (list :summary "5th Wednesday"
+                           :start '(2026 4 29 10 0)
+                           :end '(2026 4 29 11 0)))
+         (rrule (list :freq 'monthly :interval 1 :byday '("5WE")))
+         (range (test-calendar-sync--expand-monthly-range-2026))
+         (occurrences (calendar-sync--expand-monthly base-event rrule range))
+         (days (mapcar (lambda (occ)
+                         (let ((s (plist-get occ :start)))
+                           (list (nth 1 s) (nth 2 s))))
+                       occurrences)))
+    ;; 2026 months (Apr on) with a 5th Wednesday: Apr 29, Jul 29, Sep 30, Dec 30.
+    (should (equal days '((4 29) (7 29) (9 30) (12 30))))))
+
 (provide 'test-calendar-sync--expand-monthly)
 ;;; test-calendar-sync--expand-monthly.el ends here

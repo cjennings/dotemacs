@@ -206,5 +206,26 @@
         (should (= (plist-get result :count) 10)))
     (test-calendar-sync--parse-rrule-teardown)))
 
+;;; BYSETPOS / BYMONTH Cases
+
+(ert-deftest test-calendar-sync--parse-rrule-normal-bysetpos-returns-number ()
+  "Normal: BYSETPOS parses to a number (Proton emits BYDAY=SU;BYSETPOS=2)."
+  (let ((result (calendar-sync--parse-rrule "FREQ=MONTHLY;BYDAY=SU;BYSETPOS=2")))
+    (should (eq (plist-get result :freq) 'monthly))
+    (should (equal (plist-get result :byday) '("SU")))
+    (should (= (plist-get result :bysetpos) 2))))
+
+(ert-deftest test-calendar-sync--parse-rrule-normal-bymonth-returns-number ()
+  "Normal: BYMONTH parses to a number (yearly nth-weekday rules carry it)."
+  (let ((result (calendar-sync--parse-rrule "FREQ=YEARLY;BYMONTH=3;BYDAY=2SU")))
+    (should (eq (plist-get result :freq) 'yearly))
+    (should (= (plist-get result :bymonth) 3))
+    (should (equal (plist-get result :byday) '("2SU")))))
+
+(ert-deftest test-calendar-sync--parse-rrule-boundary-negative-bysetpos ()
+  "Boundary: negative BYSETPOS (last matching day) parses."
+  (let ((result (calendar-sync--parse-rrule "FREQ=MONTHLY;BYDAY=FR;BYSETPOS=-1")))
+    (should (= (plist-get result :bysetpos) -1))))
+
 (provide 'test-calendar-sync--parse-rrule)
 ;;; test-calendar-sync--parse-rrule.el ends here

@@ -78,5 +78,37 @@
   (let ((vevent "BEGIN:VEVENT\nSUMMARY:Orphan\nEND:VEVENT"))
     (should (null (calendar-sync--parse-event vevent)))))
 
+;;; STATUS:CANCELLED Cases
+
+(ert-deftest test-calendar-sync--parse-event-error-cancelled-returns-nil ()
+  "Error: a STATUS:CANCELLED event returns nil -- cancelled events don't render."
+  (let* ((start (test-calendar-sync-time-days-from-now 5 14 0))
+         (vevent (concat "BEGIN:VEVENT\n"
+                         "SUMMARY:Cancelled Meeting\n"
+                         "DTSTART:" (test-calendar-sync-ics-datetime start) "\n"
+                         "STATUS:CANCELLED\n"
+                         "END:VEVENT")))
+    (should (null (calendar-sync--parse-event vevent)))))
+
+(ert-deftest test-calendar-sync--parse-event-boundary-cancelled-case-insensitive ()
+  "Boundary: STATUS value matching is case-insensitive."
+  (let* ((start (test-calendar-sync-time-days-from-now 5 14 0))
+         (vevent (concat "BEGIN:VEVENT\n"
+                         "SUMMARY:Cancelled Meeting\n"
+                         "DTSTART:" (test-calendar-sync-ics-datetime start) "\n"
+                         "STATUS:Cancelled\n"
+                         "END:VEVENT")))
+    (should (null (calendar-sync--parse-event vevent)))))
+
+(ert-deftest test-calendar-sync--parse-event-normal-confirmed-still-parses ()
+  "Normal: STATUS:CONFIRMED events still parse."
+  (let* ((start (test-calendar-sync-time-days-from-now 5 14 0))
+         (vevent (concat "BEGIN:VEVENT\n"
+                         "SUMMARY:Confirmed Meeting\n"
+                         "DTSTART:" (test-calendar-sync-ics-datetime start) "\n"
+                         "STATUS:CONFIRMED\n"
+                         "END:VEVENT")))
+    (should (calendar-sync--parse-event vevent))))
+
 (provide 'test-calendar-sync--parse-event)
 ;;; test-calendar-sync--parse-event.el ends here
