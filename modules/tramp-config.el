@@ -77,9 +77,10 @@
   ;; Cache remote file attributes for better performance
   (setq remote-file-name-inhibit-cache nil)
 
-  ;; Don't check for modified buffers before revert
-  ;; to avoid unnecessary remote operations
-  (setq revert-without-query '(".*"))
+  ;; Skip the revert confirmation for remote files only, to avoid
+  ;; unnecessary remote round-trips.  Scoped to the TRAMP path regexp so
+  ;; local files keep their normal revert prompt.
+  (setq revert-without-query (list tramp-file-name-regexp))
 
   ;; Refresh buffers when needed rather than automatically
   (setq auto-revert-remote-files nil)
@@ -120,21 +121,8 @@
   ;; Default transfer method (use scp for most efficient transfer)
   (setq tramp-default-method "scp")
 
-  ;; Use different methods based on host/domain patterns
-  (add-to-list 'tramp-methods
-			   '("sshfast"
-				 (tramp-login-program "ssh")
-				 (tramp-login-args (("-l" "%u") ("-p" "%p") ("%c")
-									("-e" "none") ("-t" "-t") ("%h")))
-				 (tramp-async-args (("-q")))
-				 (tramp-remote-shell "/bin/sh")
-				 (tramp-remote-shell-login ("-l"))
-				 (tramp-remote-shell-args ("-c"))
-				 (tramp-connection-timeout 10)))
-
   ;; Remote shell and project settings
-  ;; Support for Docker containers
-  (add-to-list 'tramp-remote-path 'tramp-own-remote-path)
+  ;; Extend the remote PATH (tramp-own-remote-path already added above)
   (add-to-list 'tramp-remote-path "/usr/local/bin")
   (add-to-list 'tramp-remote-path "/usr/local/sbin")
 

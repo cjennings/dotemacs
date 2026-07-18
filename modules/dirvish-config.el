@@ -8,8 +8,8 @@
 ;; Load shape: eager.
 ;; Eager reason: none; file manager, a command/hook-loaded deferral candidate.
 ;; Top-level side effects: three add-hook, package configuration via use-package.
-;; Runtime requires: user-constants, system-utils, host-environment, system-lib,
-;;   external-open-lib.
+;; Runtime requires: user-constants, system-utils, external-open,
+;;   host-environment, system-lib, external-open-lib.
 ;; Direct test load: yes.
 ;;
 ;; Enhanced file management via Dirvish (modern dired replacement) with icons,
@@ -34,7 +34,8 @@
 ;;; Code:
 
 (require 'user-constants)   ;; code-dir, music-dir, pix-dir et al. used at load time
-(require 'system-utils)     ;; cj/xdg-open, cj/open-file-with-command bound to keys
+(require 'system-utils)     ;; cj/open-file-with-command bound to keys
+(require 'external-open)    ;; cj/xdg-open bound to keys ("o" and OS-handler fallback)
 (require 'host-environment)
 (require 'system-lib)
 (require 'external-open-lib)

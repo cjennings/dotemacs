@@ -7,7 +7,7 @@
 ;; Load shape: eager.
 ;; Eager reason: none; Dired/Dirvish shell commands can load by command.
 ;; Top-level side effects: package configuration via use-package.
-;; Runtime requires: cl-lib, system-lib.
+;; Runtime requires: cl-lib, system-lib, external-open.
 ;; Direct test load: yes.
 ;;
 ;; Configures dwim-shell-command actions for marked Dired/Dirvish files:
@@ -23,6 +23,7 @@
 
 (require 'cl-lib)
 (require 'system-lib)  ;; cj/confirm-strong (permanent file destruction confirm)
+(require 'external-open)  ;; cj/xdg-open, called to open conversion output files
 
 ;; Function declarations (lazily-loaded packages and sibling modules).
 (declare-function dwim-shell-command-on-marked-files "dwim-shell-command")
