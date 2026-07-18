@@ -122,7 +122,8 @@ dashboard put and letting the alist place agent into a fresh split.
 This test stubs `eat' to mimic the same-window side-effect and asserts the
 originally-selected window still shows its original buffer afterward."
   (let ((agent-name "agent [preserve-window-test]")
-        (orig-name "*test-original-buffer*"))
+        (orig-name "*test-original-buffer*")
+        (subprocess-calls nil))
     (test-ai-term--cleanup agent-name)
     (when (get-buffer orig-name) (kill-buffer orig-name))
     (unwind-protect
@@ -138,9 +139,21 @@ originally-selected window still shows its original buffer afterward."
                       (set-window-buffer (selected-window) buf)
                       buf)))
                  ((symbol-function 'cj/--ai-term-send-string)
-                  (lambda (_buf _s) nil)))
+                  (lambda (_buf _s) nil))
+                 ;; Same hermetic seams the shared macro mocks: no tmux
+                 ;; subprocess for the fresh-session check, no /color timer.
+                 ((symbol-function 'cj/--ai-term-live-tmux-sessions)
+                  (lambda () nil))
+                 ((symbol-function 'cj/--ai-term-schedule-color)
+                  (lambda (_buffer _color) nil))
+                 ;; Leak guard: any subprocess attempt is recorded, not run.
+                 ;; `cj/--ai-term-live-tmux-sessions' swallows errors, so a
+                 ;; signaling barrier would pass silently -- record and assert.
+                 ((symbol-function 'process-file)
+                  (lambda (&rest _) (push 'process-file subprocess-calls) -1)))
               (cj/--ai-term-show-or-create "/tmp/preserve" agent-name)
-              (should (eq (window-buffer orig-win) orig-buf)))))
+              (should (eq (window-buffer orig-win) orig-buf))
+              (should-not subprocess-calls))))
       (test-ai-term--cleanup agent-name)
       (when (get-buffer orig-name) (kill-buffer orig-name)))))
 
