@@ -222,12 +222,19 @@ Validates:
   (test-integration-recurring-events-setup)
   (unwind-protect
       (let* ((org-output (calendar-sync--parse-ics test-integration-recurring-events--weekly-ics))
-             (now (current-time))
-             (three-months-ago (time-subtract now (* 90 24 3600)))
-             (twelve-months-future (time-add now (* 365 24 3600))))
+             (range (calendar-sync--get-date-range))
+             (window-start (nth 0 range))
+             (window-end (nth 1 range)))
         (should (stringp org-output))
 
-        ;; Parse all dates from output
+        ;; Every emitted occurrence must fall within the pipeline's own window
+        ;; (-3/+12 calendar months at day granularity, from
+        ;; `calendar-sync--get-date-range').  Asserting against that boundary,
+        ;; rather than a hand-rolled now +/- fixed-day approximation, keeps the
+        ;; test robust on every date: a valid boundary occurrence stamped at
+        ;; midnight used to read as out-of-range against a now-90d bound taken
+        ;; at the current clock time, so the test failed or passed depending on
+        ;; the day it ran.
         (with-temp-buffer
           (insert org-output)
           (goto-char (point-min))
@@ -237,9 +244,9 @@ Validates:
                      (month (string-to-number (match-string 2)))
                      (day (string-to-number (match-string 3)))
                      (event-time (encode-time 0 0 0 day month year)))
-                ;; All dates should be within window
-                (when (or (time-less-p event-time three-months-ago)
-                          (time-less-p twelve-months-future event-time))
+                ;; Within [window-start, window-end] inclusive.
+                (when (or (time-less-p event-time window-start)
+                          (time-less-p window-end event-time))
                   (setq all-dates-in-range nil))))
             (should all-dates-in-range))))
     (test-integration-recurring-events-teardown)))
