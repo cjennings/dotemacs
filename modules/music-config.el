@@ -591,6 +591,21 @@ Returns the full path to the selected file, or nil if cancelled."
     (unless (string= choice "(Cancel)")
       (cdr (assoc choice m3u-files)))))
 
+(defun cj/music--delete-playlist-file (path)
+  "Delete the playlist file at PATH.
+Signals a `user-error' when PATH is nil or missing.  When the playlist
+buffer's associated file is PATH, the association is cleared (the in-memory
+queue is untouched).  Refreshes the radio metadata cache since an .m3u just
+left the roots."
+  (unless (and path (file-exists-p path))
+    (user-error "Playlist file does not exist: %s"
+                (if path (file-name-nondirectory path) "nil")))
+  (delete-file path)
+  (with-current-buffer (cj/music--ensure-playlist-buffer)
+    (when (equal cj/music-playlist-file path)
+      (setq cj/music-playlist-file nil)))
+  (cj/music--refresh-radio-name-map))
+
 ;;; Commands: add/select
 
 (defun cj/music--music-files-recursive (directory)
@@ -837,6 +852,23 @@ reloaded playlist keeps its display name and cover art."
     (emms-play-playlist file-path)
     (cj/music--sync-playlist-file file-path)
     (message "Reloaded playlist: %s" name)))
+
+
+(defun cj/music-delete-playlist ()
+  "Delete an .m3u playlist file after strong confirmation.
+Candidates are the playlists `cj/music-playlist-load' offers -- every
+directory in `cj/music-m3u-roots' (the local library and MPD's playlist
+dir).  Deleting the loaded playlist's file keeps the in-memory queue but
+clears its file association."
+  (interactive)
+  (let ((file (cj/music--select-m3u-file "Delete playlist: ")))
+    (if (not file)
+        (message "Playlist deletion cancelled")
+      (unless (cj/confirm-strong (format "Delete playlist %s? "
+                                         (file-name-nondirectory file)))
+        (user-error "Aborted deleting playlist"))
+      (cj/music--delete-playlist-file file)
+      (message "Deleted playlist: %s" (file-name-nondirectory file)))))
 
 
 (defun cj/music-playlist-edit ()
@@ -1347,7 +1379,7 @@ The rule uses a resize-safe :align-to span, not a hardcoded character count."
      (funcall mode-indicator "x" "consume" cj/music-consume-mode) "\n"
      (propertize "Keys    " 'face 'cj/music-header-face)
      (propertize " : " 'face 'cj/music-header-face)
-     (propertize "a:add  c:clear  L:load  v:save  S:stop  SPC:pause  <>:skip  ↑↓:move  C-↑↓:reorder  q:dismiss"
+     (propertize "a:add  c:clear  L:load  v:save  D:delete  S:stop  SPC:pause  <>:skip  ↑↓:move  C-↑↓:reorder  q:dismiss"
                  'face 'cj/music-keyhint-face) "\n"
      (propertize "Radio   " 'face 'cj/music-header-face)
      (propertize " : " 'face 'cj/music-header-face)
@@ -1592,6 +1624,7 @@ unless fancy."
         ("c" . cj/music-playlist-clear)
         ("C" . cj/music-playlist-clear)
         ("L" . cj/music-playlist-load)
+        ("D" . cj/music-delete-playlist)
         ("E" . cj/music-playlist-edit)
         ("g" . cj/music-playlist-reload)
         ("v" . cj/music-playlist-save)
