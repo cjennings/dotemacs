@@ -18,6 +18,7 @@
 ;;
 ;; Installation:
 ;;   sudo pacman -S typescript-language-server typescript prettier
+;;   sudo pacman -S vscode-html-languageserver   # LSP in web-mode buffers
 ;;
 ;; Features:
 ;;   - Tree-sitter: Syntax highlighting for TS, TSX, JS (via treesit-auto)
@@ -52,6 +53,10 @@ Install with: sudo pacman -S typescript-language-server")
   "Path to prettier executable.
 Install with: sudo pacman -S prettier")
 
+(defvar html-language-server-path "vscode-html-language-server"
+  "Path to the HTML language server executable used in web-mode buffers.
+Install with: sudo pacman -S vscode-html-languageserver")
+
 ;; Warn at load time if prettier is missing rather than waiting for the
 ;; first format-on-save to fail mid-edit.
 (cj/executable-find-or-warn prettier-path "prettier formatter" 'prog-webdev)
@@ -59,8 +64,8 @@ Install with: sudo pacman -S prettier")
 ;; ------------------------------ Web Dev Setup --------------------------------
 ;; shared setup for TypeScript, JavaScript, and TSX modes
 
-(defun cj/webdev-setup ()
-  "Set up common preferences for web development buffers."
+(defun cj/--webdev-prefs ()
+  "Apply the shared buffer-local preferences for web development buffers."
   (company-mode)
   (flyspell-prog-mode)
   (superword-mode)
@@ -68,11 +73,25 @@ Install with: sudo pacman -S prettier")
   (setq-local tab-width 2)
   (setq-local standard-indent 2)
   (setq-local indent-tabs-mode nil)
-  (electric-pair-local-mode t)
+  (electric-pair-local-mode t))
+
+(defun cj/webdev-setup ()
+  "Set up common preferences for TypeScript/JavaScript buffers."
+  (cj/--webdev-prefs)
 
   ;; Enable LSP if available
   (when (and (fboundp 'lsp-deferred)
              (executable-find ts-language-server-path))
+    (lsp-deferred)))
+
+(defun cj/web-mode-setup ()
+  "Set up preferences for web-mode (HTML template) buffers.
+Same shared preferences as the TS/JS modes, but the LSP attach is
+guarded on the HTML language server rather than the TypeScript one, so
+machines without it stay silent instead of prompting."
+  (cj/--webdev-prefs)
+  (when (and (fboundp 'lsp-deferred)
+             (executable-find html-language-server-path))
     (lsp-deferred)))
 
 (defun cj/--webdev-format-args (file)
@@ -121,6 +140,11 @@ Detects the file type automatically from the filename."
   ((js-ts-mode . cj/webdev-setup)
    (js-ts-mode . cj/webdev-keybindings)))
 
+;; Classic-mode fallback: when the JS grammar is unavailable the buffer
+;; lands in js-mode; give it the same setup as the tree-sitter modes.
+(add-hook 'js-mode-hook #'cj/webdev-setup)
+(add-hook 'js-mode-hook #'cj/webdev-keybindings)
+
 ;; ----------------------------------- LSP -------------------------------------
 ;; TypeScript/JavaScript LSP configuration
 ;; Core LSP setup is in prog-general.el
@@ -145,7 +169,8 @@ Detects the file type automatically from the filename."
   (web-mode-code-indent-offset 2)
   (web-mode-engines-alist '(("django" . "\\.html\\'")))
   :mode ("\\.html?$" . web-mode)
-  :hook (web-mode . cj/webdev-keybindings))
+  :hook ((web-mode . cj/web-mode-setup)
+         (web-mode . cj/webdev-keybindings)))
 
 (provide 'prog-webdev)
 ;;; prog-webdev.el ends here.

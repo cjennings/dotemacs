@@ -8,8 +8,9 @@
 ;; Load shape: eager.
 ;; Eager reason: none necessary; currently eager but should load by Go major
 ;;   mode (Phase 6 deferral candidate).
-;; Top-level side effects: package configuration via use-package (hooks via :hook).
-;; Runtime requires: none (configures packages via use-package).
+;; Top-level side effects: package configuration via use-package (hooks via
+;;   :hook); adds ~/go/bin to exec-path; warns at load if gopls is missing.
+;; Runtime requires: system-lib.
 ;; Direct test load: yes.
 ;;
 ;; Configuration for Go programming using go-ts-mode (tree-sitter based).
@@ -29,13 +30,24 @@
 
 ;;; Code:
 
+(require 'system-lib)  ; for cj/executable-find-or-warn
+
 (defvar go-bin-path (expand-file-name "~/go/bin")
   "Path to Go binaries directory.
 This is where tools like goimports and staticcheck are installed.")
 
+;; Register the Go bin directory before the gopls check below: go tools
+;; install there, so probing PATH without it would warn about a gopls
+;; that is in fact present.
+(add-to-list 'exec-path go-bin-path)
+
 (defvar gopls-path "gopls"
   "Path to gopls (Go language server).
 Install with: go install golang.org/x/tools/gopls@latest")
+
+;; Warn at load time if gopls is missing rather than waiting for the
+;; first Go buffer to silently skip the LSP attach.
+(cj/executable-find-or-warn gopls-path "gopls LSP" 'prog-go)
 
 (defvar dlv-path "dlv"
   "Path to Delve debugger.
@@ -113,7 +125,11 @@ Overrides default prog-mode keybindings with Go-specific commands."
   ;; never ran. Autoload gofmt so the first format pulls go-mode and its :config.
   :commands (gofmt)
   :hook ((go-ts-mode . cj/go-setup)
-         (go-ts-mode . cj/go-mode-keybindings))
+         (go-ts-mode . cj/go-mode-keybindings)
+         ;; Classic-mode fallback: same setup when the Go grammar is
+         ;; unavailable and the buffer lands in go-mode.
+         (go-mode . cj/go-setup)
+         (go-mode . cj/go-mode-keybindings))
   :mode (("\\.go\\'" . go-ts-mode)      ;; .go files use go-ts-mode
          ("go\\.mod\\'" . go-mod-ts-mode)) ;; go.mod uses go-mod-ts-mode
   :config

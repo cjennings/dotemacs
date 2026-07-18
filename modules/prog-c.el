@@ -8,8 +8,9 @@
 ;; Load shape: eager.
 ;; Eager reason: none necessary; currently eager but should load by C major mode
 ;;   (Phase 6 deferral candidate).
-;; Top-level side effects: six add-hook, package configuration via use-package.
-;; Runtime requires: none (configures packages via use-package).
+;; Top-level side effects: six add-hook, package configuration via use-package;
+;;   warns at load if clangd or clang-format is missing.
+;; Runtime requires: system-lib.
 ;; Direct test load: yes.
 ;;
 ;; Modern C programming environment with LSP, tree-sitter, debugging, and formatting.
@@ -58,6 +59,14 @@
 
 (defvar clang-format-path "clang-format"
   "Path to clang-format executable.")
+
+;; Warn at load time when a C tool is missing.  The clang-format block
+;; below gates on `:if (executable-find ...)', which evaluates once at
+;; startup — an absent binary silently disables the format key until the
+;; next restart, so this warn is the only visible trace.
+(require 'system-lib)  ; for cj/executable-find-or-warn
+(cj/executable-find-or-warn clangd-path "clangd LSP" 'prog-c)
+(cj/executable-find-or-warn clang-format-path "C formatting" 'prog-c)
 
 ;; -------------------------------- C Mode Setup -------------------------------
 ;; preferences for C programming following common conventions

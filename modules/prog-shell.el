@@ -9,8 +9,9 @@
 ;; Eager reason: none necessary; currently eager but should load by shell major
 ;;   mode (Phase 6 deferral candidate).
 ;; Top-level side effects: five add-hook, including an after-save executable hook
-;;   the spec flags as needing opt-in/scoping; package config via use-package.
-;; Runtime requires: none (configures packages via use-package).
+;;   the spec flags as needing opt-in/scoping; package config via use-package;
+;;   warns at load for missing shell tools.
+;; Runtime requires: system-lib.
 ;; Direct test load: yes.
 ;;
 ;; Modern shell scripting environment with LSP, tree-sitter, linting, and formatting.
@@ -64,6 +65,15 @@ Install with: sudo pacman -S shfmt")
 (defvar shellcheck-path "shellcheck"
   "Path to shellcheck executable.
 Install with: sudo pacman -S shellcheck")
+
+;; Warn at load time when a shell tool is missing.  The shfmt and
+;; flycheck blocks below gate on `:if (executable-find ...)', which
+;; evaluates once at startup — an absent tool silently disables that
+;; setup until the next restart, so this warn is the only visible trace.
+(require 'system-lib)  ; for cj/executable-find-or-warn
+(cj/executable-find-or-warn bash-language-server-path "bash LSP" 'prog-shell)
+(cj/executable-find-or-warn shfmt-path "shell formatting" 'prog-shell)
+(cj/executable-find-or-warn shellcheck-path "shell linting" 'prog-shell)
 
 ;; ------------------------------- Shell Script Setup ------------------------------
 ;; preferences for shell scripting
