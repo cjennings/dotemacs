@@ -164,6 +164,22 @@ contributes its own modes regardless of load order."
     (setq font-lock-global-modes
           (cj/--font-lock-global-modes-excluding font-lock-global-modes mode))))
 
+;; Declared special here for the compiler; marginalia owns the defvar.
+(defvar marginalia-annotator-registry)
+
+(defun cj/completion-ensure-marginalia-align (category)
+  "Register CATEGORY with marginalia as builtin-annotated, once.
+A custom completion category bypasses marginalia entirely, so the table's
+own annotation function renders unaligned even with `marginalia-align'
+set.  A builtin registry entry tells marginalia to use the table's
+annotation function inside its aligned field, so custom annotations line
+up like every stock category.  A category that already has an entry is
+left alone (someone chose its annotators deliberately).  Silent no-op
+when marginalia isn't loaded."
+  (when (and (boundp 'marginalia-annotator-registry)
+             (not (assq category marginalia-annotator-registry)))
+    (push (list category 'builtin 'none) marginalia-annotator-registry)))
+
 (defun cj/completion-table (category collection)
   "Return a completion table over COLLECTION tagged with completion CATEGORY.
 COLLECTION is anything `completing-read' accepts (list, alist, obarray, hash
@@ -180,7 +196,9 @@ the candidates match one; marginalia then annotates them with no further work."
   "Like `cj/completion-table' but also attach ANNOTATE as the annotation function.
 ANNOTATE is called with a candidate string and returns its annotation suffix, or
 nil.  Use this for a custom CATEGORY that marginalia has no built-in annotator
-for: marginalia falls back to the table's own annotation function."
+for; the category is registered with marginalia (builtin) so ANNOTATE's output
+renders right-aligned like stock annotations."
+  (cj/completion-ensure-marginalia-align category)
   (lambda (string predicate action)
     (if (eq action 'metadata)
         `(metadata (category . ,category)

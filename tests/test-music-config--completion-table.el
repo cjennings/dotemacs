@@ -19,6 +19,10 @@
 (defvar-keymap cj/custom-keymap
   :doc "Stub keymap for testing")
 
+;; Declare special here too (the module's bare defvar is file-local) so the
+;; registration test's `let' binds dynamically.
+(defvar marginalia-annotator-registry)
+
 ;; Load production code
 (require 'music-config)
 
@@ -130,6 +134,16 @@
          (result (funcall table "anything" nil t)))
     ;; Should not crash, returns empty
     (should (null result))))
+
+;;; Marginalia registration
+
+(ert-deftest test-music-config--completion-table-registers-with-marginalia ()
+  "Normal: building the table registers cj-music-file so marginalia
+right-aligns the size/date annotations."
+  (let ((marginalia-annotator-registry '()))
+    (cj/music--completion-table '("a.mp3"))
+    (should (equal (assq 'cj-music-file marginalia-annotator-registry)
+                   '(cj-music-file builtin none)))))
 
 (provide 'test-music-config--completion-table)
 ;;; test-music-config--completion-table.el ends here

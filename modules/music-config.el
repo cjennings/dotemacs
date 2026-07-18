@@ -306,7 +306,9 @@ Directories are suffixed with /; files are plain. Hidden dirs/files skipped."
   "Completion table for CANDIDATES preserving order and case-insensitive match.
 Tags the `cj-music-file' category and annotates each candidate (a path relative
 to `cj/music-root', with a trailing slash for directories) with its size and
-modification date so marginalia can show them."
+modification date so marginalia can show them.  The category is registered
+with marginalia (builtin) so the annotations render right-aligned."
+  (cj/completion-ensure-marginalia-align 'cj-music-file)
   (let ((annotate (cj/completion-file-annotator
                    (lambda (c)
                      (expand-file-name
@@ -1790,32 +1792,22 @@ to one station.  Pure helper."
         (puthash disp t seen)
         (push (cons disp st) out)))))
 
-(defun cj/music-radio--affixate (cands candidates)
-  "Affixation triples for CANDS with annotations aligned to one column.
-CANDIDATES is the (DISPLAY . STATION) alist.  Station names vary in width,
-so each suffix pads out to the widest candidate plus a gutter; with the
-fixed-width fields in `cj/music-radio--format-candidate' the listing reads
-as aligned columns.  The \"[done]\" sentinel has no station and gets no
-annotation rather than a bogus zero row."
-  (let ((width (apply #'max 0 (mapcar #'string-width cands))))
-    (mapcar (lambda (c)
-              (let ((st (cdr (assoc c candidates))))
-                (list c ""
-                      (if st
-                          (concat (make-string (+ 3 (- width (string-width c))) ?\s)
-                                  (propertize (cj/music-radio--format-candidate st)
-                                              'face 'completions-annotations))
-                        ""))))
-            cands)))
-
 (defun cj/music-radio--completion-table (candidates)
-  "Completion table over CANDIDATES carrying the Variant-B marginalia affix."
+  "Completion table over CANDIDATES carrying the Variant-B annotation.
+Tagged `cj-radio-station' and registered with marginalia (builtin), so the
+codec/bitrate/country/votes/tags annotation renders right-aligned like the
+stock categories.  The \"[done]\" sentinel has no station and annotates as
+nil rather than a bogus zero row."
+  (cj/completion-ensure-marginalia-align 'cj-radio-station)
   (lambda (string pred action)
     (if (eq action 'metadata)
         `(metadata
           (category . cj-radio-station)
-          (affixation-function
-           . ,(lambda (cands) (cj/music-radio--affixate cands candidates))))
+          (annotation-function
+           . ,(lambda (c)
+                (when-let ((st (cdr (assoc c candidates))))
+                  (concat " " (propertize (cj/music-radio--format-candidate st)
+                                          'face 'completions-annotations))))))
       (complete-with-action action (mapcar #'car candidates) string pred))))
 
 (defun cj/music-radio--pick-loop (candidates)

@@ -19,6 +19,10 @@
 (defvar cj/custom-keymap (make-sparse-keymap)
   "Stub keymap for testing.")
 
+;; Declare special here too (the module's bare defvar is file-local) so the
+;; registration test's `let' binds dynamically.
+(defvar marginalia-annotator-registry)
+
 (require 'music-config)
 
 (declare-function cj/music-radio--parse-search "music-config" (json-text))
@@ -169,29 +173,35 @@ across stations with different vote counts."
                 '(:codec "MP3" :bitrate 128 :countrycode "US" :votes 174208 :tags "jazz"))))
     (should (= (string-match "jazz" low) (string-match "jazz" high)))))
 
-(ert-deftest test-music-radio-affixate-aligns-annotation-column ()
-  "Normal: every annotation starts at the same display column regardless of
-how long the station name is."
-  (let* ((candidates '(("Short" . (:codec "MP3" :bitrate 128 :countrycode "US"
-                                   :votes 5 :tags "a"))
-                       ("A Much Longer Station Name" . (:codec "AAC" :bitrate 64
-                                                        :countrycode "FR" :votes 9 :tags "b"))))
-         (triples (cj/music-radio--affixate (mapcar #'car candidates) candidates))
-         (cols (mapcar (lambda (triple)
-                         (let ((cand (nth 0 triple))
-                               (suffix (nth 2 triple)))
-                           (string-match "[^ ]" suffix)
-                           (+ (string-width cand) (match-beginning 0))))
-                       triples)))
-    (should (= (length triples) 2))
-    (should (apply #'= cols))))
+(ert-deftest test-music-radio-completion-table-annotates-station ()
+  "Normal: the table's annotation function returns the Variant-B string for
+a station candidate (marginalia handles the right-alignment)."
+  (let* ((candidates '(("Jazz FM" . (:codec "MP3" :bitrate 128 :countrycode "US"
+                                     :votes 5 :tags "jazz"))))
+         (table (cj/music-radio--completion-table candidates))
+         (meta (funcall table "" nil 'metadata))
+         (annotate (alist-get 'annotation-function (cdr meta))))
+    (should (functionp annotate))
+    (should-not (alist-get 'affixation-function (cdr meta)))
+    (should (string-match-p "MP3" (funcall annotate "Jazz FM")))
+    (should (string-match-p "jazz" (funcall annotate "Jazz FM")))))
 
-(ert-deftest test-music-radio-affixate-done-sentinel-no-annotation ()
-  "Boundary: the [done] sentinel has no station and gets an empty suffix."
+(ert-deftest test-music-radio-completion-table-done-sentinel-no-annotation ()
+  "Boundary: the [done] sentinel has no station and annotates as nil."
   (let* ((candidates '(("[done]") ("Station" . (:codec "MP3" :bitrate 128
                                                 :countrycode "US" :votes 1 :tags "x"))))
-         (triples (cj/music-radio--affixate (mapcar #'car candidates) candidates)))
-    (should (equal (nth 2 (car triples)) ""))))
+         (table (cj/music-radio--completion-table candidates))
+         (annotate (alist-get 'annotation-function
+                              (cdr (funcall table "" nil 'metadata)))))
+    (should-not (funcall annotate "[done]"))))
+
+(ert-deftest test-music-radio-completion-table-registers-with-marginalia ()
+  "Normal: building the table registers cj-radio-station so marginalia
+right-aligns the table's own annotations."
+  (let ((marginalia-annotator-registry '()))
+    (cj/music-radio--completion-table '(("X" . (:codec "MP3"))))
+    (should (equal (assq 'cj-radio-station marginalia-annotator-registry)
+                   '(cj-radio-station builtin none)))))
 
 (provide 'test-music-config--radio)
 ;;; test-music-config--radio.el ends here
