@@ -133,7 +133,6 @@ Overrides default prog-mode keybindings with Go-specific commands."
   :mode (("\\.go\\'" . go-ts-mode)      ;; .go files use go-ts-mode
          ("go\\.mod\\'" . go-mod-ts-mode)) ;; go.mod uses go-mod-ts-mode
   :config
-  (add-to-list 'exec-path go-bin-path)
   ;; Use goimports for formatting (adds/removes imports automatically)
   (setq gofmt-command "goimports"))
 
