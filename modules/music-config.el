@@ -401,14 +401,8 @@ debounce timer can outlive the playlist buffer."
                   ;; row's number renders above the header block instead of
                   ;; beside its own track.
                   (overlay-put ov 'priority 200)
-                  ;; The cursor property makes redisplay draw the cursor ON
-                  ;; the number when point sits at the row start; without it
-                  ;; the cursor lands after the before-string, on the
-                  ;; album-art thumbnail, where it's invisible.
                   (overlay-put ov 'before-string
-                               (propertize (format "%3d " n)
-                                           'face 'cj/music-keyhint-face
-                                           'cursor t))))
+                               (cj/music--number-string (format "%3d " n) nil))))
               (forward-line 1))))
         ;; The rebuild deleted the marked overlay; re-mark the current row.
         (setq cj/music--current-number-overlay nil)
@@ -417,16 +411,24 @@ debounce timer can outlive the playlist buffer."
 (defvar-local cj/music--current-number-overlay nil
   "The number overlay currently rendered as the you-are-here mark, or nil.")
 
+(defun cj/music--number-string (text current)
+  "Build the number-gutter display string from TEXT.
+CURRENT non-nil renders it inverse video (the you-are-here mark).  The
+single place the gutter string's properties live: the face, and the
+cursor property that makes redisplay draw the cursor on the number
+instead of invisibly on the album art after it."
+  (propertize text
+              'face (if current
+                        '(:inherit cj/music-keyhint-face :inverse-video t)
+                      'cj/music-keyhint-face)
+              'cursor t))
+
 (defun cj/music--set-number-face (ov current)
   "Re-render number overlay OV's string; CURRENT non-nil marks it inverse.
-Keeps the text and the cursor property, swaps only the face."
+Keeps the text, swaps only the rendering (see `cj/music--number-string')."
   (let ((s (overlay-get ov 'before-string)))
     (overlay-put ov 'before-string
-                 (propertize (substring-no-properties s)
-                             'face (if current
-                                       '(:inherit cj/music-keyhint-face :inverse-video t)
-                                     'cj/music-keyhint-face)
-                             'cursor t))))
+                 (cj/music--number-string (substring-no-properties s) current))))
 
 (defun cj/music--highlight-current-number ()
   "Render the current row's number in inverse video, restoring the last one.
