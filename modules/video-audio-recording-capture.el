@@ -147,8 +147,7 @@ process started before the property existed) or the file never hit disk."
 (defun cj/recording-check-ffmpeg ()
   "Check if ffmpeg is available.  Error if not found."
   (unless (executable-find "ffmpeg")
-    (user-error "Ffmpeg not found.  Install with: sudo pacman -S ffmpeg")
-    nil)
+    (user-error "Ffmpeg not found.  Install with: sudo pacman -S ffmpeg"))
   t)
 
 (defun cj/recording--wayland-p ()
@@ -159,8 +158,7 @@ process started before the property existed) or the file never hit disk."
   "Check if wf-recorder is available (needed for Wayland video capture)."
   (if (executable-find "wf-recorder")
       t
-    (user-error "wf-recorder not found. Install with: sudo pacman -S wf-recorder")
-    nil))
+    (user-error "wf-recorder not found. Install with: sudo pacman -S wf-recorder")))
 
 ;;; Device Acquisition and Validation
 
