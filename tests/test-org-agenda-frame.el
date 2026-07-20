@@ -875,6 +875,38 @@ showing the launch buffer."
       (should (eq (cj/--agenda-frame-spawn) 'af))
       (should (eq timed 'af)))))
 
+(ert-deftest test-org-agenda-frame-safe-redo-inhibits-redisplay ()
+  "Normal: the tick runs with redisplay inhibited.
+The rebuild takes visible time; without this, the agenda window is the
+selected window for the whole rebuild and the user watches their cursor
+go hollow every five minutes -- indistinguishable from focus theft."
+  (let (seen (prev (selected-window)))
+    (cl-letf (((symbol-function 'cj/--agenda-frame) (lambda () 'af))
+              ((symbol-function 'cj/--agenda-frame-sticky-buffer)
+               (lambda () (current-buffer)))
+              ((symbol-function 'frame-live-p) (lambda (_f) t))
+              ((symbol-function 'get-buffer-window) (lambda (&rest _) prev))
+              ((symbol-function 'cj/--agenda-frame-do-redo)
+               (lambda (&rest _) (setq seen inhibit-redisplay))))
+      (cj/--agenda-frame-safe-redo)
+      (should (eq seen t)))))
+
+(ert-deftest test-org-agenda-frame-safe-redo-skips-during-minibuffer ()
+  "Boundary: a tick while a minibuffer is active is skipped entirely.
+Reselecting windows under an active minibuffer session can break it; the
+next tick catches up."
+  (let (redone (prev (selected-window)))
+    (cl-letf (((symbol-function 'active-minibuffer-window) (lambda () 'mini))
+              ((symbol-function 'cj/--agenda-frame) (lambda () 'af))
+              ((symbol-function 'cj/--agenda-frame-sticky-buffer)
+               (lambda () (current-buffer)))
+              ((symbol-function 'frame-live-p) (lambda (_f) t))
+              ((symbol-function 'get-buffer-window) (lambda (&rest _) prev))
+              ((symbol-function 'cj/--agenda-frame-do-redo)
+               (lambda (&rest _) (setq redone t))))
+      (cj/--agenda-frame-safe-redo)
+      (should-not redone))))
+
 (ert-deftest test-org-agenda-frame-safe-redo-noop-when-not-shown ()
   "Boundary: a tick with the buffer not shown in the frame does not redo or error."
   (let (redone)

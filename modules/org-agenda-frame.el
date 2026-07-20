@@ -658,8 +658,20 @@ out-of-range window-start nor steals focus."
          (buffer (cj/--agenda-frame-sticky-buffer))
          (window (and (frame-live-p frame) (buffer-live-p buffer)
                       (get-buffer-window buffer frame))))
-    (when (window-live-p window)
-      (let ((prev-window (selected-window)))
+    (when (and (window-live-p window)
+               ;; Skip the tick while a minibuffer is active anywhere --
+               ;; reselecting windows under an active minibuffer session can
+               ;; break it, and the next tick catches up.
+               (not (active-minibuffer-window)))
+      (let ((prev-window (selected-window))
+            ;; The rebuild takes visible time, and for its duration the
+            ;; agenda window is the selected window.  Without inhibiting
+            ;; redisplay the user's cursor visibly goes hollow for the whole
+            ;; rebuild every tick -- indistinguishable from focus theft.
+            ;; The rebuild blocks Emacs either way (it is synchronous), so
+            ;; this hides the selection flicker at no extra cost; redisplay
+            ;; resumes after the selection is restored.
+            (inhibit-redisplay t))
         (unwind-protect
             (progn
               (select-window window t)
