@@ -31,6 +31,8 @@
 ;; `with-eval-after-load' so a batch test-load runs no org-agenda side effects.
 (defvar org-agenda-custom-commands)
 (defvar org-agenda-finalize-hook)
+(defvar org-agenda-sticky)
+(defvar org-agenda-window-setup)
 (declare-function cj/build-org-agenda-list "org-agenda-config" (&optional force-rebuild))
 (declare-function cj/org-agenda-refresh-files "org-agenda-config" ())
 (declare-function org-agenda-redo "org-agenda" (&optional all))
@@ -357,10 +359,11 @@ the timer and kills the sticky buffer."
   "Return the frame parameters for the dedicated agenda frame.
 A normal frame -- not fullscreen -- so a tiling window manager places it
 side by side with the working frame rather than covering the whole output.
-It carries the `cj/agenda-frame' marker and a distinct name so window-manager
-rules can target it."
+It carries the `cj/agenda-frame' marker and a distinct, noticeable name
+\(\"Full Agenda\") so the frame is recognizable at a glance and
+window-manager rules can target it."
   `((,cj/--agenda-frame-parameter . t)
-    (name . "Org Agenda")))
+    (name . "Full Agenda")))
 
 (defun cj/--agenda-frame-spawn ()
   "Create, display, and focus the dedicated agenda frame.
@@ -378,7 +381,17 @@ Returns the new agenda frame on success."
           ;; Cached, non-forced: a frame spawned early after daemon startup
           ;; still shows the full project agenda, not the base-files-only view.
           (cj/build-org-agenda-list)
-          (org-agenda "a" cj/--agenda-frame-command-key)
+          ;; Bind sticky + current-window dynamically around the render.  The
+          ;; custom command's own settings apply too late to name the buffer;
+          ;; without these the buffer is plain *Org Agenda*, which matches the
+          ;; 0.75 below-selected display rule in org-agenda-config.el -- the
+          ;; new frame gets split with the launch buffer left in the top 25%.
+          ;; Sticky names it *Org Agenda(F)*, which no display rule matches.
+          (let ((org-agenda-sticky t)
+                (org-agenda-window-setup 'current-window))
+            (org-agenda "a" cj/--agenda-frame-command-key))
+          ;; Belt: whatever a display rule did, the frame is one agenda window.
+          (delete-other-windows)
           (let ((buffer (cj/--agenda-frame-sticky-buffer)))
             (when (buffer-live-p buffer)
               (with-current-buffer buffer

@@ -772,10 +772,49 @@ Guards against restoring by raw line number after the item moved."
 side by side with the working frame), carrying the marker and a distinct name."
   (let ((params (cj/--agenda-frame-make-parameters)))
     (should (assq cj/--agenda-frame-parameter params))
-    (should (equal (cdr (assq 'name params)) "Org Agenda"))
+    (should (equal (cdr (assq 'name params)) "Full Agenda"))
     ;; No fullscreen request -- a fullboth frame would cover the whole output
     ;; instead of tiling beside the working frame.
     (should-not (assq 'fullscreen params))))
+
+(ert-deftest test-org-agenda-frame-spawn-binds-sticky-and-current-window ()
+  "Normal: spawn dynamically binds sticky + current-window around the render.
+The custom command's own settings apply too late to name the buffer, so
+without these bindings the buffer is plain *Org Agenda* -- which matches
+the 0.75 below-selected display rule and splits the new frame with the
+working buffer left on top."
+  (let (seen-sticky seen-setup)
+    (cl-letf (((symbol-function 'selected-frame) (lambda () 'launch))
+              ((symbol-function 'make-frame) (lambda (&rest _) 'af))
+              ((symbol-function 'select-frame-set-input-focus) (lambda (_f &rest _) nil))
+              ((symbol-function 'cj/build-org-agenda-list) (lambda (&rest _) nil))
+              ((symbol-function 'org-agenda)
+               (lambda (&rest _)
+                 (setq seen-sticky org-agenda-sticky
+                       seen-setup org-agenda-window-setup)))
+              ((symbol-function 'delete-other-windows) (lambda (&rest _) nil))
+              ((symbol-function 'cj/--agenda-frame-sticky-buffer) (lambda () nil))
+              ((symbol-function 'cj/--agenda-frame-start-timer) (lambda (_f) nil)))
+      (cj/--agenda-frame-spawn)
+      (should (eq seen-sticky t))
+      (should (eq seen-setup 'current-window)))))
+
+(ert-deftest test-org-agenda-frame-spawn-forces-single-window ()
+  "Boundary: spawn collapses the frame to one window after rendering.
+A display rule that still splits the frame must not leave a second window
+showing the launch buffer."
+  (let (collapsed)
+    (cl-letf (((symbol-function 'selected-frame) (lambda () 'launch))
+              ((symbol-function 'make-frame) (lambda (&rest _) 'af))
+              ((symbol-function 'select-frame-set-input-focus) (lambda (_f &rest _) nil))
+              ((symbol-function 'cj/build-org-agenda-list) (lambda (&rest _) nil))
+              ((symbol-function 'org-agenda) (lambda (&rest _) nil))
+              ((symbol-function 'delete-other-windows)
+               (lambda (&rest _) (setq collapsed t)))
+              ((symbol-function 'cj/--agenda-frame-sticky-buffer) (lambda () nil))
+              ((symbol-function 'cj/--agenda-frame-start-timer) (lambda (_f) nil)))
+      (cj/--agenda-frame-spawn)
+      (should collapsed))))
 
 (ert-deftest test-org-agenda-frame-spawn-starts-timer ()
   "Normal: a successful spawn starts the refresh timer for the new frame."
