@@ -572,7 +572,7 @@ source module.
 - M-S-o — cj/kill-other-window — kill the other window's buffer and close it — undead-buffers.el
 - M-S-m — cj/kill-all-other-buffers-and-windows — close all other windows, kill their buffers — undead-buffers.el
 - M-S-y — yank-media — paste an image/media object from the clipboard — keybindings.el
-- M-S-f — fontaine-set-preset — switch the font preset — font-config.el
+- M-S-f — cj/fontaine-select-profile — switch the workflow font profile — font-config.el
 - M-S-w — wttrin — show the weather report — weather-config.el
 - M-S-e — eww — open the EWW web browser — eww-config.el
 - M-S-l — cj/switch-themes — select/cycle the theme — ui-theme.el

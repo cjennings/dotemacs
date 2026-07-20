@@ -102,7 +102,7 @@ Pure pieces (name resolution, the m3u-label extraction, the bar-fill computation
 ** DONE Serif title face
 - Owner / by-when: Craig / before Phase 3
 - Context: the fancy titles want a serif variable-pitch face, theme-owned.
-- Decision: We will add a defcustom for the title family defaulting to the nov reading view's serif (cj/nov-reading-font-family, currently "Merriweather") and a theme-owned face the dupre theme colors.
+- Decision: We will add a defcustom for the title family defaulting to the shared Reading font profile's serif (currently "Merriweather") and a theme-owned face the dupre theme colors.
 - Consequences: easier — one knob, consistent with the nov-reading typography choice; harder — another face to register in theme-studio if we want it tunable there (deferred).
 
 ** DONE Progress bar rendering and cadence

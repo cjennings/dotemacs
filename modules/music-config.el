@@ -86,7 +86,9 @@ falls back to the plain text player (names, a dim glyph, a thin status line)."
   :group 'cj/music)
 
 (defcustom cj/music-title-family
-  (if (boundp 'cj/nov-reading-font-family) cj/nov-reading-font-family "Merriweather")
+  (if (fboundp 'cj/font-profile-properties)
+      (plist-get (cj/font-profile-properties 'reading) :default-family)
+    "Merriweather")
   "Serif family for the fancy now-playing title, mirroring the nov reading view."
   :type 'string
   :group 'cj/music)

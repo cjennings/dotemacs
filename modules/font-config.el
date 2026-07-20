@@ -8,12 +8,12 @@
 ;; Load shape: eager.
 ;; Eager reason: first-frame font setup and font keybindings.
 ;; Top-level side effects: font keys, font checks, package config.
-;; Runtime requires: host-environment, keybindings.
+;; Runtime requires: host-environment, font-profiles, keybindings.
 ;; Direct test load: yes.
 ;;
-;; Configures fontaine presets, text scaling keys, icon/emoji fonts, and
-;; programming ligatures. Presets are applied per frame so daemon clients get
-;; the intended fixed/variable pitch sizes.
+;; Configures task-oriented Fontaine profiles, text scaling keys, icon/emoji
+;; fonts, and programming ligatures. The selected profile is global, persists
+;; across restarts, and applies to every daemon frame without per-frame resets.
 ;;
 ;; Also carries font-rendering safeguards for known HarfBuzz/font-cache crashes
 ;; triggered by emoji and Arabic shaping in this setup.
@@ -21,6 +21,7 @@
 ;;; Code:
 
 (require 'host-environment)
+(require 'font-profiles)
 (require 'keybindings)  ;; establishes the C-z prefix used for "C-z F" below
 
 (defvar text-scale-mode-step)
@@ -50,106 +51,154 @@
                    (#xFE70 . #xFEFF)))  ;; Arabic Presentation Forms-B
     (set-char-table-range composition-function-table range nil)))
 
-;; ----------------------- Font Family And Size Selection ----------------------
-;; preset your fixed and variable fonts, then apply them to text as a set
+;; ------------------------- Workflow Font Profiles ----------------------------
+;; Each choice is a complete destination.  Font size adjustments within one
+;; buffer remain on C-+/C--; Fontaine owns the global workflow typography.
+
+(defconst cj/fontaine-profile-order
+  cj/font-profile-order
+  "Fontaine profiles in picker order.")
+
+(defconst cj/fontaine-profile-names
+  '((everyday . "Everyday")
+    (writing . "Writing")
+    (reading . "Reading")
+    (coding-xs . "Coding XS")
+    (coding . "Coding")
+    (coding-xl . "Coding XL")
+    (presentation . "Presentation"))
+  "Human names for Fontaine workflow profiles.")
+
+(defconst cj/fontaine-profile-fonts
+  '((everyday . "Berkeley Mono + Lexend")
+    (writing . "Berkeley Mono + Merriweather")
+    (reading . "Merriweather")
+    (coding-xs . "Berkeley Mono")
+    (coding . "Berkeley Mono")
+    (coding-xl . "Berkeley Mono")
+    (presentation . "Berkeley Mono + Lexend"))
+  "Human-readable font combinations for Fontaine workflow profiles.")
+
+(defconst cj/fontaine-profile-heights
+  (mapcar (lambda (profile)
+            (cons profile
+                  (plist-get (cj/font-profile-properties profile)
+                             :default-height)))
+          cj/fontaine-profile-order)
+  "Default face heights for Fontaine workflow profiles.")
+
+(defconst cj/fontaine-ui-family "BerkeleyMono Nerd Font"
+  "Font family reserved for the mode line, echo area, and minibuffer.")
+
+(defvar fontaine-current-preset)
+(defvar fontaine-preset-history)
+(defvar fontaine-presets)
+(defvar enable-theme-functions)
+(defvar cj/fontaine-profile-history nil
+  "Minibuffer history for `cj/fontaine-select-profile'.")
+
+(declare-function fontaine-mode "fontaine")
+(declare-function fontaine-restore-latest-preset "fontaine")
+(declare-function fontaine-set-preset "fontaine")
+(declare-function face-remap-set-base "face-remap")
+
+(defun cj/fontaine-profile-p (profile)
+  "Return non-nil when PROFILE is a configured workflow profile."
+  (cj/font-profile-p profile))
+
+(defun cj/fontaine-profile-label (profile)
+  "Return the complete picker label for PROFILE."
+  (when (cj/fontaine-profile-p profile)
+    (format "%s — %s · %d pt"
+            (alist-get profile cj/fontaine-profile-names)
+            (alist-get profile cj/fontaine-profile-fonts)
+            (/ (alist-get profile cj/fontaine-profile-heights) 10))))
+
+(defun cj/fontaine-profile-candidates ()
+  "Return complete labels for all Fontaine workflow profiles."
+  (mapcar #'cj/fontaine-profile-label cj/fontaine-profile-order))
+
+(defun cj/fontaine-profile-from-label (label)
+  "Return the workflow profile represented by LABEL, or nil."
+  (seq-find (lambda (profile)
+              (equal label (cj/fontaine-profile-label profile)))
+            cj/fontaine-profile-order))
+
+(defun cj/fontaine-profile-annotation (candidate)
+  "Mark CANDIDATE when it represents the active Fontaine profile."
+  (if (eq (cj/fontaine-profile-from-label candidate)
+          fontaine-current-preset)
+      "  current"
+    ""))
+
+(defun cj/fontaine-apply-profile (profile)
+  "Apply workflow PROFILE and record it for Fontaine persistence."
+  (unless (cj/fontaine-profile-p profile)
+    (user-error "Unknown font profile: %s" profile))
+  (add-to-history 'fontaine-preset-history (symbol-name profile))
+  (fontaine-set-preset profile))
+
+(defun cj/fontaine-select-profile ()
+  "Select and apply one complete Fontaine workflow profile."
+  (interactive)
+  (let* ((candidates (cj/fontaine-profile-candidates))
+         (default (cj/fontaine-profile-label
+                   (if (cj/fontaine-profile-p fontaine-current-preset)
+                       fontaine-current-preset
+                     'everyday)))
+         (completion-extra-properties
+          '(:annotation-function cj/fontaine-profile-annotation))
+         (choice (completing-read "Font profile: " candidates nil t
+                                  nil 'cj/fontaine-profile-history default)))
+    (cj/fontaine-apply-profile (cj/fontaine-profile-from-label choice))))
+
+(defun cj/fontaine-restored-or-default-profile ()
+  "Return the saved Fontaine profile, or the `everyday' fallback."
+  (let ((restored (fontaine-restore-latest-preset)))
+    (if (cj/fontaine-profile-p restored) restored 'everyday)))
+
+(defalias 'cj/fontaine-profile-properties #'cj/font-profile-properties)
+(defalias 'cj/fontaine-remap-buffer-to-profile #'cj/font-profile-remap-buffer)
+
+(defun cj/fontaine-remap-ui-buffer ()
+  "Keep the current minibuffer or echo-area buffer in Berkeley Mono."
+  (face-remap-set-base
+   'default `(:family ,cj/fontaine-ui-family)))
+
+(defun cj/fontaine-keep-ui-chrome-monospace (&rest _ignored)
+  "Keep mode-line, minibuffer, and echo-area chrome in Berkeley Mono."
+  (dolist (face '(mode-line mode-line-active mode-line-inactive
+                  minibuffer-prompt))
+    (when (facep face)
+      (set-face-attribute face nil :family cj/fontaine-ui-family)))
+  (dolist (name '(" *Echo Area 0*" " *Echo Area 1*"))
+    (when-let* ((buffer (get-buffer name)))
+      (with-current-buffer buffer
+        (cj/fontaine-remap-ui-buffer)))))
+
+;; Fontaine 3 is global rather than frame-specific.  Remove the retired hooks
+;; as well as omitting them below, so a live module reload migrates cleanly.
+(remove-hook 'server-after-make-frame-hook #'cj/apply-font-settings-to-frame)
+(remove-hook 'delete-frame-functions #'cj/cleanup-frame-list)
 
 (use-package fontaine
   :demand t
   :bind
-  ("M-S-f" . fontaine-set-preset)  ;; was M-F, overrides forward-word
+  ("M-S-f" . cj/fontaine-select-profile)  ;; was M-F, overrides forward-word
   :config
   (setq fontaine-presets
-		`(
-		  (default
-		   :default-family "BerkeleyMono Nerd Font"
-		   :default-weight regular
-		   :default-height ,(if (env-laptop-p) 130 140)
-		   :fixed-pitch-family nil          ;; falls back to :default-family
-		   :fixed-pitch-weight nil          ;; falls back to :default-weight
-		   :fixed-pitch-height 1.0
-		   :variable-pitch-family "Lexend"
-		   :variable-pitch-weight regular
-		   :variable-pitch-height 1.0)
-		  (FiraCode
-		   :default-family "FiraCode Nerd Font Mono"
-		   :variable-pitch-family "Merriweather"
-		   :variable-pitch-weight light)
-		  (Hack
-		   :default-family "Hack Nerd Font Mono"
-		   :variable-pitch-family "Hack Nerd Font Mono")
-		  (BerkeleyMono
-		   :default-family "Berkeley Mono"
-		   :variable-pitch-family "Charis SIL")
-		  (FiraCode-Literata
-		   :default-family "Fira Code Nerd Font"
-		   :variable-pitch-family "Literata")
-		  (24-point-font
-		   :default-height 240)
-		  (20-point-font
-		   :default-height 200)
-		  (16-point-font
-		   :default-height 160)
-		  (14-point-font
-		   :default-height 140)
-		  (13-point-font
-		   :default-height 130)
-		  (12-point-font
-		   :default-height 120)
-		  (11-point-font
-		   :default-height 110)
-		  (10-point-font
-		   :default-height 100)
-		  (t                                ;; shared fallback properties go here
-		   :default-family "FiraCode Nerd Font Mono"
-		   :default-weight regular
-		   :default-height 120
-		   :fixed-pitch-family nil          ;; falls back to :default-family
-		   :fixed-pitch-weight nil          ;; falls back to :default-weight
-		   :fixed-pitch-height 1.0
-		   :fixed-pitch-serif-family nil    ;; falls back to :default-family
-		   :fixed-pitch-serif-weight nil    ;; falls back to :default-weight
-		   :fixed-pitch-serif-height 1.0
-		   :variable-pitch-family "Merriweather"
-		   :variable-pitch-weight light
-		   :variable-pitch-height 1.0
-		   :bold-family nil                 ;; use whatever the underlying face has
-		   :bold-weight bold
-		   :italic-family nil
-		   :italic-slant italic
-		   :line-spacing nil))))
-
-;; Track which frames have had fonts applied
-(defvar cj/fontaine-configured-frames nil
-  "List of frames that have had fontaine configuration applied.")
-
-(declare-function fontaine-set-preset "fontaine")
-
-(defun cj/apply-font-settings-to-frame (&optional frame)
-  "Apply font settings to FRAME if not already configured.
-If FRAME is nil, uses the selected frame."
-  (let ((target-frame (or frame (selected-frame))))
-    (unless (member target-frame cj/fontaine-configured-frames)
-      (with-selected-frame target-frame
-        (when (env-gui-p)
-          (fontaine-set-preset 'default)
-          (push target-frame cj/fontaine-configured-frames))))))
-
-(defun cj/cleanup-frame-list (frame)
-  "Remove FRAME from the configured frames list when deleted."
-  (setq cj/fontaine-configured-frames
-        (delq frame cj/fontaine-configured-frames)))
-
-(with-eval-after-load 'fontaine
-  ;; Handle daemon mode and regular mode
-  (if (daemonp)
-      (progn
-        ;; Apply to each new frame in daemon mode
-        (add-hook 'server-after-make-frame-hook #'cj/apply-font-settings-to-frame)
-        ;; Clean up deleted frames from tracking list
-        (add-hook 'delete-frame-functions #'cj/cleanup-frame-list))
-    ;; Apply immediately in non-daemon mode
-    (when (env-gui-p)
-      (cj/apply-font-settings-to-frame))))
+        (append (copy-tree cj/font-profile-definitions)
+                (list (cons t (copy-sequence
+                               cj/font-profile-shared-properties)))))
+  (fontaine-mode 1)
+  (add-hook 'fontaine-set-preset-hook
+            #'cj/fontaine-keep-ui-chrome-monospace)
+  (add-hook 'enable-theme-functions
+            #'cj/fontaine-keep-ui-chrome-monospace)
+  (add-hook 'minibuffer-setup-hook #'cj/fontaine-remap-ui-buffer)
+  (cj/fontaine-keep-ui-chrome-monospace)
+  (when (or (daemonp) (env-gui-p))
+    (cj/fontaine-apply-profile (cj/fontaine-restored-or-default-profile))))
 
 ;; ----------------------------- Font Install Check ----------------------------
 ;; convenience function to indicate whether a font is available by name.

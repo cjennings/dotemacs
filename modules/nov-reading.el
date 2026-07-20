@@ -10,7 +10,7 @@
 ;;   keymap reference; the faces must exist for theme-studio's inventory too.
 ;; Top-level side effects: defface x9 (3 palettes + per-palette heading/link),
 ;;   defcustoms, a defgroup, a defvar.
-;; Runtime requires: none (face-remap and text-scale are built in).
+;; Runtime requires: font-profiles (shared workflow profile data).
 ;; Direct test load: yes.
 ;;
 ;; A small theme layer on top of the stock `nov' package (no fork): how an EPUB
@@ -20,8 +20,9 @@
 ;;   - Reading palette -- the background + foreground, as sepia / dark / light,
 ;;     each a face the dupre theme / theme-studio own (registered as the
 ;;     "nov-reading" bespoke app in theme-studio's face_data.py).
-;;   - Typography -- a serif family and a base height, with +/-/= adjusting the
-;;     page font size live via a buffer-local text-scale on top of the base.
+;;   - Typography -- the shared Reading font profile and a nov-specific base
+;;     height, with +/-/= adjusting the page font size live via a buffer-local
+;;     text-scale on top of the base.
 ;;     The live size is remembered globally, so every book opens where you left
 ;;     it; "=" returns to the base height.
 ;;
@@ -30,6 +31,8 @@
 ;; entry point `cj/nov-reading-setup' is called from that module's nov-mode hook.
 
 ;;; Code:
+
+(require 'font-profiles)
 
 (defgroup cj/nov-reading nil
   "Reading-view theming for nov-mode EPUBs."
@@ -194,9 +197,9 @@ Interactively prompts among `cj/nov-reading-palettes' plus \"none\"."
 
 ;; ------------------------------- Typography ----------------------------------
 
-(defcustom cj/nov-reading-font-family "Merriweather"
-  "Variable-pitch serif family for the EPUB reading view."
-  :type 'string
+(defcustom cj/nov-reading-profile 'reading
+  "Shared font profile applied buffer-locally to the EPUB reading view."
+  :type 'symbol
   :group 'cj/nov-reading)
 
 (defcustom cj/nov-reading-text-height 180
@@ -213,6 +216,9 @@ returns to this base."
   "File persisting the global reading text-scale offset across sessions.
 A single integer: the buffer-local `text-scale-mode-amount' the +/-/= keys
 last set, applied on top of `cj/nov-reading-text-height' when a book opens.")
+
+(defvar-local cj/nov--typography-remap-cookies nil
+  "Face-remap cookies for the shared font profile in this nov buffer.")
 
 (defun cj/nov-reading--parse-text-scale (s)
   "Parse S (a string or nil) as an integer text-scale offset; 0 when invalid.
@@ -239,15 +245,11 @@ Creates the data directory when absent."
     (insert (number-to-string amount))))
 
 (defun cj/nov-reading-apply-typography ()
-  "Apply the reading family and base height buffer-local.
-Remaps `variable-pitch', `default', and `fixed-pitch' so nov's shr output reads
-as a comfortably-sized serif page."
-  (face-remap-add-relative 'variable-pitch
-                           :family cj/nov-reading-font-family :height 1.0)
-  (face-remap-add-relative 'default
-                           :family cj/nov-reading-font-family
-                           :height cj/nov-reading-text-height)
-  (face-remap-add-relative 'fixed-pitch :height cj/nov-reading-text-height))
+  "Apply the shared reading profile at nov's base height buffer-locally."
+  (mapc #'face-remap-remove-relative cj/nov--typography-remap-cookies)
+  (setq cj/nov--typography-remap-cookies
+        (cj/font-profile-remap-buffer
+         cj/nov-reading-profile cj/nov-reading-text-height)))
 
 (defun cj/nov-reading-text-bigger ()
   "Increase the page font size and remember it across books and sessions."

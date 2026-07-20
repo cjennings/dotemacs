@@ -4,11 +4,10 @@
 
 ;; font-config.el is mostly top-level font/package setup.  These smoke tests
 ;; cover the logic that should stay correct regardless of which fonts are
-;; installed: the install check, and the daemon-frame font applier (env-gui-p
-;; guard plus idempotency).  The module :demand's fontaine and references
-;; nerd-icons, so the tests skip when those packages are absent rather than
-;; failing on a bare checkout.  GUI and font lookups are stubbed so the run
-;; stays headless.
+;; installed: the install check, task-oriented Fontaine picker, persistence,
+;; and emoji setup. The module :demand's fontaine and references nerd-icons, so
+;; the tests skip when those packages are absent rather than failing on a bare
+;; checkout. GUI and font lookups are stubbed so the run stays headless.
 
 ;;; Code:
 
@@ -41,34 +40,32 @@
   (cl-letf (((symbol-function 'find-font) (lambda (&rest _) nil)))
     (should (null (cj/font-installed-p "No Such Font 12345")))))
 
-;;; cj/apply-font-settings-to-frame
+;;; cj/maybe-install-nerd-icons-fonts
 
-(ert-deftest test-font-config-apply-font-settings-noop-without-gui ()
-  "Boundary: on a non-GUI frame the applier does nothing and does not error."
+(ert-deftest test-font-config-nerd-icons-missing-font-installs-on-gui ()
+  "Normal: a missing Nerd Icons font is installed on a GUI frame."
   (skip-unless test-font-config--available)
   (require 'font-config)
-  (let ((cj/fontaine-configured-frames nil)
-        (applied nil))
-    (cl-letf (((symbol-function 'env-gui-p) (lambda (&rest _) nil))
-              ((symbol-function 'fontaine-set-preset)
-               (lambda (&rest _) (setq applied t))))
-      (cj/apply-font-settings-to-frame (selected-frame))
-      (should-not applied)
-      (should-not cj/fontaine-configured-frames))))
+  (let ((installed nil))
+    (cl-letf (((symbol-function 'env-gui-p) (lambda () t))
+              ((symbol-function 'cj/font-installed-p) (lambda (_name) nil))
+              ((symbol-function 'nerd-icons-install-fonts)
+               (lambda (&rest _) (setq installed t)))
+              ((symbol-function 'remove-hook) #'ignore))
+      (cj/maybe-install-nerd-icons-fonts))
+    (should installed)))
 
-(ert-deftest test-font-config-apply-font-settings-applies-once-per-frame ()
-  "Normal: on a GUI frame the applier sets the preset once and is idempotent."
+(ert-deftest test-font-config-nerd-icons-installed-font-skips-install ()
+  "Boundary: an installed Nerd Icons font needs no install attempt."
   (skip-unless test-font-config--available)
   (require 'font-config)
-  (let ((cj/fontaine-configured-frames nil)
-        (calls 0))
-    (cl-letf (((symbol-function 'env-gui-p) (lambda (&rest _) t))
-              ((symbol-function 'fontaine-set-preset)
-               (lambda (&rest _) (setq calls (1+ calls)))))
-      (cj/apply-font-settings-to-frame (selected-frame))
-      (cj/apply-font-settings-to-frame (selected-frame))
-      (should (= calls 1))
-      (should (memq (selected-frame) cj/fontaine-configured-frames)))))
+  (let ((installed nil))
+    (cl-letf (((symbol-function 'env-gui-p) (lambda () t))
+              ((symbol-function 'cj/font-installed-p) (lambda (_name) t))
+              ((symbol-function 'nerd-icons-install-fonts)
+               (lambda (&rest _) (setq installed t))))
+      (cj/maybe-install-nerd-icons-fonts))
+    (should-not installed)))
 
 ;;; cj/setup-emoji-fontset
 
@@ -134,6 +131,205 @@
             (should buffer-read-only)))
       (when (get-buffer "*Available Fonts*")
         (kill-buffer "*Available Fonts*")))))
+
+;;; Fontaine workflow profiles
+
+(ert-deftest test-font-config-fontaine-presets-are-task-oriented ()
+  "Normal: the picker exposes seven complete workflow destinations."
+  (skip-unless test-font-config--available)
+  (require 'font-config)
+  (should (equal (delq t (mapcar #'car fontaine-presets))
+                 '(everyday writing reading coding-xs coding coding-xl
+                   presentation))))
+
+(ert-deftest test-font-config-fontaine-candidates-describe-end-state ()
+  "Normal: every profile label names its purpose, fonts, and point size."
+  (skip-unless test-font-config--available)
+  (require 'font-config)
+  (let ((candidates (cj/fontaine-profile-candidates)))
+    (should (= (length candidates) 7))
+    (should (member (nth 0 candidates)
+                    '("Everyday — Berkeley Mono + Lexend · 13 pt"
+                      "Everyday — Berkeley Mono + Lexend · 14 pt")))
+    (should (equal (nth 1 candidates)
+                   "Writing — Berkeley Mono + Merriweather · 14 pt"))
+    (should (equal (nth 2 candidates)
+                   "Reading — Merriweather · 14 pt"))
+    (should (equal (nth 3 candidates)
+                   "Coding XS — Berkeley Mono · 11 pt"))
+    (should (equal (nth 4 candidates)
+                   "Coding — Berkeley Mono · 13 pt"))
+    (should (equal (nth 5 candidates)
+                   "Coding XL — Berkeley Mono · 16 pt"))
+    (should (equal (nth 6 candidates)
+                   "Presentation — Berkeley Mono + Lexend · 20 pt"))))
+
+(ert-deftest test-font-config-fontaine-candidate-round-trips-to-profile ()
+  "Boundary: a displayed destination maps back to its Fontaine symbol."
+  (skip-unless test-font-config--available)
+  (require 'font-config)
+  (dolist (profile '(everyday writing reading coding-xs coding coding-xl
+                     presentation))
+    (let ((label (cj/fontaine-profile-label profile)))
+      (should (eq (cj/fontaine-profile-from-label label) profile)))))
+
+(ert-deftest test-font-config-fontaine-uses-one-monospace-family ()
+  "Normal: every workflow profile uses Berkeley Mono for fixed pitch."
+  (skip-unless test-font-config--available)
+  (require 'font-config)
+  (dolist (profile '(everyday writing coding-xs coding coding-xl presentation))
+    (let ((properties (fontaine--get-preset-properties profile)))
+      (should (equal (plist-get properties :default-family)
+                     "BerkeleyMono Nerd Font")))))
+
+(ert-deftest test-font-config-fontaine-reading-is-merriweather-only ()
+  "Normal: Reading uses Merriweather for every primary face family."
+  (skip-unless test-font-config--available)
+  (require 'font-config)
+  (let ((properties (fontaine--get-preset-properties 'reading)))
+    (dolist (property '(:default-family
+                        :fixed-pitch-family
+                        :fixed-pitch-serif-family
+                        :variable-pitch-family))
+      (should (equal (plist-get properties property) "Merriweather")))))
+
+(ert-deftest test-font-config-fontaine-reading-properties-are-public ()
+  "Normal: consumers can resolve Reading without Fontaine private functions."
+  (skip-unless test-font-config--available)
+  (require 'font-config)
+  (let ((properties (cj/fontaine-profile-properties 'reading)))
+    (should (equal (plist-get properties :default-family) "Merriweather"))
+    (should (= (plist-get properties :default-height) 140))))
+
+(ert-deftest test-font-config-fontaine-remaps-reading-buffer-locally ()
+  "Normal: the local adapter applies all Reading families at an override height."
+  (skip-unless test-font-config--available)
+  (require 'font-config)
+  (let ((calls nil))
+    (cl-letf (((symbol-function 'face-remap-add-relative)
+               (lambda (face &rest properties)
+                 (push (cons face properties) calls)
+                 face)))
+      (should (equal (cj/fontaine-remap-buffer-to-profile 'reading 180)
+                     '(default fixed-pitch fixed-pitch-serif variable-pitch))))
+    (dolist (face '(default fixed-pitch fixed-pitch-serif variable-pitch))
+      (should (member (list face :family "Merriweather" :height 180)
+                      calls)))))
+
+(ert-deftest test-font-config-fontaine-ui-buffer-remaps-default-to-berkeley ()
+  "Normal: minibuffer and echo buffers remap their default face to Berkeley."
+  (skip-unless test-font-config--available)
+  (require 'font-config)
+  (let ((base nil))
+    (cl-letf (((symbol-function 'face-remap-set-base)
+               (lambda (face &rest specs) (setq base (cons face specs)))))
+      (cj/fontaine-remap-ui-buffer))
+    (should (equal base
+                   '(default (:family "BerkeleyMono Nerd Font"))))))
+
+(ert-deftest test-font-config-fontaine-ui-chrome-stays-berkeley ()
+  "Normal: Fontaine reasserts Berkeley on chrome faces and echo buffers."
+  (skip-unless test-font-config--available)
+  (require 'font-config)
+  (let ((faces nil)
+        (remap-count 0))
+    (cl-letf (((symbol-function 'facep) (lambda (_face) t))
+              ((symbol-function 'set-face-attribute)
+               (lambda (face _frame &rest properties)
+                 (push (cons face properties) faces)))
+              ((symbol-function 'get-buffer) (lambda (_name) (current-buffer)))
+              ((symbol-function 'cj/fontaine-remap-ui-buffer)
+               (lambda () (setq remap-count (1+ remap-count)))))
+      (cj/fontaine-keep-ui-chrome-monospace))
+    (dolist (face '(mode-line mode-line-active mode-line-inactive
+                    minibuffer-prompt))
+      (should (member (list face :family "BerkeleyMono Nerd Font") faces)))
+    (should (= remap-count 2))))
+
+(ert-deftest test-font-config-fontaine-ui-chrome-hooks-are-installed ()
+  "Boundary: profile, theme, and minibuffer changes restore UI typography."
+  (skip-unless test-font-config--available)
+  (require 'font-config)
+  (should (memq 'cj/fontaine-keep-ui-chrome-monospace
+                fontaine-set-preset-hook))
+  (should (memq 'cj/fontaine-keep-ui-chrome-monospace
+                enable-theme-functions))
+  (should (memq 'cj/fontaine-remap-ui-buffer minibuffer-setup-hook)))
+
+(ert-deftest test-font-config-fontaine-unknown-label-has-no-profile ()
+  "Error: an unknown destination label does not select a preset."
+  (skip-unless test-font-config--available)
+  (require 'font-config)
+  (should-not (cj/fontaine-profile-from-label "Missing profile")))
+
+(ert-deftest test-font-config-fontaine-annotation-marks-current-profile ()
+  "Normal: completion marks only the active workflow destination."
+  (skip-unless test-font-config--available)
+  (require 'font-config)
+  (let ((fontaine-current-preset 'writing))
+    (should (equal (cj/fontaine-profile-annotation
+                    (cj/fontaine-profile-label 'writing))
+                   "  current"))
+    (should (equal (cj/fontaine-profile-annotation
+                    (cj/fontaine-profile-label 'coding))
+                   ""))))
+
+(ert-deftest test-font-config-fontaine-selector-applies-picked-profile ()
+  "Normal: the one-prompt picker maps its complete label before applying."
+  (skip-unless test-font-config--available)
+  (require 'font-config)
+  (let ((picked (cj/fontaine-profile-label 'presentation))
+        (applied nil))
+    (cl-letf (((symbol-function 'completing-read)
+               (lambda (_prompt _choices &rest _) picked))
+              ((symbol-function 'cj/fontaine-apply-profile)
+               (lambda (profile) (setq applied profile))))
+      (cj/fontaine-select-profile)
+      (should (eq applied 'presentation)))))
+
+(ert-deftest test-font-config-fontaine-restores-valid-profile ()
+  "Normal: startup restores a persisted workflow profile."
+  (skip-unless test-font-config--available)
+  (require 'font-config)
+  (cl-letf (((symbol-function 'fontaine-restore-latest-preset)
+             (lambda () 'writing)))
+    (should (eq (cj/fontaine-restored-or-default-profile) 'writing))))
+
+(ert-deftest test-font-config-fontaine-rejects-obsolete-restored-profile ()
+  "Boundary: an old brand or point-size preset falls back to everyday."
+  (skip-unless test-font-config--available)
+  (require 'font-config)
+  (cl-letf (((symbol-function 'fontaine-restore-latest-preset)
+             (lambda () '13-point-font)))
+    (should (eq (cj/fontaine-restored-or-default-profile) 'everyday))))
+
+(ert-deftest test-font-config-fontaine-has-no-per-frame-reset-hook ()
+  "Boundary: creating a daemon frame cannot overwrite the active profile."
+  (skip-unless test-font-config--available)
+  (require 'font-config)
+  (should-not (memq 'cj/apply-font-settings-to-frame
+                    server-after-make-frame-hook))
+  (should-not (memq 'cj/cleanup-frame-list delete-frame-functions)))
+
+(ert-deftest test-font-config-fontaine-apply-records-profile-for-persistence ()
+  "Normal: applying a profile updates Fontaine history before setting it."
+  (skip-unless test-font-config--available)
+  (require 'font-config)
+  (let ((fontaine-preset-history nil)
+        (applied nil))
+    (cl-letf (((symbol-function 'fontaine-set-preset)
+               (lambda (profile) (setq applied profile))))
+      (cj/fontaine-apply-profile 'coding)
+      (should (eq applied 'coding))
+      (should (equal (car fontaine-preset-history) "coding")))))
+
+(ert-deftest test-font-config-fontaine-apply-rejects-unknown-profile ()
+  "Error: applying an unknown workflow profile signals a user error."
+  (skip-unless test-font-config--available)
+  (require 'font-config)
+  (cl-letf (((symbol-function 'fontaine-set-preset)
+             (lambda (_profile) (ert-fail "must not apply"))))
+    (should-error (cj/fontaine-apply-profile 'missing) :type 'user-error)))
 
 (provide 'test-font-config)
 ;;; test-font-config.el ends here

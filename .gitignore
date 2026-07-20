@@ -5,6 +5,7 @@
 /.coverage/
 flycheck_*
 projectile-bookmarks.eld
+/fontaine-latest-state.eld
 /recentf
 /backups/
 auto-save-list/
