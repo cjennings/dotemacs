@@ -232,7 +232,7 @@ agenda-frame toggle and moved the force-rescan here."
   (interactive)
   (cj/build-org-agenda-list 'force-rebuild))
 ;; S-<f8> and C-M-<f8> are bound by `org-agenda-frame.el' (cj/--agenda-frame-install-keys):
-;; S-<f8> toggles the fullscreen agenda frame; C-M-<f8> runs the force-rescan above.
+;; S-<f8> toggles the dedicated agenda frame; C-M-<f8> runs the force-rescan above.
 
 (defun cj/todo-list-all-agenda-files ()
   "Displays an \\='org-agenda\\=' todo list.

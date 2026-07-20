@@ -700,6 +700,16 @@ Guards against restoring by raw line number after the item moved."
       (call-interactively 'cj/agenda-frame-toggle)
       (should called))))
 
+(ert-deftest test-org-agenda-frame-parameters-normal-tiled-frame ()
+  "Boundary: the agenda frame is a normal frame (the tiling WM places it
+side by side with the working frame), carrying the marker and a distinct name."
+  (let ((params (cj/--agenda-frame-make-parameters)))
+    (should (assq cj/--agenda-frame-parameter params))
+    (should (equal (cdr (assq 'name params)) "Org Agenda"))
+    ;; No fullscreen request -- a fullboth frame would cover the whole output
+    ;; instead of tiling beside the working frame.
+    (should-not (assq 'fullscreen params))))
+
 (ert-deftest test-org-agenda-frame-spawn-starts-timer ()
   "Normal: a successful spawn starts the refresh timer for the new frame."
   (let (timed)

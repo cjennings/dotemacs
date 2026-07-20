@@ -1,4 +1,4 @@
-;;; org-agenda-frame.el --- Dedicated fullscreen agenda frame -*- lexical-binding: t; -*-
+;;; org-agenda-frame.el --- Dedicated agenda frame -*- lexical-binding: t; -*-
 ;; author: Craig Jennings <c@cjennings.net>
 
 ;;; Commentary:
@@ -10,9 +10,10 @@
 ;; Runtime requires: none.
 ;; Direct test load: yes.
 ;;
-;; A dedicated fullscreen Emacs frame of the running daemon that shows a
-;; today-anchored seven-day org-agenda, refreshing itself, kept read-only and
-;; focus-locked.  Spawned/raised/closed by one key.  See the spec:
+;; A dedicated Emacs frame of the running daemon that shows a today-anchored
+;; seven-day org-agenda, refreshing itself, kept read-only and focus-locked.
+;; A normal (non-fullscreen) frame, so a tiling WM places it side by side with
+;; the working frame.  Spawned/raised/closed by one key.  See the spec:
 ;; docs/specs/2026-07-17-org-agenda-fullscreen-frame-spec.org.
 ;;
 ;; Phase 1 (this pass) builds non-interactive helpers only: frame lookup,
@@ -171,7 +172,7 @@ Signals a `user-error' when point is not on an agenda item."
 (defun cj/--agenda-frame-close ()
   "Close the agenda frame from within it.
 Bound to q, Q, and x so Org's own quit keys delete the whole frame
-\(and cancel its timer) rather than leaving a sole-window fullscreen
+\(and cancel its timer) rather than leaving a sole-window agenda
 frame stranded on a non-agenda buffer."
   (interactive)
   (cj/--agenda-frame-delete))
@@ -328,8 +329,17 @@ the timer and kills the sticky buffer."
   (select-frame-set-input-focus frame)
   frame)
 
+(defun cj/--agenda-frame-make-parameters ()
+  "Return the frame parameters for the dedicated agenda frame.
+A normal frame -- not fullscreen -- so a tiling window manager places it
+side by side with the working frame rather than covering the whole output.
+It carries the `cj/agenda-frame' marker and a distinct name so window-manager
+rules can target it."
+  `((,cj/--agenda-frame-parameter . t)
+    (name . "Org Agenda")))
+
 (defun cj/--agenda-frame-spawn ()
-  "Create, display, and focus the dedicated fullscreen agenda frame.
+  "Create, display, and focus the dedicated agenda frame.
 Transactional: on any failure after `make-frame', delete the partial
 frame (which cleans up its buffer and timer via the delete hook), restore
 focus to the launching frame, and signal a `user-error' naming the cause.
@@ -339,9 +349,7 @@ Returns the new agenda frame on success."
     (condition-case err
         (progn
           (setq cj/--agenda-frame-launch-frame launch)
-          (setq frame (make-frame `((,cj/--agenda-frame-parameter . t)
-                                    (fullscreen . fullboth)
-                                    (name . "Org Agenda"))))
+          (setq frame (make-frame (cj/--agenda-frame-make-parameters)))
           (select-frame-set-input-focus frame)
           ;; Cached, non-forced: a frame spawned early after daemon startup
           ;; still shows the full project agenda, not the base-files-only view.
@@ -605,9 +613,9 @@ Returns the timer."
 ;; -- Public command and key install ------------------------------------------
 
 (defun cj/agenda-frame-toggle ()
-  "Toggle the dedicated fullscreen agenda frame.
-Spawn it fullscreen when none exists, raise and focus it when it exists
-but is unfocused, and close it when it is the selected frame."
+  "Toggle the dedicated agenda frame.
+Spawn it when none exists, raise and focus it when it exists but is
+unfocused, and close it when it is the selected frame."
   (interactive)
   (cj/--agenda-frame-toggle))
 
