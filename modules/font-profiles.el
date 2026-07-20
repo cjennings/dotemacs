@@ -55,8 +55,11 @@
     (coding-xs
      :default-height 110
      :variable-pitch-family "BerkeleyMono Nerd Font")
-    (coding
+    (coding-m
      :default-height 130
+     :variable-pitch-family "BerkeleyMono Nerd Font")
+    (coding-l
+     :default-height 140
      :variable-pitch-family "BerkeleyMono Nerd Font")
     (coding-xl
      :default-height 160

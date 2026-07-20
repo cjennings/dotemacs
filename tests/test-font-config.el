@@ -135,11 +135,11 @@
 ;;; Fontaine workflow profiles
 
 (ert-deftest test-font-config-fontaine-presets-are-task-oriented ()
-  "Normal: the picker exposes seven complete workflow destinations."
+  "Normal: the picker exposes eight complete workflow destinations."
   (skip-unless test-font-config--available)
   (require 'font-config)
   (should (equal (delq t (mapcar #'car fontaine-presets))
-                 '(everyday writing reading coding-xs coding coding-xl
+                 '(everyday writing reading coding-xs coding-m coding-l coding-xl
                    presentation))))
 
 (ert-deftest test-font-config-fontaine-candidates-describe-end-state ()
@@ -147,7 +147,7 @@
   (skip-unless test-font-config--available)
   (require 'font-config)
   (let ((candidates (cj/fontaine-profile-candidates)))
-    (should (= (length candidates) 7))
+    (should (= (length candidates) 8))
     (should (member (nth 0 candidates)
                     '("Everyday — Berkeley Mono + Lexend · 13 pt"
                       "Everyday — Berkeley Mono + Lexend · 14 pt")))
@@ -158,17 +158,19 @@
     (should (equal (nth 3 candidates)
                    "Coding XS — Berkeley Mono · 11 pt"))
     (should (equal (nth 4 candidates)
-                   "Coding — Berkeley Mono · 13 pt"))
+                   "Coding M — Berkeley Mono · 13 pt"))
     (should (equal (nth 5 candidates)
-                   "Coding XL — Berkeley Mono · 16 pt"))
+                   "Coding L — Berkeley Mono · 14 pt"))
     (should (equal (nth 6 candidates)
+                   "Coding XL — Berkeley Mono · 16 pt"))
+    (should (equal (nth 7 candidates)
                    "Presentation — Berkeley Mono + Lexend · 20 pt"))))
 
 (ert-deftest test-font-config-fontaine-candidate-round-trips-to-profile ()
   "Boundary: a displayed destination maps back to its Fontaine symbol."
   (skip-unless test-font-config--available)
   (require 'font-config)
-  (dolist (profile '(everyday writing reading coding-xs coding coding-xl
+  (dolist (profile '(everyday writing reading coding-xs coding-m coding-l coding-xl
                      presentation))
     (let ((label (cj/fontaine-profile-label profile)))
       (should (eq (cj/fontaine-profile-from-label label) profile)))))
@@ -177,7 +179,7 @@
   "Normal: every workflow profile uses Berkeley Mono for fixed pitch."
   (skip-unless test-font-config--available)
   (require 'font-config)
-  (dolist (profile '(everyday writing coding-xs coding coding-xl presentation))
+  (dolist (profile '(everyday writing coding-xs coding-m coding-l coding-xl presentation))
     (let ((properties (fontaine--get-preset-properties profile)))
       (should (equal (plist-get properties :default-family)
                      "BerkeleyMono Nerd Font")))))
@@ -271,7 +273,7 @@
                     (cj/fontaine-profile-label 'writing))
                    "  current"))
     (should (equal (cj/fontaine-profile-annotation
-                    (cj/fontaine-profile-label 'coding))
+                    (cj/fontaine-profile-label 'coding-m))
                    ""))))
 
 (ert-deftest test-font-config-fontaine-selector-applies-picked-profile ()
@@ -319,9 +321,9 @@
         (applied nil))
     (cl-letf (((symbol-function 'fontaine-set-preset)
                (lambda (profile) (setq applied profile))))
-      (cj/fontaine-apply-profile 'coding)
-      (should (eq applied 'coding))
-      (should (equal (car fontaine-preset-history) "coding")))))
+      (cj/fontaine-apply-profile 'coding-m)
+      (should (eq applied 'coding-m))
+      (should (equal (car fontaine-preset-history) "coding-m")))))
 
 (ert-deftest test-font-config-fontaine-apply-rejects-unknown-profile ()
   "Error: applying an unknown workflow profile signals a user error."
