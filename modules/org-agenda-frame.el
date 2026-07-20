@@ -314,6 +314,29 @@ tick, killing the buffer would no longer delete the frame."
 (defconst cj/--agenda-frame-timer-parameter 'cj/agenda-frame-timer
   "Frame parameter holding the agenda frame's refresh timer (set in Phase 2).")
 
+(declare-function auto-dim-other-buffers-mode "auto-dim-other-buffers" (&optional arg))
+
+(defvar cj/--agenda-frame-dim-was-on nil
+  "Non-nil when the agenda frame's spawn turned `auto-dim-other-buffers-mode' off.
+The refresh tick's selection swing marks the working window non-selected,
+and auto-dim's debounced dim lands after the tick -- the working frame
+visibly dims every five minutes.  Spawn suspends the mode and remembers it
+here; closing the frame restores it.")
+
+(defun cj/--agenda-frame-suspend-dim ()
+  "Turn auto-dim off for the agenda frame's lifetime, remembering it was on."
+  (when (and (bound-and-true-p auto-dim-other-buffers-mode)
+             (fboundp 'auto-dim-other-buffers-mode))
+    (setq cj/--agenda-frame-dim-was-on t)
+    (auto-dim-other-buffers-mode -1)))
+
+(defun cj/--agenda-frame-restore-dim ()
+  "Restore auto-dim if the agenda frame's spawn suspended it."
+  (when (and cj/--agenda-frame-dim-was-on
+             (fboundp 'auto-dim-other-buffers-mode))
+    (setq cj/--agenda-frame-dim-was-on nil)
+    (auto-dim-other-buffers-mode 1)))
+
 (defvar cj/--agenda-frame-tearing-down nil
   "Non-nil while the agenda frame is being torn down.
 Breaks the `delete-frame' / `kill-buffer-hook' re-entrancy loop: deleting
@@ -343,6 +366,7 @@ kills the dedicated sticky buffer, so the next spawn regenerates fresh
 rather than reusing stale sticky content.  A non-agenda frame is ignored."
   (when (cj/--agenda-frame-p frame)
     (cj/--agenda-frame-cancel-timer frame)
+    (cj/--agenda-frame-restore-dim)
     (let ((buffer (cj/--agenda-frame-sticky-buffer))
           (cj/--agenda-frame-tearing-down t))
       (when (buffer-live-p buffer)
@@ -414,6 +438,7 @@ Returns the new agenda frame on success."
                 (add-hook 'kill-buffer-hook
                           #'cj/--agenda-frame-on-kill-buffer nil t))))
           (cj/--agenda-frame-start-timer frame)
+          (cj/--agenda-frame-suspend-dim)
           frame)
       (error
        (when (frame-live-p frame)

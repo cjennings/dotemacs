@@ -516,6 +516,76 @@ removed after a later success -- the failure banner would stick forever."
       (cj/--agenda-frame-on-kill-buffer)
       (should-not deleted))))
 
+;;; Auto-dim suspension while the agenda frame lives
+
+(ert-deftest test-org-agenda-frame-spawn-suspends-auto-dim ()
+  "Normal: spawning the frame turns auto-dim off and remembers it was on.
+The refresh tick's selection swing marks the working window non-selected;
+auto-dim's debounced dim then lands after the tick and the working frame
+visibly dims every five minutes."
+  (defvar auto-dim-other-buffers-mode)
+  (let ((auto-dim-other-buffers-mode t)
+        (cj/--agenda-frame-dim-was-on nil)
+        calls)
+    (cl-letf (((symbol-function 'auto-dim-other-buffers-mode)
+               (lambda (arg) (push arg calls)))
+              ((symbol-function 'selected-frame) (lambda () 'launch))
+              ((symbol-function 'make-frame) (lambda (&rest _) 'af))
+              ((symbol-function 'select-frame-set-input-focus) (lambda (_f &rest _) nil))
+              ((symbol-function 'cj/build-org-agenda-list) (lambda (&rest _) nil))
+              ((symbol-function 'org-agenda) (lambda (&rest _) nil))
+              ((symbol-function 'delete-other-windows) (lambda (&rest _) nil))
+              ((symbol-function 'cj/--agenda-frame-sticky-buffer) (lambda () nil))
+              ((symbol-function 'cj/--agenda-frame-start-timer) (lambda (_f) nil)))
+      (cj/--agenda-frame-spawn)
+      (should (equal calls '(-1)))
+      (should cj/--agenda-frame-dim-was-on))))
+
+(ert-deftest test-org-agenda-frame-spawn-leaves-auto-dim-when-off ()
+  "Boundary: auto-dim already off -> spawn doesn't touch it, no restore later."
+  (defvar auto-dim-other-buffers-mode)
+  (let ((auto-dim-other-buffers-mode nil)
+        (cj/--agenda-frame-dim-was-on nil)
+        calls)
+    (cl-letf (((symbol-function 'auto-dim-other-buffers-mode)
+               (lambda (arg) (push arg calls)))
+              ((symbol-function 'selected-frame) (lambda () 'launch))
+              ((symbol-function 'make-frame) (lambda (&rest _) 'af))
+              ((symbol-function 'select-frame-set-input-focus) (lambda (_f &rest _) nil))
+              ((symbol-function 'cj/build-org-agenda-list) (lambda (&rest _) nil))
+              ((symbol-function 'org-agenda) (lambda (&rest _) nil))
+              ((symbol-function 'delete-other-windows) (lambda (&rest _) nil))
+              ((symbol-function 'cj/--agenda-frame-sticky-buffer) (lambda () nil))
+              ((symbol-function 'cj/--agenda-frame-start-timer) (lambda (_f) nil)))
+      (cj/--agenda-frame-spawn)
+      (should (null calls))
+      (should-not cj/--agenda-frame-dim-was-on))))
+
+(ert-deftest test-org-agenda-frame-on-delete-restores-auto-dim ()
+  "Normal: closing the frame restores auto-dim when spawn had turned it off."
+  (let ((cj/--agenda-frame-dim-was-on t)
+        calls)
+    (cl-letf (((symbol-function 'auto-dim-other-buffers-mode)
+               (lambda (arg) (push arg calls)))
+              ((symbol-function 'cj/--agenda-frame-p) (lambda (_f) t))
+              ((symbol-function 'cj/--agenda-frame-cancel-timer)
+               (lambda (&optional _f) nil)))
+      (cj/--agenda-frame-on-delete-frame 'af)
+      (should (equal calls '(1)))
+      (should-not cj/--agenda-frame-dim-was-on))))
+
+(ert-deftest test-org-agenda-frame-on-delete-no-dim-restore-when-untouched ()
+  "Boundary: closing without a suspended auto-dim doesn't enable it."
+  (let ((cj/--agenda-frame-dim-was-on nil)
+        calls)
+    (cl-letf (((symbol-function 'auto-dim-other-buffers-mode)
+               (lambda (arg) (push arg calls)))
+              ((symbol-function 'cj/--agenda-frame-p) (lambda (_f) t))
+              ((symbol-function 'cj/--agenda-frame-cancel-timer)
+               (lambda (&optional _f) nil)))
+      (cj/--agenda-frame-on-delete-frame 'af)
+      (should (null calls)))))
+
 ;;; Frame lifecycle — transactional spawn rollback
 
 (ert-deftest test-org-agenda-frame-spawn-rolls-back-on-failure ()
