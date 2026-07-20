@@ -237,6 +237,11 @@ The default binding for every key not on the allowlist."
     (define-key map (kbd "r") #'cj/--agenda-frame-safe-redo)
     (define-key map (kbd "S-<f8>") #'cj/agenda-frame-toggle)
     (define-key map (kbd "C-M-<f8>") #'cj/org-agenda-refresh-files)
+    ;; C-x C-c means "close this frame" here.  The global
+    ;; `save-buffers-kill-terminal' must never run in this frame: it was made
+    ;; by `make-frame', not emacsclient, so with no client to close it falls
+    ;; back to killing the daemon itself.
+    (define-key map (kbd "C-x C-c") #'cj/--agenda-frame-close)
     ;; (d) Input machinery punched through the catch-all.  An explicit nil
     ;; shadows the [t] default in this map, so these fall through to their
     ;; global bindings.  Without the punches, every frame-focus change

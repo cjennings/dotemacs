@@ -232,6 +232,14 @@ catch-all denies them and the frame can't be closed by its own key."
   (should (eq (lookup-key cj/agenda-frame-mode-map (kbd "C-M-<f8>"))
               'cj/org-agenda-refresh-files)))
 
+(ert-deftest test-org-agenda-frame-map-C-x-C-c-closes-frame ()
+  "Normal: C-x C-c in the agenda frame closes the frame, not the daemon.
+The global save-buffers-kill-terminal would kill Emacs itself here (a
+make-frame frame has no client), so the intuitive close gesture must be
+remapped to the frame close."
+  (should (eq (lookup-key cj/agenda-frame-mode-map (kbd "C-x C-c"))
+              'cj/--agenda-frame-close)))
+
 (ert-deftest test-org-agenda-frame-map-machinery-punched-through ()
   "Boundary: input machinery is punched through the [t] catch-all.
 switch-frame events, mouse-wheel scrolling, mouse-1 clicks, and the help
