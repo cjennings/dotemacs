@@ -458,26 +458,18 @@ interrupt work in progress.  Bound to C-; a k."
 
 ;; ------------------------- Step to the next agent ----------------------------
 
-(defun cj/ai-term-next ()
-  "Step to the next open AI-term agent in the queue.
+(defun cj/--ai-term-step-among (dirs)
+  "Step to the next AI-term agent among DIRS, an ordered active-dir list.
 
-The queue is every active agent ordered by buffer name -- a stable
-rotation, unaffected by which agent was most recently selected.  Active
-means a live agent buffer (attached) OR a live tmux session with no Emacs
-buffer (detached); stepping onto a detached agent attaches it (recreates
-its terminal, which reattaches the session).  When an agent window is on
-screen, swap it to the next agent (wrapping after the last) and select it.
-When no agent is displayed but agents exist, show the first.  When none
-are open, open the project picker to launch the first agent rather than
-erroring.  When the sole agent is already focused, echo that there are
-no other ai-terms to switch to instead of swapping to itself.
-
-Bound to M-SPC.  Unlike C-; a a (toggle the most-recent agent on/off), this
-is the \"switch among existing agents\" surface; C-; a s opens the project
-picker and C-; a k closes an agent."
-  (interactive)
-  (let* ((dirs (cj/--ai-term-active-agent-dirs))
-         (win (cj/--ai-term-displayed-agent-window))
+Shared body for `cj/ai-term-next' (all active agents) and
+`cj/ai-term-next-attached' (attached agents only).  When an agent window
+is on screen, swap it to the next agent in DIRS (wrapping after the last)
+and select it: a live attached agent swaps buffer-only, a detached one is
+materialized by `cj/--ai-term-show-or-create'.  When DIRS is empty, open
+the project picker rather than erroring, so the swap key doubles as a
+start-an-agent key.  When the sole eligible agent is already focused, echo
+that there is nowhere else to go instead of swapping to itself."
+  (let* ((win (cj/--ai-term-displayed-agent-window))
          (current-name (and win (buffer-name (window-buffer win))))
          (current-dir (and current-name
                            (seq-find (lambda (d)
@@ -486,8 +478,8 @@ picker and C-; a k closes an agent."
          (next-dir (cj/--ai-term-next-agent-dir current-dir dirs)))
     (cond
      ((not next-dir)
-      ;; No agents open: launch the first via the project picker instead of
-      ;; erroring, so the swap key doubles as a "start an agent" key.
+      ;; No eligible agents: launch the first via the project picker instead
+      ;; of erroring, so the swap key doubles as a "start an agent" key.
       (cj/ai-term-pick-project))
      ;; Sole agent, already focused: the rotation wraps back to the same
      ;; agent, so a swap would be a silent no-op.  Say there's nowhere to
@@ -512,16 +504,49 @@ picker and C-; a k closes an agent."
           (let ((w (get-buffer-window name)))
             (when w (select-window w)))))))))
 
+(defun cj/ai-term-next ()
+  "Step to the next open AI-term agent -- attached or detached.
+
+The queue is every active agent ordered by buffer name -- a stable
+rotation, unaffected by which agent was most recently selected.  Active
+means a live agent buffer (attached) OR a live tmux session with no Emacs
+buffer (detached); stepping onto a detached agent attaches it (recreates
+its terminal, which reattaches the session).
+
+Bound to M-S-SPC (and C-; a n).  For a chord that stays among the agents
+already on screen, use `cj/ai-term-next-attached' (M-SPC).  Unlike C-; a a
+\(toggle the most-recent agent on/off), this is the \"switch among existing
+agents\" surface; C-; a s opens the project picker and C-; a k closes an
+agent."
+  (interactive)
+  (cj/--ai-term-step-among (cj/--ai-term-active-agent-dirs)))
+
+(defun cj/ai-term-next-attached ()
+  "Step to the next ATTACHED AI-term agent -- live Emacs buffers only.
+
+Cycles only agents currently on screen (a live agent buffer), skipping
+detached tmux sessions.  Use `cj/ai-term-next' (M-S-SPC) to include
+detached sessions and attach them.  When no agent is attached, opens the
+project picker.
+
+Bound to M-SPC -- the fast \"swap to the next visible agent\" chord."
+  (interactive)
+  (cj/--ai-term-step-among (cj/--ai-term-attached-agent-dirs)))
+
 ;; ai-term lives under the C-; a prefix (vacated when gptel was archived).
-;; The frequent "swap to the next agent" also gets M-SPC for a fast chord.
+;; The frequent "swap to the next agent" gets M-SPC (attached only) for a fast
+;; chord, with M-S-SPC to include detached sessions.
 (defvar-keymap cj/ai-term-keymap
   :doc "Keymap for ai-term agent commands (C-; a)."
   "a" #'cj/ai-term               ;; toggle the most-recent agent on/off
   "s" #'cj/ai-term-pick-project  ;; select / launch via the project picker
-  "n" #'cj/ai-term-next          ;; swap to the next open agent
+  "n" #'cj/ai-term-next          ;; swap to the next open agent (all)
   "k" #'cj/ai-term-close)        ;; kill the current agent
 (cj/register-prefix-map "a" cj/ai-term-keymap "ai-term")
-(keymap-global-set "M-SPC" #'cj/ai-term-next)
+;; M-SPC cycles only attached agents (on-screen); M-S-SPC cycles all, attaching
+;; a detached tmux session when it lands on one.
+(keymap-global-set "M-SPC" #'cj/ai-term-next-attached)
+(keymap-global-set "M-S-SPC" #'cj/ai-term-next)
 
 (with-eval-after-load 'which-key
   (which-key-add-key-based-replacements
@@ -530,7 +555,8 @@ picker and C-; a k closes an agent."
     "C-; a s" "select / launch"
     "C-; a n" "next agent"
     "C-; a k" "kill agent"
-    "M-SPC"   "ai-term: next agent"))
+    "M-SPC"   "ai-term: next attached"
+    "M-S-SPC" "ai-term: next (all)"))
 
 ;; ------------------- Wrap-it-up teardown + shutdown -------------------------
 ;;

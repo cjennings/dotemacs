@@ -159,12 +159,14 @@ buffer."
           buf))))))
 
 ;; In EAT's semi-char mode, keys not bound in `eat-semi-char-mode-map' are
-;; forwarded to the pty.  M-SPC (swap to the next agent) must reach Emacs from
-;; inside an agent buffer, so bind it in that map -- no exception-list or rebuild
+;; forwarded to the pty.  The swap-to-next chords must reach Emacs from inside
+;; an agent buffer, so bind them in that map -- no exception-list or rebuild
 ;; dance like ghostel needed.  C-; is already bound there (eat-config), so the
 ;; C-; a family resolves through the global prefix without extra wiring.
+;; M-SPC cycles attached agents only; M-S-SPC cycles all (attaching a detached).
 (with-eval-after-load 'eat
-  (keymap-set eat-semi-char-mode-map "M-SPC" #'cj/ai-term-next))
+  (keymap-set eat-semi-char-mode-map "M-SPC" #'cj/ai-term-next-attached)
+  (keymap-set eat-semi-char-mode-map "M-S-SPC" #'cj/ai-term-next))
 
 (provide 'ai-term-backend-eat)
 ;;; ai-term-backend-eat.el ends here

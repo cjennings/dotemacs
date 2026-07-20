@@ -33,14 +33,18 @@
   (should (eq (keymap-lookup cj/custom-keymap "a") cj/ai-term-keymap)))
 
 (ert-deftest test-ai-term-next-bound-to-meta-space-globally ()
-  "Normal: M-SPC runs `cj/ai-term-next' (the fast swap chord)."
-  (should (eq (lookup-key (current-global-map) (kbd "M-SPC")) #'cj/ai-term-next)))
+  "Normal: M-SPC runs `cj/ai-term-next-attached' (cycle attached only) and
+M-S-SPC runs `cj/ai-term-next' (cycle all, including detached)."
+  (should (eq (lookup-key (current-global-map) (kbd "M-SPC")) #'cj/ai-term-next-attached))
+  (should (eq (lookup-key (current-global-map) (kbd "M-S-SPC")) #'cj/ai-term-next)))
 
 (ert-deftest test-ai-term-meta-space-bound-in-eat-semi-char-mode-map ()
-  "Normal: M-SPC is bound in `eat-semi-char-mode-map' so swap works inside an
-agent.  EAT forwards unbound keys to the pty, so the bind is what lets it reach
-Emacs -- no ghostel-style exception list or rebuild is needed."
-  (should (eq (keymap-lookup eat-semi-char-mode-map "M-SPC") #'cj/ai-term-next)))
+  "Normal: both swap chords are bound in `eat-semi-char-mode-map' so they work
+inside an agent.  EAT forwards unbound keys to the pty, so the bind is what lets
+them reach Emacs -- no ghostel-style exception list or rebuild is needed.  M-SPC
+cycles attached only; M-S-SPC cycles all."
+  (should (eq (keymap-lookup eat-semi-char-mode-map "M-SPC") #'cj/ai-term-next-attached))
+  (should (eq (keymap-lookup eat-semi-char-mode-map "M-S-SPC") #'cj/ai-term-next)))
 
 (ert-deftest test-ai-term-f9-family-removed-globally ()
   "Regression: the old F9 family no longer binds the ai-term commands globally."

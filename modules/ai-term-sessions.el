@@ -121,6 +121,23 @@ which the step materializes by attaching."
      (lambda (a b)
        (string< (cj/--ai-term-buffer-name a) (cj/--ai-term-buffer-name b))))))
 
+(defun cj/--ai-term-attached-agent-dirs ()
+  "Return project dirs that have a live agent BUFFER (attached only).
+
+Like `cj/--ai-term-active-agent-dirs' but excludes detached tmux
+sessions with no Emacs buffer -- this is the queue `cj/ai-term-next-attached'
+\(M-SPC) steps through, so the fast chord stays among agents already on
+screen.  Detached sessions are reachable only via `cj/ai-term-next'
+\(M-S-SPC).  Sorted by agent buffer name for a stable rotation."
+  (let ((live-names (mapcar #'buffer-name (cj/--ai-term-agent-buffers))))
+    (sort
+     (seq-filter
+      (lambda (dir)
+        (member (cj/--ai-term-buffer-name dir) live-names))
+      (cj/--ai-term-candidates))
+     (lambda (a b)
+       (string< (cj/--ai-term-buffer-name a) (cj/--ai-term-buffer-name b))))))
+
 (defun cj/--ai-term-tmux-session-name (dir)
   "Return the tmux session name for project directory DIR.
 
