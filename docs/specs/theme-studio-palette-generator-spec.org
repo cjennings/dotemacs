@@ -278,7 +278,7 @@ Use the existing Theme Studio test stack:
 - Manual Chrome pass on at least one dark palette and one light palette.
 
 * References / Appendix
-- [[file:design/theme-studio-color-harmony.org][theme-studio color harmony explainer]]
+- [[file:../design/theme-studio-color-harmony.org][theme-studio color harmony explainer]]
 - [[id:15db8ae3-fc14-49f3-9ed5-d5ff59790904][perceptual color metrics spec]]
 - [[file:theme-studio-palette-ramps-spec.org][palette ramps and contrast safety spec]]
 - [[file:theme-studio-palette-columns-spec.org][palette columns spec]]

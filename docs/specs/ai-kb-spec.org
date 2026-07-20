@@ -19,7 +19,7 @@ In scope: Step 1 (store + contract/CLI + global rule + provisioning) and Step 2 
 
 * Scope decision: memory store, not (yet) an LLM Wiki
 
-ai-kb v1 is a *global, durable, cross-project memory store* for AI coding agents (Claude Code today; agent-neutral by contract): org-roam nodes holding lessons, principles, Craig's preferences, reusable procedures, and durable observations. It is the concrete first slice of the broader "org-roam as agent memory" vision in [[file:agentic-knowledgebase.org][agentic-knowledgebase.org]].
+ai-kb v1 is a *global, durable, cross-project memory store* for AI coding agents (Claude Code today; agent-neutral by contract): org-roam nodes holding lessons, principles, Craig's preferences, reusable procedures, and durable observations. It is the concrete first slice of the broader "org-roam as agent memory" vision in [[file:../design/agentic-knowledgebase.org][agentic-knowledgebase.org]].
 
 It is *not* a Karpathy-style LLM Wiki in v1. That pattern — immutable =raw/= sources, compiled =wiki/= synthesis pages, =schema.org=, source hashes, and full ingest/query/lint pipelines — is a larger product whose value is *grounding compiled knowledge in re-checkable sources*. v1 adopts the one piece that pays off immediately: a =raw/= capture for *external* sources (see [[*Grounding external sources][Grounding external sources]]). The rest of that machinery is the documented evolution path (see [[*vNext][vNext]]); v1's structure is chosen so it can grow that way without a rewrite.
 

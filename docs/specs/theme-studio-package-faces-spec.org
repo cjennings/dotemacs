@@ -552,7 +552,7 @@ generalized face-control helper, package style kept inside the package object,
 - *Why:* The direction is coherent and the first-round decisions are folded in,
   but v1 now depends on behavior that is not yet implementable from the current
   static generator without a defined inventory and state/export contract.
-- *Artifacts:* [[file:theme-studio-package-faces-spec-review.org][theme-studio-package-faces-spec-review.org]]
+- *Artifacts:* =theme-studio-package-faces-spec-review.org=
 
 ** 2026-06-07 Sun @ 18:28:02 -0500 — Claude Code (emacs-d) — responder
 - *What:* Ran spec-response against the Codex review. Added Implementation

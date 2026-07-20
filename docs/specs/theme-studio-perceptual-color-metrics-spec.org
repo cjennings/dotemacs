@@ -510,7 +510,7 @@ Modified or rejected recommendations only; everything else in the Codex review
   values or make that second chromatic fixture optional.
 - *Why:* The implementation is otherwise ready-shaped, but APCA math and numeric
   fixtures need a single authoritative source before coding starts.
-- *Artifacts:* [[file:theme-studio-perceptual-color-metrics-spec-review.org][theme-studio-perceptual-color-metrics-spec-review.org]]
+- *Artifacts:* =theme-studio-perceptual-color-metrics-spec-review.org=
 
 ** 2026-06-08 Mon @ 13:19:15 -0500 — Claude Code — responder
 - *What changed:* Processed Codex's second pass. Accepted all three findings, no
