@@ -223,6 +223,63 @@ not caught by the read-only catch-all."
     (should (eq (lookup-key cj/agenda-frame-mode-map (kbd key))
                 'cj/--agenda-frame-denied-fixed-view))))
 
+(ert-deftest test-org-agenda-frame-map-frame-controls-bound ()
+  "Normal: the frame's own controls work from inside the frame.
+S-<f8> must close/toggle and C-M-<f8> must force-rescan; unbound, the
+catch-all denies them and the frame can't be closed by its own key."
+  (should (eq (lookup-key cj/agenda-frame-mode-map (kbd "S-<f8>"))
+              'cj/agenda-frame-toggle))
+  (should (eq (lookup-key cj/agenda-frame-mode-map (kbd "C-M-<f8>"))
+              'cj/org-agenda-refresh-files)))
+
+(ert-deftest test-org-agenda-frame-map-machinery-punched-through ()
+  "Boundary: input machinery is punched through the [t] catch-all.
+switch-frame events, mouse-wheel scrolling, mouse-1 clicks, and the help
+prefix must fall through to their global bindings (an explicit nil shadows
+the default in this map); otherwise every frame-focus change and every
+scroll spams the deny message."
+  (dolist (key (list [switch-frame]
+                     [wheel-up] [wheel-down] [wheel-left] [wheel-right]
+                     [double-wheel-up] [double-wheel-down]
+                     [triple-wheel-up] [triple-wheel-down]
+                     [mouse-1] [down-mouse-1] [drag-mouse-1]
+                     (kbd "C-h")))
+    ;; accept-default t: a punched key returns nil (falls through to the
+    ;; global map); an unpunched key returns the catch-all deny handler.
+    (should (null (lookup-key cj/agenda-frame-mode-map key t)))))
+
+(ert-deftest test-org-agenda-frame-map-unpunched-still-denied ()
+  "Normal: an ordinary unbound key still hits the catch-all after the punches."
+  (should (eq (lookup-key cj/agenda-frame-mode-map (kbd "t") t)
+              'cj/--agenda-frame-denied-readonly)))
+
+(ert-deftest test-org-agenda-frame-maybe-enable-readds-kill-buffer-hook ()
+  "Normal: the finalize re-enable also re-adds the buffer-local kill hook.
+org-agenda-redo's kill-all-local-variables strips the hook installed at
+spawn; without the re-add, killing the buffer after the first refresh tick
+orphans the frame."
+  (with-temp-buffer
+    (cl-letf (((symbol-function 'cj/--agenda-frame) (lambda () 'agenda))
+              ((symbol-function 'get-buffer-window) (lambda (_b _f) 'win)))
+      (cj/--agenda-frame-maybe-enable-mode)
+      (should (memq 'cj/--agenda-frame-on-kill-buffer
+                    (buffer-local-value 'kill-buffer-hook (current-buffer)))))))
+
+(ert-deftest test-org-agenda-frame-overlay-removable-after-local-var-wipe ()
+  "Error: the failure overlay is found by property, not a buffer-local var.
+kill-all-local-variables (every redo) wipes buffer-local vars while the
+overlay object survives erase-buffer, so a var-held overlay could never be
+removed after a later success -- the failure banner would stick forever."
+  (with-temp-buffer
+    (insert "x\n")
+    (cj/--agenda-frame-show-failure-overlay (current-buffer))
+    ;; Simulate the org-agenda-mode reset between failure and success.
+    (kill-all-local-variables)
+    (cj/--agenda-frame-remove-overlay (current-buffer))
+    ;; The visible banner (a before-string overlay) must be gone.
+    (should (= 0 (seq-count (lambda (o) (overlay-get o 'before-string))
+                            (overlays-in (point-min) (point-max)))))))
+
 (ert-deftest test-org-agenda-frame-map-mutation-keys-not-explicitly-bound ()
   "Boundary: a mutation key (t = org-agenda-todo) is not explicitly bound, so the
 [t] catch-all denies it as read-only."
@@ -594,7 +651,8 @@ re-enables the policy, shows one overlay, and reports once."
                      (lambda (fmt &rest a) (push (apply #'format fmt a) msgs))))
             (cj/--agenda-frame-do-redo 'af (current-buffer) nil)
             (should cj/agenda-frame-mode)                         ; policy re-enabled
-            (should (overlayp cj/--agenda-frame-failure-overlay)) ; overlay shown
+            (should (= 1 (length (cj/--agenda-frame-failure-overlays
+                                  (current-buffer)))))            ; overlay shown
             (should (string-match-p "good agenda content" (buffer-string))) ; restored
             (should-not (string-match-p "PARTIAL" (buffer-string)))
             (should (= 1 (seq-count (lambda (m) (string-match-p "refresh failed" m))
@@ -683,9 +741,10 @@ Guards against restoring by raw line number after the item moved."
     (unwind-protect
         (progn
           (cj/--agenda-frame-show-failure-overlay (current-buffer))
-          (let ((first cj/--agenda-frame-failure-overlay))
+          (let ((first (car (cj/--agenda-frame-failure-overlays (current-buffer)))))
             (cj/--agenda-frame-show-failure-overlay (current-buffer))
-            (should (eq cj/--agenda-frame-failure-overlay first))
+            (should (equal (cj/--agenda-frame-failure-overlays (current-buffer))
+                           (list first)))
             (should (= 1 (seq-count (lambda (o) (overlay-get o 'before-string))
                                     (overlays-in (point-min) (point-max)))))))
       (cj/--agenda-frame-remove-overlay (current-buffer)))))

@@ -235,6 +235,20 @@ The default binding for every key not on the allowlist."
     (define-key map (kbd "Q") #'cj/--agenda-frame-close)
     (define-key map (kbd "x") #'cj/--agenda-frame-close)
     (define-key map (kbd "r") #'cj/--agenda-frame-safe-redo)
+    (define-key map (kbd "S-<f8>") #'cj/agenda-frame-toggle)
+    (define-key map (kbd "C-M-<f8>") #'cj/org-agenda-refresh-files)
+    ;; (d) Input machinery punched through the catch-all.  An explicit nil
+    ;; shadows the [t] default in this map, so these fall through to their
+    ;; global bindings.  Without the punches, every frame-focus change
+    ;; (switch-frame), every wheel scroll, and every mouse click hits the
+    ;; deny handler -- message spam and broken frame switching.
+    (dolist (key (list [switch-frame]
+                       [wheel-up] [wheel-down] [wheel-left] [wheel-right]
+                       [double-wheel-up] [double-wheel-down]
+                       [triple-wheel-up] [triple-wheel-down]
+                       [mouse-1] [down-mouse-1] [drag-mouse-1]
+                       (kbd "C-h")))
+      (define-key map key nil))
     ;; View-changers get the distinct fixed-view message, not the read-only one.
     (dolist (key '("w" "d" "y" "f" "b" "j" "g"))
       (define-key map (kbd key) #'cj/--agenda-frame-denied-fixed-view))
@@ -262,10 +276,15 @@ Added to `org-agenda-finalize-hook'.  `org-agenda-redo' rebuilds through
 minor mode; this reinstates it whenever the just-built buffer is displayed
 in the frame carrying the `cj/agenda-frame' marker (a frame parameter, which
 survives the buffer reset).  Ordinary agenda builds in working frames are
-left untouched."
+left untouched.
+
+The same reset also strips the buffer-local `kill-buffer-hook' installed at
+spawn, so it is re-added here too -- otherwise, after the first refresh
+tick, killing the buffer would no longer delete the frame."
   (let ((frame (cj/--agenda-frame)))
     (when (and frame (get-buffer-window (current-buffer) frame))
-      (cj/agenda-frame-mode 1))))
+      (cj/agenda-frame-mode 1)
+      (add-hook 'kill-buffer-hook #'cj/--agenda-frame-on-kill-buffer nil t))))
 
 ;;; Frame lifecycle — spawn, raise, delete, toggle, cleanup
 
@@ -392,10 +411,12 @@ Non-interactive by design in Phase 1: reachable only from ERT, never from
 (defconst cj/--agenda-frame-fail-count-parameter 'cj/agenda-frame-fail-count
   "Frame parameter holding the consecutive-failure count for the refresh timer.")
 
-(defvar-local cj/--agenda-frame-failure-overlay nil
-  "Overlay showing the refresh-failed notice in the dedicated buffer.
-An overlay, not inserted text, so the org text properties (org-redo-cmd,
-markers) stay intact and consecutive failures never accumulate a header.")
+(defconst cj/--agenda-frame-overlay-property 'cj/agenda-frame-failure
+  "Overlay property tagging the refresh-failed banner.
+The banner is found by scanning for this property, never held in a
+buffer-local variable: `org-agenda-redo' runs `kill-all-local-variables',
+which would wipe the variable while the overlay object survives
+`erase-buffer' -- leaving a banner nothing could ever remove.")
 
 (defun cj/--agenda-frame-seconds-to-next-mark (time period)
   "Return seconds from TIME to the next wall-clock multiple of PERIOD.
@@ -526,22 +547,28 @@ Reports only on the first failure of a run (the 0 -> 1 transition)."
   "Reset FRAME's consecutive-failure count (the next tick reports again)."
   (set-frame-parameter frame cj/--agenda-frame-fail-count-parameter 0))
 
-(defun cj/--agenda-frame-show-failure-overlay (buffer)
-  "Show the refresh-failed notice as an overlay at the top of BUFFER."
+(defun cj/--agenda-frame-failure-overlays (buffer)
+  "Return the refresh-failed banner overlays in BUFFER (normally 0 or 1)."
   (with-current-buffer buffer
-    (unless (overlayp cj/--agenda-frame-failure-overlay)
-      (setq cj/--agenda-frame-failure-overlay
-            (make-overlay (point-min) (point-min))))
-    (overlay-put cj/--agenda-frame-failure-overlay 'before-string
-                 (propertize "Agenda frame: refresh failed (C-M-<f8> to force-rescan)\n"
-                             'face 'warning))))
+    (seq-filter (lambda (o) (overlay-get o cj/--agenda-frame-overlay-property))
+                (overlays-in (point-min) (point-max)))))
+
+(defun cj/--agenda-frame-show-failure-overlay (buffer)
+  "Show the refresh-failed notice as an overlay at the top of BUFFER.
+Idempotent: an existing banner is reused, so consecutive failures never
+stack a second one."
+  (with-current-buffer buffer
+    (let ((overlay (or (car (cj/--agenda-frame-failure-overlays buffer))
+                       (make-overlay (point-min) (point-min)))))
+      (overlay-put overlay cj/--agenda-frame-overlay-property t)
+      (overlay-put overlay 'before-string
+                   (propertize "Agenda frame: refresh failed (C-M-<f8> to force-rescan)\n"
+                               'face 'warning)))))
 
 (defun cj/--agenda-frame-remove-overlay (buffer)
-  "Remove the refresh-failed overlay from BUFFER, if present."
-  (with-current-buffer buffer
-    (when (overlayp cj/--agenda-frame-failure-overlay)
-      (delete-overlay cj/--agenda-frame-failure-overlay)
-      (setq cj/--agenda-frame-failure-overlay nil))))
+  "Remove the refresh-failed banner from BUFFER, if present."
+  (when (buffer-live-p buffer)
+    (mapc #'delete-overlay (cj/--agenda-frame-failure-overlays buffer))))
 
 ;; -- The refresh itself ------------------------------------------------------
 
