@@ -225,11 +225,14 @@ improves performance from several seconds to instant."
 Use this after adding new projects or todo.org files.
 Bypasses cache and scans directories from scratch.
 
-Bound to S-<f8>, the force-rebuild sibling of the F8 agenda family
-\(<f8> display, s-<f8> all files, C-<f8> single project, M-<f8> this buffer)."
+Bound to C-M-<f8>, the force-rebuild sibling of the F8 agenda family
+\(<f8> display, s-<f8> all files, C-<f8> single project, M-<f8> this buffer).
+The binding lives in `org-agenda-frame.el', which took S-<f8> for the
+agenda-frame toggle and moved the force-rescan here."
   (interactive)
   (cj/build-org-agenda-list 'force-rebuild))
-(global-set-key (kbd "S-<f8>") #'cj/org-agenda-refresh-files)
+;; S-<f8> and C-M-<f8> are bound by `org-agenda-frame.el' (cj/--agenda-frame-install-keys):
+;; S-<f8> toggles the fullscreen agenda frame; C-M-<f8> runs the force-rescan above.
 
 (defun cj/todo-list-all-agenda-files ()
   "Displays an \\='org-agenda\\=' todo list.

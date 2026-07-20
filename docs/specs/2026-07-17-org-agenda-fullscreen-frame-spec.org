@@ -1,0 +1,403 @@
+#+TITLE: org-agenda fullscreen frame — Spec
+#+AUTHOR: Craig Jennings
+#+DATE: 2026-07-17
+#+TODO: TODO | DONE
+#+TODO: DRAFT READY DOING | IMPLEMENTED SUPERSEDED CANCELLED
+
+* IMPLEMENTED org-agenda fullscreen frame
+:PROPERTIES:
+:ID:       7705c94b-9bb7-47d8-9828-e9584172c54f
+:END:
+- 2026-07-20 Mon @ 14:10 -0500 — IMPLEMENTED. Built both phases in =modules/org-agenda-frame.el= (58 ERT tests, full suite green, byte-compile clean, full init loads clean, live-reloaded into the daemon with all wiring confirmed). Phase 1: frame lookup/predicate/working-frame routing, the =F= today-anchored 7-day view + registration, the default-deny =cj/agenda-frame-mode= (allowlist + two message classes + menu removal + finalize re-enable), transactional spawn/raise/delete/toggle, engage routing, sticky/close lifecycle. Phase 2: the 5-min wall-clock =org-agenda-redo= timer with the window/focus contract, duplicate-timer prevention, deterministic point restoration, the frame-owned last-good snapshot with cloned markers + failure overlay + report-once latch, and the public =cj/agenda-frame-toggle= on =S-<f8>= with the force-rescan moved to =C-M-<f8>=. The compositor fullscreen/focus and real-redo behaviors are a residual manual check (VERIFY filed under Manual testing).
+- 2026-07-20 Mon @ 13:30 -0500 — DOING. Decomposed into build tasks (Phase 1, Phase 2, flip-to-IMPLEMENTED) under the fullscreen-frame PROJECT in todo.org; =:SPEC_ID:= stamped. Building Phase 1.
+- 2026-07-20 Mon @ 13:26 -0500 — READY (Craig accepted for build). Folded Codex's marker-clone finding (all 28 findings, 13 decisions resolved). Craig's call: build v1 now; the Hyprland-window variant is vNext once the in-Emacs frame proves out. Decomposing into build tasks next.
+- 2026-07-20 Mon @ 13:07 -0500 — spec-review (Codex): still DRAFT. The two prior responses close their stated behavior gaps, but Org invalidates the old agenda's marker objects during redo; the specified shallow property-bearing snapshot therefore restores dead =org-marker=/=org-hd-marker= links after a failed rebuild. One blocking marker-cloning/ownership finding added.
+- 2026-07-20 Mon @ 12:59 -0500 — spec-response: both fifth-pass findings dispositioned. Enumerated the full default-deny allowlist + honest keys/mouse enforcement boundary (menu removed, M-x out of contract); made failed-redo a complete retryable state (frame-owned snapshot with Org properties, explicit policy re-enable on the error path, overlay header, rebuild from =org-redo-cmd=). Findings [27/27]; Decisions [13/13]. Stays DRAFT pending Codex re-review.
+- 2026-07-20 Mon @ 12:47 -0500 — spec-review (Codex): still DRAFT. The structural response closes the prior eight findings, but two blockers remain: the default-deny minor-mode map neither defines its actual allowlist nor covers menu/M-x invocation, and failed-redo rollback does not restore a complete policy-enabled, retryable agenda state.
+- 2026-07-20 Mon @ 12:29 -0500 — renamed the file =…-dock-mode-spec.org= → =…-org-agenda-fullscreen-frame-spec.org= to match the design; inbound links in todo.org and .ai/notes.org updated. The ":ID:" is unchanged.
+- 2026-07-20 Mon @ 12:26 -0500 — spec-response: all 8 fourth-pass findings dispositioned. Root fix: replaced keymap enumeration with a default-deny =cj/agenda-frame-mode= policy (re-enabled by a finalize hook so redo can't strip it), frame-owned timer/failure state, sticky-kill-on-close, failed-redo snapshot restore, non-interactive Phase 1, synced ERT. Decisions now 13; findings [25/25]. Stays DRAFT pending Codex re-review.
+- 2026-07-20 Mon @ 12:11 -0500 — spec-review (Codex): still DRAFT. Detail-complete re-review found eight blocking gaps beneath the resolved values: Phase 1 remains callable through M-x; mutation, display-opening, view-change, and manual-redo command classes are incomplete; Org redo discards dedicated buffer-local policy/state; sticky reopen can show stale content; failed-redo display state is undefined; and the ERT surface does not cover the expanded contracts.
+- 2026-07-20 Mon @ 12:02 -0500 — spec-response: all 7 third-pass findings dispositioned (accepted; 4 with a chosen value). Key =F=, current-window, cached build on spawn, read-only command policy, source-opening routing, retry-report-once refresh, unbound-Phase-1 then binding-in-Phase-2, deterministic point tie-break. Decisions now 12; findings [17/17]. Stays DRAFT pending Codex re-review.
+- 2026-07-20 Mon @ 11:29 -0500 — spec-review (Codex): still DRAFT. A stricter second implementation-readiness pass found seven blocking choices still deferred to implementation: agenda command identity/window setup, initial source-list preparation, the permitted command surface, non-RET/TAB display routing, timer-failure recovery, phase exposure, and refresh point tie-breaking.
+- 2026-07-20 Mon @ 10:22 -0500 — spec-response: all 10 findings dispositioned (accepted; 2 with a chosen behavior). Design, Decisions (now 10), phases (now 2), acceptance, and the test surface updated. Stays DRAFT pending a re-review to confirm the blockers are closed.
+- 2026-07-20 Mon @ 10:12 -0500 — spec-review (Codex): demoted READY → DRAFT. Independent code-grounded re-review found six blocking gaps in date anchoring, exit/buffer lifecycle, working-frame fallback, phase safety, refresh context, and automated test coverage; three non-blocking implementation details also need definition.
+- 2026-07-20 Mon @ 09:53 -0500 — spec-review: READY. All 8 decisions resolved; code read confirmed the F8 bindings and display rule. One non-blocking finding recorded (the frame view needs its own custom-command entry). Ready to decompose the 3 phases.
+- 2026-07-20 Mon @ 09:45 -0500 — redesigned: a dedicated fullscreen frame replaces the right-side side-window dock. All eight design decisions resolved (see Decisions). The design is a fullscreen agenda frame, not a side dock; the file was later renamed to match.
+- 2026-07-17 Fri @ 19:34:07 -0500 — drafted.
+
+* Metadata
+| Status   | implemented                                    |
+|----------+------------------------------------------------|
+| Owner    | Craig Jennings                                 |
+|----------+------------------------------------------------|
+| Reviewer | Codex                                          |
+|----------+------------------------------------------------|
+| Related  | [[file:../../todo.org][fullscreen-frame task (Emacs Open Work)]] |
+|----------+------------------------------------------------|
+
+* Summary
+
+A dedicated fullscreen Emacs frame that shows the agenda. One key spawns (or raises) a frame of the running daemon, fullscreened, displaying the next seven days of schedule and tasks, refreshing itself every few minutes. Inside that frame focus stays on the agenda. The point is a standing, always-current agenda surface you can throw on its own workspace or monitor, one keystroke away, without the agenda ever stealing the frame you work in.
+
+* Problem / Context
+
+The normal agenda (=<f8>=, =cj/main-agenda-display=) opens below-selected at 75% of the frame (=cj/org-agenda-window-height=, applied through =cj/--org-agenda-display-rule=). That's a modal, take-over-the-frame view: you summon it, read it, dismiss it, and go back to work. There's no way to keep the schedule and task list glanceable while working, and no live refresh, so an agenda left open drifts stale (the now-line and freshly-synced calendar events don't move).
+
+Craig wants a second, non-modal surface: the agenda living in its own fullscreen frame, current and ready to engage, so it can sit on a separate workspace or monitor while the working frames stay untouched. This is a distinct mode from the existing full-view agenda, not a replacement for it.
+
+* Goals and Non-Goals
+
+** Goals
+- A dedicated fullscreen frame of the running daemon showing the seven-day schedule and task list, wholly separate from the working frames.
+- Live: the frame refreshes on a few-minute cadence so the now-line and synced events stay current. It shares the daemon's state, so calendar-sync results and buffer edits are already reflected.
+- One key to spawn, raise, and close it.
+- Focus stays on the agenda inside that frame; engaging a task opens the file in the working frame, not over the agenda.
+
+** Non-Goals
+- Not a replacement for the existing =<f8>= full-view agenda — that stays as is.
+- Not a separate OS process. It's a frame of the running daemon (chosen for live shared state over an isolated second Emacs). It therefore dies with the daemon, which is acceptable.
+- Not a capture/scratch surface in v1. Whether an agenda surface should double as a scratchpad is a separate exploration (see the [#D] task); v1 is read + engage only.
+- Not a startup auto-open. The frame is spawned on demand by its key; there is no auto-open defcustom.
+- Not a redesign of agenda content or faces — it reuses org-agenda's rendering.
+
+** Scope tiers
+- v1: a spawn/raise/close command bound to =S-<f8>=; a fullscreen frame; a seven-day agenda view filling it; focus held on the agenda; jump-to-task routed to the working frame; a frame-scoped refresh timer; the force-refresh keybinding move.
+- Out of scope: the scratchpad surface; a separate-process agenda; persisting frame state across daemon restarts.
+- vNext: scratchpad exploration (its own task); richer view tuning once the mode is in daily use; if the fullscreen frame proves out, reimplement as a Hyprland-managed window with its own keybinding — an external launcher replacing the in-Emacs =S-<f8>= spawn (Craig, 2026-07-20). v1 stays the in-Emacs frame.
+
+* Design
+
+The agenda lives in its own frame of the running daemon, created with =make-frame= carrying =(fullscreen . fullboth)= and a marker parameter (=(cj/agenda-frame . t)=) so the toggle can find, raise, or delete it. Sharing the daemon means the frame sees the same live state as every working frame: calendar-sync writes, unsaved buffer edits, and the current now-line are all already there, so "live" needs only a periodic redo, not a reload.
+
+For the user, the interface is one key. =S-<f8>= toggles the frame: spawn it fullscreen if none exists, raise and select it if it exists but isn't focused, delete it if it's the selected frame. The current occupant of =S-<f8>= (=cj/org-agenda-refresh-files=, the manual force-rescan shipped in 17ae3e2a) moves to =C-M-<f8>=, keeping the whole force-refresh idea in the F8 family.
+
+Inside the agenda frame, focus stays on the agenda. The frame holds a single window showing the seven-day agenda buffer, so point rests there by construction. Engaging a task (=RET=/=TAB= on an agenda line) opens the target file in the working frame and raises it; the agenda frame is never chosen as the display target, so it keeps showing the agenda. In the working frame (the one that launched it, and every other frame) there are no such restrictions — normal behavior throughout.
+
+For the implementer, these pieces compose:
+
+1. A toggle command that spawns, raises, or deletes the marked frame. Spawn is transactional: create the fullscreen frame, run the cached non-forced =(cj/build-org-agenda-list)= (the same prep =cj/main-agenda-display= does at :380-391, so a frame spawned early after daemon startup isn't the base-files-only agenda), build and display the dedicated agenda buffer, install the frame-local routing, and start the timer. If any step fails after =make-frame= succeeds — including a build failure — cancel the timer, delete the partial frame and buffer, leave the original working frame selected, and report =Agenda frame: <operation> failed: <cause>=. Delete removes the frame and stops the timer. The frame carries the =cj/agenda-frame= marker so the command locates it among the daemon's frames.
+
+2. A dedicated seven-day agenda view, defined as its own =org-agenda-custom-commands= key =F= (the existing top-level key at =org-agenda-config.el:344= is =d=, so =F= is collision-free), with =org-agenda-sticky= and =(org-agenda-window-setup 'current-window)= bound in that command's *local* settings. =org-agenda-sticky= local gives Org a distinct =*Org Agenda(F)*= buffer without touching the ordinary =<f8>= behavior; =current-window= keeps the view in the frame's sole window (Org 9.7.11 defaults =org-agenda-window-setup= to =reorganize-frame=, which would split the new frame). The span is anchored to today, not the week: =(org-agenda-span 7)= plus =(org-agenda-start-day "0d")= and =(org-agenda-start-on-weekday nil)= (=org-agenda-list= otherwise anchors any seven-day span to Monday in Org 9.7.11; the daily command uses the same pair at :347-349). No separate TODO block — the span surfaces scheduled work; unscheduled-priority surfacing is a vNext question.
+
+3. A read-only command policy by *default-deny, not enumeration*. The dedicated buffer runs a minor mode =cj/agenda-frame-mode= whose keymap binds =[t]= (the catch-all) to a denial handler, so every *key or mouse* command not on an explicit allowlist is intercepted by one fallthrough — the whole keymap is covered, and a future Org binding is denied by default. The enforcement boundary is keys and mouse, stated honestly: a minor-mode map can't intercept an Agenda-menu item or a direct =M-x=, so the mode also *removes the Agenda menu-bar* in the dedicated buffer (no menu path to a mutation), and direct =M-x org-agenda-…= is explicitly *out of contract* — typing the command name is a deliberate bypass of a read-only surface, like editing a read-only buffer under =inhibit-read-only=. The complete allowlist is: (a) navigation — =org-agenda-next-line=/=-previous-line=, =org-agenda-next-item=/=-previous-item=, the arrow keys, =C-n=/=C-p=, =C-v=/=M-v= scroll, =M-<=/=M->=, and =C-g=; (b) engage/open — =RET=/=TAB= (=org-agenda-switch-to=/=org-agenda-goto=), mouse-2 (=org-agenda-goto-mouse=), =C-c C-o= (=org-agenda-open-link=), each routed to the working frame — the MRU live non-agenda frame at engagement time, or a new normal (non-fullscreen) frame when none exists — never into the agenda frame; and (c) the frame's own controls — =S-<f8>= toggle, =C-M-<f8>= force-rescan, =q=/=Q=/=x= close, and =r= (remapped to the safe-redo wrapper, below). Everything else is denied with a one-line message: source mutations (TODO-state, tags, priority, effort, schedule/deadline, refile, archive, kill, bulk, and any other) and buffer-opening/preview/follow commands that would split or replace the frame (=SPC=/=DEL=, mouse-3, =C-c C-x b=, clock-goto, follow mode) show =Agenda frame is read-only — press RET to edit in your working frame=; and view-changing commands that would break the today-anchored span (=d=/=w=/=y=, =f=/=b=, =j=, =g=) show =Agenda frame is fixed to the 7-day view=. The one exception is =r= (manual redo): it's allowlisted but remapped to the frame's own safe-redo wrapper (the manual version of the timer tick), so a manual refresh takes the same failure-latched, focus-safe path. The dedicated view also binds =org-agenda-start-with-follow-mode= nil locally, so a non-nil global default can't turn follow mode on at buffer creation. Because =org-agenda-redo= rebuilds through =org-agenda-mode=, which runs =kill-all-local-variables=, the mode is re-enabled after every build by =org-agenda-finalize-hook= gated on the frame's =cj/agenda-frame= marker (a frame parameter, which survives the buffer reset) — so the refresh never strips the policy. =q=/=Q=/=x= delete the marked frame and cancel its timer, and closing the frame (by any path) also kills the =*Org Agenda(F)*= sticky buffer, so the next spawn regenerates fresh rather than reusing stale sticky content; killing the dedicated buffer deletes the frame too, so no orphan fullscreen frame survives.
+
+4. A frame-scoped refresh timer: =org-agenda-redo= on the dedicated buffer every 5 minutes, wall-clock aligned, started on spawn and cancelled on delete/kill, with a live-frame/live-buffer guard and duplicate-timer prevention. The callback runs with the dedicated agenda window selected for the redo's dynamic extent, restores the prior selected frame and window afterward, and never calls an input-focus function — so a tick while Craig works in another frame neither errors on an out-of-range =window-start= nor steals focus. Point restoration is deterministic: restore the same-=org-marker= occurrence closest to the old agenda line (one marker can appear twice, e.g. a scheduled and a deadline line); if the marker is gone, clamp the old line number into the rebuilt buffer's range; on a header line move to the first agenda item; an empty view leaves point at buffer start. On a failed redo the timer keeps running and retries on the next scheduled tick — a transient failure shouldn't kill live refresh — and the failure is reported once per consecutive-failure run (naming the next action: =C-M-<f8>= force-rescan or re-spawn), with the next successful tick clearing the failure state. Because =org-agenda-redo= erases the buffer before it rebuilds and =org-agenda-mode= would strip the policy, the callback keeps a *frame-owned last-good snapshot* — the buffer text with its =org-redo-cmd=/=org-lprops= properties, point, window-start, and any active filter/identity — captured from the last successful build, undecorated. Markers get special handling: =org-agenda-reset-markers= nulls the old =org-marker=/=org-hd-marker= objects during a rebuild, so the snapshot must not keep them by reference — it *clones* each agenda marker into a snapshot-owned live marker (=copy-marker= into the unchanged source buffer) and reinstalls the clones on restore, so =RET=/=TAB= still resolve to the right source line; the clones are released when a successful build replaces the snapshot or the frame closes, so repeated failures don't leak markers. On a redo error it restores that snapshot verbatim, *explicitly re-enables =cj/agenda-frame-mode=* (the finalize hook runs only on success, so the error path must reinstate the policy or the frame would be left unrestricted), and shows the "refresh failed (=C-M-<f8>= to force-rescan)" line as an *overlay*, not inserted text — so the Org properties aren't corrupted and consecutive failures don't accumulate headers. The next tick then redoes from the preserved =org-redo-cmd= (a real rebuild, not a no-op off an error header); a success removes the overlay and replaces the snapshot. So the frame is never blank, never unrestricted, and always retryable — =RET= and navigation keep working on the restored snapshot. A thin wrapper suppresses =org-agenda-redo='s routine "Rebuilding..." chatter but lets that one failure message through. =redo= re-reads file contents, not the file list — a new project's todo.org still needs the manual force-rescan.
+
+** Not a prototype-pipeline UI
+
+=ui-prototyping.md='s research → five-prototype → iterate process governs bespoke visual surfaces (panels, multi-control widgets, SVG faceplates). This frame is org-agenda's existing text rendering shown fullscreen; the layout question ("where does it go?") is answered in a sentence (its own fullscreen frame). So the prototype pipeline is intentionally skipped. The open questions here were behavioral (frame vs process, view span, focus, jump routing, auto-open), not visual-layout, and they're settled in the Decisions below.
+
+* Alternatives Considered
+
+** Dedicated fullscreen frame of the daemon (chosen)
+- Good, because it shares the daemon's live state: calendar-sync, open buffers, and edits are already reflected, so "live" costs only a periodic redo.
+- Good, because it's genuinely separate from the working frames — it can sit on its own workspace or monitor and never steals working space.
+- Neutral, because it dies with the daemon (no cross-restart persistence). Acceptable for v1.
+
+** A separate Emacs process
+- Good, because it's fully isolated and survives a daemon restart.
+- Bad, because it doesn't share the daemon's in-memory state — it reads the org files from disk and only reflects what's been saved. The "always current, shares live edits" goal argues against it, so it was rejected in favor of a frame.
+
+** A right-side side-window dock (the prior draft's design)
+- Good, because it lives in the working frame and is protected from =delete-other-windows=.
+- Bad, because it isn't what Craig wants: it shares the working frame rather than standing alone, it's bounded to a dock width that crowds the working area, and it can't move to its own workspace or monitor. Superseded by the fullscreen frame.
+
+** A normal split window
+- Good, because it's the least new machinery.
+- Bad, because it isn't protected, has no clean "this is the agenda surface" identity, and takes over the working frame. This is what the current 0.75 rule already gives and what the frame needs to be different from.
+
+** Global "refresh any visible agenda" timer
+- Good, because it would also refresh the =<f8>= full view when left open.
+- Bad, because it has no clean lifecycle — it has to poll for visible agenda buffers and decide when to stop. The frame-scoped timer starts and stops with the frame, which is simpler and matches the feature's boundary.
+
+* Decisions [13/13]
+
+** DONE Dedicated fullscreen frame as the display mechanism
+- Context: the surface must stand wholly apart from the working frames, be placeable on its own workspace or monitor, and stay live.
+- Decision: We display the agenda in a dedicated frame of the running daemon, created with =make-frame= + =(fullscreen . fullboth)= and a =cj/agenda-frame= marker parameter. A frame (not a separate process) so it shares the daemon's live state.
+- Consequences: easier — live state, no reload, full isolation from working frames. Harder — it dies with the daemon; frame lookup and lifecycle must be explicit.
+
+** DONE Launch/toggle on S-<f8>; force-refresh moves to C-M-<f8>
+- Context: =S-<f8>= currently runs =cj/org-agenda-refresh-files= (shipped 17ae3e2a); Craig wants =S-<f8>= to spawn/raise/close the agenda frame.
+- Decision: =S-<f8>= toggles the agenda frame (spawn if none, raise+select if unfocused, delete if selected). =cj/org-agenda-refresh-files= rebinds to =C-M-<f8>=, keeping both in the F8 family.
+- Consequences: easier — one gesture, next to the other agenda keys. Harder — one existing binding moves; the docstring/family comment needs updating.
+
+** DONE View: the seven-day agenda span alone
+- Context: "the day's work visible" is a composite; how many days, and whether to append a TODO block.
+- Decision: the frame shows a seven-day agenda span (=org-agenda-span= 7) as one =org-agenda-custom-commands= entry, with no separate prioritized TODO block. The span already surfaces scheduled work.
+- Consequences: easier — one custom-command entry, no block composition to tune. Harder — unscheduled priorities aren't surfaced; that's a vNext tuning question if it turns out to matter.
+
+** DONE Focus stays on the agenda inside the frame
+- Context: opening or working the agenda frame should keep point on the agenda, not scatter into other buffers; the launching frame stays unrestricted.
+- Decision: the agenda frame holds a single window on the agenda buffer and point rests there; no focus restrictions apply to any other frame.
+- Consequences: easier — the frame is unambiguous to use. Harder — anything that would open a buffer in the frame must be routed elsewhere (see jump-to-task).
+
+** DONE Jump-to-task opens the file in the working frame
+- Context: engaging a task from a fullscreen agenda must not replace the agenda with the target file.
+- Decision: =RET=/=TAB= on an agenda line opens the target file in the working frame (the most-recently-selected non-agenda frame) and raises it; the agenda frame keeps showing the agenda.
+- Consequences: easier — the agenda frame is genuinely "ready to engage" and stays pure. Harder — needs deliberate =org-agenda-window-setup= / =display-buffer= handling so the agenda frame is never the jump target (the likeliest rabbit hole).
+
+** DONE Frame-scoped refresh via org-agenda-redo, wall-clock aligned
+- Context: the frame must stay current (now-line, synced events) without re-scanning the file list or churning a timer when it's closed.
+- Decision: run =org-agenda-redo= on the agenda buffer every 5 minutes aligned to the :00/:05/:10 mark, started on spawn and cancelled on delete/kill. Not a file-list rebuild — that's the manual force-rescan.
+- Consequences: easier — cheap, self-scoped, picks up content changes. Harder — a brand-new project's todo.org won't appear until a manual force-rescan or the 24h cache TTL lapses.
+
+** DONE No startup auto-open
+- Context: the frame could spawn automatically on daemon start.
+- Decision: no auto-open. The frame is spawned on demand by =S-<f8>=; there is no auto-open defcustom.
+- Consequences: easier — no startup coupling, no small-frame-at-startup edge case, one fewer knob. Harder — none; a standing frame is one keystroke away.
+
+** DONE Not a separate process — a frame of the daemon
+- Context: "its own Emacs" could mean an isolated process or a frame of the running daemon.
+- Decision: a frame of the daemon, for live shared state (calendar-sync, edits, now-line). A separate process would only reflect saved-to-disk state.
+- Consequences: easier — always current, zero duplicated config load. Harder — no cross-restart persistence; the frame is gone after a daemon restart and re-spawned by its key.
+
+** DONE Frame-local exit and buffer-kill semantics
+- Context: =S-<f8>= is the intended close, but Org's =q=/=Q=/=x= and a buffer-kill can otherwise leave the sole-window fullscreen frame alive on an unrelated buffer.
+- Decision: =q=/=Q=/=x= in the agenda frame delete the marked frame and cancel its timer; killing the dedicated agenda buffer deletes the frame too. Ordinary agenda buffers in other frames are unaffected.
+- Consequences: easier — the frame can never strand on a non-agenda buffer. Harder — needs frame-local key remaps and a buffer-kill hook scoped to the dedicated buffer.
+
+** DONE Working-frame target and no-frame fallback
+- Context: "the most-recently-selected non-agenda frame" is the intent; the launch frame may be gone, several may exist, or the agenda frame may be the only live frame.
+- Decision: engage targets the MRU live non-agenda frame at engagement time; when none exists, create a normal (non-fullscreen) frame and open there. The engage action never falls back into the agenda frame.
+- Consequences: easier — a deterministic target in every frame state. Harder — the deleted-launch, multiple-frame, and no-frame cases each need explicit handling and tests.
+
+** DONE Read-only policy by default-deny, not enumeration
+- Context: enumerating =org-agenda-mode-map= command-by-command can't converge (a review always finds a missed key), and =org-agenda-redo='s =kill-all-local-variables= would strip a buffer-local policy on every refresh.
+- Decision: a minor mode =cj/agenda-frame-mode= with a =[t]= catch-all denial handler shadows =org-agenda-mode-map= — only an enumerated allowlist (navigation, the engage/open keys routed to the working frame, and the frame's own controls =S-<f8>=/=C-M-<f8>=/=q=/=Q=/=x=/=r=) is permitted; every other key/mouse command shows a read-only or fixed-view message. The enforcement boundary is keys and mouse: the mode removes the Agenda menu-bar in the buffer, and direct =M-x= is out of contract. The mode is re-enabled after each build by =org-agenda-finalize-hook= gated on the frame's =cj/agenda-frame= marker (and by the failed-redo error path), so redo can't strip it.
+- Consequences: easier — one rule covers the whole keymap and survives refresh, with nothing to enumerate or keep in sync. Harder — the allowlist and the two message classes (read-only vs fixed-view) need explicit definition and tests.
+
+** DONE Sticky buffer and failed-redo display lifecycle
+- Context: closing the frame left the command-local sticky =*Org Agenda(F)*= buffer alive (a reopen would reuse stale content), and =org-agenda-redo= erases the buffer before rebuilding (a failed redo would show blank/partial).
+- Decision: closing the frame by any path also kills the =*Org Agenda(F)*= buffer, so the next spawn regenerates fresh. The refresh keeps a frame-owned last-good snapshot (buffer text with =org-redo-cmd=/=org-lprops=, point, window-start, filter/identity — undecorated; agenda markers *cloned* via =copy-marker= since =org-agenda-reset-markers= nulls the originals on rebuild); a failed redo restores it verbatim, re-enables the policy explicitly, and shows the failure as an overlay; the next tick rebuilds from the preserved =org-redo-cmd=. The clones are released on the next success or on close. The frame is never blank, unrestricted, or non-retryable.
+- Consequences: easier — reopen is always current and a failed refresh degrades to stale-but-readable. Harder — the close paths must kill the sticky buffer, and the callback carries a pre-redo snapshot.
+
+** DONE Refresh-failure recovery: retry, report once
+- Context: a failed =org-agenda-redo= tick needs a defined recovery, not "cancel or retry".
+- Decision: keep the timer running and retry on the next scheduled tick; report the failure once per consecutive-failure run, naming the next action (=C-M-<f8>= force-rescan or re-spawn); the next successful tick clears the failure state.
+- Consequences: easier — a transient failure doesn't kill live refresh, and the user isn't spammed. Harder — needs a small failure-state latch across ticks.
+
+* Review findings [28/28]
+
+** DONE Frame view needs its own custom-command entry (avoid the span-8 collision)
+=modules/org-agenda-config.el:344-348= already sets =org-agenda-custom-commands= with a =(org-agenda-span 8)= entry. The frame view must be its own custom-command key rather than reusing or editing the existing span-8 entry, and =org-agenda-sticky= is bound in that command's local settings, not globally, so Org derives the dedicated =*Org Agenda(KEY)*= buffer without changing the ordinary =<f8>= behavior.
+Response (accept): folded into Design piece 2.
+
+** DONE Seven-day view is week-anchored, not next-seven-days
+=org-agenda-span= 7 alone anchors to Monday in Org 9.7.11 (=org-agenda-start-on-weekday= defaults to 1). The frame command adds =(org-agenda-start-day "0d")= and =(org-agenda-start-on-weekday nil)= (the same pair the daily command uses at :347-349) so the range is today..today+6.
+Response (accept): folded into Design piece 2; acceptance criterion added (midweek starts today, ends six days later).
+
+** DONE Agenda exit paths can abandon the dedicated frame
+=q=/=Q=/=x= and a buffer-kill could otherwise leave the sole-window fullscreen frame alive on an unrelated buffer.
+Response (accept): added a Decision (frame-local exit + buffer-kill semantics), folded into Design piece 3, and added two acceptance criteria.
+
+** DONE Working-frame target and fallback are undefined
+The launch frame may be gone, several working frames may exist, or the agenda frame may be the only live frame.
+Response (accept, with a chosen behavior): target the MRU live non-agenda frame at engagement time; when none exists, create a normal (non-fullscreen) frame and open there (chose Codex's create-a-frame option over a user-facing refusal, so engage always succeeds). Added a Decision, folded into Design piece 3, and added the three frame-state acceptance cases.
+
+** DONE Phase 1 exposed a frame that violates v1 invariants
+The former Phase 1 exposed a fullscreen frame before the sticky buffer and jump routing existed, which is a broken intermediate state.
+Response (accept, with a chosen restructure): merged the former Phase 1+2 into a single Phase 1 that ships the dedicated sticky view plus full frame-local navigation/exit routing, so the first user-reachable state is fully isolated. Phases are now 2, not 3.
+
+** DONE Refresh callback lacks a window-and-focus contract
+=org-agenda-redo= reads selected-window state (=window-start=), so a bare =with-current-buffer= tick from another frame can miscalculate or error.
+Response (accept): folded into Design piece 4 (select the agenda window for the redo's extent, restore the prior frame/window, no input-focus calls) with an acceptance criterion.
+
+** DONE Frame and timer test surface is understated
+The repo already tests these boundaries (=tests/test-dirvish-config-popup.el= mocks frame lookup/focus/delete; =tests/test-ai-term--project-color.el= drives timer callbacks + a dead-buffer case), so "not cleanly unit-testable" was wrong.
+Response (accept): rewrote the Dev-tooling readiness dimension to require ERT coverage across frame lookup, spawn/raise/close, keybindings, sticky-buffer identity, the today-anchored settings, RET/TAB/exit routing, the MRU + no-frame fallback, timer alignment, duplicate-timer prevention, every cancellation path, dead frame/buffer guards, and silent-success/visible-failure behavior, with a live-daemon checklist only for compositor fullscreen/focus.
+
+** DONE Refresh point-preservation semantics are ambiguous
+=org-agenda-redo= preserves a line number, not the same item when lines shift.
+Response (accept): folded into Design piece 4 (restore the same =org-marker= when it exists, else clamp to the nearest valid line); Phase 2 carries it.
+
+** DONE Silent timer conflicts with org-agenda-redo messages
+=org-agenda-redo= emits "Rebuilding..." chatter on every run.
+Response (accept): folded into Design piece 4 (a wrapper suppresses routine success chatter, surfaces a failure once, and cancels/retries the stale timer); Observability updated; acceptance criterion added.
+
+** DONE Spawn failure cleanup and error message are undefined
+A failure after =make-frame= could leave an orphan frame and partial state.
+Response (accept): made spawn transactional in Design piece 1 (on failure: cancel the timer, delete the partial frame/buffer, restore the working frame, report =Agenda frame: <operation> failed: <cause>=); Errors dimension and an acceptance criterion added.
+
+** DONE Dedicated view identity and window setup remain placeholders
+The custom-command key and =org-agenda-window-setup= value are observable behavior, and the Org 9.7.11 default (=reorganize-frame=) would split the frame.
+Response (accept): chose key =F= (existing top-level key is =d=) and =(org-agenda-window-setup 'current-window)=, both in the command's local settings; folded into Design piece 2 with an acceptance criterion.
+
+** DONE Initial agenda-file preparation is undefined
+Spawning early after startup could show the base-files-only agenda, since the project-file list is built by an idle timer and =cj/main-agenda-display= calls =cj/build-org-agenda-list= first (:380-391).
+Response (accept): spawn runs the cached non-forced =(cj/build-org-agenda-list)= before rendering, and a build failure is part of the transactional spawn (Design piece 1); early-start acceptance criterion added.
+
+** DONE Read-and-engage command surface conflicts with Org's mutation keys
+=org-agenda-mode-map= exposes source-mutating keys the "read + engage only" non-goal doesn't want.
+Response (accept, resolved from the existing non-goal): source-mutating keys (TODO-state, schedule/deadline, refile, archive, kill, bulk) are remapped to a read-only message; engage (=RET=) reaches the file to edit it. Added a Decision (read-only command policy), folded into Design piece 3, acceptance criterion added.
+
+** DONE Source-opening routes beyond RET and TAB are unaccounted for
+=SPC=/=DEL= preview, mouse-2, =C-c C-o=, and follow mode can also show source or split the frame.
+Response (accept): defined the full class — =RET=/=TAB=/mouse-2/=C-c C-o= route to the working frame; =SPC=/=DEL= and follow mode are disabled in the dedicated buffer. Folded into Design piece 3 (and the read-only-policy Decision); invariant acceptance criterion added.
+
+** DONE Refresh failure recovery still contains an unresolved branch
+"Cancels or safely retries" is two different user-visible outcomes.
+Response (accept, chose retry): the timer keeps running and retries next tick; the failure is reported once per consecutive-failure run (naming =C-M-<f8>= / re-spawn), and the next success clears the state. Added a Decision (refresh-failure recovery), folded into Design piece 4, acceptance criterion added.
+
+** DONE Phase 1 exposes a non-live version of a live feature
+The former Phase 1 bound =S-<f8>= before the timer (the "live" contract) existed, shipping a static intermediate.
+Response (accept, chose defer-the-binding): Phase 1 now builds the command unbound (reachable only from ERT/=M-x=); Phase 2 adds the timer and only then binds =S-<f8>= and moves the force-rescan. No user-reachable intermediate is non-live. Phases and an acceptance criterion updated.
+
+** DONE Refresh point restoration lacks duplicate and fallback rules
+A source marker can occur twice, and "nearest" was undefined.
+Response (accept): restore the same-marker occurrence closest to the old agenda line; if the marker is gone, clamp the old line number into range; header line → first item; empty view → buffer start. Folded into Design piece 4, acceptance criterion added.
+
+** DONE Phase 1 is still user-reachable through M-x
+Phase 1's body made the toggle an interactive command, so =M-x= could still open the non-live intermediate.
+Response (accept): Phase 1 now builds only non-interactive helpers (=cj/--agenda-frame-*=); no =interactive= command exists until Phase 2, so it's reachable only from ERT. Phases + acceptance criterion updated.
+
+** DONE Read-only mutation policy is not exhaustive
+Enumerating blocked mutations misses many keys (tags, priority, effort, clock, capture, =C-c C-c=, the menu).
+Response (accept, resolved structurally): replaced the denylist with a *default-deny* policy — the =cj/agenda-frame-mode= keymap shadows =org-agenda-mode-map= and permits only a small allowlist; every unlisted command (all mutations, present and future) is denied with the read-only message. Nothing to enumerate. Design piece 3 + the Decision rewritten.
+
+** DONE Frame-isolation policy omits buffer-opening commands and initial follow state
+mouse-3, =C-c C-x b=, clock-goto, calendar, and non-nil =org-agenda-start-with-follow-mode= could still split/replace the frame.
+Response (accept): the same default-deny allowlist covers every buffer-opening command (denied unless allowlisted); the dedicated view binds =org-agenda-start-with-follow-mode= nil locally. Folded into Design piece 3.
+
+** DONE View-changing and manual-redo commands have no dedicated-frame policy
+=d=/=w=/=y=, =f=/=b=, =j=, =r=, =g= had no policy against the fixed today-anchored view.
+Response (accept, chose fixed view): the seven-day view is fixed — view-changers are denied with a =fixed to the 7-day view= message; =r= is remapped to the frame's safe-redo wrapper (manual version of the timer tick) so a manual refresh uses the failure-latched path; =g= is denied (it targets other buffers). Design piece 3 + acceptance criterion.
+
+** DONE Org redo discards dedicated buffer-local policy and state
+=org-agenda-redo= → =org-agenda-mode= runs =kill-all-local-variables=, stripping a buffer-local map and any buffer-local timer/failure state.
+Response (accept): =cj/agenda-frame-mode= is re-enabled after every build by =org-agenda-finalize-hook= gated on the frame's =cj/agenda-frame= marker (a frame parameter, which survives the reset), and the timer/failure state is frame-owned, not buffer-local — so redo can't strip either. Design piece 3 (policy) + Decision; acceptance criterion for policy-survives-redo.
+
+** DONE Sticky close and reopen freshness is undefined
+Closing left the command-local sticky =*Org Agenda(F)*= buffer alive, so a reopen reused stale content.
+Response (accept, chose kill-on-close): every close path also kills the sticky buffer, so the next spawn regenerates fresh. Added to Design piece 3 and the buffer-lifecycle Decision; close→change→reopen acceptance criterion.
+
+** DONE Failed-redo display state is undefined
+=org-agenda-redo= erases before rebuilding, so a failure could leave the frame blank/partial.
+Response (accept, chose last-known-good): the callback snapshots the last-good buffer before redoing and, on error, restores it with a "refresh failed" header; the frame is never blank/half-built, and the next success replaces it. Design piece 4 + the buffer-lifecycle Decision; acceptance criterion.
+
+** DONE Required ERT surface was not synchronized with the new contracts
+The Dev-tooling dimension still listed the older surface.
+Response (accept): expanded it to require ERT for the cached-build early-start, the default-deny policy (denied + allowed keys, both message classes), the policy surviving a redo, sticky kill-on-close / fresh reopen, the failed-redo snapshot restore, the deterministic marker cases, and the Phase-1 no-interactive-entry boundary; only compositor fullscreen/focus stays on the live-daemon checklist.
+
+** DONE Default-deny does not yet define or enforce the actual interactive surface
+The allowlist wasn't concrete (lifecycle keys, =C-g=, scrolling absent), and a minor-mode map can't intercept the Agenda menu or a direct =M-x=, so "every command is intercepted" overclaimed.
+Response (accept): enumerated the complete allowlist in Design piece 3 (navigation with concrete commands + =C-g=, engage/open routed to the working frame, and the frame's own controls =S-<f8>=/=C-M-<f8>=/=q=/=Q=/=x=/=r=), and chose the honest enforcement boundary — keys/mouse via the =[t]= catch-all, the Agenda menu-bar removed in the buffer, and direct =M-x= explicitly out of contract. Decision + acceptance updated.
+
+** DONE Failed-redo rollback is not yet a complete retryable agenda state
+The error path didn't re-enable the policy (finalize runs only on success), and the snapshot didn't promise Org properties / point/window/filter / an undecorated copy — so =RET= and the next rebuild weren't guaranteed.
+Response (accept): defined a frame-owned last-good snapshot (text + =org-redo-cmd=/=org-lprops=/markers + point/window/filter, undecorated); the error path restores it verbatim, explicitly re-enables =cj/agenda-frame-mode=, and shows the failure as an *overlay* (no header accumulation, no property corruption); the next tick rebuilds from the preserved =org-redo-cmd=. Design piece 4 + the buffer-lifecycle Decision; acceptance for failure-before-finalize, failure→failure, and failure→retry updated.
+
+** DONE Failed-redo snapshots retain markers only by shallow reference
+=org-agenda-reset-markers= nulls the old =org-marker=/=org-hd-marker= objects during rebuild, so a text-property copy holds dead markers and =RET=/=TAB= break after a failed restore.
+Response (accept): the snapshot *clones* each agenda marker into a snapshot-owned live marker (=copy-marker= into the unchanged source buffer) and reinstalls the clones on restore, so engage/navigation resolve to the right source line; the clones are released on the next successful build or on frame close, so repeated failures don't leak markers. Design piece 4 + the buffer-lifecycle Decision; ERT covers fail-after-reset → restored-marker targets → repeat → success → clones released.
+
+* Implementation phases
+
+** Phase 1 — Frame, view, and routing (private helpers, not user-reachable)
+Build the mechanism as *non-interactive* helpers (=cj/--agenda-frame-spawn/-raise/-delete/-toggle=, =cj/agenda-frame-mode=): transactional spawn (cached =(cj/build-org-agenda-list)=, fullscreen =make-frame= + =fullboth= + the =cj/agenda-frame= marker, the dedicated =F= today-anchored seven-day view with =(org-agenda-window-setup 'current-window)= + local sticky), the default-deny read-only policy + source-opening routing to the working frame (MRU live non-agenda frame, or a new normal frame when none exists), and =q=/=Q=/=x=/buffer-kill close that also kills the sticky buffer. No =interactive= command exists yet, so the mechanism is reachable only from ERT — not =M-x=, not a key. Do NOT bind =S-<f8>= and do NOT move the force-rescan. Clean stop: the frame, view, and policy are correct and tested; nothing user-visible changed.
+
+** Phase 2 — Refresh timer + public command
+Add the frame-scoped 5-minute wall-clock =org-agenda-redo= timer (window/focus contract, duplicate-timer prevention, dead frame/buffer guard, deterministic point restoration, retry-and-report-once failure recovery with the pre-redo snapshot restore, message-suppressing wrapper). Then wrap =cj/--agenda-frame-toggle= in the public interactive =cj/agenda-frame-toggle=, bind it to =S-<f8>=, and move =cj/org-agenda-refresh-files= to =C-M-<f8>=. The public gesture appears only when the feature is complete and live — the first user-reachable state is the finished feature.
+
+* Acceptance criteria
+- [ ] =S-<f8>= spawns a fullscreen agenda frame; pressing it from that frame closes it; pressing it from a working frame raises it.
+- [ ] =C-M-<f8>= runs the force-rescan (=cj/org-agenda-refresh-files=); =S-<f8>= no longer does.
+- [ ] The agenda frame shows a seven-day span and keeps focus on the agenda.
+- [ ] Opening a file from an agenda line (=RET=) shows the file in the working frame and raises it; the agenda frame remains on the agenda.
+- [ ] A midweek invocation starts today and ends six days later (not Monday-anchored).
+- [ ] =q=, =Q=, and =x= in the agenda frame close the frame and cancel its timer; ordinary =<f8>= agenda buffers are unaffected.
+- [ ] Killing the dedicated agenda buffer deletes the frame (no orphan fullscreen frame).
+- [ ] =RET= with the launch frame deleted, with multiple working frames, and with no working frame each opens the file outside the agenda frame (creating a normal frame in the last case).
+- [ ] The frame refreshes on the wall-clock 5-minute mark while open, and no timer runs after it's closed.
+- [ ] A refresh tick while another frame is active neither errors nor changes focus.
+- [ ] The refresh timer is silent on success and surfaces a failure once with an actionable message.
+- [ ] A spawn failure after =make-frame= leaves no orphan frame or timer and reports the failure.
+- [ ] Deleting the frame (or killing its buffer) cancels the timer without erroring.
+- [ ] The view uses key =F= with =current-window= — the frame stays a single window (no split).
+- [ ] A frame spawned right after daemon startup shows the full project agenda (the cached build ran), not the base-files-only view.
+- [ ] A source-mutating key (TODO-state, schedule, refile, archive, kill) in the frame shows the read-only message and edits nothing; =SPC=/=DEL= and follow mode don't split the frame; mouse-2 and =C-c C-o= open in the working frame.
+- [ ] A failed refresh keeps the timer, reports once per consecutive-failure run, and the next successful tick clears the failure state.
+- [ ] Point restoration: a duplicate source marker restores the occurrence nearest the old line; a missing marker clamps the old line into range; header-line and empty-view cases are handled.
+- [ ] A denied command in the frame (a mutation, a view-changer like =w=/=d=, a splitting preview) shows the right read-only/fixed-view message and does not act; an allowlisted command (navigation, =RET= engage) works.
+- [ ] After a refresh tick (=org-agenda-redo=), a denied command is still blocked — the policy survives =kill-all-local-variables=.
+- [ ] Closing the frame kills the =*Org Agenda(F)*= sticky buffer; the next spawn shows fresh content, not the stale sticky buffer.
+- [ ] A redo error restores the last-good buffer with a "refresh failed" header; the frame is never blank or half-built.
+- [ ] The Agenda menu-bar is absent in the frame; every allowlisted key (=C-g=, scroll, navigation, the lifecycle keys) works and every other key shows the message.
+- [ ] After a failed redo the policy is still active (a denied key is still blocked) and =RET=/navigation still work on the restored snapshot with point/filter preserved.
+- [ ] Failure → failure shows one overlay and one message (no header/overlay accumulation); failure → success removes the overlay and rebuilds from =org-redo-cmd=.
+- [ ] After a failed redo the restored snapshot's cloned markers point at the right source lines (=RET=/=TAB= resolve correctly); on the next success or on close the clones are released (no marker leak across repeated failures).
+- [ ] Phase 1 exposes no interactive command — the mechanism is reachable only from ERT (no =M-x=, no key); =S-<f8>= and the =C-M-<f8>= move appear only in Phase 2.
+- [ ] The normal =<f8>= full-view agenda is unchanged.
+
+* Readiness dimensions
+- Data model & ownership: N/A — the frame reads existing agenda files; it authors nothing. Refresh is display-only.
+- Errors, empty states & failure: an empty agenda renders as org's normal empty agenda in the frame. A frame/buffer killed out from under the timer must cancel the timer rather than error on the next tick — a live-frame/live-buffer guard in the callback. A spawn that fails after =make-frame= is transactional: cancel the timer, delete the partial frame/buffer, restore the working frame, and report =Agenda frame: <operation> failed: <cause>=.
+- Security & privacy: N/A — no credentials, no new data surface.
+- Observability: the frame is its own visible state; the refresh wrapper is quiet on success and surfaces a failure once with an actionable message.
+- Performance & scale: =redo= is cheap and already the manual-refresh path; a 5-minute cadence on one buffer is negligible. The file-list scan (the expensive path) is deliberately not on the tick.
+- Reuse & lost opportunities: reuses =make-frame=, =org-agenda-custom-commands=, =org-agenda-sticky=, =org-agenda-redo=, and the F8 family. No new rendering.
+- Architecture fit & weak points: integrates at =make-frame= + a frame parameter, the agenda display call, and the F8 keymap. Weak point: jump-to-task display routing across frames; timer lifecycle tied to frame deletion is the other watch point.
+- Config surface: the seven-day custom-command view is the one implicit knob. No width, no auto-open flag (both removed by the redesign).
+- Documentation plan: an entry in the keybinding/agenda notes; docstrings on the toggle command. No user-facing README beyond that.
+- Dev tooling: existing =make test= / byte-compile / live-reload. ERT covers frame lookup, spawn/raise/close, the =S-<f8>=/=C-M-<f8>= rebind, distinct sticky-buffer identity, the today-anchored seven-day settings, the cached-build early-start, the =RET=/=TAB=/mouse/=C-c C-o= engage routing and the MRU + no-frame fallback, the default-deny policy (the full allowlist works including =C-g=/scroll/lifecycle keys, representative denied keys show the right message, the Agenda menu-bar is absent), the policy surviving an =org-agenda-redo= (re-enabled by the finalize hook) and being re-enabled on the failed-redo error path, sticky-buffer kill on close and a fresh reopen, the failed-redo snapshot restore (policy active, =RET=/nav work, point/filter preserved, one overlay across consecutive failures, rebuild-from-=org-redo-cmd= on retry), timer alignment, duplicate-timer prevention, every cancellation path, dead frame/buffer guards, and silent-success/visible-failure behavior — the repo already tests these boundaries (=tests/test-dirvish-config-popup.el= mocks frame lookup/focus/delete; =tests/test-ai-term--project-color.el= drives timer callbacks + a dead-buffer case). One live-daemon checklist covers compositor fullscreen/focus; manual verification supplements, not replaces, the ERT surface.
+- Rollout, compatibility & rollback: additive. The one compatibility touch is the =S-<f8>= rebind (force-refresh moves to =C-M-<f8>=). Rollback is removing the command and the binding; nothing persisted changes.
+- External APIs & deps: N/A — all built-in Emacs/org.
+
+* Risks, Rabbit Holes, and Drawbacks
+- Jump-to-task display routing across frames is the likeliest rabbit hole: getting =RET= to reliably open in the working frame (not the agenda frame) across =org-agenda-window-setup= values and single-frame states can take fiddling. Dodge: pin the agenda buffer's window-setup and target the file's =display-buffer= at a non-agenda frame explicitly.
+- Frame lifecycle: closing or killing the frame must cancel the timer; a killed frame must not error on tick. Dodge: guard the callback and hang cancellation off =delete-frame-functions= / buffer-kill.
+- Daemon-only lifetime: the frame is gone after a daemon restart. Accepted (re-spawn by key); noted so it isn't mistaken for a bug.
+
+* Review and iteration history
+** 2026-07-20 Mon @ 13:26:53 -0500 — Claude Code (emacs-d) — responder
+- What: dispositioned Codex's sixth-pass marker finding — the snapshot now clones agenda markers (=copy-marker=) instead of holding them by reference, since =org-agenda-reset-markers= nulls the originals on rebuild; restore reinstalls the clones (so =RET=/=TAB= resolve), and they're released on the next success or on close. Added the vNext note (Hyprland-managed window with its own keybind, once the in-Emacs frame proves out). All 28 findings and 13 decisions resolved. Craig accepted the spec for build, so flipped =DRAFT= → =READY=.
+- Why: the marker fix is a real correctness point (a text-property copy holds dead markers). With it folded, the spec is behavior-complete; Craig's call is to build v1 rather than run further review rounds.
+- Artifacts: all Review findings DONE [28/28]; Decisions [13/13]; status =READY=, mirror =ready=. Six review/response rounds total; the default-deny structural pivot (12:26) was the turning point.
+** 2026-07-20 Mon @ 13:07:58 -0500 — Codex (emacs-d) — reviewer
+- What: re-ran the full readiness gate after all 27 prior findings were dispositioned. Verdict: Not ready. Added one blocking finding: a failed-redo snapshot must clone or reconstruct live agenda markers rather than retain shallow text-property references.
+- Why: Org 9.7.11 calls =org-agenda-reset-markers= during regeneration, moving the old =org-marker=/=org-hd-marker= objects to nil. Emacs text-property snapshots retain those same objects, so the promised verbatim restore cannot support =RET=/=TAB= after a failed rebuild without an explicit marker-copy and cleanup contract.
+- Artifacts: this spec's =Review findings [27/28]=. Source checks: =org-agenda-redo=, =org-agenda-prepare=, =org-agenda-reset-markers=, =org-agenda-new-marker=, and =org-agenda-goto= in installed Emacs 30.2 / Org 9.7.11; a batch check confirmed the snapshot property and source property hold the same marker object and both become dead after reset.
+** 2026-07-20 Mon @ 12:59:00 -0500 — Claude Code (emacs-d) — responder
+- What: dispositioned both of Codex's fifth-pass findings. (1) Enumerated the complete default-deny allowlist (navigation commands + =C-g= + scroll, engage/open routed out, and the frame's own controls =S-<f8>=/=C-M-<f8>=/=q=/=Q=/=x=/=r=) and set the honest enforcement boundary — keys/mouse via the =[t]= catch-all, the Agenda menu-bar removed in the buffer, direct =M-x= out of contract (dropped the overclaim that "every command" is intercepted). (2) Made the failed-redo rollback a complete retryable state: a frame-owned last-good snapshot carrying Org properties (=org-redo-cmd=/=org-lprops=/markers), point/window/filter, undecorated; the error path restores it and *explicitly re-enables the policy* (finalize only runs on success), shows the failure as an *overlay* (no accumulation, no property corruption), and the next tick rebuilds from the preserved =org-redo-cmd=.
+- Why: Codex accepted the default-deny structure but flagged the two absolute claims it hadn't yet backed — the map can't cover the menu/M-x, and a text-only snapshot doesn't guarantee a re-enabled, retryable agenda. Both are now bounded by an explicit contract.
+- Artifacts: all Review findings DONE [27/27]; Decisions [13/13] (the read-only and buffer-lifecycle Decisions were tightened, not added). Status stays DRAFT pending Codex's re-review.
+** 2026-07-20 Mon @ 12:47:44 -0500 — Codex (emacs-d) — reviewer
+- What: verified the renamed spec and all 25 resolved findings against installed Org's key dispatch, finalize, redo, and text-property behavior. Verdict: Not ready. Added two blocking findings: the default-deny map's exact/enforced interaction boundary and the failed-redo snapshot's policy-enabled, metadata-preserving retry contract.
+- Why: the new structural design closes the earlier enumeration and sticky-lifecycle problems, but its remaining absolute claims exceed what a minor-mode map and a text-only rollback guarantee. Both gaps would make the implementer choose observable behavior and could leave the frame unrestricted or permanently stale after a failed refresh.
+- Artifacts: this spec's =Review findings [25/27]=. Source checks: =org-agenda-mode-map=, =org-agenda-mode=, =org-agenda-finalize=, =org-agenda-redo=, and the =org-redo-cmd=/=org-lprops= text-property flow in installed Emacs 30.2 / Org 9.7.11. Filename/location precondition passes after the tracked rename.
+** 2026-07-20 Mon @ 12:26:29 -0500 — Claude Code (emacs-d) — responder
+- What: dispositioned all 8 of Codex's fourth-pass findings — accepted every one. The key change is structural: replaced the command-by-command enumeration (which the prior two rounds proved can't converge against a ~100-entry keymap) with a *default-deny* policy — a =cj/agenda-frame-mode= minor mode shadows =org-agenda-mode-map= and permits only a small allowlist, so all mutations / buffer-openers / view-changers are denied in one rule (closes findings 2, 3, 4). Re-enabled via =org-agenda-finalize-hook= keyed on the frame marker so =org-agenda-redo='s =kill-all-local-variables= can't strip it, with timer/failure state frame-owned (finding 5). Close kills the sticky buffer (finding 6); failed redo restores a pre-redo snapshot (finding 7); Phase 1 is non-interactive helpers only (finding 1); the ERT surface is synced (finding 8). Fixed the 7-day view, remapped =r= to the safe wrapper, bound follow-mode nil locally. Rewrote the read-only Decision to default-deny and added one (buffer/failed-redo lifecycle) — 13 Decisions.
+- Why: the fourth review showed the earlier responses were enumerating a keymap instead of stating a policy — the root cause of the round-over-round regress. Default-deny covers the whole map in one rule and terminates.
+- Artifacts: all Review findings DONE [25/25]; Decisions [13/13]. Status stays DRAFT pending Codex's re-review.
+** 2026-07-20 Mon @ 12:11:31 -0500 — Codex (emacs-d) — reviewer
+- What: verified all 17 prior findings against the current repo and installed Org, then traced every agenda command/lifecycle path through regeneration and sticky reuse. Verdict: Not ready. Added eight blocking findings covering the still-interactive Phase 1, incomplete mutation/display/view/manual-redo policies, loss of dedicated local state on redo, stale sticky reopen, failed-redo display state, and the unsynchronized ERT matrix.
+- Why: the chosen values from the prior response are viable, but implementation would still require behavior and state-ownership decisions. In particular, Org's full keymap is broader than the enumerated commands, =org-agenda-mode= resets the local map during every redo, and command-local sticky agendas reuse a closed buffer without regenerating it.
+- Artifacts: this spec's =Review findings [17/25]=. Source checks: =org-agenda-mode-map=, =org-agenda-mode=, =org-agenda-prepare=, =org-agenda-use-sticky-p=, =org-agenda-redo=, =org-agenda-goto-calendar=, =org-agenda-tree-to-indirect-buffer=, and =org-agenda-clock-goto= in installed Emacs 30.2 / Org 9.7.11; current hooks and display rules in =modules/org-agenda-config.el=.
+** 2026-07-20 Mon @ 12:02:00 -0500 — Claude Code (emacs-d) — responder
+- What: dispositioned all 7 of Codex's third-pass findings — accepted every one; four carried a chosen behavior. View identity: key =F= + =(org-agenda-window-setup 'current-window)=. Command policy: source-mutating keys read-only-remapped, all source-opening keys routed to the working frame, preview/follow disabled. Refresh failure: retry + report-once-per-run. Phase safety: Phase 1 builds the command unbound, Phase 2 adds the timer and the =S-<f8>= binding. Also pinned the cached-build-on-spawn and the point-restoration tie-break. Added three Decisions (read-only policy, refresh-failure recovery, plus the earlier two = now 12), and expanded acceptance criteria.
+- Why: Craig's strict gate — no behavior decision deferred to implementation. Codex's third pass named seven still-open keymap/lifecycle choices against the installed Org 9.7.11; each is now pinned with a concrete value.
+- Artifacts: all Review findings DONE [17/17]; Decisions [12/12]. The read-only mutation policy was resolved from the existing "read + engage only" non-goal, not a fresh product call — flip it if in-agenda mutation was actually wanted. Status stays DRAFT pending Codex's re-review.
+** 2026-07-20 Mon @ 11:29:33 -0500 — Codex (emacs-d) — reviewer
+- What: re-ran the authoritative code-grounded review after all 10 earlier findings were dispositioned. Verdict: Not ready. Added seven blocking findings covering the exact dedicated-command identity/window setup, initial agenda-file preparation, read-versus-mutate command policy, source-opening commands beyond =RET=/=TAB=, refresh-failure recovery, safe phase exposure, and deterministic point restoration.
+- Why: Craig set the stricter gate that no behavior decision may be deferred to implementation. The revised spec closes the earlier findings, but still contains explicit alternatives and conflicts with the installed Org keymap and this repo's deferred agenda-file initialization.
+- Artifacts: this spec's =Review findings [10/17]=. Source checks: =modules/org-agenda-config.el:186-220,344-391,431-433= and =org-agenda-mode-map=, =org-agenda-prepare-window=, =org-agenda-goto=, =org-agenda-open-link=, and =org-agenda-show-and-scroll-up= in installed Emacs 30.2 / Org 9.7.11.
+** 2026-07-20 Mon @ 10:22:00 -0500 — Claude Code (emacs-d) — responder
+- What: dispositioned all 10 of Codex's findings — accepted every one, two with a chosen behavior. Working-frame fallback: the MRU live non-agenda frame, creating a normal frame when none exists (Codex's create-a-frame option over a refusal). Phase safety: merged the former Phase 1+2 into one isolated Phase 1 so no broken intermediate state ships. Folded the resolutions into Design (transactional spawn, today-anchored sticky seven-day view, frame-local navigation/exit routing, refresh window/focus contract + message wrapper + org-marker restore), added two Decisions (exit semantics, working-frame fallback), cut to 2 phases, and expanded the acceptance criteria and the Dev-tooling test surface.
+- Why: Codex's code-grounded re-review found six blocking gaps the first (my) review missed — week anchoring, exit lifecycle, working-frame fallback, phase safety, refresh window context, and the understated test surface. Each needed the spec to specify behavior it had left implicit.
+- Artifacts: all Review findings DONE [10/10]; Decisions [10/10]. Status stays DRAFT pending a re-review to confirm the responses close the blockers.
+** 2026-07-20 Mon @ 10:12:30 -0500 — Codex (emacs-d) — reviewer
+- What: independently re-ran the full spec-review against =modules/org-agenda-config.el=, its ERT coverage, relevant frame/timer precedent, and the installed Emacs 30.2 / Org 9.7.11 source. Verdict: Not ready. Added six blocking and three non-blocking findings; retained the prior non-blocking custom-command finding.
+- Why: the first review checked the local F8 premises but did not trace Org's seven-day anchoring, sticky exit behavior, cross-frame jump boundaries, selected-window dependency during redo, phase-by-phase safety, or the repository's existing frame/timer test patterns. Those gaps would force implementation decisions or ship broken intermediate behavior.
+- Artifacts: this spec's =Review findings [0/10]=; lifecycle demoted =READY= → =DRAFT= and Metadata mirrored to =draft=. Source checks: =org-agenda-list=, =org-agenda-quit=, =org-agenda-redo=, =org-agenda-switch-to=, and =org-agenda-goto= in Org 9.7.11.
+** 2026-07-20 Mon @ 09:53:02 -0500 — Claude Code (emacs-d) — reviewer
+- What: spec-review of the redesigned spec. Verdict READY. Read =modules/org-agenda-config.el= first — confirmed =cj/org-agenda-refresh-files= is bound to =S-<f8>= (:232), the =cj/--org-agenda-display-rule= / =cj/org-agenda-window-height= 0.75 rule (:27-37), and =<f8>= = =cj/main-agenda-display= (:392), so the rebind and override premises hold. All 8 decisions resolved (cookie complete); phases decompose cleanly into 3 sessions; no blocking finding. One non-blocking finding recorded: the frame's seven-day view needs its own custom-command entry (the code already has a span-8 entry).
+- Why: gate the DRAFT → READY transition before decomposing the build. The reworked design has no unverified API assumptions (all built-in Emacs/org) and no data/security surface.
+- Artifacts: this spec's Review findings [0/1]; flipped status heading DRAFT → READY and the Metadata mirror.
+** 2026-07-20 Mon @ 09:45:00 -0500 — Craig Jennings — redesign
+- What: replaced the right-side side-window dock with a dedicated fullscreen frame of the daemon. Resolved all eight decisions: fullscreen frame (not side window, not separate process), =S-<f8>= toggle, seven-day span, focus-on-agenda, jump-to-task opens in the working frame, frame-scoped 5-min redo, no startup auto-open.
+- Why: Craig wants a standing, fullscreen agenda surface placeable on its own workspace/monitor, sharing the daemon's live state, rather than a dock bounded to the working frame.
+- Artifacts: this spec; the dock-mode task in todo.org (Emacs Open Work).
+** 2026-07-17 Fri @ 19:34:07 -0500 — Craig Jennings — author
+- What: initial draft (right-side side-window dock).
+- Why: dock mode had four-plus open design questions and real trade-offs; settling them on paper before code.
+- Artifacts: dock-mode task in todo.org (Emacs Open Work); supersedes the folded "auto-refresh every 5 min" roam item.
