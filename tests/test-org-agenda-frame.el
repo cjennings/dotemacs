@@ -129,6 +129,35 @@
     (should (assq 'org-agenda-start-on-weekday s))
     (should (null (cadr (assq 'org-agenda-start-on-weekday s))))))
 
+(ert-deftest test-org-agenda-frame-command-tight-prefix-format ()
+  "Normal: the view sets its own prefix format with a narrow category column.
+Without it the global agenda format applies, whose 25-char category pad
+leaves a wide blank gutter between the source name and the item."
+  (let ((s (test-org-agenda-frame--block-settings)))
+    (should (assq 'org-agenda-prefix-format s))
+    (should (string-match-p "%-10:c"
+                            (cadr (assq 'org-agenda-prefix-format s))))))
+
+(ert-deftest test-org-agenda-frame-do-redo-leaves-sticky-alone ()
+  "Normal: the redo binds current-window but never touches sticky.
+org-agenda-redo handles the in-place rebuild itself (it binds sticky nil
+and redirects the buffer name); a sticky t reaching org-agenda-prepare
+mid-redo makes it throw \\='exit with no catch and the tick fails."
+  (let ((org-agenda-sticky nil)
+        seen-sticky seen-setup (params '()))
+    (with-temp-buffer
+      (insert "agenda line\n")
+      (cl-letf (((symbol-function 'org-agenda-redo)
+                 (lambda (&rest _)
+                   (setq seen-sticky org-agenda-sticky
+                         seen-setup org-agenda-window-setup)))
+                ((symbol-function 'frame-parameter) (lambda (_f p) (alist-get p params)))
+                ((symbol-function 'set-frame-parameter)
+                 (lambda (_f p v) (setf (alist-get p params) v))))
+        (cj/--agenda-frame-do-redo 'af (current-buffer) nil)
+        (should (null seen-sticky))
+        (should (eq seen-setup 'current-window))))))
+
 (ert-deftest test-org-agenda-frame-command-follow-mode-off ()
   "Boundary: follow-mode is forced off locally so a global default can't split."
   (let ((s (test-org-agenda-frame--block-settings)))
@@ -136,9 +165,14 @@
     (should (null (cadr (assq 'org-agenda-start-with-follow-mode s))))))
 
 (ert-deftest test-org-agenda-frame-command-sticky-and-current-window ()
-  "Normal: sticky (distinct buffer) and current-window (no frame split)."
+  "Normal: current-window in the settings; sticky deliberately NOT there.
+The general settings are baked into the buffer's series-redo-cmd and
+re-applied on every redo; a sticky t there makes org-agenda-use-sticky-p
+true mid-redo (the buffer exists), and org-agenda-prepare throws \\='exit
+with no catch -- every refresh tick fails.  Stickiness belongs only in
+the spawn wrapper, where it names the buffer."
   (let ((g (test-org-agenda-frame--general-settings)))
-    (should (eq (cadr (assq 'org-agenda-sticky g)) t))
+    (should-not (assq 'org-agenda-sticky g))
     ;; org evaluates custom-command setting values via org-let, so the stored
     ;; form is (quote current-window); eval it the way org would.
     (should (eq (eval (cadr (assq 'org-agenda-window-setup g)) t)
@@ -192,6 +226,17 @@
   (should (eq (lookup-key cj/agenda-frame-mode-map (kbd "n")) 'org-agenda-next-line))
   (should (eq (lookup-key cj/agenda-frame-mode-map (kbd "p")) 'org-agenda-previous-line))
   (should (eq (lookup-key cj/agenda-frame-mode-map (kbd "C-g")) 'keyboard-quit)))
+
+(ert-deftest test-org-agenda-frame-map-point-motion-and-isearch-allowed ()
+  "Normal: read-only point motion and isearch work in the frame.
+C-a/C-e/C-f/C-b move point and C-s/C-r search; all are read-only and
+must not hit the deny catch-all."
+  (should (eq (lookup-key cj/agenda-frame-mode-map (kbd "C-a")) 'move-beginning-of-line))
+  (should (eq (lookup-key cj/agenda-frame-mode-map (kbd "C-e")) 'move-end-of-line))
+  (should (eq (lookup-key cj/agenda-frame-mode-map (kbd "C-f")) 'forward-char))
+  (should (eq (lookup-key cj/agenda-frame-mode-map (kbd "C-b")) 'backward-char))
+  (should (eq (lookup-key cj/agenda-frame-mode-map (kbd "C-s")) 'isearch-forward))
+  (should (eq (lookup-key cj/agenda-frame-mode-map (kbd "C-r")) 'isearch-backward)))
 
 (ert-deftest test-org-agenda-frame-map-engage-routed ()
   "Normal: RET and TAB route to the working-frame engage command."

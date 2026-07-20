@@ -108,9 +108,18 @@ a non-nil global default can't open a second window at build time."
              ((org-agenda-span 7)
               (org-agenda-start-day "0d")
               (org-agenda-start-on-weekday nil)
-              (org-agenda-start-with-follow-mode nil))))
-    ((org-agenda-sticky t)
-     (org-agenda-window-setup 'current-window))))
+              (org-agenda-start-with-follow-mode nil)
+              ;; Narrow category column: the global agenda format pads the
+              ;; category to 25 chars, leaving a wide blank gutter between
+              ;; the source name (todo:, dcal:) and the item.
+              (org-agenda-prefix-format "  %i %-10:c%?-12t% s"))))
+    ;; No `org-agenda-sticky' here, deliberately: these settings are baked
+    ;; into the buffer's series-redo-cmd and re-applied by every redo, and a
+    ;; sticky t mid-redo makes `org-agenda-use-sticky-p' true while the
+    ;; buffer exists -- `org-agenda-prepare' then throws \\='exit ("use `r'
+    ;; to refresh") with no catch, failing every refresh tick.  Stickiness
+    ;; is bound in the spawn wrapper instead, where it names the buffer.
+    ((org-agenda-window-setup 'current-window))))
 
 (defun cj/--agenda-frame-register-command ()
   "Register the agenda-frame view in `org-agenda-custom-commands'.
@@ -220,6 +229,13 @@ The default binding for every key not on the allowlist."
     (define-key map (kbd "M-v") #'scroll-down-command)
     (define-key map (kbd "M-<") #'beginning-of-buffer)
     (define-key map (kbd "M->") #'end-of-buffer)
+    ;; Read-only point motion and search within the agenda.
+    (define-key map (kbd "C-a") #'move-beginning-of-line)
+    (define-key map (kbd "C-e") #'move-end-of-line)
+    (define-key map (kbd "C-f") #'forward-char)
+    (define-key map (kbd "C-b") #'backward-char)
+    (define-key map (kbd "C-s") #'isearch-forward)
+    (define-key map (kbd "C-r") #'isearch-backward)
     (define-key map (kbd "C-g") #'keyboard-quit)
     ;; (b) Engage / open — routed to the working frame, never the agenda frame.
     ;; Bind the GUI function-key events ([return]/[tab]) as well as the ASCII
@@ -609,7 +625,14 @@ Either way the frame is never blank, unrestricted, or non-retryable."
           (snapshot (cj/--agenda-frame-snapshot buffer window)))
       (unwind-protect
           (condition-case nil
-              (let ((inhibit-message t))
+              ;; Never bind sticky here: `org-agenda-redo' handles the
+              ;; in-place rebuild itself (binds sticky nil, redirects the
+              ;; buffer name).  A sticky t reaching `org-agenda-prepare'
+              ;; mid-redo makes it throw \\='exit with no catch, failing
+              ;; every tick.  current-window is bound as a belt so a rule
+              ;; can't split the frame during the rebuild.
+              (let ((inhibit-message t)
+                    (org-agenda-window-setup 'current-window))
                 (org-agenda-redo)
                 (cj/--agenda-frame-remove-overlay buffer)
                 (cj/--agenda-frame-restore-point old-marker old-line)
