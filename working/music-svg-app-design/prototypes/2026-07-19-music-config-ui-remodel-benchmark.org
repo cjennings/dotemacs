@@ -1,0 +1,61 @@
+#+TITLE: Music Config UI Remodel Prototype Benchmark
+#+DATE: 2026-07-19
+
+* Purpose
+
+Measure the rasterization cost that matters for the proposed Emacs SVG port.
+The interactive browser prototype proves behavior, but its DOM timings do not
+predict librsvg cost.  These trials use =rsvg-convert= 2.62.3 against embedded
+raster/SVG fixtures at the intended roughly 958×411 dock size.
+
+The shell loop launched a fresh =rsvg-convert= process for each sample.  Process
+startup is therefore included, making these results a conservative bound for an
+in-process Emacs/librsvg update.
+
+* Full instrument trial
+
+- Fixture: concept 30 embedded as a 3.0 MiB data URI, plus live metadata,
+  playlist rows, progress, VU needles, and volume segments.
+- Output: 958×411.
+- Duration: 60 seconds.
+- Samples: 448.
+- Mean: 134.074 ms.
+- Median: 133.616 ms.
+- 95th percentile: 139.822 ms.
+- Range: 125.105–163.231 ms.
+- Verdict: fail.  A full receiver rasterization cannot drive ten-Hz VU motion.
+
+* Lower-deck tile trial
+
+- Fixture: the opaque lower control deck exported at its 585×226 display size
+  as JPEG quality 88, embedded as a 52 KiB data URI, plus two dynamic needles
+  and twenty-one dynamic volume segments.
+- Output: 585×226.
+- Duration: 60 seconds.
+- Samples: 1,677.
+- Mean: 35.694 ms.
+- Median: 35.513 ms.
+- 95th percentile: 38.221 ms.
+- Range: 31.719–62.626 ms.
+- Verdict: pass.  Both the under-50-ms median and under-100-ms p95 budgets pass.
+
+* Resulting implementation constraint
+
+The production view uses three aligned image regions from one coordinate
+manifest:
+
+1. Upper player glass, redrawn for track, art, seek, and radio-state changes.
+2. Lower control deck, redrawn at meter cadence while visible and playing.
+3. Playlist, redrawn for queue, selection, and scroll changes.
+
+The editable neutral source remains lossless and full resolution.  The opaque
+runtime deck export is sized for the normal dock and may use a high-quality JPEG
+after visual comparison with PNG; it is not the editable source.  A wider dock
+may select a larger cached export, but V1 never returns to full-instrument
+meter-rate rasterization.
+
+* Related artifacts
+
+- [[file:2026-07-19-music-config-ui-remodel-prototype-1.html][Functional browser prototype]]
+- [[file:../2026-07-19-music-config-ui-remodel-render-fixture.svg][Full-render SVG fixture]]
+- [[file:../2026-07-19-music-config-ui-remodel-spec.org][Music Config UI Remodel spec]]

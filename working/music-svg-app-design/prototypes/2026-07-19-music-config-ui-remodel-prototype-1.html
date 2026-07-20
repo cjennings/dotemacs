@@ -1,0 +1,1450 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dupre Studios Music Config UI Remodel</title>
+<style>
+  :root {
+    --black: #050605;
+    --glass: #090a09;
+    --soft-white: #e9e2d3;
+    --dim-white: #a9a59c;
+    --amber: #f2a900;
+    --amber-hot: #ffc34f;
+    --green: #9dda59;
+    --red: #a73a29;
+    --brass: #c9a574;
+    --coffee: #b69c7d;
+    --ink: #201810;
+    --mono: "Berkeley Mono", "BerkeleyMono Nerd Font", ui-monospace, monospace;
+  }
+
+  * { box-sizing: border-box; }
+
+  [hidden] { display: none !important; }
+
+  html, body { min-height: 100%; }
+
+  body {
+    margin: 0;
+    color: var(--soft-white);
+    background:
+      radial-gradient(circle at 50% -20%, #2c261e 0, transparent 42%),
+      linear-gradient(#0e0e0d, #050505 70%);
+    font-family: var(--mono);
+  }
+
+  button, input { font: inherit; }
+
+  .workbench {
+    width: min(100%, 1960px);
+    margin: 0 auto;
+    padding: 16px 20px 28px;
+  }
+
+  .prototype-bar {
+    min-height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 18px;
+    margin-bottom: 12px;
+    color: #bbb3a3;
+    font-size: 12px;
+    letter-spacing: .04em;
+  }
+
+  .prototype-bar h1 {
+    margin: 0 0 3px;
+    color: #e8d6b7;
+    font-size: 14px;
+    font-weight: 500;
+    letter-spacing: .13em;
+    text-transform: uppercase;
+  }
+
+  .prototype-bar p { margin: 0; }
+
+  .fixture-switch, .bench-controls {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+
+  .lab-button {
+    min-height: 31px;
+    padding: 5px 10px;
+    color: #bbb3a3;
+    border: 1px solid #554b3e;
+    border-radius: 3px;
+    background: linear-gradient(#26231f, #141311);
+    cursor: pointer;
+  }
+
+  .lab-button:hover, .lab-button[aria-pressed="true"] {
+    color: #17130e;
+    border-color: #b89765;
+    background: linear-gradient(#e0c292, #a98857);
+  }
+
+  .bench-readout {
+    min-width: 242px;
+    color: #9b9487;
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+  }
+
+  .receiver-wrap {
+    width: 100%;
+    overflow: hidden;
+    border-radius: 0 0 12px 12px;
+    box-shadow: 0 28px 60px #000c;
+  }
+
+  .receiver {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 1916 / 821;
+    overflow: hidden;
+    background: #060606 url("../concepts/30a-dupre-studios-user-refined-playlist.png") center / 100% 100% no-repeat;
+    user-select: none;
+    touch-action: none;
+  }
+
+  .dynamic-svg, .hit-layer {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+  }
+
+  .dynamic-svg { pointer-events: none; }
+
+  .upper-live {
+    position: absolute;
+    left: 31.55%;
+    top: 11.6%;
+    width: 27.9%;
+    height: 31.4%;
+    overflow: hidden;
+    background:
+      radial-gradient(ellipse at 36% 10%, #25242140, transparent 46%),
+      linear-gradient(100deg, #090a09 0, #060706 72%, #080908 100%);
+    box-shadow: inset 0 0 34px #000;
+  }
+
+  .art {
+    position: absolute;
+    left: 1.4%;
+    top: 1.5%;
+    width: 28%;
+    height: 69%;
+    overflow: hidden;
+    border: 1px solid #292724;
+    border-radius: 2px;
+    background: #171716;
+    box-shadow: 0 5px 15px #000b;
+  }
+
+  .art img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+
+  .album-crop {
+    width: 100%;
+    height: 100%;
+    background-image: url("../concepts/30a-dupre-studios-user-refined-playlist.png");
+    background-size: 1312.33% 475.2%;
+    background-position: 34.42% 20.9%;
+  }
+
+  .metadata {
+    position: absolute;
+    left: 33.1%;
+    right: 1.5%;
+    top: 0;
+    height: 72%;
+    display: grid;
+    align-content: start;
+    gap: 4.6%;
+    padding-top: 1.2%;
+    color: var(--soft-white);
+    font-size: clamp(7px, 1.04vw, 20px);
+    line-height: 1.07;
+    letter-spacing: .08em;
+    text-shadow: 0 0 6px #fff2;
+    text-transform: uppercase;
+  }
+
+  .metadata-line {
+    min-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+
+  .metadata-line.dim { color: #d5cfc2; }
+
+  .on-air-under-art {
+    position: absolute;
+    left: 1.6%;
+    top: 73.5%;
+    width: 27.5%;
+    color: #e9543f;
+    font-size: clamp(8px, 1vw, 18px);
+    letter-spacing: .18em;
+    text-align: center;
+    text-shadow: 0 0 9px #e9543f99;
+  }
+
+  .seek-line {
+    position: absolute;
+    left: 1.4%;
+    right: 1.5%;
+    bottom: 2.5%;
+    height: 20%;
+    display: grid;
+    grid-template-columns: 12% 1fr 12%;
+    align-items: center;
+    gap: 3%;
+    color: #d2cabd;
+    font-size: clamp(8px, .94vw, 18px);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .seek-time:last-child { text-align: right; }
+
+  .seek-track {
+    position: relative;
+    height: 12px;
+    cursor: ew-resize;
+  }
+
+  .seek-track::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 5px;
+    height: 2px;
+    background: #373735;
+    box-shadow: inset 0 1px #000;
+  }
+
+  .seek-fill {
+    position: absolute;
+    left: 0;
+    top: 5px;
+    width: calc(var(--progress) * 1%);
+    height: 2px;
+    background: var(--amber);
+    box-shadow: 0 0 4px #f2a90088;
+  }
+
+  .seek-thumb {
+    position: absolute;
+    top: 50%;
+    left: calc(var(--progress) * 1%);
+    width: 12px;
+    height: 21px;
+    border: 1px solid #ead0a4;
+    border-radius: 3px;
+    background: linear-gradient(90deg, #6f4c2d, #caa16a 22%, #f0d3a0 48%, #ad7f4a 74%, #654429);
+    box-shadow: 0 2px 4px #000d, inset 0 1px #fff4, inset 0 -1px #50351f;
+    transform: translate(-50%, -50%);
+  }
+
+  .seek-thumb::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    top: 3px;
+    bottom: 3px;
+    width: 1px;
+    background: #5f4026aa;
+    box-shadow: 1px 0 #f2d7aa66;
+  }
+
+  .playlist-header {
+    position: absolute;
+    left: 61.16%;
+    top: 6.35%;
+    width: 36%;
+    height: 7.8%;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 2.4%;
+    padding: 0 2.1%;
+    overflow: hidden;
+    color: #1f1811;
+    background:
+      radial-gradient(ellipse 10% 100% at 5% -3%, #fff1d7 0, #eac184aa 35%, transparent 76%),
+      radial-gradient(ellipse 10% 100% at 35% -3%, #fff1d7 0, #eac184aa 35%, transparent 76%),
+      radial-gradient(ellipse 10% 100% at 65% -3%, #fff1d7 0, #eac184aa 35%, transparent 76%),
+      radial-gradient(ellipse 10% 100% at 95% -3%, #fff1d7 0, #eac184aa 35%, transparent 76%),
+      linear-gradient(90deg, #d5b78c22, transparent 25% 75%, #5c3c2233),
+      linear-gradient(180deg, #92795e, #877057);
+    box-shadow:
+      inset 0 1px #f7dfb6,
+      inset 0 5px 14px #fff2,
+      inset 0 -8px 15px #5a3d2433,
+      inset 0 0 0 1px #73583b66;
+    font-size: clamp(8px, 1.04vw, 20px);
+    letter-spacing: .075em;
+    text-transform: uppercase;
+  }
+
+  .header-name {
+    min-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+
+  .playlist-live {
+    position: absolute;
+    left: 61.05%;
+    top: 14.25%;
+    width: 36.12%;
+    height: 66.15%;
+    overflow: hidden;
+    background:
+      radial-gradient(ellipse at 48% 0, #20211e22, transparent 55%),
+      linear-gradient(90deg, #070807, #090a09 65%, #050605);
+    box-shadow: inset 0 0 26px #000;
+  }
+
+  .playlist-scroll {
+    position: absolute;
+    inset: 0 22px 0 0;
+    overflow-y: scroll;
+    scrollbar-width: none;
+    overscroll-behavior: contain;
+  }
+
+  .playlist-scroll::-webkit-scrollbar { display: none; }
+
+  .playlist-rows { min-height: 100%; }
+
+  .playlist-row {
+    height: var(--row-height, 37px);
+    min-height: var(--row-height, 37px);
+    display: grid;
+    grid-template-columns: 7.5% minmax(0, 1fr) 12%;
+    align-items: center;
+    gap: 1.5%;
+    padding: 0 1.2% 0 2.6%;
+    color: #dad6cd;
+    border-bottom: 1px solid #ffffff06;
+    font-size: clamp(7px, .91vw, 17px);
+    letter-spacing: .045em;
+    text-transform: uppercase;
+    cursor: pointer;
+  }
+
+  .playlist-row:hover { background: #f2a9000b; color: #fffaf0; }
+
+  .playlist-row.selected {
+    color: var(--amber);
+    background: linear-gradient(90deg, #f2a90012, transparent 72%);
+    text-shadow: 0 0 7px #f2a90044;
+  }
+
+  .row-number { position: relative; font-variant-numeric: tabular-nums; }
+
+  .playlist-row.selected .row-number::before {
+    content: "▶";
+    position: absolute;
+    right: calc(100% + 4px);
+    font-size: .78em;
+  }
+
+  .row-name {
+    min-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+
+  .row-meta { text-align: right; font-variant-numeric: tabular-nums; }
+
+  .scroll-rail {
+    position: absolute;
+    top: 1.2%;
+    right: 5px;
+    bottom: 1.2%;
+    width: 9px;
+    border: 1px solid #554b3d;
+    border-radius: 5px;
+    background: #191815;
+    box-shadow: inset 0 1px 3px #000;
+  }
+
+  .scroll-thumb {
+    position: absolute;
+    left: -1px;
+    top: 0;
+    width: 9px;
+    min-height: 38px;
+    border: 1px solid #aa9574;
+    border-radius: 5px;
+    background: linear-gradient(90deg, #7b6a53, #bca887 45%, #76634b);
+    box-shadow: 0 0 4px #000;
+    cursor: ns-resize;
+  }
+
+  .empty-row {
+    height: var(--row-height, 37px);
+    border-bottom: 1px solid #ffffff05;
+  }
+
+  .transport-bank {
+    position: absolute;
+    left: 5.95%;
+    top: 71.7%;
+    width: 24.5%;
+    height: 7.45%;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 5.4%;
+  }
+
+  .transport-button {
+    position: relative;
+    border: 1px solid #1d1b18;
+    border-radius: 4px;
+    color: #b6a687;
+    background:
+      linear-gradient(180deg, #292927 0 7%, #171716 15% 72%, #090a09 100%);
+    box-shadow:
+      inset 0 1px #5b5953,
+      inset 0 -3px #050505,
+      0 5px 5px #0009;
+    font-size: clamp(10px, 1.4vw, 25px);
+    cursor: pointer;
+    transform: translateY(0);
+  }
+
+  .transport-button:hover { color: #e9ddc6; filter: brightness(1.12); }
+
+  .transport-button:active, .transport-button.pressed {
+    transform: translateY(3px);
+    box-shadow: inset 0 2px 4px #000, 0 1px 2px #000b;
+  }
+
+  .transport-button.playing {
+    color: #bdd27c;
+    text-shadow: 0 0 2px #a7c26c, 0 0 4px #70883e99;
+    transform: translateY(3px);
+    box-shadow: inset 0 2px 5px #000, 0 1px 2px #000b;
+  }
+
+  .mode-button,
+  .radio-button {
+    position: absolute;
+    width: 2.05%;
+    aspect-ratio: 1;
+    padding: 0;
+    border: 1px solid #6e5436;
+    border-radius: 50%;
+    color: #2a2118;
+    background:
+      radial-gradient(circle at 34% 25%, #fff0c5 0 2.5%, transparent 5%),
+      repeating-radial-gradient(circle at 50% 50%, #fff3d00b 0 1px, #4b2e160b 1px 2px),
+      radial-gradient(circle at 46% 42%, #e8cb94 0, #c79a60 52%, #8b6038 82%, #d3aa70 100%);
+    box-shadow:
+      0 3px 3px #0009,
+      inset 0 1px #f2d39e,
+      0 0 0 3px #342719,
+      0 0 0 4px #d0ad78;
+    cursor: pointer;
+    transform: translateY(0);
+  }
+
+  .mode-button::after {
+    content: "";
+    position: absolute;
+    inset: -4px;
+    border: 1px solid transparent;
+    border-radius: 50%;
+  }
+
+  .mode-button[aria-pressed="true"]::after {
+    border-color: #829b55;
+    box-shadow: 0 0 2px #819a55aa, inset 0 0 2px #71864988;
+  }
+
+  .mode-button[aria-pressed="true"], .mode-button:active {
+    transform: translateY(2px);
+    box-shadow:
+      0 1px 1px #0009,
+      inset 0 2px 3px #3c291777,
+      0 0 0 3px #2c2117,
+      0 0 0 4px #bb9766;
+  }
+
+  .radio-button {
+    box-shadow:
+      0 3px 3px #0009,
+      inset 0 1px #f2d39e,
+      0 0 0 3px #342719,
+      0 0 0 4px #d0ad78;
+  }
+
+  .radio-button:active {
+    transform: translateY(2px);
+    box-shadow:
+      0 1px 1px #0009,
+      inset 0 2px 3px #3c291777,
+      0 0 0 3px #2c2117,
+      0 0 0 4px #bb9766;
+  }
+
+  .mode-repeat { left: 34.68%; top: 52.75%; }
+  .mode-single { left: 39.18%; top: 52.75%; }
+  .mode-random { left: 34.68%; top: 61.25%; }
+  .mode-consume { left: 39.18%; top: 61.25%; }
+  .radio-name { left: 34.68%; top: 75.65%; }
+  .radio-tags { left: 39.18%; top: 75.65%; }
+
+  .volume-hit {
+    position: absolute;
+    left: 43.2%;
+    top: 49.6%;
+    width: 14.6%;
+    height: 34%;
+    border-radius: 50%;
+    cursor: grab;
+  }
+
+  .volume-hit:active { cursor: grabbing; }
+
+  .playlist-actions {
+    position: absolute;
+    left: 61.13%;
+    top: 81.65%;
+    width: 35.45%;
+    height: 7.45%;
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: .65%;
+  }
+
+  .playlist-action {
+    border: 1px solid #302b23;
+    border-radius: 2px;
+    color: #ccc5b8;
+    background: linear-gradient(#1d1c19, #090a09);
+    box-shadow: inset 0 1px #555147, 0 3px 5px #0007;
+    font-size: clamp(8px, 1vw, 19px);
+    letter-spacing: .05em;
+    cursor: pointer;
+  }
+
+  .playlist-action[data-action="add"],
+  .playlist-action[data-action="new"] {
+    background: linear-gradient(#29271d, #11120d);
+  }
+
+  .playlist-action[data-action="delete"] {
+    color: #ead3cc;
+    border-color: #572c24;
+    background: linear-gradient(#552019, #2e0f0b);
+  }
+
+  .playlist-action:hover { filter: brightness(1.2); }
+
+  .playlist-action:active { transform: translateY(2px); box-shadow: inset 0 2px 5px #000; }
+
+  .status-toast {
+    position: absolute;
+    left: 50%;
+    bottom: 2.7%;
+    z-index: 8;
+    max-width: 52%;
+    padding: .55% 1%;
+    color: #d7ccb8;
+    border: 1px solid #6d5b42;
+    border-radius: 3px;
+    background: #090907ed;
+    box-shadow: 0 5px 14px #000c;
+    font-size: clamp(7px, .78vw, 15px);
+    letter-spacing: .04em;
+    opacity: 0;
+    pointer-events: none;
+    transform: translate(-50%, 8px);
+    transition: opacity .15s, transform .15s;
+  }
+
+  .status-toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+  dialog {
+    width: min(430px, calc(100vw - 40px));
+    color: #e6dccb;
+    border: 1px solid #9b7651;
+    border-radius: 6px;
+    background: linear-gradient(#1d1b18, #0b0b0a);
+    box-shadow: 0 24px 70px #000;
+    font-family: var(--mono);
+  }
+
+  dialog::backdrop { background: #000b; }
+  dialog h2 { color: #e0be87; font-size: 16px; font-weight: 500; }
+  dialog p { color: #bdb5a8; font-size: 13px; line-height: 1.45; }
+  dialog menu { display: flex; justify-content: flex-end; gap: 8px; padding: 0; }
+
+  .delete-confirm {
+    color: #f0dad3;
+    border-color: #7c3327;
+    background: #592018;
+  }
+
+  .inspection-note {
+    margin: 13px 2px 0;
+    display: flex;
+    justify-content: space-between;
+    gap: 18px;
+    color: #7f796f;
+    font-size: 11px;
+    line-height: 1.5;
+  }
+
+  .inspection-note span:last-child { text-align: right; }
+
+  @media (max-width: 980px) {
+    .workbench { padding: 10px 8px 20px; }
+    .prototype-bar { align-items: flex-start; flex-direction: column; }
+    .fixture-switch, .bench-controls { justify-content: flex-start; }
+    .bench-readout { text-align: left; }
+  }
+</style>
+</head>
+<body>
+<main class="workbench">
+  <header class="prototype-bar">
+    <div>
+      <h1>Music Config UI Remodel · Functional Prototype 1</h1>
+      <p>Drive the receiver. The controls outside it only switch fixtures and run the review benchmark.</p>
+    </div>
+    <div class="fixture-switch" aria-label="Prototype fixtures">
+      <button class="lab-button" id="localFixture" aria-pressed="true">Local playlist</button>
+      <button class="lab-button" id="radioFixture" aria-pressed="false">Radio station</button>
+      <button class="lab-button" id="restoreFixture">Restore fixture</button>
+    </div>
+    <div class="bench-controls">
+      <button class="lab-button" id="benchmarkButton">Run 60s benchmark</button>
+      <span class="bench-readout" id="benchmarkReadout">Dynamic updates: awaiting benchmark</span>
+    </div>
+  </header>
+
+  <section class="receiver-wrap" aria-label="Dupre Studios receiver prototype">
+    <div class="receiver" id="receiver">
+      <div class="upper-live" id="upperLive">
+        <div class="art" id="art"><div class="album-crop" aria-label="69 Love Songs album art"></div></div>
+        <div class="metadata" id="metadata"></div>
+        <div class="on-air-under-art" id="onAirUnderArt" hidden>ON AIR</div>
+        <div class="seek-line" id="seekLine">
+          <span class="seek-time" id="elapsed">01:30</span>
+          <div class="seek-track" id="seekTrack" role="slider" tabindex="0" aria-label="Track position" aria-valuemin="0" aria-valuemax="100" aria-valuenow="50">
+            <div class="seek-fill"></div>
+            <div class="seek-thumb"></div>
+          </div>
+          <span class="seek-time" id="duration">02:59</span>
+        </div>
+      </div>
+
+      <div class="playlist-header" id="playlistHeader">
+        <span class="header-name" id="headerName">69 LOVE SONGS — COMPLETE</span>
+        <span id="headerCount">69 TRACKS</span>
+      </div>
+
+      <div class="playlist-live">
+        <div class="playlist-scroll" id="playlistScroll" tabindex="0" aria-label="Playlist rows">
+          <div class="playlist-rows" id="playlistRows"></div>
+        </div>
+        <div class="scroll-rail" id="scrollRail" hidden><div class="scroll-thumb" id="scrollThumb"></div></div>
+      </div>
+
+      <svg class="dynamic-svg" viewBox="0 0 1916 821" aria-hidden="true">
+        <defs>
+          <radialGradient id="meterGlow" cx="50%" cy="100%" r="65%">
+            <stop offset="0" stop-color="#ffc55b" stop-opacity=".75"/>
+            <stop offset=".32" stop-color="#8c5b16" stop-opacity=".18"/>
+            <stop offset="1" stop-color="#000" stop-opacity="0"/>
+          </radialGradient>
+          <linearGradient id="meterFrame" x1="0" x2="1">
+            <stop offset="0" stop-color="#5b4325"/>
+            <stop offset=".18" stop-color="#e2c08a"/>
+            <stop offset=".5" stop-color="#7c5a32"/>
+            <stop offset=".82" stop-color="#ddba82"/>
+            <stop offset="1" stop-color="#4a321c"/>
+          </linearGradient>
+          <linearGradient id="faceplateMask" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" stop-color="#c3a477"/>
+            <stop offset=".52" stop-color="#b9996d"/>
+            <stop offset="1" stop-color="#c5a77b"/>
+          </linearGradient>
+          <linearGradient id="champagneFace" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#c8b89f"/>
+            <stop offset=".18" stop-color="#b9a489"/>
+            <stop offset=".56" stop-color="#b19a7c"/>
+            <stop offset="1" stop-color="#a68e71"/>
+          </linearGradient>
+          <linearGradient id="glassLip" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#050606" stop-opacity=".96"/>
+            <stop offset=".45" stop-color="#111311"/>
+            <stop offset=".76" stop-color="#030404"/>
+            <stop offset="1" stop-color="#2a2118"/>
+          </linearGradient>
+          <pattern id="microBrush" width="5" height="4" patternUnits="userSpaceOnUse">
+            <path d="M0 .5 H5" stroke="#fff5df" stroke-opacity=".1" stroke-width=".55"/>
+            <path d="M0 3.5 H5" stroke="#57452f" stroke-opacity=".08" stroke-width=".45"/>
+          </pattern>
+          <clipPath id="volumeKnobClip">
+            <circle cx="972" cy="551" r="98"/>
+          </clipPath>
+          <radialGradient id="volumeLamp" cx="36%" cy="28%" r="70%">
+            <stop offset="0" stop-color="#fff8d7"/>
+            <stop offset=".24" stop-color="#ffd27d"/>
+            <stop offset=".72" stop-color="#f1a02e"/>
+            <stop offset="1" stop-color="#b96513"/>
+          </radialGradient>
+        </defs>
+        <g id="faceplateSurface">
+          <rect x="69" y="366" width="1078" height="31" rx="19" fill="url(#glassLip)"/>
+          <path d="M88 369 H1128 Q1143 369 1147 385" fill="none" stroke="#353735" stroke-opacity=".8" stroke-width="2"/>
+          <rect x="69" y="379" width="1078" height="367" rx="19" fill="url(#champagneFace)"/>
+          <rect x="69" y="379" width="1078" height="367" rx="19" fill="url(#microBrush)"/>
+          <path d="M88 379 H1128 Q1142 379 1147 395" fill="none" stroke="#f0d09c" stroke-width="2.2"/>
+          <rect x="73" y="383" width="1070" height="359" rx="16" fill="none" stroke="#d2b584" stroke-width="1.5"/>
+          <rect x="77" y="387" width="1062" height="351" rx="14" fill="none" stroke="#715438" stroke-opacity=".72" stroke-width="1.4"/>
+          <line x1="641" y1="578" x2="817" y2="578" stroke="#705438" stroke-width="1.2"/>
+          <g fill="#261d16" font-family="Berkeley Mono, monospace" text-anchor="middle" letter-spacing=".5">
+            <text x="729" y="422" font-size="17">PLAY MODES</text>
+            <text x="684" y="492" font-size="15">REPEAT</text>
+            <text x="770" y="492" font-size="15">SINGLE</text>
+            <text x="684" y="563" font-size="15">RANDOM</text>
+            <text x="770" y="563" font-size="15">CONSUME</text>
+            <text x="729" y="608" font-size="16">RADIO SEARCH</text>
+            <text x="684" y="686" font-size="15">NAME</text>
+            <text x="770" y="686" font-size="15">TAGS</text>
+            <text x="162" y="690" font-size="16">PREV</text>
+            <text x="285" y="690" font-size="16">PLAY/PAUSE</text>
+            <text x="408" y="690" font-size="16">STOP</text>
+            <text x="531" y="690" font-size="16">NEXT</text>
+            <text x="972" y="691" font-size="17">VOLUME</text>
+          </g>
+          <image href="../concepts/30a-dupre-studios-user-refined-playlist.png"
+                 x="0" y="0" width="1916" height="821" clip-path="url(#volumeKnobClip)"/>
+        </g>
+        <g id="meters"></g>
+        <g id="volumeMask"></g>
+        <g id="volumeSegments"></g>
+      </svg>
+
+      <div class="transport-bank" aria-label="Transport controls">
+        <button class="transport-button" data-transport="prev" aria-label="Previous">|◀</button>
+        <button class="transport-button" data-transport="play" aria-label="Play or pause">▶Ⅱ</button>
+        <button class="transport-button" data-transport="stop" aria-label="Stop">■</button>
+        <button class="transport-button" data-transport="next" aria-label="Next">▶|</button>
+      </div>
+
+      <button class="mode-button mode-repeat" data-mode="repeat" aria-label="Repeat playlist" aria-pressed="false"></button>
+      <button class="mode-button mode-single" data-mode="single" aria-label="Repeat one track" aria-pressed="false"></button>
+      <button class="mode-button mode-random" data-mode="random" aria-label="Random playback" aria-pressed="false"></button>
+      <button class="mode-button mode-consume" data-mode="consume" aria-label="Consume tracks" aria-pressed="false"></button>
+      <button class="radio-button radio-name" data-radio="name" aria-label="Search radio stations by name"></button>
+      <button class="radio-button radio-tags" data-radio="tags" aria-label="Search radio stations by tag"></button>
+      <div class="volume-hit" id="volumeHit" role="slider" tabindex="0" aria-label="Player volume" aria-valuemin="0" aria-valuemax="100" aria-valuenow="68"></div>
+
+      <div class="playlist-actions" aria-label="Playlist actions">
+        <button class="playlist-action" data-action="add">ADD</button>
+        <button class="playlist-action" data-action="new">NEW</button>
+        <button class="playlist-action" data-action="load">LOAD</button>
+        <button class="playlist-action" data-action="save">SAVE</button>
+        <button class="playlist-action" data-action="delete">DELETE</button>
+      </div>
+
+      <div class="status-toast" id="statusToast" role="status" aria-live="polite"></div>
+    </div>
+  </section>
+
+  <div class="inspection-note">
+    <span>Keyboard: Space play/pause · arrows select · Page Up/Down browse · Home/End · R/S/X/C modes. Prototype VU motion is synthetic; production reads mpv RMS.</span>
+    <span id="interactionStatus">Local fixture · playing · volume 68</span>
+  </div>
+</main>
+
+<dialog id="deleteDialog">
+  <form method="dialog">
+    <h2>Delete this playlist?</h2>
+    <p id="deletePrompt">This removes the saved playlist. Playback stops and the receiver returns to an untitled empty queue.</p>
+    <menu>
+      <button class="lab-button" value="cancel">Cancel</button>
+      <button class="lab-button delete-confirm" value="confirm">Delete playlist</button>
+    </menu>
+  </form>
+</dialog>
+
+<script>
+(() => {
+  "use strict";
+
+  const BASE_ROW_HEIGHT = 37;
+  const VISIBLE_ROWS = 14;
+  const localSeed = [
+    ["Absolutely Cuckoo", "The Magnetic Fields", "02:02"],
+    ["I Don’t Believe in the Sun", "The Magnetic Fields", "02:50"],
+    ["All My Little Words", "The Magnetic Fields", "02:03"],
+    ["A Chicken With Its Head Cut Off — Remastered Anniversary Edition", "The Magnetic Fields and the Long-Lost Orchestra", "02:59"],
+    ["(I’m) Dazota", "The Magnetic Fields", "02:38"],
+    ["I Don’t Want to Get Over You", "The Magnetic Fields", "02:50"],
+    ["Come Back From San Francisco", "The Magnetic Fields", "02:37"],
+    ["The Luckiest Guy on the Lower East Side", "The Magnetic Fields", "01:32"],
+    ["Let’s Pretend We’re Bunny Rabbits", "The Magnetic Fields", "02:10"],
+    ["The Cactus Where Your Heart Should Be", "The Magnetic Fields", "02:38"],
+    ["I Think I Need a New Heart", "The Magnetic Fields", "02:58"],
+    ["The Book of Love", "The Magnetic Fields", "02:56"],
+    ["Fido, Your Leash Is Too Long", "The Magnetic Fields", "02:13"],
+    ["How Fucking Romantic", "The Magnetic Fields", "00:58"],
+    ["The One You Really Love", "The Magnetic Fields", "02:53"],
+    ["Punk Love", "The Magnetic Fields", "00:58"],
+    ["Parades Go By", "The Magnetic Fields", "02:56"],
+    ["Boa Constrictor", "The Magnetic Fields", "00:58"],
+    ["A Pretty Girl Is Like…", "The Magnetic Fields", "01:50"],
+    ["My Sentimental Melody", "The Magnetic Fields", "03:07"]
+  ];
+
+  const fillerTitles = [
+    "Nothing Matters When We’re Dancing", "Sweet-Lovin’ Man", "The Things We Did and Didn’t Do",
+    "Roses", "Love Is Like Jazz", "When My Boy Walks Down the Street", "Time Enough for Rocking",
+    "Very Funny", "Grand Canyon", "No One Will Ever Love You", "If You Don’t Cry",
+    "You’re My Only Home", "Washington, D.C.", "Long-Forgotten Fairytale"
+  ];
+
+  const radioSeed = [
+    ["Groove Salad", "SomaFM · Ambient / Downtempo", "ON AIR"],
+    ["Drone Zone", "SomaFM · Atmospheric Textures", "256k"],
+    ["Secret Agent", "SomaFM · Cinematic", "256k"],
+    ["Illinois Street Lounge", "SomaFM · Lounge", "256k"],
+    ["Space Station Soma", "SomaFM · Space Music", "256k"],
+    ["Left Coast 70s", "SomaFM · Mellow Rock", "256k"],
+    ["The Trip", "SomaFM · Progressive House", "256k"],
+    ["Underground 80s", "SomaFM · Synthpop", "256k"],
+    ["Deep Space One", "SomaFM · Ambient", "256k"],
+    ["Black Rock FM", "SomaFM · Eclectic", "256k"],
+    ["Bossa Beyond", "SomaFM · Brazilian", "256k"],
+    ["Seven Inch Soul", "SomaFM · Vintage Soul", "256k"],
+    ["Suburbs of Goa", "SomaFM · South Asian", "256k"],
+    ["Boot Liquor", "SomaFM · Americana", "256k"],
+    ["Heavyweight Reggae", "SomaFM · Roots Reggae", "256k"],
+    ["Lush", "SomaFM · Female Vocals", "256k"],
+    ["Beat Blender", "SomaFM · Electronic", "256k"],
+    ["Digitalis", "SomaFM · Indie Electronic", "256k"]
+  ];
+
+  const makeLocalTracks = () => Array.from({length: 69}, (_, index) => {
+    const base = localSeed[index] || [
+      fillerTitles[index % fillerTitles.length],
+      index % 7 === 0 ? "The Magnetic Fields with an Improbably Long Guest Credit" : "The Magnetic Fields",
+      `${String(1 + (index % 3)).padStart(2, "0")}:${String((17 * index) % 60).padStart(2, "0")}`
+    ];
+    return {id: `local-${index}`, title: base[0], artist: base[1], meta: base[2]};
+  });
+
+  const makeRadioTracks = () => radioSeed.map((row, index) => ({
+    id: `radio-${index}`, title: row[0], artist: row[1], meta: row[2]
+  }));
+
+  const fixtures = {
+    local: {
+      name: "69 Love Songs — The Complete Three-Volume Collection",
+      kind: "PLAYLIST",
+      tracks: makeLocalTracks,
+      selected: 3,
+      position: 90,
+      duration: 179,
+      metadata: [
+        "A Chicken With Its Head Cut Off — Remastered Anniversary Edition",
+        "The Magnetic Fields and the Long-Lost Orchestra",
+        "69 Love Songs: The Complete Three-Volume Collection",
+        "Merge Records",
+        "1999"
+      ]
+    },
+    radio: {
+      name: "Name Search · Ambient",
+      kind: "RADIO",
+      tracks: makeRadioTracks,
+      selected: 0,
+      position: 0,
+      duration: 0,
+      metadata: ["Groove Salad", "SomaFM", "Ambient / Downtempo", "256 kbps"]
+    }
+  };
+
+  const state = {
+    fixture: "local",
+    playlistName: fixtures.local.name,
+    tracks: fixtures.local.tracks(),
+    selected: fixtures.local.selected,
+    position: fixtures.local.position,
+    duration: fixtures.local.duration,
+    playing: true,
+    volume: 68,
+    modes: {repeat: false, single: false, random: false, consume: false},
+    search: null,
+    vu: {left: -20, right: -20},
+    benchmark: null
+  };
+
+  const $ = selector => document.querySelector(selector);
+  const $$ = selector => [...document.querySelectorAll(selector)];
+  const receiver = $("#receiver");
+  const rows = $("#playlistRows");
+  const scroll = $("#playlistScroll");
+  const rail = $("#scrollRail");
+  const thumb = $("#scrollThumb");
+  const seekTrack = $("#seekTrack");
+  const volumeHit = $("#volumeHit");
+  const toast = $("#statusToast");
+  const deleteDialog = $("#deleteDialog");
+  let toastTimer = null;
+  let seekDragging = false;
+  let volumeDragging = false;
+  let thumbDragging = false;
+  let thumbGrabOffset = 0;
+  let lastMeterTime = performance.now();
+
+  const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
+  const formatTime = seconds => {
+    const value = Math.max(0, Math.round(seconds));
+    return `${String(Math.floor(value / 60)).padStart(2, "0")}:${String(value % 60).padStart(2, "0")}`;
+  };
+
+  function announce(message) {
+    clearTimeout(toastTimer);
+    toast.textContent = message;
+    toast.classList.add("show");
+    toastTimer = setTimeout(() => toast.classList.remove("show"), 1800);
+    updateInspection(message);
+  }
+
+  function currentTrack() { return state.tracks[state.selected] || null; }
+
+  function switchFixture(name, message = null) {
+    const source = fixtures[name];
+    state.fixture = name;
+    state.playlistName = source.name;
+    state.tracks = source.tracks();
+    state.selected = source.selected;
+    state.position = source.position;
+    state.duration = source.duration;
+    state.playing = true;
+    state.search = null;
+    scroll.scrollTop = 0;
+    renderAll();
+    announce(message || `${name === "local" ? "Local playlist" : "Radio station"} fixture loaded`);
+  }
+
+  function renderInfo() {
+    const source = fixtures[state.fixture];
+    const track = currentTrack();
+    const metadata = track ? (state.fixture === "local" ? [
+      track.title,
+      track.artist,
+      source.metadata[2],
+      source.metadata[3],
+      source.metadata[4]
+    ] : [track.title, "SomaFM", track.artist.replace(/^SomaFM · /, ""), "256 kbps"]) : [];
+
+    $("#metadata").innerHTML = metadata.filter(Boolean).map((line, index) =>
+      `<div class="metadata-line ${index ? "dim" : ""}" title="${escapeHtml(line)}">${escapeHtml(line)}</div>`
+    ).join("");
+
+    $("#art").innerHTML = state.fixture === "radio"
+      ? '<img src="../../../assets/vinyl-placeholder.svg" alt="Radio station artwork unavailable; vinyl placeholder">'
+      : '<div class="album-crop" role="img" aria-label="69 Love Songs album art"></div>';
+
+    const onAir = state.fixture === "radio" && Boolean(track);
+    $("#onAirUnderArt").hidden = !onAir;
+    $("#seekLine").hidden = onAir || !track;
+    if (track && !onAir) updateSeekVisual();
+  }
+
+  function escapeHtml(value) {
+    return String(value).replace(/[&<>"']/g, character => ({
+      "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+    })[character]);
+  }
+
+  function renderHeader() {
+    $("#headerName").textContent = state.playlistName || "UNTITLED";
+    $("#headerName").title = state.playlistName || "UNTITLED";
+    const noun = state.fixture === "radio" ? (state.tracks.length === 1 ? "STATION" : "STATIONS") : (state.tracks.length === 1 ? "TRACK" : "TRACKS");
+    $("#headerCount").textContent = `${state.tracks.length} ${noun}`;
+  }
+
+  function renderRows() {
+    const rowHeight = scroll.clientHeight / VISIBLE_ROWS;
+    rows.style.setProperty("--row-height", `${rowHeight}px`);
+    if (!state.tracks.length) {
+      rows.innerHTML = Array.from({length: VISIBLE_ROWS}, () => '<div class="empty-row"></div>').join("");
+      rows.style.height = `${scroll.clientHeight}px`;
+      rail.hidden = true;
+      return;
+    }
+    rows.style.height = `${rowHeight * Math.max(VISIBLE_ROWS, state.tracks.length)}px`;
+    rows.innerHTML = state.tracks.map((track, index) => `
+      <div class="playlist-row ${index === state.selected ? "selected" : ""}" data-row="${index}" title="${escapeHtml(`${track.title} — ${track.artist}`)}">
+        <span class="row-number">${String(index + 1).padStart(2, "0")}</span>
+        <span class="row-name">${escapeHtml(track.title)} — ${escapeHtml(track.artist)}</span>
+        <span class="row-meta">${state.fixture === "radio" && index === state.selected && state.playing ? "ON AIR" : escapeHtml(track.meta)}</span>
+      </div>`).join("");
+    $$("[data-row]").forEach(row => row.addEventListener("click", () => selectTrack(Number(row.dataset.row), true)));
+    requestAnimationFrame(updateScrollbar);
+  }
+
+  function renderControls() {
+    const hasTrack = Boolean(currentTrack());
+    const play = $('[data-transport="play"]');
+    play.classList.toggle("playing", state.playing && hasTrack);
+    play.disabled = !hasTrack;
+    $('[data-transport="prev"]').disabled = !hasTrack;
+    $('[data-transport="next"]').disabled = !hasTrack;
+    $('[data-transport="stop"]').disabled = !hasTrack;
+    $$("[data-mode]").forEach(button => button.setAttribute("aria-pressed", String(state.modes[button.dataset.mode])));
+    $("#localFixture").setAttribute("aria-pressed", String(state.fixture === "local"));
+    $("#radioFixture").setAttribute("aria-pressed", String(state.fixture === "radio"));
+    volumeHit.setAttribute("aria-valuenow", String(state.volume));
+    updateVolumeSegments();
+    updateInspection();
+  }
+
+  function renderAll() {
+    const started = performance.now();
+    renderInfo();
+    renderHeader();
+    renderRows();
+    renderControls();
+    recordRender(performance.now() - started);
+  }
+
+  function updateSeekVisual() {
+    const percentage = state.duration ? clamp((state.position / state.duration) * 100, 0, 100) : 0;
+    seekTrack.style.setProperty("--progress", percentage.toFixed(3));
+    seekTrack.setAttribute("aria-valuenow", String(Math.round(percentage)));
+    $("#elapsed").textContent = formatTime(state.position);
+    $("#duration").textContent = formatTime(state.duration);
+  }
+
+  function seekFromPointer(event) {
+    if (state.fixture !== "local" || !currentTrack()) return;
+    const bounds = seekTrack.getBoundingClientRect();
+    const fraction = clamp((event.clientX - bounds.left) / bounds.width, 0, 1);
+    state.position = state.duration * fraction;
+    updateSeekVisual();
+    updateInspection(`Seek ${formatTime(state.position)} / ${formatTime(state.duration)}`);
+  }
+
+  function selectTrack(index, play = false) {
+    if (!state.tracks.length) return;
+    state.selected = clamp(index, 0, state.tracks.length - 1);
+    state.position = 0;
+    if (play) state.playing = true;
+    renderInfo();
+    renderRows();
+    renderControls();
+    ensureSelectedVisible();
+  }
+
+  function ensureSelectedVisible() {
+    const row = rows.children[state.selected];
+    if (row) row.scrollIntoView({block: "nearest"});
+  }
+
+  function moveTrack(delta) {
+    if (!state.tracks.length) return;
+    const next = (state.selected + delta + state.tracks.length) % state.tracks.length;
+    selectTrack(next, true);
+    announce(`${delta < 0 ? "Previous" : "Next"}: ${currentTrack().title}`);
+  }
+
+  function togglePlay() {
+    if (!currentTrack()) return;
+    state.playing = !state.playing;
+    renderRows();
+    renderControls();
+    announce(state.playing ? "Playback resumed" : "Playback paused");
+  }
+
+  function setVolume(value, message = true) {
+    state.volume = Math.round(clamp(value, 0, 100));
+    renderControls();
+    if (message) updateInspection(`Player volume ${state.volume}`);
+  }
+
+  function volumeFromPointer(event) {
+    const bounds = volumeHit.getBoundingClientRect();
+    const x = event.clientX - (bounds.left + bounds.width / 2);
+    const y = event.clientY - (bounds.top + bounds.height / 2);
+    let angle = Math.atan2(y, x) * 180 / Math.PI;
+    if (angle < 150) angle += 360;
+    setVolume(((clamp(angle, 150, 390) - 150) / 240) * 100, false);
+  }
+
+  function updateVolumeSegments() {
+    const points = [
+      [885, 630], [871, 608], [861, 583], [857, 557], [857, 531], [864, 507],
+      [875, 484], [890, 464], [906, 448], [924, 440], [947, 432], [972, 431],
+      [996, 433], [1018, 440], [1038, 452], [1055, 467], [1068, 486], [1079, 507],
+      [1086, 532], [1087, 557], [1085, 582], [1078, 608], [1059, 628]
+    ];
+    const count = points.length;
+    const lit = Math.round((state.volume / 100) * (count - 1));
+    $("#volumeMask").innerHTML = points.map(([x, y]) =>
+      `<circle cx="${x}" cy="${y}" r="5.3" fill="#0d0e0c" stroke="#655039" stroke-width=".8"/>`
+    ).join("");
+    const circles = points.map(([x, y], index) => {
+      const active = index <= lit;
+      if (active) {
+        return `<g><circle cx="${x}" cy="${y}" r="10" fill="#ff9d24" fill-opacity=".28"/><circle cx="${x}" cy="${y}" r="7" fill="#ffad32" fill-opacity=".22"/><circle cx="${x}" cy="${y}" r="4.8" fill="url(#volumeLamp)" stroke="#fff1c2" stroke-width=".85"/></g>`;
+      }
+      return "";
+    }).join("");
+    $("#volumeSegments").innerHTML = circles;
+  }
+
+  function meterMarkup(x, id) {
+    const labels = ["-40", "-20", "-10", "-6", "-3", "0", "+3"];
+    const ticks = Array.from({length: 19}, (_, index) => {
+      const angle = -56 + index * (112 / 18);
+      const major = index % 3 === 0;
+      const radians = angle * Math.PI / 180;
+      const x1 = 115 + Math.sin(radians) * (major ? 91 : 95);
+      const y1 = 131 - Math.cos(radians) * (major ? 91 : 95);
+      const x2 = 115 + Math.sin(radians) * 102;
+      const y2 = 131 - Math.cos(radians) * 102;
+      return `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${index > 14 ? "#d43b25" : "#d7c48d"}" stroke-width="${major ? 1.7 : 1}"/>`;
+    }).join("");
+    const labelText = labels.map((label, index) => {
+      const angle = -52 + index * (104 / (labels.length - 1));
+      const radians = angle * Math.PI / 180;
+      const lx = 115 + Math.sin(radians) * 72;
+      const ly = 131 - Math.cos(radians) * 72;
+      return `<text x="${lx}" y="${ly}" text-anchor="middle" fill="${index > 4 ? "#de442f" : "#ddd0aa"}" font-family="Berkeley Mono,monospace" font-size="10">${label}</text>`;
+    }).join("");
+    return `<g transform="translate(${x} 432)">
+      <rect x="0" y="0" width="230" height="113" rx="7" fill="url(#meterFrame)"/>
+      <rect x="4" y="4" width="222" height="105" rx="5" fill="#050605" stroke="#1b1812" stroke-width="2"/>
+      <rect x="5" y="5" width="220" height="103" rx="5" fill="url(#meterGlow)"/>
+      ${ticks}${labelText}
+      <text x="115" y="91" text-anchor="middle" fill="#e7d7ae" font-family="Berkeley Mono,monospace" font-size="18">VU</text>
+      <circle cx="115" cy="111" r="17" fill="url(#meterGlow)" opacity=".9"/>
+      <line id="needle-${id}" x1="115" y1="105" x2="115" y2="27" stroke="#f3d59c" stroke-width="2.2" transform="rotate(0 115 105)"/>
+      <circle cx="115" cy="105" r="3.2" fill="#c7a56f"/>
+    </g>`;
+  }
+
+  function initMeters() {
+    $("#meters").innerHTML = meterMarkup(112, "left") + meterMarkup(365, "right");
+  }
+
+  function vuAngle(db) {
+    const normalized = clamp((db + 40) / 43, 0, 1);
+    return -54 + normalized * 108;
+  }
+
+  function updateMeters(timestamp) {
+    const started = performance.now();
+    const elapsed = Math.min(.05, (timestamp - lastMeterTime) / 1000);
+    lastMeterTime = timestamp;
+    const signal = state.playing && currentTrack();
+    const base = timestamp / 350;
+    const targets = signal ? {
+      left: -13 + Math.sin(base * 1.13) * 5 + Math.sin(base * 2.31) * 2,
+      right: -14 + Math.sin(base * .97 + 1.1) * 5.5 + Math.sin(base * 2.08) * 2
+    } : {left: -40, right: -40};
+    for (const side of ["left", "right"]) {
+      const target = targets[side];
+      const speed = target > state.vu[side] ? 7.2 : 2.4;
+      state.vu[side] += (target - state.vu[side]) * Math.min(1, elapsed * speed);
+      $(`#needle-${side}`).setAttribute("transform", `rotate(${vuAngle(state.vu[side]).toFixed(2)} 115 105)`);
+    }
+    recordRender(performance.now() - started);
+    requestAnimationFrame(updateMeters);
+  }
+
+  function updateScrollbar() {
+    const overflow = scroll.scrollHeight - scroll.clientHeight;
+    rail.hidden = overflow <= 1;
+    if (overflow <= 1) return;
+    const railHeight = rail.clientHeight;
+    const ratio = scroll.clientHeight / scroll.scrollHeight;
+    const thumbHeight = Math.max(38, railHeight * ratio);
+    const travel = railHeight - thumbHeight;
+    thumb.style.height = `${thumbHeight}px`;
+    thumb.style.top = `${travel * (scroll.scrollTop / overflow)}px`;
+  }
+
+  function updateInspection(message = null) {
+    const label = state.fixture === "radio" ? "Radio fixture" : "Local fixture";
+    const play = state.playing ? "playing" : "paused";
+    $("#interactionStatus").textContent = message || `${label} · ${play} · volume ${state.volume}`;
+  }
+
+  function handlePlaylistAction(action) {
+    if (action === "add") {
+      const number = state.tracks.length + 1;
+      state.tracks.push({id: `added-${Date.now()}`, title: "Newly Added Track With a Deliberately Long Display Name", artist: "Prototype Library", meta: "04:12"});
+      state.selected = number - 1;
+      renderAll();
+      ensureSelectedVisible();
+      announce(`Added track ${number}`);
+    } else if (action === "new") {
+      state.playlistName = "UNTITLED";
+      state.tracks = [];
+      state.selected = 0;
+      state.playing = false;
+      renderAll();
+      announce("New empty playlist");
+    } else if (action === "load") {
+      switchFixture(state.fixture, `Loaded ${fixtures[state.fixture].name}`);
+    } else if (action === "save") {
+      announce(`Saved ${state.playlistName || "UNTITLED"} · ${state.tracks.length} tracks`);
+    } else if (action === "delete") {
+      $("#deletePrompt").textContent = `Delete “${state.playlistName || "UNTITLED"}”? This removes the saved playlist and leaves an untitled empty queue.`;
+      deleteDialog.showModal();
+    }
+  }
+
+  function handleTransport(action) {
+    if (action === "prev") moveTrack(-1);
+    if (action === "next") moveTrack(1);
+    if (action === "play") togglePlay();
+    if (action === "stop") {
+      state.playing = false;
+      state.position = 0;
+      renderRows();
+      renderControls();
+      if (state.fixture === "local") updateSeekVisual();
+      announce("Playback stopped");
+    }
+  }
+
+  function radioSearch(kind) {
+    const label = kind === "name" ? "Name search · Groove" : "Tag search · Ambient";
+    if (state.fixture !== "radio") switchFixture("radio", label);
+    state.search = kind;
+    state.playlistName = label;
+    renderHeader();
+    announce(label);
+  }
+
+  function recordRender(value) {
+    if (!state.benchmark) return;
+    state.benchmark.samples.push(value);
+  }
+
+  function percentile(sorted, fraction) {
+    return sorted[Math.min(sorted.length - 1, Math.floor(sorted.length * fraction))] || 0;
+  }
+
+  function updateBenchmarkReadout() {
+    if (!state.benchmark) return;
+    const elapsed = performance.now() - state.benchmark.started;
+    const remaining = Math.max(0, state.benchmark.duration - elapsed);
+    const sorted = [...state.benchmark.samples].sort((a, b) => a - b);
+    const median = percentile(sorted, .5);
+    const p95 = percentile(sorted, .95);
+    $("#benchmarkReadout").textContent = remaining > 0
+      ? `Benchmark ${Math.ceil(remaining / 1000)}s · median ${median.toFixed(2)} ms · p95 ${p95.toFixed(2)} ms`
+      : `Complete · ${sorted.length} updates · median ${median.toFixed(2)} ms · p95 ${p95.toFixed(2)} ms`;
+    if (remaining > 0) setTimeout(updateBenchmarkReadout, 250);
+    else {
+      state.benchmark.complete = true;
+      $("#benchmarkButton").disabled = false;
+      document.documentElement.dataset.benchmark = JSON.stringify({
+        samples: sorted.length,
+        medianMs: Number(median.toFixed(3)),
+        p95Ms: Number(p95.toFixed(3)),
+        durationMs: state.benchmark.duration,
+        viewport: `${Math.round(receiver.getBoundingClientRect().width)}x${Math.round(receiver.getBoundingClientRect().height)}`
+      });
+      announce("60-second dynamic-update benchmark complete");
+    }
+  }
+
+  function runBenchmark(duration = 60000) {
+    if (state.benchmark && !state.benchmark.complete) return;
+    state.benchmark = {started: performance.now(), duration, samples: [], complete: false};
+    $("#benchmarkButton").disabled = true;
+    updateBenchmarkReadout();
+  }
+
+  function bindEvents() {
+    $("#localFixture").addEventListener("click", () => switchFixture("local"));
+    $("#radioFixture").addEventListener("click", () => switchFixture("radio"));
+    $("#restoreFixture").addEventListener("click", () => switchFixture(state.fixture));
+    $("#benchmarkButton").addEventListener("click", () => runBenchmark());
+
+    $$("[data-transport]").forEach(button => button.addEventListener("click", () => handleTransport(button.dataset.transport)));
+    $$("[data-mode]").forEach(button => button.addEventListener("click", () => {
+      const mode = button.dataset.mode;
+      state.modes[mode] = !state.modes[mode];
+      renderControls();
+      announce(`${mode.toUpperCase()} ${state.modes[mode] ? "enabled" : "disabled"}`);
+    }));
+    $$("[data-radio]").forEach(button => button.addEventListener("click", () => radioSearch(button.dataset.radio)));
+    $$("[data-action]").forEach(button => button.addEventListener("click", () => handlePlaylistAction(button.dataset.action)));
+
+    seekTrack.addEventListener("pointerdown", event => {
+      seekDragging = true;
+      seekTrack.setPointerCapture(event.pointerId);
+      seekFromPointer(event);
+    });
+    seekTrack.addEventListener("pointermove", event => { if (seekDragging) seekFromPointer(event); });
+    seekTrack.addEventListener("pointerup", event => {
+      seekDragging = false;
+      seekTrack.releasePointerCapture(event.pointerId);
+      announce(`Seeked to ${formatTime(state.position)}`);
+    });
+    seekTrack.addEventListener("keydown", event => {
+      if (!["ArrowLeft", "ArrowRight"].includes(event.key)) return;
+      event.preventDefault();
+      state.position = clamp(state.position + (event.key === "ArrowRight" ? 5 : -5), 0, state.duration);
+      updateSeekVisual();
+    });
+
+    volumeHit.addEventListener("pointerdown", event => {
+      volumeDragging = true;
+      volumeHit.setPointerCapture(event.pointerId);
+      volumeFromPointer(event);
+    });
+    volumeHit.addEventListener("pointermove", event => { if (volumeDragging) volumeFromPointer(event); });
+    volumeHit.addEventListener("pointerup", event => {
+      volumeDragging = false;
+      volumeHit.releasePointerCapture(event.pointerId);
+      announce(`Player volume ${state.volume}`);
+    });
+    volumeHit.addEventListener("wheel", event => {
+      event.preventDefault();
+      setVolume(state.volume + (event.deltaY < 0 ? 5 : -5));
+    }, {passive: false});
+    volumeHit.addEventListener("keydown", event => {
+      if (!["ArrowLeft", "ArrowDown", "ArrowRight", "ArrowUp"].includes(event.key)) return;
+      event.preventDefault();
+      setVolume(state.volume + (["ArrowRight", "ArrowUp"].includes(event.key) ? 5 : -5));
+    });
+
+    scroll.addEventListener("scroll", updateScrollbar);
+    thumb.addEventListener("pointerdown", event => {
+      thumbDragging = true;
+      thumbGrabOffset = event.clientY - thumb.getBoundingClientRect().top;
+      thumb.setPointerCapture(event.pointerId);
+    });
+    thumb.addEventListener("pointermove", event => {
+      if (!thumbDragging) return;
+      const railBox = rail.getBoundingClientRect();
+      const thumbHeight = thumb.getBoundingClientRect().height;
+      const travel = railBox.height - thumbHeight;
+      const top = clamp(event.clientY - railBox.top - thumbGrabOffset, 0, travel);
+      scroll.scrollTop = (top / travel) * (scroll.scrollHeight - scroll.clientHeight);
+    });
+    thumb.addEventListener("pointerup", event => {
+      thumbDragging = false;
+      thumb.releasePointerCapture(event.pointerId);
+    });
+
+    deleteDialog.addEventListener("close", () => {
+      if (deleteDialog.returnValue !== "confirm") return;
+      const deleted = state.playlistName || "UNTITLED";
+      state.playlistName = "UNTITLED";
+      state.tracks = [];
+      state.selected = 0;
+      state.playing = false;
+      renderAll();
+      announce(`Deleted ${deleted}`);
+    });
+
+    document.addEventListener("keydown", event => {
+      if (deleteDialog.open || event.target.matches("button, input, [role=slider], .playlist-scroll")) return;
+      if (event.code === "Space") { event.preventDefault(); togglePlay(); }
+      else if (event.key === "ArrowDown") { event.preventDefault(); selectTrack(state.selected + 1); ensureSelectedVisible(); }
+      else if (event.key === "ArrowUp") { event.preventDefault(); selectTrack(state.selected - 1); ensureSelectedVisible(); }
+      else if (event.key === "PageDown") { event.preventDefault(); selectTrack(state.selected + VISIBLE_ROWS); ensureSelectedVisible(); }
+      else if (event.key === "PageUp") { event.preventDefault(); selectTrack(state.selected - VISIBLE_ROWS); ensureSelectedVisible(); }
+      else if (event.key === "Home") { event.preventDefault(); selectTrack(0); ensureSelectedVisible(); }
+      else if (event.key === "End") { event.preventDefault(); selectTrack(state.tracks.length - 1); ensureSelectedVisible(); }
+      else if (["r", "s", "x", "c"].includes(event.key.toLowerCase())) {
+        const mode = ({r: "repeat", s: "single", x: "random", c: "consume"})[event.key.toLowerCase()];
+        state.modes[mode] = !state.modes[mode];
+        renderControls();
+      }
+    });
+
+    window.addEventListener("resize", () => {
+      renderRows();
+      updateScrollbar();
+    });
+  }
+
+  function runSelfTest() {
+    const checks = [];
+    const check = (name, condition) => {
+      checks.push({name, passed: Boolean(condition)});
+      if (!condition) throw new Error(`Self-test failed: ${name}`);
+    };
+    try {
+      switchFixture("radio", "Self-test radio fixture");
+      check("radio hides seek", $("#seekLine").hidden);
+      check("radio has two ON AIR indications", !$("#onAirUnderArt").hidden && $(".playlist-row.selected .row-meta")?.textContent === "ON AIR");
+      $('[data-mode="repeat"]').click();
+      check("mode latches", state.modes.repeat);
+      $('[data-transport="next"]').click();
+      check("next selects a station", state.selected === 1);
+      $('[data-action="add"]').click();
+      check("add changes queue", state.tracks.length === 19);
+      $('[data-action="new"]').click();
+      check("new clears queue", state.tracks.length === 0 && state.playlistName === "UNTITLED");
+      $('[data-action="load"]').click();
+      check("load restores queue", state.tracks.length === 18);
+      switchFixture("local", "Self-test local fixture");
+      check("local shows seek", !$("#seekLine").hidden);
+      setVolume(35, false);
+      check("volume state changes", state.volume === 35);
+      state.position = state.duration * .72;
+      updateSeekVisual();
+      check("seek state changes", Math.round(Number(seekTrack.getAttribute("aria-valuenow"))) === 72);
+      scroll.scrollTop = scroll.scrollHeight;
+      updateScrollbar();
+      check("long playlist has scrollbar", !rail.hidden && scroll.scrollTop > 0);
+      check("fourteen rows fit viewport", Math.abs(rows.children[0].getBoundingClientRect().height * VISIBLE_ROWS - scroll.clientHeight) < 2);
+      switchFixture("local", "Self-test restored");
+      document.documentElement.dataset.selftest = JSON.stringify({passed: true, checks});
+    } catch (error) {
+      document.documentElement.dataset.selftest = JSON.stringify({passed: false, error: error.message, checks});
+      console.error(error);
+    }
+  }
+
+  initMeters();
+  bindEvents();
+  renderAll();
+  requestAnimationFrame(updateMeters);
+
+  const params = new URLSearchParams(location.search);
+  if (params.get("state") === "radio") switchFixture("radio");
+  if (params.has("benchmark")) runBenchmark(Number(params.get("benchmark")) || 60000);
+  if (params.has("selftest")) setTimeout(runSelfTest, 50);
+})();
+</script>
+</body>
+</html>

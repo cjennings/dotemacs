@@ -1,0 +1,923 @@
+#+TITLE: Music Config UI Remodel — Spec
+#+AUTHOR: Craig Jennings
+#+DATE: 2026-07-19
+#+TODO: TODO | DONE
+#+TODO: DRAFT READY DOING | IMPLEMENTED SUPERSEDED CANCELLED
+
+* DRAFT Music Config UI Remodel
+:PROPERTIES:
+:ID:       bcbb9342-1884-4281-8821-89b06f6f8793
+:END:
+- 2026-07-19 Sun @ 16:03:13 -0500 — drafted from the approved Dupre Studios design session.
+
+** Prototype iterations
+
+The design session started with working HTML directions, moved through six
+distinct visual concepts, and then refined one receiver layout through paired
+playlist/radio boards.  The last board is Craig's GIMP refinement and is the
+visual authority for this spec.
+
+- [[file:music-svg-directions.html][Initial working SVG directions]]
+- [[file:concept-board.html][Six-direction comparison board]]
+- [[file:concepts/01-champagne-receiver.png][01 Champagne Receiver]]
+- [[file:concepts/02-le-mans-night-cluster.png][02 Le Mans Night Cluster]]
+- [[file:concepts/03-geneva-playback-chronograph.png][03 Geneva Playback Chronograph]]
+- [[file:concepts/04-mastering-room-reel-console.png][04 Mastering Room Reel Console]]
+- [[file:concepts/05-perpetual-calendar-salon.png][05 Perpetual Calendar Salon]]
+- [[file:concepts/06-transatlantic-broadcast-navigator.png][06 Transatlantic Broadcast Navigator]]
+- [[file:concepts/07-functional-black-glass-receiver.png][07 Functional black-glass receiver]]
+- [[file:concepts/08-functional-black-glass-flipped.png][08 Playlist-flipped receiver]]
+- [[file:concepts/09-functional-black-glass-retro.png][09 Warmer retro receiver]]
+- [[file:concepts/10-warm-black-glass-player-volume.png][10 Player-volume receiver]]
+- [[file:concepts/11-illuminated-black-glass-controls.png][11 Illuminated controls]]
+- [[file:concepts/12-consolidated-functional-receiver.png][12 Consolidated functional receiver]]
+- [[file:concepts/13-black-silver-chronograph-receiver.png][13 Black-silver chronograph]]
+- [[file:concepts/14-corrected-luxury-chronograph-receiver.png][14 Corrected luxury chronograph]]
+- [[file:concepts/15-champagne-brass-digital-hifi.png][15 Champagne digital hi-fi]]
+- [[file:concepts/16-champagne-aluminum-radio-groups.png][16 Explicit radio grouping]]
+- [[file:concepts/17-dupre-coltrane-scrollbar.png][17 Long-playlist and scrollbar stress test]]
+- [[file:concepts/18-dupre-branding-control-study.png][18 Branding and control study]]
+- [[file:concepts/19a-dupre-playlist-state.png][19a Playlist state]] and [[file:concepts/19b-dupre-radio-state.png][19b radio state]]
+- [[file:concepts/20-dupre-playlist-radio-comparison.png][20 Long playlist / compact radio comparison]]
+- [[file:concepts/21-dupre-semantic-controls-comparison.png][21 Semantic control comparison]]
+- [[file:concepts/22-dupre-identity-bay-comparison.png][22 Identity-bay comparison]]
+- [[file:concepts/23-dupre-swapped-info-comparison.png][23 Swapped information comparison]]
+- [[file:concepts/24-dupre-full-brass-vu-comparison.png][24 Full-brass VU comparison]]
+- [[file:concepts/25-dupre-seamless-flush-comparison.png][25 Seamless flush comparison]]
+- [[file:concepts/26-dupre-studios-rounded-chrome-comparison.png][26 Dupre Studios comparison]]
+- [[file:concepts/27-dupre-studios-leather-analog-header-comparison.png][27 Leather and analog-header comparison]]
+- [[file:concepts/28-dupre-studios-balanced-controls-comparison.png][28 Balanced-control comparison]]
+- [[file:concepts/29a-dupre-studios-brass-seek-playlist.png][29 Brass seek-thumb pass]]
+- [[file:concepts/30a-dupre-studios-user-refined-playlist.png][30 Craig's near-final playlist board (visual authority)]]
+- [[file:prototypes/2026-07-19-music-config-ui-remodel-prototype-1.html][31 Functional local-playlist / radio prototype (acceptance candidate)]]
+
+* Metadata
+| Status   | Not ready — first review found one functional-prototype blocker       |
+|----------+------------------------------------------------------------------------|
+| Owner    | Craig Jennings                                                         |
+|----------+------------------------------------------------------------------------|
+| Reviewer | Craig Jennings                                                         |
+|----------+------------------------------------------------------------------------|
+| Related  | [[file:../../todo.org][music: SVG player application design and delivery]]; [[file:../../docs/specs/2026-07-06-fancy-music-player-ui-spec.org][implemented fancy player spec]]; [[file:../../docs/specs/music-config-without-emms-spec.org][EMMS-free architecture spec]] |
+|----------+------------------------------------------------------------------------|
+
+* Summary
+
+Replace the current text-and-image EMMS playlist surface with a realistic
+Dupre Studios receiver rendered inside Emacs.  The interface uses a raster skin
+for leather, glass, brass, and machined controls, then draws all changing
+information and illumination in SVG.  Emacs Lisp remains the application
+runtime and maps the SVG surface to the existing music-config commands.
+
+The remodel preserves the plain and fancy text views as fallbacks.  It does not
+change M3U ownership, radio-browser behavior, or the current EMMS playback model.
+
+* Problem / Context
+
+The implemented fancy player improved names, artwork, and progress, but it is
+still a text playlist with a multi-line overlay.  It cannot present the player
+as one coherent instrument.  Controls are key hints rather than controls,
+playlist management is visually detached from playback, and active state is
+limited to text faces and a character-cell progress bar.
+
+Craig wants a bottom-docked application that looks like a manufactured object:
+black leather, black glass, champagne brass, lit analog meters, and discreet
+controls.  The beauty has to explain state.  A lamp, depressed key, moving
+needle, seek position, or selected row must correspond to real music-config or
+mpv behavior.  Decorative AM/FM, tone, power, reload, manual URL, and other
+unsupported faceplate controls are prohibited.
+
+The final 1916×821 board settles the visual direction.  The remaining design
+problem is how to preserve its realism without baking live state into a picture.
+An all-vector redraw would lose much of the leather and metal detail.  A single
+clickable PNG would preserve the appearance but freeze track data, meter state,
+playlist rows, and button feedback.  The chosen design separates the physical
+object from its information and behavior.
+
+* Goals and Non-Goals
+
+** Goals
+
+- Match Craig's near-final board closely enough that the running player reads as
+  the same manufactured receiver, not a simplified diagram of it.
+- Preserve the full music-config workflow: playback, seek, player volume,
+  playlist browsing and persistence, radio search, repeat/single/random/consume,
+  reordering, add, new, load, save, and delete.
+- Make every visible state honest.  Meter needles use real program levels,
+  volume lamps use mpv volume, progress uses mpv position, and mode lamps use
+  current mode state.
+- Keep the hot path compact: album information and controls on the left,
+  fourteen playlist rows and playlist actions on the right.
+- Keep keyboard operation complete while adding direct mouse interaction.
+- Preserve the existing text render for TTY frames, unsupported SVG builds, and
+  opt-out/rollback.
+- Keep the renderer independent of EMMS objects so the planned EMMS-free/VAMP
+  work can replace the controller without replacing the visual layer.
+
+** Non-Goals
+
+- No music library browser, tag editor, lyrics view, waveform editor, or album
+  collection database.
+- No streaming-service integration.
+- No fake receiver functions such as AM/FM tuning, bass, treble, speakers, or
+  power.
+- No permanent faceplate controls for reload, editing the M3U file, or manual URL
+  entry.  Existing keyboard and M-x access may remain.
+- No all-vector imitation of leather, brushed metal, or photographic reflections.
+- No EMMS removal or VAMP extraction in this project.  Those remain separate
+  architecture efforts.
+- No alternate narrow/mobile layout in v1.  The player scales as one panoramic
+  instrument.
+
+** Scope tiers
+
+- v1: neutral raster skin, SVG renderer, dedicated graphical view buffer,
+  complete keyboard/mouse command surface, playlist viewport, seek, persistent
+  mpv volume, real stereo VU telemetry, local-file and radio states, diagnostics,
+  fallbacks, tests, and live verification.
+- Out of scope: library browsing, ratings, per-track menus, editable metadata,
+  alternate skins, responsive reflow, and remote control.
+- vNext: multiple visual skins, a narrower alternate layout, richer motion
+  transitions, and reuse in a future standalone VAMP package.
+
+* Design
+
+** User view
+
+F10 opens the player in the existing bottom side-window position.  In a
+graphical frame with the remodel enabled, the buffer is the Dupre Studios
+receiver.  The same keys still work.  The visible buttons also work with the
+mouse, the playlist scrolls inside its fourteen-row aperture, and selecting a
+row starts that track.
+
+A local file shows album art, title, artist, album, label, and year on separate
+lines when those fields exist.  It shows elapsed and total time with a draggable
+seek control.  A live station shows station art and two ON AIR indications: one
+under the art and one in the active station row.  It never shows a seek control
+or invented time for a stream.  Missing metadata produces no placeholder word.
+
+The interface behaves like hardware.  Play/Pause sits depressed and glows green
+while playing.  Momentary transport controls brighten while pressed.  Active
+play modes illuminate the circumference of their brass buttons.  Volume lamps
+fill continuously to the current mpv volume.  VU needles move from the actual
+left and right audio levels.
+
+The interaction model is available in the [[file:prototypes/2026-07-19-music-config-ui-remodel-prototype-1.html][functional browser prototype]].  It
+switches between a 69-track local fixture and an 18-station radio fixture and
+wires transport, playback modes, radio search, playlist actions, row selection,
+seek, volume, wheel/keyboard browsing, scrollbar drag, empty state, and delete
+confirmation.  Its built-in twelve-check behavior pass is green.  Craig's
+hands-on acceptance remains the last prototype gate.
+
+** Research and visual sources
+
+The design session compared NAD restraint, Marshall's black-and-brass control
+language, McIntosh black glass and meter hierarchy, vintage stereo transport
+controls, automobile instrument clusters, and black/silver chronographs.  The
+useful lessons were consistent: controls need one visual family, status lights
+need stable color meaning, labels belong on the faceplate, and ornament should
+make state easier to read.
+
+The local Dupre references are the implementation sources:
+
+- [[file:references/dupre-gallery.png][Dupre component gallery capture]]
+- [[file:references/waybar-redesign.png][Waybar redesign capture]]
+- [[file:README.org][Design-session decisions and critique log]]
+- [[file:concepts/30a-dupre-studios-user-refined-playlist.png][Near-final visual authority]]
+- [[file:../../../code/archsetup/docs/prototypes/gallery-widget.el][svg.el Dupre renderer proof of concept]]
+
+** Canonical geometry
+
+The source canvas is 1916×821 with a viewBox of =0 0 1916 821=.  The renderer
+preserves that aspect ratio and scales it to the available window width.  It
+does not reflow the playlist under the controls or move controls at runtime.
+Extra vertical room stays black below the instrument.  A window too short for
+legible rendering falls back to the existing fancy text view rather than
+shrinking controls into unusable targets.
+
+Craig's final board defines the visual positions.  Phase 1 records them in one
+geometry table, including every visual rectangle, label anchor, hit target, and
+playlist row.  Rendering and hit testing use the same constants.  No second
+hand-maintained map is allowed.
+
+The principal regions are:
+
+| Region                 | Approximate source bounds |
+|------------------------+---------------------------|
+| Complete instrument    | 0,0 to 1916,821           |
+| Player upper glass     | 50,50 to 1170,368         |
+| Lower brass deck       | 69,372 to 1147,744        |
+| Playlist glass         | 1170,52 to 1862,744       |
+| Branding field         | 150,115 to 500,275        |
+| Artwork                | 609,108 to 755,281        |
+| Metadata               | 780,100 to 1125,275       |
+| Seek / ON AIR line     | 608,302 to 1125,330       |
+| Playlist viewport      | 1175,126 to 1835,658      |
+| Playlist actions       | 1173,671 to 1850,733      |
+
+Exact measured values replace these orientation bounds in the geometry table.
+
+** Rendering layers
+
+The SVG is a scene graph with four layers.
+
+1. The physical shell is raster.  It contains the leather chassis, compressed
+   seams, black glass texture, fine low-contrast champagne micro-brush, recessed
+   grooves, fixed branding,
+   engraved labels, neutral control bodies, neutral volume knob, and empty VU
+   scales.  The application embeds the assets with =svg-embed= and caches their
+   encoded data for the Emacs session.
+
+2. Static vector geometry supplies clip paths, hit-region outlines used only in
+   debug mode, row separators, and any simple lines that need to stay sharp at
+   different scales.
+
+3. Dynamic SVG supplies album/station art, metadata, playlist header and rows,
+   progress, brass seek thumb, scrollbar, transport glyphs, pressed states,
+   lamps, VU needles, and meter light.  No live text, needle, lamp, selected row,
+   scrollbar, or progress state is baked into the raster shell.
+
+4. Emacs Lisp supplies behavior.  SVG rendered through librsvg does not run
+   browser JavaScript.  A buffer-local keymap receives mouse events,
+   =posn-object-x-y= returns pixel coordinates inside the displayed image, and
+   one scale transform maps them back to the source coordinate system.
+
+The near-final PNG cannot be embedded unchanged.  Phase 1 creates a neutral
+layered source by removing metadata, playlist text, active lamps, VU needles,
+progress, and selection from the final board.  The source stays editable.  The
+editable source stays one full-resolution instrument.  Runtime rendering uses
+three aligned image regions: upper player glass, lower control deck, and
+playlist.  A compact control sprite sheet and neutral VU face supplement those
+regions.  The current 1916×821 art is treated as a two-times source for a typical
+roughly 958×410 rendered dock.  Opaque runtime crops may be exported at their
+display size after a PNG/JPEG visual comparison.  V1 does not upscale beyond the
+native source pixels.
+
+** Module and state boundary
+
+The SVG view lives in a new =modules/music-svg-ui.el= module.  It requires
+=svg=, =dom=, and ordinary Emacs image support, but it does not require EMMS.
+Its pure entry points accept plain data:
+
+- =cj/music-svg-render= takes a state snapshot and viewport.
+- =cj/music-svg-hit-target= maps source coordinates to an action description.
+- =cj/music-svg-truncate= fits display text to a fixed pixel/character budget.
+- =cj/music-svg-scrollbar= computes thumb length and position.
+- =cj/music-svg-vu-angle= maps a smoothed dB value to the meter scale.
+
+=modules/music-config.el= remains the controller.  It builds an ephemeral
+=cj/music-ui-state= snapshot from the current EMMS playlist and player state,
+then dispatches renderer actions back to existing commands.  The snapshot owns
+no durable music data.  EMMS and M3U files remain authoritative in v1.
+
+The snapshot contains:
+
+- playback status and track kind
+- current track identity and metadata
+- art path, elapsed time, duration, and seekability
+- playlist name/file, total count, rows, selected index, and viewport offset
+- repeat, single, random, and consume state
+- player volume
+- left/right meter values
+- transient pressed/focused target
+
+The graphical view is a dedicated =*Music Player*= special-mode buffer.  The
+hidden EMMS playlist buffer continues to own playlist markers and track order.
+Controller helpers translate a visible row index to an EMMS buffer position
+before selection, playback, reorder, or deletion.  This avoids making a single
+image character pretend to be fourteen editable EMMS rows, and it leaves a
+clean seam for the EMMS-free state API later.
+
+** Metadata and typography
+
+Berkeley Mono is the default instrument typeface because it is the Dupre token
+font and is installed on the target system.  Missing font support falls back to
+=monospace=.  The cursive Dupre Studios mark remains raster in the physical
+shell.
+
+Title, artist, album, label, and year each get one line.  Empty values disappear
+without closing the line spacing above them.  The title receives the largest
+width budget and truncates with a literal ellipsis.  The renderer uses the
+fixed-width font metrics and the measured metadata box, not a guessed character
+count from the current window.
+
+The playlist shows fourteen one-line rows.  Each row is number, title, artist,
+and duration on one line.  The row text truncates before the duration column.
+Inactive text is soft white.  The active row is amber and carries the triangular
+play marker.  There are no decorative status dots.
+
+The header is the only coffee/cream instrument card.  It shows the current
+collection or search name and item count, but never labels the source as a
+playlist or radio.  Four concealed warm-light pools are part of the static skin,
+but the text is SVG because the name and count change.  Its champagne surface is
+smooth metal with a fine linear micro-brush, never coarse or wavy wood grain.
+
+** Playlist viewport
+
+The UI keeps a buffer-local first-visible index.  The current track is kept in
+view after track changes unless the user is actively browsing elsewhere.  Mouse
+wheel moves three rows.  Up/Down moves the UI cursor one row.  Page Up/Page Down
+moves fourteen.  Home/End goes to the first/last track.  A row click selects and
+starts that track.  The existing keyboard play command remains available.
+
+For =N= tracks and fourteen visible rows, the scrollbar thumb fraction is
+=min(1, 14/N)=.  Its position is =offset/(N-14)= when =N > 14=.  Dragging the
+thumb changes the viewport but never changes the playing track.  No scrollbar
+appears for fourteen or fewer tracks.
+
+** Control behavior
+
+The visible controls map to existing behavior:
+
+| Surface       | Action |
+|---------------+--------|
+| PREV          | =cj/music-previous= |
+| PLAY/PAUSE    | start selected/current track, or =emms-pause= while playing |
+| STOP          | =emms-stop= |
+| NEXT          | =cj/music-next= |
+| REPEAT        | =emms-toggle-repeat-playlist= |
+| SINGLE        | =emms-toggle-repeat-track= |
+| RANDOM        | =emms-toggle-random-playlist= |
+| CONSUME       | =cj/music-toggle-consume= |
+| NAME          | =cj/music-radio-search-by-name= |
+| TAGS          | =cj/music-radio-search-by-tag= |
+| ADD           | =cj/music-fuzzy-select-and-add= |
+| NEW           | =cj/music-playlist-clear=, including its file-association reset |
+| LOAD          | =cj/music-playlist-load= |
+| SAVE          | =cj/music-playlist-save= |
+| DELETE        | =cj/music-delete-playlist= with its existing strong confirmation |
+
+Mouse press immediately renders the physical pressed state.  Release inside the
+same target dispatches the command.  Release elsewhere cancels it.  The
+Play/Pause key remains depressed while playback is active.  PREV and NEXT only
+brighten during a press.  STOP has no latched light.
+
+The four play-mode controls are alternate-action pushbuttons, not lamps or
+rotary controls.  Each has an unmarked spun-brass cap matching the volume cap, a
+fixed collar, and a narrow dark travel seam; the faceplate label identifies its
+function.  Off stands slightly proud and casts a small lower shadow.  On sits
+nearly flush, collapses that shadow, and illuminates a thin desaturated-green
+ring inside the cap/collar gap.  Play/Pause uses the same warm instrument green
+through its cut-out symbol with a tight internal bloom; the depressed key
+remains the primary playing cue.
+
+The SVG mode retains the full existing keyboard surface, including commands not
+placed on the faceplate: manual station creation, reload, edit, append to another
+playlist, shuffle, track removal, and track reordering.  Which-key/help text
+documents those commands.  The faceplate stays limited to the approved controls.
+
+** Seek and volume
+
+Local files show elapsed time, total duration, an amber progress line, and a
+narrow vertical machined-brass grip.  Clicking or dragging the slider sends an
+mpv =seek= command in
+=absolute-percent= mode.  The displayed thumb is computed from mpv =time-pos=
+and =duration=.  While dragging, the local preview follows the pointer; the next
+mpv response confirms or corrects it.
+
+URL tracks always use the radio presentation.  The slider and times disappear.
+One red =ON AIR= line appears under the station art, and the active playlist row
+contains the second =ON AIR=.  No other ON AIR label is rendered.
+
+Player volume is separate from the system mixer.  Add
+=cj/music-player-volume=, default 100, and apply it to every new mpv process.
+The knob has no number or pointer.  Its equally spaced lamps show the stored
+0–100 value.  Click/drag around the arc sets volume, the mouse wheel changes it
+by five, and the existing +/− bindings call the same player-volume commands.
+Setting volume writes mpv's =volume= property and updates the stored value so a
+track change does not reset it.
+
+Every volume position is one fixed lamp well.  Dark and illuminated states use
+the same center and mounting bezel; the lit state replaces the dark lens rather
+than adding another dot or adjacent glow.  The neutral raster skin contains no
+baked lamp cores or light spill.
+
+** Real VU telemetry
+
+mpv starts with a labeled FFmpeg audio filter:
+
+#+begin_src text
+--af-add=@meter:lavfi=[astats=metadata=1:reset=1:measure_perchannel=RMS_level+Peak_level:measure_overall=none]
+#+end_src
+
+The UI reads =af-metadata/meter= over mpv JSON IPC.  FFmpeg supplies
+=lavfi.astats.1.RMS_level= and =lavfi.astats.2.RMS_level= (plus peak values).
+Mono duplicates channel one to both meters.  Missing or nonnumeric data rests
+the needles and records one diagnostic; it never invents motion.
+
+This path was verified locally on 2026-07-19 with mpv 0.41.0 and FFmpeg 8.1.2.
+A synthetic stereo source returned distinct left/right RMS and peak values
+through the labeled property.  The official references are:
+
+- [[https://mpv.io/manual/master/#command-interface-af-metadata][mpv af-metadata property]]
+- [[https://ffmpeg.org/ffmpeg-filters.html#astats-1][FFmpeg astats filter]]
+
+The renderer maps dB to the printed meter scale (−40 through +3).  A 300 ms
+attack and slower 600 ms release approximate a physical VU movement.  Values
+below the scale rest at the left stop.  Values above +3 clamp at the right stop.
+
+Telemetry uses one persistent, nonblocking IPC connection with request IDs and
+line-buffered JSON replies.  It polls only while the player view is visible and
+audio is running.  It closes when playback stops or the view is hidden.  The
+existing one-shot IPC helpers remain valid for infrequent commands.
+
+** Refresh and render budget
+
+Hooks trigger immediate redraws for track, playlist, playback, mode, and art
+changes.  Progress updates four times per second while a seekable file plays.
+Meters target ten updates per second while visible and playing.  Paused, stopped,
+hidden, and TTY states run no animation timer.
+
+The [[file:prototypes/2026-07-19-music-config-ui-remodel-benchmark.org][prototype benchmark]] measured full-image and tiled refresh for one minute
+each at the real dock size.  Full refresh failed at 133.616 ms median and
+139.822 ms p95.  A display-sized lower-deck tile passed at 35.513 ms median and
+38.221 ms p95.  The application therefore uses three aligned images: upper
+player glass, lower control deck, and playlist.  Each image includes the
+matching raster crop.  Meter ticks refresh only the lower deck; hooks refresh
+the other regions.  The source geometry and user-visible layout do not change.
+
+** Errors and empty states
+
+An empty queue shows the receiver, =UNTITLED=, =0 TRACKS=, and fourteen blank
+rows.  Playlist actions and radio search remain enabled.  Transport, seek, and
+mode actions that require a track are visibly inactive and report a short
+message if invoked by key.
+
+Missing artwork uses the existing vinyl placeholder.  Missing metadata is
+omitted.  The UI never displays =Unknown=, =N/A=, a raw nil, or a raw stream URL
+as program information.
+
+If SVG, librsvg, the raster shell, or a minimum legible viewport is unavailable,
+F10 opens the implemented fancy/text playlist instead and reports why once.  If
+mpv IPC is unavailable, seek, volume telemetry, and meters disable without
+stopping playback.  A command reports the failed operation and the next step,
+for example: =Music seek unavailable: mpv IPC socket is not connected; start a
+track and try again.=
+
+=M-x cj/music-ui-doctor= reports graphical/SVG support, resolved assets and font,
+view size, last render time, mpv socket state, meter filter state, telemetry
+timer state, and the last telemetry error.  It does not log private file paths
+or stream URLs unless called with a debug prefix.
+
+* Alternatives Considered
+
+** Hybrid raster skin plus dynamic SVG (chosen)
+
+- Good, because it preserves the leather, glass, brass grain, and machined
+  highlights from the approved board while keeping every changing value honest.
+- Bad, because the neutral raster source and SVG geometry must stay aligned.
+- Neutral, because the result is still one SVG application document even though
+  the document embeds raster assets.
+
+** Rebuild the complete receiver as vector geometry
+
+- Good, because every surface would scale without raster limits and theme tokens
+  could recolor everything.
+- Bad, because reproducing leather, brushed brass, glass, and irregular reflected
+  light would take much longer and would look less like the approved board.
+- Neutral, because simple Dupre controls still supply useful vector geometry
+  inside the hybrid renderer.
+
+** Use the final PNG as one clickable background
+
+- Good, because it would match the approved image immediately.
+- Bad, because the PNG contains one track, one playlist, lit volume segments,
+  meter needles, progress, and button state.  Painting over those areas would
+  flatten the material texture and produce visible patches.
+- Neutral, because a cleaned neutral derivative of the PNG is the chosen shell.
+
+** Browser/xwidget application
+
+- Good, because browser SVG supports native DOM events and partial element
+  updates.
+- Bad, because it introduces a browser runtime inside Emacs, complicates window
+  integration, and weakens TTY and configuration portability.
+- Neutral, because browser prototypes remain useful before the svg.el port.
+
+** Replace the EMMS playlist buffer in place
+
+- Good, because no second buffer name or adapter is needed.
+- Bad, because EMMS commands depend on point and text markers while the SVG is
+  one displayed image glyph.  Mixing invisible rows and image coordinates would
+  be brittle.
+- Neutral, because the dedicated view still delegates every operation to the
+  existing EMMS buffer in v1.
+
+* Decisions [10/10]
+
+** DONE Hybrid raster/SVG rendering
+- Context: the final board's realism comes from material texture and reflected
+  light, while live state must remain replaceable.
+- Decision: We will embed a neutral raster skin in an SVG scene and render all
+  changing information, needles, lights, and selection as SVG.
+- Consequences: easier, the running UI can closely match the board.  Harder, the
+  asset export and SVG geometry need one measured coordinate system.
+
+** DONE Craig's final board is the visual authority
+- Context: the design session produced many useful directions, but implementation
+  needs one source for proportion and material treatment.
+- Decision: We will use concept 30, Craig's 1916×821 GIMP refinement, as the
+  layout and appearance authority.
+- Consequences: easier, visual disputes can be checked against one board.  Harder,
+  the radio state must be derived without drifting from that hardware.
+
+** DONE Neutral physical shell
+- Context: the final flattened PNG contains transient information and active
+  state.
+- Decision: We will create an editable neutral source and export a clean shell,
+  control sprites, and neutral VU face.  No live state remains in those assets.
+- Consequences: easier, texture stays realistic.  Harder, Phase 1 includes careful
+  image cleanup before application code can look finished.
+
+** DONE Dedicated graphical view buffer
+- Context: EMMS playlist operations are point/marker based and cannot treat one
+  SVG image as fourteen text rows.
+- Decision: We will render into =*Music Player*= and use controller adapters to
+  operate on the hidden EMMS playlist buffer.
+- Consequences: easier, the SVG renderer stays clean and future-backend ready.
+  Harder, selection and reorder commands need explicit index-to-marker adapters.
+
+** DONE One geometry table for drawing and input
+- Context: separate hand-maintained visual and hit maps will drift.
+- Decision: We will measure the final board once and derive rendering, hit tests,
+  clipping, and scaling from the same constants.
+- Consequences: easier, controls stay clickable after scaling.  Harder, geometry
+  extraction is a named deliverable rather than ad hoc coordinates in draw code.
+
+** DONE Direct control semantics
+- Context: every faceplate control must perform real music-config behavior.
+- Decision: We will map the approved transport, modes, radio search, playlist
+  actions, seek, and volume controls directly to their existing commands or the
+  named mpv additions in this spec.
+- Consequences: easier, the interface is self-explanatory.  Harder, commands not
+  approved for the faceplate remain keyboard/M-x only and need discoverable help.
+
+** DONE Persistent per-player volume
+- Context: the existing +/- path can change the system mixer, while the design's
+  knob is the player's volume and mpv restarts for each track.
+- Decision: We will store volume in music-config, write mpv's volume property,
+  and apply the stored value when every new mpv process starts.
+- Consequences: easier, the knob is truthful and track changes preserve level.
+  Harder, one more piece of runtime state must stay synchronized with mpv.
+
+** DONE Real meter data through mpv astats
+- Context: random needle animation would violate the design's functional-lighting
+  rule.
+- Decision: We will read left/right RMS metadata from a labeled FFmpeg astats
+  filter over mpv IPC and apply physical needle smoothing.
+- Consequences: easier, the VUs convey real program level.  Harder, a visible
+  view needs a small persistent IPC telemetry client and bounded refresh timer.
+
+** DONE Current text views remain fallbacks
+- Context: TTY frames and SVG/asset failures need a usable player, and the
+  implemented fancy text UI already works.
+- Decision: We will add an SVG enable flag and fall back to the current fancy or
+  plain text path without changing M3U or playback state.
+- Consequences: easier, rollout and rollback are safe.  Harder, the text path
+  remains maintained alongside the SVG application.
+
+** DONE Three-region render path after measurement
+- Context: =svg-possibly-update-image= rerasterizes an SVG image, so ten full
+  receiver renders per second may exceed the dock's CPU budget.
+- Decision: The prototype benchmark measured the full receiver at 133.616 ms
+  median / 139.822 ms p95 and the display-sized lower-deck tile at 35.513 ms
+  median / 38.221 ms p95.  We will use three aligned regions and refresh only
+  the lower deck at meter cadence.
+- Consequences: easier, meter animation passes the render budget with margin.
+  Harder, the renderer places three images and the asset export must hide their
+  boundaries exactly.
+
+* Review findings [0/1]
+
+** TODO The final interaction model has no working two-state prototype :blocking:
+
+The design session produced extensive static boards and established concept 30
+as the visual authority, but the final geometry has not been exercised as a
+working local-playlist and radio prototype.  That leaves click targets, drag
+behavior, playlist scrolling, long-text clipping, local/radio state changes,
+and the full-image render budget unproven.  Starting implementation now would
+make the first build phase answer product and performance questions that belong
+in the design gate.
+
+Smallest resolution: create one functional prototype using concept 30's
+geometry and neutral skin.  It may be a browser prototype or an Emacs SVG proof,
+but it must switch between a long local playlist and a live-radio fixture; wire
+transport, modes, radio search, playlist actions, row and scrollbar navigation,
+seek, and volume interaction; show all pressed and latched states; stress long
+metadata; and record one minute of render timing at the intended dock size.
+Link the accepted prototype under Prototype iterations and Design, record any
+geometry or performance changes here, then repeat spec review.
+
+Progress on 2026-07-19: [[file:prototypes/2026-07-19-music-config-ui-remodel-prototype-1.html][prototype 1]] now supplies both fixtures and the named
+interactions; its twelve-check behavior pass is green.  The [[file:prototypes/2026-07-19-music-config-ui-remodel-benchmark.org][librsvg benchmark]]
+records a full-render failure and a passing lower-deck tile, so the spec now
+requires the three-region renderer.  Craig's hands-on acceptance is the only
+remaining part of this finding.
+
+* Implementation phases
+
+** Phase 1 — Neutral skin and geometry manifest
+
+Create the editable neutral source from concept 30.  Export aligned upper-glass,
+lower-deck, and playlist crops plus control sprites and the VU face under final
+dated asset names.  Record measured
+source rectangles, anchors, clip boxes, and hit targets in one Lisp geometry
+table.  Add an asset/geometry debug command that renders target outlines over the
+skin.  The phase ends with a static SVG in Emacs that matches the final board and
+contains no baked live state.
+
+** Phase 2 — Pure SVG renderer and view mode
+
+Add =modules/music-svg-ui.el=, the state structs, pure layout helpers, raster
+embedding cache, text clipping, dynamic node construction, and
+=cj/music-svg-mode=.  F10 can show/hide the static graphical view while the
+existing fancy/text path remains available.  Add unit tests for scale transforms,
+hit testing, truncation, scrollbar math, mode colors, and VU angle mapping.
+
+** Phase 3 — Controller snapshot and playlist viewport
+
+Build state snapshots from EMMS without exposing EMMS objects to the renderer.
+Render metadata, album art, header, fourteen rows, selection, and the exact
+scrollbar.  Implement keyboard and mouse scrolling, row selection/play, and
+index-to-EMMS-marker adapters.  Characterize existing reorder/removal behavior
+before routing those keys through the graphical view.
+
+** Phase 4 — Transport, modes, radio search, and playlist actions
+
+Wire the approved faceplate controls and pressed/latched rendering.  Preserve
+the remaining keyboard-only commands and add a concise help surface.  Cover
+empty-queue behavior, destructive Delete confirmation, command errors, and
+state refresh hooks.  The phase ends with a complete functional control surface
+using the existing backend.
+
+** Phase 5 — Seek and persistent mpv volume
+
+Add player-owned volume state and apply it on process start.  Route +/−, wheel,
+click, and drag through the same volume setters.  Add absolute seek and drag
+confirmation using mpv time/duration.  Render local progress and the exact brass
+thumb.  Unit-test value/coordinate mapping and use a fake IPC ledger for command
+order.
+
+** Phase 6 — Stereo telemetry and timed refresh
+
+Add the labeled astats filter, persistent nonblocking telemetry connection,
+JSON request/reply routing, meter parsing, dB mapping, and needle ballistics.
+Run progress and meter timers only while visible and active.  Measure the render
+budget for one minute and use the documented three-region fallback if needed.
+Test with the synthetic no-audio-output source used during spec research.
+
+** Phase 7 — Radio state, failures, and diagnostics
+
+Render the matched live-radio state with exactly two ON AIR labels and no seek
+surface.  Handle missing art/metadata, unavailable SVG/assets/font, lost mpv IPC,
+missing meter metadata, hidden-window timer shutdown, and an empty queue.  Add
+=cj/music-ui-doctor= and verify that fallback never mutates playback or playlist
+state.
+
+** Phase 8 — Integration, documentation, and live verification
+
+Run the focused music tests, batch load, byte compilation, TTY fallback, and GUI
+daemon verification.  Exercise a long local playlist, a short radio playlist,
+seek, volume across track changes, every control, scrolling, reorder, deletion,
+and one-hour timer stability.  Update music documentation and key hints.  Make
+the SVG view the graphical default only after Craig accepts the live result.
+
+* Acceptance criteria
+
+- [ ] F10 opens the Dupre Studios receiver in the bottom side window on a
+  graphical frame and toggles it closed without changing playback.
+- [ ] The running receiver matches concept 30 in proportion, material character,
+  spacing, typography, and control placement at the normal dock size.
+- [ ] Leather, glass, brass, fixed engraving, and neutral hardware come from the
+  raster skin; live information and illumination are not baked into it.
+- [ ] The UI remains fully usable from the keyboard.
+- [ ] Every visible button maps to the command named in this spec.
+- [ ] Pressed, playing, and latched mode states are physically and chromatically
+  distinct.
+- [ ] Local metadata uses separate lines and omits missing values.  No visible
+  program field says Unknown or N/A.
+- [ ] Long metadata and playlist rows truncate with an ellipsis before colliding
+  with adjacent fields.
+- [ ] The analog header card shows only the collection/search name and item
+  count; it never adds a PLAYLIST or RADIO type label.
+- [ ] Champagne surfaces use a fine low-contrast metallic micro-brush and never
+  read as wood grain.
+- [ ] The playlist shows fourteen one-line rows with artist inline, selected row
+  amber, and a functional scrollbar whose size and position follow the formulas.
+- [ ] Mouse wheel, keyboard navigation, scrollbar drag, row click/play, reorder,
+  and removal operate on the intended EMMS tracks.
+- [ ] ADD, NEW, LOAD, SAVE, and DELETE preserve current playlist/M3U semantics.
+- [ ] DELETE uses the existing strong confirmation and reports which playlist was
+  deleted.
+- [ ] A local track displays actual elapsed/duration and supports click/drag seek.
+- [ ] The seek thumb is brass and its position comes from mpv state.
+- [ ] A live station has no slider or times and shows exactly two ON AIR labels.
+- [ ] The volume knob controls mpv, not the system mixer, and persists across
+  track changes.
+- [ ] Volume segments fill cumulatively to the stored mpv volume and have no
+  numeric display.
+- [ ] VU needles use distinct real left/right RMS values, rest on missing data,
+  and never use random animation.
+- [ ] Paused, stopped, hidden, and TTY states run no meter/progress timer.
+- [ ] Full or tiled rendering meets the median/95th-percentile budget during a
+  one-minute meter run.
+- [ ] Empty playlist, missing art, missing metadata, missing SVG/assets, and lost
+  mpv IPC each have the fallback or actionable error defined in this spec.
+- [ ] =cj/music-ui-doctor= reports the renderer and telemetry state without
+  exposing file paths or stream URLs by default.
+- [ ] Setting the SVG enable flag off restores the implemented fancy/text UI.
+- [ ] Existing music-config tests pass, and new pure tests cover geometry,
+  snapshots, hit targets, clipping, scrolling, volume, seek, meter mapping, and
+  timer lifecycle.
+- [ ] Craig accepts both a long local-playlist state and a live-radio state in the
+  real Emacs side window before the SVG view becomes the default.
+
+* Readiness dimensions
+
+- Data model & ownership: EMMS and M3U remain authoritative.  The SVG snapshot,
+  pressed target, viewport offset, meter smoothing, and render timing are
+  generated runtime state.  Player volume is music-config runtime state applied
+  to each mpv process.  Raster source assets are project-authored and versioned.
+- Errors, empty states & failure: defined in the Errors and empty states section.
+  Playback continues if rendering or meter telemetry fails.  Destructive
+  playlist deletion retains the existing strong confirmation.
+- Security & privacy: no credentials are added.  Diagnostics omit local paths and
+  stream URLs by default.  Album art and radio favicons stay in the existing
+  local cache.
+- Observability: =cj/music-ui-doctor= exposes assets, font, viewport, render
+  timing, socket/filter/timer state, and last telemetry error.  The UI itself
+  exposes player state through lamps, needles, progress, and selection.
+- Performance & scale: fourteen visible rows from playlists tested through at
+  least 1,000 tracks.  SVG refresh has explicit median/95th-percentile budgets,
+  a one-minute test, and a pre-approved tiled fallback.  Hidden views do no timed
+  work.
+- Reuse & lost opportunities: reuses the current music commands, EMMS state,
+  M3U/radio/art code, bottom side window, Dupre tokens, =svg.el=, and the gallery
+  widget proof.  It deliberately does not wait for the EMMS-free/VAMP rewrite.
+- Architecture fit & weak points: new renderer module is pure at its boundary;
+  music-config owns EMMS adaptation and mpv effects.  Weak points are raster/SVG
+  alignment, point-based EMMS adapters, full-image rerasterization, and telemetry
+  lifecycle.  Geometry sharing, adapter tests, tiled fallback, and visibility-
+  scoped IPC mitigate them.
+- Config surface: add =cj/music-svg-ui= (boolean, default off until live acceptance,
+  then on) and =cj/music-player-volume= (integer 0–100, default 100).  Keep
+  =cj/music-fancy-ui= as the fallback selector.  Refresh rates and geometry are
+  internal until real use proves a customization need.
+- Documentation plan: update music-config commentary/docstrings, F10/keybinding
+  notes, the music VERIFY task, and the design README.  The final spec and dated
+  runtime assets remain linked from the parent task.
+- Dev tooling: use the existing ERT/byte-compile commands, focused music test
+  files, Emacs daemon live verification, and a deterministic synthetic mpv meter
+  script/fixture with =ao=null=.  No network or audible output in the normal
+  suite.
+- Rollout, compatibility & rollback: SVG is additive and initially disabled.
+  Fallback is automatic.  Rollback is setting =cj/music-svg-ui= nil or reverting
+  the new renderer/controller changes; M3U files and cached art do not migrate.
+- External APIs & deps: built-in Emacs 30.2 =svg.el= and librsvg are the render
+  path.  mpv 0.41 and FFmpeg 8.1 were checked locally.  Official mpv and FFmpeg
+  documentation confirms labeled audio-filter metadata and astats keys.
+
+* Risks, Rabbit Holes, and Drawbacks
+
+- Cleaning a neutral skin from a flattened final board can produce visible
+  texture patches.  Keep the layered source, use broad material samples rather
+  than small clone spots, and approve the neutral shell before wiring state.
+- Full-image librsvg refresh may be too expensive at meter cadence.  Measure in
+  the prototype.  Use the specified three-region split rather than lowering the
+  meter to a decorative crawl.
+- EMMS commands expect point in the playlist buffer.  Keep every index-to-marker
+  translation in one controller adapter and test reorder/remove against the same
+  logical track.
+- SVG text metrics can differ from Emacs face metrics.  Use the installed Dupre
+  fixed-width font, fixed boxes, clipping paths, and visual stress fixtures with
+  long titles.
+- An mpv filter may fail for an unusual audio format.  Playback wins: leave the
+  meter at rest, show the failure in the doctor, and never stop the track.
+- The raster skin limits infinite scaling and alternate themes.  V1 targets the
+  current dock and approved aesthetic.  Multiple skins and responsive reflow are
+  separate work.
+
+* Testing / Verification / Rollout
+
+Pure ERT tests cover layout transforms, geometry/hit agreement, text fitting,
+playlist window/scrollbar math, state-to-color mapping, volume/seek conversion,
+VU dB/angle mapping, ballistics, and timer state.  Controller tests use an EMMS
+fixture or stubs and an mpv IPC ledger so they do not play sound.
+
+Integration tests build representative local and radio snapshots, render SVG
+strings, and assert required IDs, text, clip paths, and state classes.  They do
+not use pixel-perfect screenshots as the main contract because librsvg/font
+versions can change antialiasing.  A small set of manual reference screenshots
+supports the visual acceptance step.
+
+The live pass runs in the real bottom side window with the normal long playlist
+and a radio playlist.  It covers every faceplate control, keyboard parity,
+scrolling, long strings, seek, persistent volume, two-channel meters, exactly two
+ON AIR states, hidden-window timer shutdown, and fallback.  The SVG flag changes
+to default-on only after that pass.
+
+* References / Appendix
+
+- [[file:../../docs/specs/2026-07-06-fancy-music-player-ui-spec.org][Implemented fancy music-player UI spec]]
+- [[file:../../docs/specs/music-config-without-emms-spec.org][Music-config without EMMS architecture spec]]
+- [[file:README.org][Music SVG design record]]
+- [[file:concepts/30a-dupre-studios-user-refined-playlist.png][Near-final playlist board]]
+- [[file:prototypes/2026-07-19-music-config-ui-remodel-prototype-1.html][Functional two-state prototype]]
+- [[file:prototypes/2026-07-19-music-config-ui-remodel-benchmark.org][Prototype librsvg benchmark]]
+- [[https://www.gnu.org/software/emacs/manual/html_node/elisp/SVG-Images.html][Emacs Lisp SVG images]]
+- [[https://mpv.io/manual/master/#json-ipc][mpv JSON IPC]]
+- [[https://mpv.io/manual/master/#command-interface-af-metadata][mpv audio-filter metadata]]
+- [[https://ffmpeg.org/ffmpeg-filters.html#astats-1][FFmpeg astats]]
+
+* Review and iteration history
+
+** 2026-07-19 Sun @ 19:11:57 -0500 — Codex (emacs-d) — hardware-depth correction
+- What: changed the upper boundary of the lower deck from a raised champagne
+  rim to a dark glass reveal descending into the brass faceplate.  Unified all
+  four play-mode and both radio-search controls as blank, circularly machined
+  brass pushbutton caps.  Removed the returned search glyphs and expanded then
+  tightened the source crop to preserve the volume knob's complete black
+  knurled skirt without importing the old faceplate halo.
+- Why: the prior neutral-faceplate overlay flattened the glass/metal depth,
+  allowed the small-control treatments to diverge, and clipped the knob at a
+  perfect circle that hid its physical knurling.  These changes restore a
+  believable assembly hierarchy while retaining state-owned lamps.
+- Artifacts: updated [[file:prototypes/2026-07-19-music-config-ui-remodel-prototype-1.html][functional prototype 1]]; twelve-check interaction regression green.
+
+** 2026-07-19 Sun @ 18:43:00 -0500 — Codex (emacs-d) — prototype refinement
+- What: replaced the baked lower-deck faceplate with a neutral SVG-owned
+  champagne micro-brush surface, then restored only the approved volume knob
+  through a circular crop.  Re-engraved the fixed control labels on the new
+  surface and reduced the volume arc to small dark wells with state-owned amber
+  cores and local glow.  Verified both local and radio layouts and reran the
+  twelve-check headless interaction pass successfully.
+- Why: masking individual source-image lamps left visible baked illumination and
+  made the faceplate look patched.  Owning the complete neutral deck surface in
+  SVG removes the conflicting lamp state and the woodlike raster grain while
+  retaining the realistic machined knob from the approved visual authority.
+- Artifacts: updated [[file:prototypes/2026-07-19-music-config-ui-remodel-prototype-1.html][functional prototype 1]]; local and radio state screenshots.
+
+** 2026-07-19 Sun @ 18:39:41 -0500 — Codex (emacs-d) — prototype refinement
+- What: applied Craig's second hands-on pass.  Removed source-type words and the
+  separator from the analog card; changed radio fixture naming to =NAME SEARCH=;
+  replaced the circular seek ornament with a vertical machined-brass grip;
+  removed all mode-cap glyphs and matched their smooth spun-brass finish to the
+  volume cap; and rebuilt the volume arc as dark recessed wells whose amber core
+  and glow exist only for lit positions.
+- Why: the card should identify the current collection/search rather than report
+  an internal playlist/radio type.  The prior seek coin had no hardware model,
+  the mode symbols duplicated their faceplate labels, and baked light spill made
+  some nominally dark volume positions glow.  The spec now also rejects coarse,
+  wavy champagne texture that reads as wood grain.
+- Artifacts: updated [[file:prototypes/2026-07-19-music-config-ui-remodel-prototype-1.html][functional prototype 1]]; Craig's 18:29–18:32 screenshots.
+
+** 2026-07-19 Sun @ 18:19:28 -0500 — Codex (emacs-d) — prototype refinement
+- What: incorporated Craig's first hands-on notes.  Rebuilt play modes as
+  alternate-action brass pushbuttons with engraved glyphs, visible travel, and
+  a restrained inset green ring; tightened Play/Pause illumination; aligned
+  each volume lamp's dark and lit state to one physical well; restored four
+  concealed warm-light pools on a darker coffee/cream playlist card; and made
+  the prototype's synthetic-VU / production-signal distinction explicit.
+- Why: the prior controls read as glowing domes, the green looked like a neon
+  outline, the flattened source and live volume arcs produced double lamps, and
+  the playlist card had lost its analog illumination model.  Production VUs
+  remain tied to real mpv astats RMS data as already specified.
+- Artifacts: updated [[file:prototypes/2026-07-19-music-config-ui-remodel-prototype-1.html][functional prototype 1]]; Craig's 17:59–18:03 screenshots.
+
+** 2026-07-19 Sun @ 17:56:27 -0500 — Codex (emacs-d) — prototype author
+- What: built functional prototype 1 from concept 30 with local and radio
+  fixtures, all approved faceplate controls, long-string stress data, exactly
+  fourteen visible rows, scrollbar and seek/volume drag, pressed/latched states,
+  empty/delete flows, keyboard navigation, and synthetic stereo needle motion.
+  Its built-in twelve-check behavior pass is green.  Measured librsvg for one
+  minute per path: full receiver 133.616 ms median / 139.822 ms p95 (fail),
+  display-sized lower deck 35.513 ms median / 38.221 ms p95 (pass).
+- Why: this supplies the interaction and performance evidence requested by the
+  first review finding.  The measured result makes the three-region renderer a
+  requirement rather than a contingency.  Craig's hands-on prototype acceptance
+  remains pending, so the finding stays open and the spec stays DRAFT.
+- Artifacts: [[file:prototypes/2026-07-19-music-config-ui-remodel-prototype-1.html][functional prototype 1]]; [[file:prototypes/2026-07-19-music-config-ui-remodel-benchmark.org][benchmark record]];
+  [[file:2026-07-19-music-config-ui-remodel-render-fixture.svg][full-render fixture template]].
+
+** 2026-07-19 Sun @ 16:16:57 -0500 — Codex (emacs-d) — reviewer
+- What: completed the first implementation-readiness review after reading the
+  current music-config render, EMMS playlist, radio, mpv IPC, and volume paths.
+  Assigned =Not ready= and recorded one blocking finding: the approved final
+  board is static, so its two application states, hit/drag/scroll behavior, and
+  rendering budget have not passed the project's functional-prototype gate.
+- Why: the architecture, ownership, failure handling, telemetry source, rollout,
+  acceptance criteria, and eight phase boundaries are otherwise specific enough
+  to implement.  A working prototype is the smallest remaining test of the
+  design rather than an invitation to redesign it during Phase 1.
+- Artifacts: =* Review findings [0/1]= in this spec; source checks in
+  =modules/music-config.el=; Dupre =gallery-widget.el= SVG proof; verified mpv
+  =af-metadata/meter= / FFmpeg =astats= telemetry path.
+
+** 2026-07-19 Sun @ 16:03:13 -0500 — Codex (emacs-d) — author
+- What: drafted the Music Config UI Remodel spec from Craig's selected concept,
+  manual GIMP refinement, and hybrid raster/SVG decision.  Verified the real VU
+  telemetry path against the installed mpv/FFmpeg stack and primary docs.
+- Why: the visual design is settled closely enough to define the renderer,
+  controller boundary, interaction surface, phases, and test contract before
+  implementation.
+- Artifacts: [[file:concepts/30a-dupre-studios-user-refined-playlist.png][concept 30]]; local mpv astats IPC check; parent music SVG task.

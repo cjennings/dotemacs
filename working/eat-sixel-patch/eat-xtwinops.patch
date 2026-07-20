@@ -1,0 +1,46 @@
+--- a/eat.el
++++ b/eat.el
+@@ -2809,6 +2809,33 @@
+        (funcall (eat--t-term-input-fn eat--t-term) eat--t-term
+                 "\e[>0;0;0c")))))
+ 
++(defun eat--t-send-window-size-report (n)
++  "Respond to XTWINOPS window size report request N.
++
++N is 14 (text area size in pixels), 16 (cell size in pixels) or 18
++\(text area size in characters).  Other operations are ignored.
++Multiplexers like tmux send \\='CSI 14 t\\=' to discover the cell
++pixel size they need before they will emit Sixel to a terminal."
++  (let ((disp (eat--t-term-display eat--t-term)))
++    (pcase n
++      (14
++       (funcall (eat--t-term-input-fn eat--t-term) eat--t-term
++                (format "\e[4;%i;%it"
++                        (* (eat--t-disp-height disp)
++                           (eat--t-term-char-height eat--t-term))
++                        (* (eat--t-disp-width disp)
++                           (eat--t-term-char-width eat--t-term)))))
++      (16
++       (funcall (eat--t-term-input-fn eat--t-term) eat--t-term
++                (format "\e[6;%i;%it"
++                        (eat--t-term-char-height eat--t-term)
++                        (eat--t-term-char-width eat--t-term))))
++      (18
++       (funcall (eat--t-term-input-fn eat--t-term) eat--t-term
++                (format "\e[8;%i;%it"
++                        (eat--t-disp-height disp)
++                        (eat--t-disp-width disp)))))))
++
+ (defun eat--t-send-graphics-attrs (attr operation)
+   "Send graphics attributes.
+ 
+@@ -3632,6 +3659,9 @@
+                  ;; CSI s.
+                  (`((?s) nil nil)
+                   (eat--t-save-cur))
++                 ;; CSI <n> t.
++                 (`((?t) nil ((,n)))
++                  (eat--t-send-window-size-report n))
+                  ;; CSI u.
+                  (`((?u) nil nil)
+                   (eat--t-restore-cur)))))))

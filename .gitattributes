@@ -1,0 +1,2 @@
+# Unified diff context lines can carry a required trailing space marker.
+working/**/*.patch whitespace=-blank-at-eol

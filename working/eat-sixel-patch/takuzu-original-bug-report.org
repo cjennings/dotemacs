@@ -1,0 +1,17 @@
+#+TITLE: Bug/investigate: images from Claude Code don't display in th
+#+SOURCE: from takuzu
+#+DATE: 2026-07-11 14:41:39 -0500
+
+Bug/investigate: images from Claude Code don't display in the EAT terminal.
+
+Context: running Claude Code inside EAT (eat 0.9.4 from elpa). When the agent posts an image to the terminal, nothing renders — Craig can't see it.
+
+Finding: EAT *does* have Sixel image support. eat.el defines eat-sixel-scale, eat-sixel-aspect-ratio, eat-sixel-render-formats, and a full Sixel decode/render path (sixel-buffer, sixel-palette, sixel-render-format, etc.). So the capability exists; this isn't a plain 'EAT can't do images' limitation.
+
+Likely causes to check:
+1. Protocol mismatch: Claude Code CLI probably emits the kitty graphics protocol or the iTerm2 inline-image protocol (OSC 1337), NOT Sixel. EAT renders Sixel only, so a kitty/iTerm image sequence is dropped. Confirm which protocol Claude Code uses (env like TERM, or its terminal-capability detection) and whether it can be told to emit Sixel.
+2. Sixel render-format availability: eat-sixel-render-formats lists preferred render backends; if none is available in this Emacs build, Sixel silently won't display. Test EAT with a known-good sixel image (e.g. img2sixel output) to confirm EAT-side rendering works at all.
+
+Repro: in an EAT session, have Claude Code (or any tool) post an image; observe nothing renders. Next step: identify the emitted escape sequence (capture raw bytes) to confirm protocol.
+
+From the takuzu session, 2026-07-11 — surfaced because the agent kept posting game screenshots the terminal couldn't show.

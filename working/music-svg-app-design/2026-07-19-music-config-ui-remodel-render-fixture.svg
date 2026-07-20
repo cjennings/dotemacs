@@ -1,0 +1,87 @@
+<svg xmlns="http://www.w3.org/2000/svg"
+     xmlns:xlink="http://www.w3.org/1999/xlink"
+     viewBox="0 0 1916 821" width="1916" height="821">
+  <defs>
+    <radialGradient id="glassGlow" cx="40%" cy="0" r="90%">
+      <stop offset="0" stop-color="#22231f" stop-opacity=".28"/>
+      <stop offset="1" stop-color="#050605" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="headerBrass" x1="0" x2="1">
+      <stop offset="0" stop-color="#c4aa89"/>
+      <stop offset=".5" stop-color="#ae9374"/>
+      <stop offset="1" stop-color="#c2a27d"/>
+    </linearGradient>
+    <clipPath id="metadataClip"><rect x="780" y="104" width="350" height="180"/></clipPath>
+    <clipPath id="playlistClip"><rect x="1188" y="126" width="610" height="520"/></clipPath>
+  </defs>
+
+  <image x="0" y="0" width="1916" height="821"
+         xlink:href="concepts/30a-dupre-studios-user-refined-playlist.png"/>
+
+  <rect x="605" y="96" width="540" height="250" fill="#070807"/>
+  <rect x="605" y="96" width="540" height="250" fill="url(#glassGlow)"/>
+  <image x="612" y="108" width="146" height="173" xlink:href="assets/vinyl-placeholder.svg"/>
+  <g clip-path="url(#metadataClip)" fill="#ebe5d9" font-family="Berkeley Mono, monospace" font-size="20" letter-spacing="1.4">
+    <text x="780" y="130">A CHICKEN WITH ITS HEAD CUT OFF — REMASTERED ANNIVERSARY EDITION</text>
+    <text x="780" y="166">THE MAGNETIC FIELDS AND THE LONG-LOST ORCHESTRA</text>
+    <text x="780" y="202">69 LOVE SONGS: THE COMPLETE THREE-VOLUME COLLECTION</text>
+    <text x="780" y="238">MERGE RECORDS</text>
+    <text x="780" y="274">1999</text>
+  </g>
+  <text x="610" y="322" fill="#ddd4c5" font-family="Berkeley Mono, monospace" font-size="19">01:30</text>
+  <line x1="679" y1="316" x2="1023" y2="316" stroke="#3b3a37" stroke-width="2"/>
+  <line x1="679" y1="316" x2="850" y2="316" stroke="#f2a900" stroke-width="2"/>
+  <circle cx="850" cy="316" r="9" fill="#c79a60" stroke="#f0d4a7" stroke-width="1"/>
+  <text x="1040" y="322" fill="#ddd4c5" font-family="Berkeley Mono, monospace" font-size="19">02:59</text>
+
+  <rect x="1172" y="52" width="688" height="65" fill="url(#headerBrass)"/>
+  <g fill="#251c14" font-family="Berkeley Mono, monospace" font-size="20" letter-spacing="1.5">
+    <text x="1202" y="94">PLAYLIST</text>
+    <text x="1316" y="94">|</text>
+    <text x="1355" y="94">69 LOVE SONGS — COMPLETE</text>
+    <text x="1731" y="94">69 TRACKS</text>
+  </g>
+  <rect x="1172" y="118" width="688" height="545" fill="#070807"/>
+  <rect x="1172" y="118" width="688" height="545" fill="url(#glassGlow)"/>
+  <g clip-path="url(#playlistClip)" font-family="Berkeley Mono, monospace" font-size="17" letter-spacing=".8">
+    <g fill="#ddd8cf">
+      <text x="1192" y="153">01</text><text x="1237" y="153">ABSOLUTELY CUCKOO — THE MAGNETIC FIELDS</text><text x="1760" y="153">02:02</text>
+      <text x="1192" y="190">02</text><text x="1237" y="190">I DON’T BELIEVE IN THE SUN — THE MAGNETIC FIELDS</text><text x="1760" y="190">02:50</text>
+      <text x="1192" y="227">03</text><text x="1237" y="227">ALL MY LITTLE WORDS — THE MAGNETIC FIELDS</text><text x="1760" y="227">02:03</text>
+    </g>
+    <rect x="1175" y="238" width="650" height="37" fill="#f2a900" fill-opacity=".07"/>
+    <g fill="#f2a900">
+      <text x="1174" y="264">▶</text><text x="1192" y="264">04</text><text x="1237" y="264">A CHICKEN WITH ITS HEAD CUT OFF — THE MAGNETIC FIELDS</text><text x="1760" y="264">02:59</text>
+    </g>
+    <g fill="#ddd8cf">
+      <text x="1192" y="301">05</text><text x="1237" y="301">(I’M) DAZOTA — THE MAGNETIC FIELDS</text><text x="1760" y="301">02:38</text>
+      <text x="1192" y="338">06</text><text x="1237" y="338">I DON’T WANT TO GET OVER YOU — THE MAGNETIC FIELDS</text><text x="1760" y="338">02:50</text>
+      <text x="1192" y="375">07</text><text x="1237" y="375">COME BACK FROM SAN FRANCISCO — THE MAGNETIC FIELDS</text><text x="1760" y="375">02:37</text>
+      <text x="1192" y="412">08</text><text x="1237" y="412">THE LUCKIEST GUY ON THE LOWER EAST SIDE — THE MAGNETIC FIELDS</text><text x="1760" y="412">01:32</text>
+      <text x="1192" y="449">09</text><text x="1237" y="449">LET’S PRETEND WE’RE BUNNY RABBITS — THE MAGNETIC FIELDS</text><text x="1760" y="449">02:10</text>
+      <text x="1192" y="486">10</text><text x="1237" y="486">THE CACTUS WHERE YOUR HEART SHOULD BE — THE MAGNETIC FIELDS</text><text x="1760" y="486">02:38</text>
+      <text x="1192" y="523">11</text><text x="1237" y="523">I THINK I NEED A NEW HEART — THE MAGNETIC FIELDS</text><text x="1760" y="523">02:58</text>
+      <text x="1192" y="560">12</text><text x="1237" y="560">THE BOOK OF LOVE — THE MAGNETIC FIELDS</text><text x="1760" y="560">02:56</text>
+      <text x="1192" y="597">13</text><text x="1237" y="597">FIDO, YOUR LEASH IS TOO LONG — THE MAGNETIC FIELDS</text><text x="1760" y="597">02:13</text>
+      <text x="1192" y="634">14</text><text x="1237" y="634">HOW FUCKING ROMANTIC — THE MAGNETIC FIELDS</text><text x="1760" y="634">00:58</text>
+    </g>
+  </g>
+
+  <g fill="#171714" stroke="#6b5a3c" stroke-width="1.5">
+    <circle cx="862" cy="614" r="6"/><circle cx="850" cy="588" r="6"/><circle cx="846" cy="559" r="6"/>
+    <circle cx="850" cy="530" r="6"/><circle cx="861" cy="502" r="6"/><circle cx="878" cy="479" r="6"/>
+    <circle cx="901" cy="461" r="6"/><circle cx="928" cy="451" r="6"/><circle cx="957" cy="447" r="6"/>
+    <circle cx="986" cy="451" r="6"/><circle cx="1013" cy="461" r="6"/><circle cx="1036" cy="479" r="6"/>
+    <circle cx="1053" cy="502" r="6"/><circle cx="1064" cy="530" r="6"/><circle cx="1068" cy="559" r="6"/>
+    <circle cx="1064" cy="588" r="6"/><circle cx="1052" cy="614" r="6"/>
+  </g>
+  <g fill="#ffb23c" stroke="#fff0bd" stroke-width="1.5">
+    <circle cx="862" cy="614" r="6"/><circle cx="850" cy="588" r="6"/><circle cx="846" cy="559" r="6"/>
+    <circle cx="850" cy="530" r="6"/><circle cx="861" cy="502" r="6"/><circle cx="878" cy="479" r="6"/>
+    <circle cx="901" cy="461" r="6"/><circle cx="928" cy="451" r="6"/><circle cx="957" cy="447" r="6"/>
+    <circle cx="986" cy="451" r="6"/><circle cx="1013" cy="461" r="6"/>
+  </g>
+
+  <line x1="227" y1="537" x2="245" y2="467" stroke="#f3d59c" stroke-width="2"/>
+  <line x1="480" y1="537" x2="496" y2="466" stroke="#f3d59c" stroke-width="2"/>
+</svg>
