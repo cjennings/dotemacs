@@ -269,5 +269,23 @@ Upper bound alone can't catch a dropped final occurrence -- assert both."
     ;; 2026 months (Apr on) with a 5th Wednesday: Apr 29, Jul 29, Sep 30, Dec 30.
     (should (equal days '((4 29) (7 29) (9 30) (12 30))))))
 
+(ert-deftest test-calendar-sync--expand-monthly-on-31st-skips-short-months ()
+  "Boundary: a plain monthly rule on the 31st skips months without a 31st.
+The stepper kept day-of-month verbatim, so Jan 31 stepped to Feb 31,
+which encode-time normalizes to Mar 3 -- phantom mis-dated occurrences
+instead of the RFC 5545 skip."
+  (let* ((base-event (list :summary "Monthly on the 31st"
+                           :start '(2030 1 31 10 0)
+                           :end '(2030 1 31 11 0)))
+         (rrule (list :freq 'monthly :interval 1))
+         (range (list (calendar-sync--date-to-time '(2030 1 1))
+                      (calendar-sync--date-to-time '(2030 12 31))))
+         (occurrences (calendar-sync--expand-monthly base-event rrule range))
+         (months (mapcar (lambda (o) (nth 1 (plist-get o :start))) occurrences))
+         (days (mapcar (lambda (o) (nth 2 (plist-get o :start))) occurrences)))
+    ;; Only the seven 31-day months of 2030, each on the 31st.
+    (should (equal months '(1 3 5 7 8 10 12)))
+    (should (equal days '(31 31 31 31 31 31 31)))))
+
 (provide 'test-calendar-sync--expand-monthly)
 ;;; test-calendar-sync--expand-monthly.el ends here

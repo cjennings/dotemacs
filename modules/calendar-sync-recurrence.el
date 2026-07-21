@@ -498,11 +498,27 @@ DTSTART's month, landing each occurrence on the day its BYDAY rule selects
 BASE-EVENT is the event plist, RRULE is parsed rrule, RANGE is date range.
 A rule with BYDAY (nth weekday, e.g. 2WE, -1TU, or SU with BYSETPOS)
 expands via `calendar-sync--expand-monthly-byday'; a plain rule steps
-DTSTART's day-of-month."
+DTSTART's day-of-month, skipping months without that day."
   (if (plist-get rrule :byday)
       (calendar-sync--expand-monthly-byday base-event rrule range)
     (calendar-sync--expand-simple-recurrence
-     base-event rrule range #'calendar-sync--add-months)))
+     base-event rrule range #'calendar-sync--next-monthly-date)))
+
+(defun calendar-sync--next-monthly-date (date interval)
+  "Step DATE forward INTERVAL months, skipping months without DATE's day.
+A plain FREQ=MONTHLY on the 31st must skip short months (RFC 5545):
+`calendar-sync--add-months' keeps day-of-month verbatim, so Jan 31 would
+step to Feb 31, which encode-time normalizes into a phantom Mar 3
+occurrence.  Bounded so a pathological input can't loop forever."
+  (require 'time-date)
+  (let ((next (calendar-sync--add-months date interval))
+        (day (nth 2 date))
+        (guard 0))
+    (while (and (< guard 100)
+                (> day (date-days-in-month (nth 0 next) (nth 1 next))))
+      (setq guard (1+ guard))
+      (setq next (calendar-sync--add-months next interval)))
+    next))
 
 (defun calendar-sync--expand-yearly-byday (base-event rrule range)
   "Expand a yearly nth-weekday event (e.g. BYMONTH=3;BYDAY=2SU).
