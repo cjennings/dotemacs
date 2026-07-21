@@ -62,6 +62,61 @@ CHARS-SKIP-RESET: : ! ? .), reached by skipping blanks back to PREV-WORD-END."
         (and (not (zerop (skip-chars-backward "[:blank:]" prev-word-end)))
              (memq (char-before (point)) chars-skip-reset)))))
 
+(defconst cj/--title-case-reset-chars '(?: ?! ?? ?.)
+  "Characters that restart capitalization for the following word.
+So \"Warning: An Example\" capitalizes the \"An\" and a sentence-ending
+period capitalizes the next word (\"End. The Next\").")
+
+(defconst cj/--title-case-separator-chars '(?\\ ?- ?' ?.)
+  "Characters whose following character is never capitalized.
+Covers \"Foo-bar\", \"Foo\\bar\", and \"Foo's\".  The period keeps
+\"3.14\" and \"foo.bar\" untouched; a period followed by a blank still
+restarts capitalization via `cj/--title-case-reset-chars'.")
+
+(defconst cj/--title-case-minor-words
+  '("a" "an" "and" "as" "at" "but" "by"
+    "for" "if" "in" "nor" "of"
+    "on" "or" "so" "the" "to" "yet")
+  "Minor words kept lowercase mid-title.
+\"is\" and other linking verbs are major words, so they are not here.")
+
+(defconst cj/--title-case-word-chars "[:alnum:]"
+  "skip-chars set that constitutes a word for title-casing.")
+
+(defun cj/--title-case-region-bounds ()
+  "Return (BEG . END) for the active region, else the current line."
+  (if (region-active-p)
+      (cons (region-beginning) (region-end))
+    (cons (line-beginning-position) (line-end-position))))
+
+(defun cj/--title-case-last-word-start (beg end)
+  "Return the start position of the last word in BEG..END.
+The last word is always capitalized in title case, so it is located once:
+from END, skip back over trailing non-word characters, then the word."
+  (save-excursion
+    (goto-char end)
+    (skip-chars-backward (concat "^" cj/--title-case-word-chars) beg)
+    (skip-chars-backward cj/--title-case-word-chars beg)
+    (point)))
+
+(defun cj/--title-case-maybe-capitalize (word-end end is-first last-word-start prev-word-end)
+  "Capitalize the character at point when title-case rules call for it.
+Point sits on a word's first character, WORD-END past its last.  END bounds
+the operation; IS-FIRST, LAST-WORD-START, and PREV-WORD-END feed
+`cj/--title-case-capitalize-word-p'.  Modifies the buffer in place."
+  (unless (or (>= (point) end)
+              (memq (char-before (point)) cj/--title-case-separator-chars))
+    (let* ((c-orig (char-to-string (char-after (point))))
+           (c-up (capitalize c-orig)))
+      (unless (string-equal c-orig c-up)
+        (let ((word (buffer-substring-no-properties (point) word-end)))
+          (when (cj/--title-case-capitalize-word-p
+                 word is-first (= (point) last-word-start)
+                 prev-word-end cj/--title-case-minor-words
+                 cj/--title-case-reset-chars)
+            (delete-region (point) (1+ (point)))
+            (insert c-up)))))))
+
 (defun cj/title-case-region ()
   "Capitalize the region in title case format.
 Title case is a capitalization convention where major words are capitalized,
@@ -73,43 +128,13 @@ and last words are always capitalized, and a word following a sentence-ending
 period (or a colon, exclamation mark, or question mark) restarts
 capitalization even when it is a minor word."
   (interactive)
-  (let ((beg nil)
-        (end nil)
-        (prev-word-end nil)
-        (last-word-start nil)
-        ;; Restart capitalization for a minor word after one of these, so
-        ;; "Warning: An Example" capitalizes the "An" and a sentence-ending
-        ;; period capitalizes the next word ("End. The Next").
-        (chars-skip-reset '(?: ?! ?? ?.))
-        ;; Don't capitalize characters directly after these. e.g.
-        ;; "Foo-bar" or "Foo\bar" or "Foo's".  A period is here too, so
-        ;; "3.14" and "foo.bar" are left alone; a period followed by a
-        ;; blank still restarts via `chars-skip-reset' above.
-        (chars-separator '(?\\ ?- ?' ?.))
-        (word-chars "[:alnum:]")
-        ;; "is" and other linking verbs are major words, so they are not in
-        ;; this minor-word skip list.
-        (word-skip
-         (list "a" "an" "and" "as" "at" "but" "by"
-               "for" "if" "in" "nor" "of"
-               "on" "or" "so" "the" "to" "yet"))
-        (is-first t))
-    (cond
-     ((region-active-p)
-      (setq beg (region-beginning))
-      (setq end (region-end)))
-     (t
-      (setq beg (line-beginning-position))
-      (setq end (line-end-position))))
-    ;; The last word is always capitalized in title case, so find its start
-    ;; once: from END, skip back over any trailing non-word chars, then over
-    ;; the word itself.
-    (setq last-word-start
-          (save-excursion
-            (goto-char end)
-            (skip-chars-backward (concat "^" word-chars) beg)
-            (skip-chars-backward word-chars beg)
-            (point)))
+  (let* ((bounds (cj/--title-case-region-bounds))
+         (beg (car bounds))
+         (end (cdr bounds))
+         (last-word-start (cj/--title-case-last-word-start beg end))
+         (word-chars cj/--title-case-word-chars)
+         (prev-word-end nil)
+         (is-first t))
     (save-excursion
       ;; work on uppercased text (e.g., headlines) by downcasing first
       (downcase-region beg end)
@@ -123,17 +148,8 @@ capitalization even when it is a minor word."
                (save-excursion
                  (skip-chars-forward word-chars end)
                  (point))))
-          (unless (or (>= (point) end)
-                      (memq (char-before (point)) chars-separator))
-            (let* ((c-orig (char-to-string (char-after (point))))
-                   (c-up (capitalize c-orig)))
-              (unless (string-equal c-orig c-up)
-                (let ((word (buffer-substring-no-properties (point) word-end)))
-                  (when (cj/--title-case-capitalize-word-p
-                         word is-first (= (point) last-word-start)
-                         prev-word-end word-skip chars-skip-reset)
-                    (delete-region (point) (1+ (point)))
-                    (insert c-up))))))
+          (cj/--title-case-maybe-capitalize
+           word-end end is-first last-word-start prev-word-end)
           (goto-char word-end)
           (setq is-first nil))))))
 
