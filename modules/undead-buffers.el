@@ -96,7 +96,10 @@ Undead-buffers are buffers in `cj/undead-buffer-list'."
   (let ((buf (current-buffer)))
 	(unless (one-window-p)
 	  (delete-window))
-	(cj/kill-buffer-or-bury-alive buf)))
+	;; The delegate reads current-prefix-arg; a C-u meant for this wrapper
+	;; must not flip it into add-to-undead-list mode.
+	(let ((current-prefix-arg nil))
+	  (cj/kill-buffer-or-bury-alive buf))))
 ;; Keybinding moved to custom-buffer-file.el (C-; b k)
 
 (defun cj/kill-other-window ()
@@ -109,7 +112,8 @@ window and acting would kill the buffer being viewed."
   (other-window 1)
   (let ((buf (current-buffer)))
 	(delete-window)
-	(cj/kill-buffer-or-bury-alive buf)))
+	(let ((current-prefix-arg nil))
+	  (cj/kill-buffer-or-bury-alive buf))))
 (keymap-global-set "M-S-o" #'cj/kill-other-window)
 
 (defun cj/kill-other-window-buffer ()
@@ -123,7 +127,8 @@ split is preserved.  Buffers in `cj/undead-buffer-list' are buried."
   (if (one-window-p)
 	  (user-error "No other window")
 	(with-selected-window (next-window)
-	  (cj/kill-buffer-or-bury-alive (current-buffer)))))
+	  (let ((current-prefix-arg nil))
+		(cj/kill-buffer-or-bury-alive (current-buffer))))))
 ;; Keybinding in custom-buffer-file.el (C-; b K)
 
 (defun cj/kill-all-other-buffers-and-windows ()
@@ -131,8 +136,9 @@ split is preserved.  Buffers in `cj/undead-buffer-list' are buried."
   (interactive)
   (save-some-buffers nil #'cj/undead-buffer-p)
   (delete-other-windows)
-  (mapc #'cj/kill-buffer-or-bury-alive
-		(delq (current-buffer) (buffer-list))))
+  (let ((current-prefix-arg nil))
+	(mapc #'cj/kill-buffer-or-bury-alive
+		  (delq (current-buffer) (buffer-list)))))
 (keymap-global-set "M-S-m" #'cj/kill-all-other-buffers-and-windows)  ;; was M-M
 
 (provide 'undead-buffers)

@@ -158,5 +158,22 @@
                 (kill-buffer buf))))))
     (test-kill-all-other-buffers-and-windows-teardown)))
 
+(ert-deftest test-kill-all-other-buffers-and-windows-with-prefix-still-kills ()
+  "Boundary: C-u on the wrapper must still kill, not spam the undead list.
+The delegated cj/kill-buffer-or-bury-alive reads current-prefix-arg, so a
+prefixed wrapper call used to take the add-to-undead-list branch for every
+buffer -- nothing killed, list spammed."
+  (test-kill-all-other-buffers-and-windows-setup)
+  (unwind-protect
+      (let ((cj/undead-buffer-list cj/undead-buffer-list)
+            (buf (generate-new-buffer "*test-prefix-kill*")))
+        (unwind-protect
+            (let ((current-prefix-arg '(4)))
+              (cj/kill-all-other-buffers-and-windows)
+              (should-not (buffer-live-p buf))
+              (should-not (member "*test-prefix-kill*" cj/undead-buffer-list)))
+          (when (buffer-live-p buf) (kill-buffer buf))))
+    (test-kill-all-other-buffers-and-windows-teardown)))
+
 (provide 'test-undead-buffers-kill-all-other-buffers-and-windows)
 ;;; test-undead-buffers-kill-all-other-buffers-and-windows.el ends here
