@@ -38,6 +38,7 @@
 ;; without forcing an eager require.
 
 ;; Functions provided by the erc package.
+(defvar erc-server-process)
 (declare-function erc-buffer-list "erc")
 (declare-function erc-server-process-alive "erc")
 (declare-function erc-server-or-unjoined-channel-buffer-p "erc")
