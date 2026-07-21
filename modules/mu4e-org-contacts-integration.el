@@ -60,13 +60,10 @@ In email header fields (To, Cc, Bcc), complete using org-contacts.
 Elsewhere, perform the default TAB action."
   (interactive)
   (cond
-   ;; In email header fields, use completion-at-point
+   ;; In email header fields, use completion-at-point (it both starts a new
+   ;; completion and cycles an in-progress one, so no mode check is needed).
    ((mail-abbrev-in-expansion-header-p)
-    (if (and (boundp 'completion-in-region-mode) completion-in-region-mode)
-        ;; If we're already in completion mode, cycle through candidates
-        (completion-at-point)
-      ;; Start new completion
-      (completion-at-point)))
+    (completion-at-point))
    ;; In org-msg-edit-mode body, use org-cycle
    ((and (eq major-mode 'org-msg-edit-mode)
          (not (mail-abbrev-in-expansion-header-p)))
