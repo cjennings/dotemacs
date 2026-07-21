@@ -92,5 +92,13 @@
   (let ((slack-current-buffer nil))
     (should-error (cj/slack-message-add-reaction) :type 'user-error)))
 
+(ert-deftest test-slack-config-message-add-reaction-errors-before-slack-loads ()
+  "Error: a cold call before slack.el ever loads gives the friendly user-error.
+The module defvars slack-current-buffer with no value, so until slack.el
+binds it the variable is void -- a bare read signals void-variable instead
+of the intended \"Not in a Slack buffer\"."
+  (makunbound 'slack-current-buffer)
+  (should-error (cj/slack-message-add-reaction) :type 'user-error))
+
 (provide 'test-slack-config-reactions)
 ;;; test-slack-config-reactions.el ends here

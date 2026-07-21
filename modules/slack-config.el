@@ -197,7 +197,10 @@ so the Slack buffer stays usable."
   "Add a reaction to the current Slack message using a curated shortlist.
 Errors if called outside a Slack message buffer."
   (interactive)
-  (let ((buf (or slack-current-buffer
+  ;; boundp guard: the defvar above declares the var with no value, so it is
+  ;; void until slack.el loads -- a bare read on a cold call would signal
+  ;; void-variable instead of this friendly error.
+  (let ((buf (or (and (boundp 'slack-current-buffer) slack-current-buffer)
                  (user-error "Not in a Slack buffer"))))
     (when-let* ((team (slack-buffer-team buf))
                 (reaction (cj/slack-select-reaction team)))
