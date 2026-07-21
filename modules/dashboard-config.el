@@ -92,30 +92,39 @@
 (with-suppressed-warnings ((lexical el))
   (defvar el))
 
-(defun dashboard-insert-bookmarks (list-size)
-  "Add the list of LIST-SIZE items of bookmarks."
-  (require 'bookmark)
-  (dashboard-insert-section
-   "Bookmarks:"
-   (dashboard-subseq (bookmark-all-names) list-size)
-   list-size
-   'bookmarks
-   (dashboard-get-shortcut 'bookmarks)
-   `(lambda (&rest _) (bookmark-jump ,el))
-   (if-let* ((filename el)
-             (path (bookmark-get-filename el))
-             (path-shorten (dashboard-shorten-path path 'bookmarks)))
-       (cl-case dashboard-bookmarks-show-path
-         (`align
-          (unless dashboard--bookmarks-cache-item-format
-            (let* ((len-align (dashboard--align-length-by-type 'bookmarks))
-                   (new-fmt (dashboard--generate-align-format
-                             dashboard-bookmarks-item-format len-align)))
-              (setq dashboard--bookmarks-cache-item-format new-fmt)))
-          (format dashboard--bookmarks-cache-item-format filename path-shorten))
-         (`nil filename)
-         (t (format dashboard-bookmarks-item-format filename path-shorten)))
-     el)))
+;; The override body uses the `dashboard-insert-section' MACRO, so it must be
+;; known when this module byte-compiles or the call compiles as a plain
+;; function call that evaluates `el' eagerly -- void-variable at render time.
+(eval-when-compile (require 'dashboard-widgets nil t))
+
+;; Registered after dashboard-widgets, not as a bare top-level defun: the
+;; use-package below reloads dashboard-widgets, which would clobber an eager
+;; override.  Same shape as the banner-title override further down.
+(with-eval-after-load 'dashboard-widgets
+  (defun dashboard-insert-bookmarks (list-size)
+    "Add the list of LIST-SIZE items of bookmarks."
+    (require 'bookmark)
+    (dashboard-insert-section
+     "Bookmarks:"
+     (dashboard-subseq (bookmark-all-names) list-size)
+     list-size
+     'bookmarks
+     (dashboard-get-shortcut 'bookmarks)
+     `(lambda (&rest _) (bookmark-jump ,el))
+     (if-let* ((filename el)
+               (path (bookmark-get-filename el))
+               (path-shorten (dashboard-shorten-path path 'bookmarks)))
+         (cl-case dashboard-bookmarks-show-path
+           (`align
+            (unless dashboard--bookmarks-cache-item-format
+              (let* ((len-align (dashboard--align-length-by-type 'bookmarks))
+                     (new-fmt (dashboard--generate-align-format
+                               dashboard-bookmarks-item-format len-align)))
+                (setq dashboard--bookmarks-cache-item-format new-fmt)))
+            (format dashboard--bookmarks-cache-item-format filename path-shorten))
+           (`nil filename)
+           (t (format dashboard-bookmarks-item-format filename path-shorten)))
+       el))))
 
 ;; ------------------------- Banner Title Centering Fix ------------------------
 ;; The default centering can be off due to font width calculations.

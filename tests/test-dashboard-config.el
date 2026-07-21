@@ -56,5 +56,15 @@ start at the top.  Without `set-window-start', batch redisplay leaves
       (when (buffer-live-p dash)
         (kill-buffer dash)))))
 
+(ert-deftest test-dashboard-config-bookmark-override-deferred-to-package-load ()
+  "Normal: the bookmarks override is defined exactly when dashboard-widgets is.
+A bare top-level defun would exist even without the package (and be
+clobbered when the package loads); the deferred registration means the
+function tracks the package's own load state.  Holds in both runners:
+the hook env loads dashboard, the make-test env can't."
+  (if (featurep 'dashboard-widgets)
+      (should (fboundp 'dashboard-insert-bookmarks))
+    (should-not (fboundp 'dashboard-insert-bookmarks))))
+
 (provide 'test-dashboard-config)
 ;;; test-dashboard-config.el ends here
