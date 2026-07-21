@@ -147,5 +147,13 @@ Returns the formatted file content."
   (let ((result (test-format "Title" "id" "* Content")))
     (should (string-match-p "#\\+FILETAGS: Topic\n\n\\* Content" result))))
 
+(ert-deftest test-org-roam-config-capture-templates-declared-special ()
+  "Normal: org-roam-capture-templates is declared special in the module.
+cj/org-roam-node-insert-immediate let-binds it; without the defvar the
+byte-compiled let is a dead lexical binding and :immediate-finish never
+reaches org-roam-node-insert -- the \"immediate\" insert opens a capture
+buffer."
+  (should (special-variable-p 'org-roam-capture-templates)))
+
 (provide 'test-org-roam-config-format)
 ;;; test-org-roam-config-format.el ends here

@@ -30,6 +30,10 @@
 ;; Declared special so the `let'-binding in `cj/org-roam-copy-todo-to-today'
 ;; compiles as a dynamic bind, not a dead lexical local -- otherwise the custom
 ;; capture template never reaches org-roam-dailies (the foreign-special-var trap).
+;; Declared special so cj/org-roam-node-insert-immediate's let-binding is
+;; dynamic under lexical-binding; without it the byte-compiled let is a dead
+;; lexical binding and :immediate-finish never reaches org-roam-node-insert.
+(defvar org-roam-capture-templates)
 (defvar org-roam-dailies-capture-templates)
 
 ;; External variables, declared special so byte-compilation doesn't treat them
