@@ -223,7 +223,7 @@ not apply to).  Signals a `user-error' when a used second count is negative."
 	 :utils "convert"))
 
   (defun cj/dwim-shell-commands-flip-image-vertically ()
-	"Horizontally flip image(s)."
+	"Vertically flip image(s)."
 	(interactive)
 	(dwim-shell-command-on-marked-files
 	 "Image vertical flip"
