@@ -131,8 +131,9 @@ REGEXP must be a string or an rx form."
                                   treesit-auto-recipe-list))
          (go-recipe (and go-idx (nth go-idx treesit-auto-recipe-list))))
     (when go-recipe
-      ;; Directly modify the slot value using aset (struct fields are vectors internally)
-      (aset go-recipe 6 "v0.19.1")))  ; slot 6 is :revision
+      ;; Use the struct accessor so a treesit-auto slot reorder can't silently
+      ;; write the pin into the wrong field.
+      (setf (treesit-auto-recipe-revision go-recipe) "v0.19.1")))
 
   (treesit-auto-add-to-auto-mode-alist 'all)
   (global-treesit-auto-mode))
