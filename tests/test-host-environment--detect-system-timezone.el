@@ -17,12 +17,23 @@
 (add-to-list 'load-path (expand-file-name "modules" user-emacs-directory))
 (require 'host-environment)
 
-(ert-deftest test-host-environment-detect-tz-match-localtime-wins ()
-  "Normal: when match-localtime-to-zoneinfo returns a value, that wins."
+(ert-deftest test-host-environment-detect-tz-env-wins-without-content-scan ()
+  "Normal: an explicit TZ wins and the exhaustive zoneinfo scan never runs.
+The scan reads hundreds of files; it used to run first on every call even
+when a cheap O(1) method would answer."
+  (cl-letf (((symbol-function 'cj/match-localtime-to-zoneinfo)
+             (lambda () (error "content scan should not have run")))
+            ((symbol-function 'getenv)
+             (lambda (name &rest _) (when (string= name "TZ") "America/Chicago"))))
+    (should (equal (cj/detect-system-timezone) "America/Chicago"))))
+
+(ert-deftest test-host-environment-detect-tz-content-scan-is-last-resort ()
+  "Boundary: with every cheap method empty, the content scan still answers."
   (cl-letf (((symbol-function 'cj/match-localtime-to-zoneinfo)
              (lambda () "America/Los_Angeles"))
-            ((symbol-function 'getenv)
-             (lambda (_ &rest _) (error "TZ should not have been consulted"))))
+            ((symbol-function 'getenv) (lambda (&rest _) nil))
+            ((symbol-function 'file-exists-p) (lambda (&rest _) nil))
+            ((symbol-function 'file-symlink-p) (lambda (&rest _) nil)))
     (should (equal (cj/detect-system-timezone) "America/Los_Angeles"))))
 
 (ert-deftest test-host-environment-detect-tz-env-var-wins-when-match-nil ()

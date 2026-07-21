@@ -138,15 +138,13 @@ find /usr/share/zoneinfo -type f ! -name `posixrules' \\
 
 (defun cj/detect-system-timezone ()
   "Detect the system timezone in IANA format (e.g., `America/Los_Angeles').
-Tries multiple methods in order of reliability:
-1. File comparison of /etc/localtime with zoneinfo database
-2. Environment variable TZ
-3. /etc/timezone file contents
-4. /etc/localtime symlink target"
+Tries the cheap methods first and the exhaustive scan last:
+1. Environment variable TZ (most explicit if set)
+2. /etc/timezone file contents (Debian/Ubuntu)
+3. /etc/localtime symlink target (O(1) on symlinked systems)
+4. File comparison of /etc/localtime against the zoneinfo database
+   (reads hundreds of files; only needed when localtime is a copy)"
   (or
-   ;; Compare file contents (reliable on Arch/modern systems)
-   (cj/match-localtime-to-zoneinfo)
-
    ;; Environment variable (most explicit if set)
    (getenv "TZ")
 
@@ -156,11 +154,14 @@ Tries multiple methods in order of reliability:
 	   (insert-file-contents "/etc/timezone")
 	   (string-trim (buffer-string))))
 
-   ;; Method 4: Parse symlink (fallback for older systems)
+   ;; Parse the symlink -- O(1), answers on any symlinked /etc/localtime
    (when (file-symlink-p "/etc/localtime")
 	 (let ((target (file-truename "/etc/localtime")))
 	   (when (string-match ".*/zoneinfo/\\(.+\\)" target)
 		 (match-string 1 target))))
+
+   ;; Compare file contents -- the last resort for a copied /etc/localtime
+   (cj/match-localtime-to-zoneinfo)
 
    ;; Default to nil if detection fails
    nil))
