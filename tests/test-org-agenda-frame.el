@@ -255,16 +255,19 @@ graphical frame and RET would be denied instead of opening the item."
               'cj/--agenda-frame-engage-open)))
 
 (ert-deftest test-org-agenda-frame-map-lifecycle-keys ()
-  "Normal: q/Q/x close the frame; r takes the safe-redo path."
+  "Normal: q/Q/x close the frame; r and g take the safe-redo path.
+g is the muscle-memory agenda refresh; it must refresh, not hit the
+fixed-view deny handler."
   (should (eq (lookup-key cj/agenda-frame-mode-map (kbd "q")) 'cj/--agenda-frame-close))
   (should (eq (lookup-key cj/agenda-frame-mode-map (kbd "Q")) 'cj/--agenda-frame-close))
   (should (eq (lookup-key cj/agenda-frame-mode-map (kbd "x")) 'cj/--agenda-frame-close))
-  (should (eq (lookup-key cj/agenda-frame-mode-map (kbd "r")) 'cj/--agenda-frame-safe-redo)))
+  (should (eq (lookup-key cj/agenda-frame-mode-map (kbd "r")) 'cj/--agenda-frame-safe-redo))
+  (should (eq (lookup-key cj/agenda-frame-mode-map (kbd "g")) 'cj/--agenda-frame-safe-redo)))
 
 (ert-deftest test-org-agenda-frame-map-view-changers-fixed-view-deny ()
   "Boundary: view-changing keys are explicitly denied with the fixed-view message,
 not caught by the read-only catch-all."
-  (dolist (key '("w" "d" "y" "f" "b" "j" "g"))
+  (dolist (key '("w" "d" "y" "f" "b" "j"))
     (should (eq (lookup-key cj/agenda-frame-mode-map (kbd key))
                 'cj/--agenda-frame-denied-fixed-view))))
 

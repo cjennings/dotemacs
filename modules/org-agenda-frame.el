@@ -253,6 +253,10 @@ The default binding for every key not on the allowlist."
     (define-key map (kbd "Q") #'cj/--agenda-frame-close)
     (define-key map (kbd "x") #'cj/--agenda-frame-close)
     (define-key map (kbd "r") #'cj/--agenda-frame-safe-redo)
+    ;; g is the muscle-memory agenda refresh; keep it working here (the
+    ;; frame-scoped safe redo, same as r) rather than denying it as a
+    ;; view-change.  C-M-<f8> stays the force-rescan.
+    (define-key map (kbd "g") #'cj/--agenda-frame-safe-redo)
     (define-key map (kbd "S-<f8>") #'cj/agenda-frame-toggle)
     (define-key map (kbd "C-M-<f8>") #'cj/org-agenda-refresh-files)
     ;; C-x C-c means "close this frame" here.  The global
@@ -273,7 +277,7 @@ The default binding for every key not on the allowlist."
                        (kbd "C-h")))
       (define-key map key nil))
     ;; View-changers get the distinct fixed-view message, not the read-only one.
-    (dolist (key '("w" "d" "y" "f" "b" "j" "g"))
+    (dolist (key '("w" "d" "y" "f" "b" "j"))
       (define-key map (kbd key) #'cj/--agenda-frame-denied-fixed-view))
     map)
   "Keymap for `cj/agenda-frame-mode'.
