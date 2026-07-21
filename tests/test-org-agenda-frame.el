@@ -304,6 +304,16 @@ scroll spams the deny message."
     ;; global map); an unpunched key returns the catch-all deny handler.
     (should (null (lookup-key cj/agenda-frame-mode-map key t)))))
 
+(ert-deftest test-org-agenda-frame-map-global-escape-chords-denied ()
+  "Boundary: global chords bound elsewhere (M-SPC / M-S-SPC swap ai-term
+agents) are denied by an explicit binding, not left to the [t] catch-all.
+A keymap's default binding does not shadow an explicit binding in a
+lower-priority map, so without an explicit deny here M-SPC follows its
+global binding and escapes the read-only frame into ai-term."
+  (dolist (key '("M-SPC" "M-S-SPC"))
+    (should (eq (lookup-key cj/agenda-frame-mode-map (kbd key))
+                'cj/--agenda-frame-denied-readonly))))
+
 (ert-deftest test-org-agenda-frame-map-unpunched-still-denied ()
   "Normal: an ordinary unbound key still hits the catch-all after the punches."
   (should (eq (lookup-key cj/agenda-frame-mode-map (kbd "t") t)

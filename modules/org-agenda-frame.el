@@ -276,6 +276,14 @@ The default binding for every key not on the allowlist."
                        [mouse-1] [down-mouse-1] [drag-mouse-1]
                        (kbd "C-h")))
       (define-key map key nil))
+    ;; (e) Global chords that would pull focus out of the frame must be
+    ;; denied *explicitly*.  The [t] catch-all can't reach them: a keymap's
+    ;; default binding does not shadow an *explicit* binding in a
+    ;; lower-priority map, and these are bound in the global map (M-SPC /
+    ;; M-S-SPC swap ai-term agents).  Left to the catch-all, M-SPC follows
+    ;; its global binding and escapes the read-only frame into ai-term.
+    (dolist (key '("M-SPC" "M-S-SPC"))
+      (define-key map (kbd key) #'cj/--agenda-frame-denied-readonly))
     ;; View-changers get the distinct fixed-view message, not the read-only one.
     (dolist (key '("w" "d" "y" "f" "b" "j"))
       (define-key map (kbd key) #'cj/--agenda-frame-denied-fixed-view))
