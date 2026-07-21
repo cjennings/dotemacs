@@ -351,16 +351,18 @@ it runs.
 EAT renders in terminal frames as well as GUI frames, so this
 launches from either."
   (interactive "P")
-  (let* ((dir (cj/--ai-term-pick-project))
+  ;; One tmux fetch per launch: the same list feeds the picker's sorting,
+  ;; the fresh check here, and show-or-create's own fresh check.
+  (let* ((sessions (cj/--ai-term-live-tmux-sessions))
+         (dir (cj/--ai-term-pick-project sessions))
          (name (cj/--ai-term-buffer-name dir))
          (existing (get-buffer name))
          (fresh (and (not (and existing
                                (cj/--ai-term-process-live-p existing)))
-                     (not (cj/--ai-term-session-active-p
-                           dir (cj/--ai-term-live-tmux-sessions)))))
+                     (not (cj/--ai-term-session-active-p dir sessions))))
          (command (when fresh
                     (cj/--ai-term-runtime-command (cj/--ai-term-pick-runtime))))
-         (buf (cj/--ai-term-show-or-create dir name command)))
+         (buf (cj/--ai-term-show-or-create dir name command sessions)))
     (unless arg
       (let ((win (get-buffer-window buf)))
         (when win (select-window win))))

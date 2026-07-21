@@ -351,8 +351,11 @@ the metadata keeps the order ALIST was built in."
                    (cycle-sort-function . identity))
       (complete-with-action action alist string predicate))))
 
-(defun cj/--ai-term-pick-project ()
+(defun cj/--ai-term-pick-project (&optional sessions)
   "Prompt for an AI-agent project; return its absolute path.
+SESSIONS, when non-nil, is a pre-fetched result of
+`cj/--ai-term-live-tmux-sessions', so a caller that already paid for the
+tmux subprocess can thread it through instead of spawning another.
 
 Candidates come from `cj/--ai-term-candidates', ordered by
 `cj/--ai-term-sort-candidates' so projects with a live tmux session
@@ -368,7 +371,7 @@ Signals `user-error' when no candidates exist."
                              (append cj/ai-term-project-roots
                                      cj/ai-term-container-roots)
                              ", ")))
-    (let* ((sessions (cj/--ai-term-live-tmux-sessions))
+    (let* ((sessions (or sessions (cj/--ai-term-live-tmux-sessions)))
            (sorted (cj/--ai-term-sort-candidates candidates sessions))
            (display-alist
             (mapcar (lambda (p)

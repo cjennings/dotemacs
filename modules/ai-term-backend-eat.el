@@ -100,8 +100,11 @@ typed into a bare shell.  Returns the poll timer."
                (cancel-timer timer))))))
     timer))
 
-(defun cj/--ai-term-show-or-create (dir name &optional agent-command)
+(defun cj/--ai-term-show-or-create (dir name &optional agent-command sessions)
   "Show or create the AI-term buffer for project DIR with buffer NAME.
+SESSIONS, when non-nil, is a pre-fetched
+`cj/--ai-term-live-tmux-sessions' list threaded from the caller so the
+launch path pays for the tmux subprocess once.
 
 If a buffer named NAME exists with a live process, display it.  If
 the buffer exists but its process is dead, kill it and recreate.  If
@@ -135,7 +138,8 @@ buffer."
       ;; session gets the project /color injected below; a reattach carries
       ;; whatever color the running Claude already has.
       (let ((fresh (not (cj/--ai-term-session-active-p
-                         dir (cj/--ai-term-live-tmux-sessions)))))
+                         dir (or sessions
+                                 (cj/--ai-term-live-tmux-sessions))))))
         ;; `eat' switches to its buffer in the selected window before our
         ;; display-buffer-alist rule can route it; `save-window-excursion'
         ;; reverts that, and the explicit display-buffer below routes the buffer
