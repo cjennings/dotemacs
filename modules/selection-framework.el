@@ -225,7 +225,7 @@
         ("C-p" . company-select-previous))
   :custom
   (company-backends '(company-capf company-files company-keywords))
-  (company-idle-delay 2)
+  (company-idle-delay 4)
   (company-minimum-prefix-length 2)
   (company-show-numbers t)
   (company-tooltip-align-annotations t)
