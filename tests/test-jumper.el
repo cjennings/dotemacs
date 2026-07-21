@@ -348,5 +348,30 @@
       (should (string-match-p "test line" formatted))))
   (test-jumper-teardown))
 
+;;; Empty completing-read input (vertico-less UI can return "")
+
+(ert-deftest test-jumper-jump-empty-choice-signals-user-error ()
+  "Error: empty input at the jump prompt gives a user-error, not a crash.
+An unmatched choice makes (cdr (assoc ...)) nil, which used to flow into
+the index arithmetic and signal wrong-type-argument."
+  (let ((jumper--next-index 2))
+    (cl-letf (((symbol-function 'jumper--location-candidates)
+               (lambda () '(("[0] here" . 0) ("[1] there" . 1))))
+              ((symbol-function 'get-register) (lambda (_r) nil))
+              ((symbol-function 'completing-read) (lambda (&rest _) "")))
+      (should-error (jumper-jump-to-location) :type 'user-error))))
+
+(ert-deftest test-jumper-remove-empty-choice-cancels ()
+  "Boundary: empty input at the remove prompt cancels instead of crashing."
+  (let ((jumper--next-index 2)
+        removed)
+    (cl-letf (((symbol-function 'jumper--location-candidates)
+               (lambda () '(("[0] here" . 0) ("[1] there" . 1))))
+              ((symbol-function 'completing-read) (lambda (&rest _) ""))
+              ((symbol-function 'jumper--reorder-registers)
+               (lambda (_i) (setq removed t))))
+      (jumper-remove-location)
+      (should-not removed))))
+
 (provide 'test-jumper)
 ;;; test-jumper.el ends here

@@ -194,6 +194,10 @@ Returns: \\='no-locations if no locations stored,
                         locations))
            (choice (completing-read "Jump to: " locations nil t))
            (idx (cdr (assoc choice locations))))
+      ;; A UI that permits empty input (no vertico) yields a choice with no
+      ;; entry; nil would crash the index arithmetic downstream.
+      (unless idx
+        (user-error "No matching location"))
       (jumper--do-jump-to-location idx)
       (message "Jumped to location")))))
 
@@ -230,7 +234,8 @@ Returns: \\='no-locations if no locations stored,
             (jumper--location-candidates))
            (locations (cons (cons "Cancel" -1) locations))
            (choice (completing-read "Remove location: " locations nil t))
-           (idx (cdr (assoc choice locations))))
+           ;; Empty input (no matching entry) cancels, same as picking Cancel.
+           (idx (or (cdr (assoc choice locations)) -1)))
       (pcase (jumper--do-remove-location idx)
         ('cancelled (message "Operation cancelled"))
         ('t (message "Location removed"))))))
