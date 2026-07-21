@@ -17,6 +17,7 @@
 
 (require 'ert)
 (require 'cl-lib)
+(require 'user-constants) ;; org-dir, read by the ispell :config below
 (require 'flyspell)
 (require 'flyspell-and-abbrev)
 
@@ -26,6 +27,23 @@
     (overlay-put o 'flyspell-overlay t)
     (overlay-put o 'face 'flyspell-incorrect)
     o))
+
+;; ------------------------- org src-block skip entry ---------------------------
+
+(ert-deftest test-flyspell-ispell-skip-entry-matches-src-block-lines ()
+  "Normal: the ispell skip entry matches real org src-block delimiters.
+The old entry used \"#+\" (one-or-more #), which matches no real
+begin_src line, so ispell spell-checked inside every org code block."
+  (require 'ispell)
+  (let ((entry (seq-find (lambda (e)
+                           (and (consp e) (stringp (car e))
+                                (string-match-p "BEGIN_SRC" (car e))))
+                         ispell-skip-region-alist)))
+    (should entry)
+    (let ((case-fold-search t))
+      (should (string-match-p (car entry) "#+BEGIN_SRC emacs-lisp"))
+      (should (string-match-p (car entry) "#+begin_src python"))
+      (should (string-match-p (cdr entry) "#+end_src")))))
 
 ;; ------------------------ cj/--require-spell-checker -------------------------
 

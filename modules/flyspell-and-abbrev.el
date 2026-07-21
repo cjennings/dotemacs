@@ -73,8 +73,10 @@
   ;; personal directory goes with sync'd files
   (setq ispell-personal-dictionary
 		(concat org-dir "aspell-personal-dictionary"))
-  ;; skip code blocks in org mode
-  (add-to-list 'ispell-skip-region-alist '("^#+BEGIN_SRC" . "^#+END_SRC")))
+  ;; Skip code blocks in org mode.  The # must be literal and the + escaped:
+  ;; "#+" in regex means one-or-more #, which matches no real begin_src line,
+  ;; so ispell used to spell-check inside every org code block.
+  (add-to-list 'ispell-skip-region-alist '("^#\\+BEGIN_SRC" . "^#\\+END_SRC")))
 
 (use-package flyspell
   :ensure nil ;; built-in
