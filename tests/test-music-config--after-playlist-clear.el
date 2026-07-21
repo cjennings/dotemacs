@@ -112,5 +112,30 @@
                     (progn (cj/music--after-playlist-clear) nil)
                   (error err)))))
 
+(ert-deftest test-music-header-toggle-advice-is-named-and-installed ()
+  "Normal: the header-refresh toggle advice is a named, removable function.
+An anonymous lambda can't be advice-removed and stacks a copy on every
+:config reload, firing the header refresh N times per toggle."
+  (should (fboundp 'cj/music--refresh-header-after-toggle))
+  (dolist (fn '(emms-toggle-repeat-playlist
+                emms-toggle-repeat-track
+                emms-toggle-random-playlist
+                cj/music-toggle-consume))
+    (should (advice-member-p #'cj/music--refresh-header-after-toggle fn))))
+
+(ert-deftest test-music-header-toggle-advice-does-not-stack ()
+  "Boundary: re-running the install (a :config reload) keeps one advice copy."
+  (dolist (fn '(emms-toggle-repeat-playlist emms-toggle-repeat-track))
+    (advice-remove fn #'cj/music--refresh-header-after-toggle)
+    (advice-add fn :after #'cj/music--refresh-header-after-toggle)
+    (advice-remove fn #'cj/music--refresh-header-after-toggle)
+    (advice-add fn :after #'cj/music--refresh-header-after-toggle)
+    (let ((count 0))
+      (advice-mapc (lambda (f _props)
+                     (when (eq f 'cj/music--refresh-header-after-toggle)
+                       (setq count (1+ count))))
+                   fn)
+      (should (= count 1)))))
+
 (provide 'test-music-config--after-playlist-clear)
 ;;; test-music-config--after-playlist-clear.el ends here

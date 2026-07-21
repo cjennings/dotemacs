@@ -1064,9 +1064,10 @@ Dirs added recursively."
   (unless (derived-mode-p 'dired-mode)
     (user-error "This command must be run in a Dired buffer"))
   (cj/music--ensure-playlist-buffer)
-  (let ((files (if (use-region-p)
-                   (dired-get-marked-files)
-                 (list (dired-get-file-for-visit)))))
+  ;; dired-get-marked-files already honors m-marks, an active region, or the
+  ;; file at point; gating it behind use-region-p silently dropped all but
+  ;; the point file whenever files were marked without a region.
+  (let ((files (dired-get-marked-files)))
     (when (null files)
       (user-error "No files selected"))
     (dolist (file files)
@@ -1459,6 +1460,12 @@ redisplay this move triggers doesn't loop.  Always returns nil."
           (move-overlay cj/music--header-overlay pos pos))))
     nil))
 
+(defun cj/music--refresh-header-after-toggle (&rest _)
+  "Refresh the playlist header after a repeat/random/consume toggle.
+Named (not an anonymous lambda) so the :config reload can advice-remove
+it before re-adding -- anonymous advice stacks a copy per reload."
+  (cj/music--update-header))
+
 (defun cj/music--update-header ()
   "Insert or update the multi-line header overlay in the playlist buffer.
 Anchors at the displaying window's start (see
@@ -1591,12 +1598,16 @@ unless fancy."
   (add-hook 'emms-player-stopped-hook #'cj/music--stop-bar-timer)
   (add-hook 'emms-player-finished-hook #'cj/music--stop-bar-timer)
 
-  ;; Refresh header immediately when toggling modes
+  ;; Refresh header immediately when toggling modes.  Named advice with a
+  ;; remove-then-add guard (like the emms-playlist-clear advice above):
+  ;; an anonymous lambda can't be advice-removed and stacks a copy on every
+  ;; :config reload, firing the refresh N times per toggle.
   (dolist (fn '(emms-toggle-repeat-playlist
                 emms-toggle-repeat-track
                 emms-toggle-random-playlist
                 cj/music-toggle-consume))
-    (advice-add fn :after (lambda (&rest _) (cj/music--update-header))))
+    (advice-remove fn #'cj/music--refresh-header-after-toggle)
+    (advice-add fn :after #'cj/music--refresh-header-after-toggle))
 
   :bind
   (:map emms-playlist-mode-map
