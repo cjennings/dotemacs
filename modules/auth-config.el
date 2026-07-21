@@ -26,6 +26,7 @@
 ;; below.  oauth2-auto is required at runtime inside the advised function; these
 ;; declarations satisfy the byte-compiler without forcing an eager load.
 (declare-function oauth2-auto--compute-id "oauth2-auto")
+(declare-function plstore-open "plstore")
 (declare-function plstore-get "plstore")
 (declare-function plstore-close "plstore")
 (defvar oauth2-auto--plstore-cache)
