@@ -278,8 +278,10 @@ instead of the RFC 5545 skip."
                            :start '(2030 1 31 10 0)
                            :end '(2030 1 31 11 0)))
          (rrule (list :freq 'monthly :interval 1))
+         ;; End the range past Dec 31: the range end is midnight, so ending
+         ;; ON the 31st would exclude that day's 10:00 occurrence.
          (range (list (calendar-sync--date-to-time '(2030 1 1))
-                      (calendar-sync--date-to-time '(2030 12 31))))
+                      (calendar-sync--date-to-time '(2031 1 1))))
          (occurrences (calendar-sync--expand-monthly base-event rrule range))
          (months (mapcar (lambda (o) (nth 1 (plist-get o :start))) occurrences))
          (days (mapcar (lambda (o) (nth 2 (plist-get o :start))) occurrences)))

@@ -147,13 +147,21 @@ Returns the formatted file content."
   (let ((result (test-format "Title" "id" "* Content")))
     (should (string-match-p "#\\+FILETAGS: Topic\n\n\\* Content" result))))
 
-(ert-deftest test-org-roam-config-capture-templates-declared-special ()
-  "Normal: org-roam-capture-templates is declared special in the module.
-cj/org-roam-node-insert-immediate let-binds it; without the defvar the
-byte-compiled let is a dead lexical binding and :immediate-finish never
-reaches org-roam-node-insert -- the \"immediate\" insert opens a capture
-buffer."
-  (should (special-variable-p 'org-roam-capture-templates)))
+(defvar org-roam-capture-templates)
+
+(ert-deftest test-org-roam-config-immediate-insert-binding-is-dynamic ()
+  "Normal: the immediate-insert template binding reaches the insert call.
+Without the module's defvar, the byte-compiled let is a dead lexical
+binding: org-roam-node-insert would see the untouched global templates
+and :immediate-finish never applies -- the \"immediate\" insert opens a
+capture buffer.  Asserted behaviorally (not via special-variable-p,
+whose answer differs between the package-loaded and bare batch envs)."
+  (let ((org-roam-capture-templates '(("d" "default")))
+        seen)
+    (cl-letf (((symbol-function 'org-roam-node-insert)
+               (lambda (&rest _) (setq seen org-roam-capture-templates))))
+      (cj/org-roam-node-insert-immediate nil))
+    (should (equal seen '(("d" "default" :immediate-finish t))))))
 
 (provide 'test-org-roam-config-format)
 ;;; test-org-roam-config-format.el ends here
