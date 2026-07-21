@@ -519,8 +519,7 @@ computed column based on the window text area width."
 	  (goto-char (point-min))
 	  ;; Work in the selected window showing this buffer (if any).
 	  (when-let* ((win (get-buffer-window (current-buffer) t))
-				  (col-width (window-body-width win)) ;; columns
-				  (col-px (* col-width (window-font-width win))))
+				  (col-width (window-body-width win))) ;; columns
 		(while (let ((m (text-property-search-forward
 						 'display nil
 						 (lambda (_ p) (and (consp p) (eq (car-safe p) 'image))))))
