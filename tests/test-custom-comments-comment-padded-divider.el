@@ -246,5 +246,23 @@ Returns the buffer string for assertions."
     ;; Should include comment-end
     (should (string-match-p "\\*/" result))))
 
+;;; Rendered width honors LENGTH exactly
+
+(ert-deftest test-padded-divider-width-matches-length-exactly ()
+  "Normal: each decoration line renders exactly LENGTH wide.
+available-width forgot the doubled semicolon (elisp) and the space after
+comment-start that the emit path adds, so dividers rendered LENGTH+2
+(elisp) or LENGTH+1 wide, contradicting the docstring."
+  ;; elisp: lone ";" doubles to ";;" plus a space
+  (let* ((result (test-padded-divider-at-column 0 ";" "" "-" "x" 40 1))
+         (lines (split-string result "\n" t)))
+    (should (= 40 (length (car lines))))
+    (should (= 40 (length (car (last lines))))))
+  ;; c-style with an end delimiter and no doubling
+  (let* ((result (test-padded-divider-at-column 0 "/*" "*/" "-" "x" 40 1))
+         (lines (split-string result "\n" t)))
+    (should (= 40 (length (car lines))))
+    (should (= 40 (length (car (last lines)))))))
+
 (provide 'test-custom-comments-comment-padded-divider)
 ;;; test-custom-comments-comment-padded-divider.el ends here

@@ -200,8 +200,13 @@ PADDING is the number of spaces before the text."
                        (if (string-empty-p cmt-end) 0 (1+ (length cmt-end))))))
     (when (< length min-length)
       (error "Length %d is too small to generate comment (minimum %d)" length min-length))
+    ;; Mirror every term the emit path adds: the prologue also inserts a
+    ;; doubled semicolon (elisp) and a trailing space that this budget used
+    ;; to omit, rendering dividers LENGTH+2 (elisp) or LENGTH+1 wide.
     (let* ((available-width (- length current-column-pos
                               (length cmt-start)
+                              (if (equal cmt-start ";") 1 0)  ; doubled semicolon
+                              1  ; space after comment-start
                               (if (string-empty-p cmt-end) 0 (1+ (length cmt-end)))))
            (line (make-string available-width (string-to-char decoration-char))))
       ;; Top line
