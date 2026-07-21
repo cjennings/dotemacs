@@ -126,17 +126,26 @@ active, otherwise the entire buffer."
       (cons (region-beginning) (region-end))
     (cons (point-min) (point-max))))
 
-(defun cj/append-to-lines-in-region-or-buffer (str)
-  "Append STR to the end of each line in the region or entire buffer."
-  (interactive "sEnter string to append: ")
+(defun cj/--replace-region-or-buffer (transform)
+  "Replace the region (or whole buffer) with TRANSFORM applied to its text.
+TRANSFORM takes the current text and returns the replacement.  The
+replacement is computed before anything is deleted, so a TRANSFORM error
+leaves the buffer untouched.  Point lands at the start of the replaced
+span.  The shared delete/goto/insert tail of the line-transform commands."
   (let* ((bounds (cj/--region-or-buffer-bounds))
          (start-pos (car bounds))
          (end-pos (cdr bounds))
          (text (buffer-substring start-pos end-pos))
-         (insertion (cj/--append-to-lines text str)))
+         (insertion (funcall transform text)))
     (delete-region start-pos end-pos)
     (goto-char start-pos)
     (insert insertion)))
+
+(defun cj/append-to-lines-in-region-or-buffer (str)
+  "Append STR to the end of each line in the region or entire buffer."
+  (interactive "sEnter string to append: ")
+  (cj/--replace-region-or-buffer
+   (lambda (text) (cj/--append-to-lines text str))))
 
 (defun cj/--prepend-to-lines (text prefix)
   "Internal implementation: Prepend PREFIX to each line in TEXT.
@@ -158,14 +167,8 @@ Returns the transformed string without modifying the buffer."
 (defun cj/prepend-to-lines-in-region-or-buffer (str)
   "Prepend STR to the beginning of each line in the region or entire buffer."
   (interactive "sEnter string to prepend: ")
-  (let* ((bounds (cj/--region-or-buffer-bounds))
-         (start-pos (car bounds))
-         (end-pos (cdr bounds))
-         (text (buffer-substring start-pos end-pos))
-         (insertion (cj/--prepend-to-lines text str)))
-    (delete-region start-pos end-pos)
-    (goto-char start-pos)
-    (insert insertion)))
+  (cj/--replace-region-or-buffer
+   (lambda (text) (cj/--prepend-to-lines text str))))
 
 (defun cj/--indent-lines (text count use-tabs)
   "Internal implementation: Indent each line in TEXT by COUNT characters.
@@ -188,14 +191,8 @@ mean the count.  Call it from Lisp with an explicit USE-TABS to override."
                          (prefix-numeric-value current-prefix-arg)
                        4)
                      indent-tabs-mode))
-  (let* ((bounds (cj/--region-or-buffer-bounds))
-         (start-pos (car bounds))
-         (end-pos (cdr bounds))
-         (text (buffer-substring start-pos end-pos))
-         (insertion (cj/--indent-lines text count use-tabs)))
-    (delete-region start-pos end-pos)
-    (goto-char start-pos)
-    (insert insertion)))
+  (cj/--replace-region-or-buffer
+   (lambda (text) (cj/--indent-lines text count use-tabs))))
 
 (defun cj/--dedent-lines (text count)
   "Internal implementation: Remove up to COUNT leading characters from each line.
@@ -234,14 +231,8 @@ Works on region if active, otherwise entire buffer."
   (interactive (list (if current-prefix-arg
                          (prefix-numeric-value current-prefix-arg)
                        4)))
-  (let* ((bounds (cj/--region-or-buffer-bounds))
-         (start-pos (car bounds))
-         (end-pos (cdr bounds))
-         (text (buffer-substring start-pos end-pos))
-         (insertion (cj/--dedent-lines text count)))
-    (delete-region start-pos end-pos)
-    (goto-char start-pos)
-    (insert insertion)))
+  (cj/--replace-region-or-buffer
+   (lambda (text) (cj/--dedent-lines text count))))
 
 ;; Text enclosure keymap
 (defvar-keymap cj/enclose-map
