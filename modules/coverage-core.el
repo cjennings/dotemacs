@@ -220,7 +220,7 @@ empty hash table.  Malformed hunk headers are skipped silently."
   "Return the merge-base between HEAD and BASE."
   (let ((merge-base (string-trim
                      (cj/git-output-or-error "merge-base" "HEAD" base))))
-    (unless (not (string-empty-p merge-base))
+    (when (string-empty-p merge-base)
       (user-error "git merge-base HEAD %s returned no commit" base))
     merge-base))
 
