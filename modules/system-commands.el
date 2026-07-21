@@ -115,8 +115,21 @@ actions like shutdown and reboot), nil for no confirmation."
 ;; directly: logind emits the Lock signal, hypridle catches it and runs its
 ;; lock_cmd (hyprlock), the same path idle/before-sleep locking already uses.
 ;; X11 machines keep slock.
-(cj/defsystem-command cj/system-cmd-lock     lockscreen-cmd
-  (if (env-wayland-p) "loginctl lock-session" "slock"))
+;;
+;; Unlike its siblings, the locker is resolved at COMMAND time, not baked into
+;; the defvar at load: a daemon started before WAYLAND_DISPLAY reaches its
+;; environment would freeze the locker to slock forever, and Lock would then
+;; fail silently on Wayland.  `lockscreen-cmd' stays as an override knob.
+(defvar lockscreen-cmd nil
+  "Explicit lock command, overriding session-type resolution when non-nil.")
+
+(defun cj/system-cmd-lock ()
+  "Lock the session, resolving the locker from the live session type.
+Runs `lockscreen-cmd' when set; otherwise `loginctl lock-session' on
+Wayland and slock on X11, decided per call via `env-wayland-p'."
+  (interactive)
+  (cj/system-cmd (or lockscreen-cmd
+                     (if (env-wayland-p) "loginctl lock-session" "slock"))))
 (cj/defsystem-command cj/system-cmd-suspend  suspend-cmd "systemctl suspend" t)
 (cj/defsystem-command cj/system-cmd-shutdown shutdown-cmd "systemctl poweroff" strong)
 (cj/defsystem-command cj/system-cmd-reboot   reboot-cmd "systemctl reboot" strong)

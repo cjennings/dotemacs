@@ -230,5 +230,37 @@ kill-emacs directly (the service owns the daemon lifecycle)."
       (cj/system-command-menu))
     (should (eq called 'cj/system-cmd-lock))))
 
+;;; Lock command resolves the locker at call time
+
+(defun test-system-cmd--run-lock-capturing ()
+  "Run the lock command; return the shell command line it launched."
+  (let (cmd-line)
+    (cl-letf (((symbol-function 'start-process-shell-command)
+               (lambda (_name _buf c) (setq cmd-line c) 'fake-proc))
+              ((symbol-function 'set-process-query-on-exit-flag) #'ignore)
+              ((symbol-function 'set-process-sentinel) #'ignore)
+              ((symbol-function 'message) #'ignore))
+      (cj/system-cmd-lock))
+    cmd-line))
+
+(ert-deftest test-system-cmd-lock-follows-session-type-at-call-time ()
+  "Normal: the locker tracks the live session type, not the load-time bake.
+A daemon started before WAYLAND_DISPLAY was imported used to freeze the
+locker to slock forever; Lock then failed silently on Wayland."
+  (let ((lockscreen-cmd nil))
+    (cl-letf (((symbol-function 'env-wayland-p) (lambda () t)))
+      (should (string-match-p "loginctl lock-session"
+                              (test-system-cmd--run-lock-capturing))))
+    (cl-letf (((symbol-function 'env-wayland-p) (lambda () nil)))
+      (should (string-match-p "slock"
+                              (test-system-cmd--run-lock-capturing))))))
+
+(ert-deftest test-system-cmd-lock-explicit-override-wins ()
+  "Boundary: a user-set lockscreen-cmd overrides the session-type resolution."
+  (let ((lockscreen-cmd "my-locker --now"))
+    (cl-letf (((symbol-function 'env-wayland-p) (lambda () t)))
+      (should (string-match-p "my-locker --now"
+                              (test-system-cmd--run-lock-capturing))))))
+
 (provide 'test-system-commands-resolve-and-run)
 ;;; test-system-commands-resolve-and-run.el ends here
