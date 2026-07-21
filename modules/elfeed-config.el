@@ -142,30 +142,6 @@
   (elfeed-search-update--force)
   (goto-char (point-min)))
 
-;; ----------------------------- Extract Stream URL ----------------------------
-;; TASK: Is this method reused anywhere here or in another file?
-
-(defun cj/extract-stream-url (url format)
-  "Extract the direct stream URL from URL using yt-dlp with FORMAT.
-Returns the stream URL or nil on failure."
-  (unless (executable-find "yt-dlp")
-	(error "The program yt-dlp is not installed or not in PATH"))
-  (let* ((format-args (if format
-						  (list "-f" format)
-						nil))
-         (cmd-args (append '("yt-dlp" "-q" "-g")
-						   format-args
-						   (list url)))
-		 (output (with-temp-buffer
-				   (let ((exit-code (apply #'call-process
-										   (car cmd-args) nil t nil
-										   (cdr cmd-args))))
-					 (if (zerop exit-code)
-						 (string-trim (buffer-string))
-					   nil)))))
-    (when (and output (string-match-p "^https?://" output))
-      output)))
-
 ;; -------------------------- Elfeed Core Processing ---------------------------
 
 (defun cj/elfeed-process-entries (action-fn action-name &optional skip-error-handling)

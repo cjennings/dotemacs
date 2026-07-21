@@ -1,10 +1,7 @@
 ;;; test-elfeed-config-helpers.el --- Tests for elfeed stream/process helpers -*- lexical-binding: t; -*-
 
 ;;; Commentary:
-;; Coverage for two elfeed-config helpers that were untested:
-;;   - cj/extract-stream-url: runs yt-dlp -g to resolve a direct stream URL,
-;;     returning the URL, nil on non-URL / nonzero exit, or signalling when
-;;     yt-dlp is absent.
+;; Coverage for the elfeed-config entry-processing helper:
 ;;   - cj/elfeed-process-entries: applies an action to each selected entry,
 ;;     marking them read; errors when nothing is selected, skips entries with
 ;;     no link, and (by default) catches per-entry action errors.
@@ -33,40 +30,6 @@
 (package-initialize)
 (require 'elfeed-config)
 (require 'elfeed nil t)
-
-;;; cj/extract-stream-url
-
-(ert-deftest test-elfeed-extract-stream-url-normal-returns-url ()
-  "Normal: a successful yt-dlp run returns the trimmed https stream URL."
-  (cl-letf (((symbol-function 'executable-find)
-             (lambda (p &rest _) (and (equal p "yt-dlp") "/usr/bin/yt-dlp")))
-            ((symbol-function 'cj/log-silently) #'ignore)
-            ((symbol-function 'call-process)
-             (lambda (_prog _infile _dest _disp &rest _args)
-               (insert "https://stream.example/abc\n") 0)))
-    (should (equal "https://stream.example/abc"
-                   (cj/extract-stream-url "https://youtube.com/watch?v=x" "best")))))
-
-(ert-deftest test-elfeed-extract-stream-url-boundary-non-url-output-is-nil ()
-  "Boundary: output that is not an http(s) URL yields nil, not the raw text."
-  (cl-letf (((symbol-function 'executable-find) (lambda (_ &rest _) "/usr/bin/yt-dlp"))
-            ((symbol-function 'cj/log-silently) #'ignore)
-            ((symbol-function 'call-process)
-             (lambda (_p _i _d _disp &rest _) (insert "ERROR: unavailable\n") 0)))
-    (should (null (cj/extract-stream-url "u" nil)))))
-
-(ert-deftest test-elfeed-extract-stream-url-boundary-nonzero-exit-is-nil ()
-  "Boundary: a nonzero yt-dlp exit code yields nil."
-  (cl-letf (((symbol-function 'executable-find) (lambda (_ &rest _) "/usr/bin/yt-dlp"))
-            ((symbol-function 'cj/log-silently) #'ignore)
-            ((symbol-function 'call-process)
-             (lambda (_p _i _d _disp &rest _) (insert "boom") 1)))
-    (should (null (cj/extract-stream-url "u" nil)))))
-
-(ert-deftest test-elfeed-extract-stream-url-error-without-yt-dlp ()
-  "Error: a missing yt-dlp signals before attempting the call."
-  (cl-letf (((symbol-function 'executable-find) (lambda (_ &rest _) nil)))
-    (should-error (cj/extract-stream-url "u" "best") :type 'error)))
 
 ;;; cj/elfeed-process-entries
 
