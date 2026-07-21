@@ -188,5 +188,30 @@ text via `read-from-minibuffer'."
     (cj/comment-block-banner)
     (should (string-match-p "Banner" (buffer-string)))))
 
+;;; cj/--comment-read-syntax — the shared comment-syntax resolution
+
+(ert-deftest test-comment-read-syntax-uses-buffer-syntax ()
+  "Normal: a buffer with comment syntax resolves without prompting."
+  (with-temp-buffer
+    (setq-local comment-start ";")
+    (setq-local comment-end "")
+    (cl-letf (((symbol-function 'read-string)
+               (lambda (&rest _) (error "should not prompt"))))
+      (should (equal (cj/--comment-read-syntax) '(";" . ""))))))
+
+(ert-deftest test-comment-read-syntax-nil-end-falls-back-to-empty ()
+  "Boundary: a nil comment-end resolves to the empty string."
+  (with-temp-buffer
+    (setq-local comment-start "#")
+    (setq-local comment-end nil)
+    (should (equal (cj/--comment-read-syntax) '("#" . "")))))
+
+(ert-deftest test-comment-read-syntax-prompts-when-unset ()
+  "Error: no buffer comment-start falls back to the prompt."
+  (with-temp-buffer
+    (setq-local comment-start nil)
+    (cl-letf (((symbol-function 'read-string) (lambda (&rest _) "//")))
+      (should (equal (car (cj/--comment-read-syntax)) "//")))))
+
 (provide 'test-custom-comments-public-wrappers)
 ;;; test-custom-comments-public-wrappers.el ends here

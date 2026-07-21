@@ -72,6 +72,18 @@ is the line-opening prologue shared by the divider and inline-border emitters."
   (when (equal cmt-start ";") (insert cmt-start))
   (insert " "))
 
+(defun cj/--comment-read-syntax ()
+  "Return the buffer's comment syntax as a cons (COMMENT-START . COMMENT-END).
+Falls back to prompting for the start when the buffer has none, and to an
+empty end string.  The single source of the resolution that was previously
+copied into each command wrapper."
+  (cons (if (and (boundp 'comment-start) comment-start)
+            comment-start
+          (read-string "Comment start character(s): "))
+        (if (and (boundp 'comment-end) comment-end)
+            comment-end
+          "")))
+
 ;; ----------------------------- Inline Border ---------------------------------
 
 (defun cj/--comment-inline-border (cmt-start cmt-end decoration-char text length)
@@ -129,12 +141,9 @@ LENGTH is the total width of the line."
 DECORATION-CHAR defaults to \"#\" if not provided.
 Uses the lesser of `fill-column\\=' or 80 for line length."
   (interactive)
-  (let* ((comment-start (if (and (boundp 'comment-start) comment-start)
-                           comment-start
-                         (read-string "Comment start character(s): ")))
-         (comment-end (if (and (boundp 'comment-end) comment-end)
-                         comment-end
-                       ""))
+  (let* ((comment-syntax (cj/--comment-read-syntax))
+         (comment-start (car comment-syntax))
+         (comment-end (cdr comment-syntax))
          (decoration-char (or decoration-char "#"))
          (text (capitalize (string-trim (read-from-minibuffer "Comment: "))))
          (length (min fill-column 80)))
@@ -157,12 +166,9 @@ delegates to `cj/--comment-padded-divider' with PADDING 0."
   "Insert a simple divider comment banner.
 Prompts for decoration character, text, and length option."
   (interactive)
-  (let* ((comment-start (if (and (boundp 'comment-start) comment-start)
-                           comment-start
-                         (read-string "Comment start character(s): ")))
-         (comment-end (if (and (boundp 'comment-end) comment-end)
-                         comment-end
-                       ""))
+  (let* ((comment-syntax (cj/--comment-read-syntax))
+         (comment-start (car comment-syntax))
+         (comment-end (cdr comment-syntax))
          (decoration-char (read-string "Decoration character (default =): " nil nil "="))
          (text (read-string "Comment text: "))
          (length-option (completing-read "Comment length: "
@@ -237,12 +243,9 @@ PADDING is the number of spaces before the text."
   "Insert a padded divider comment banner.
 Prompts for decoration character, text, padding, and length option."
   (interactive)
-  (let* ((comment-start (if (and (boundp 'comment-start) comment-start)
-                           comment-start
-                         (read-string "Comment start character(s): ")))
-         (comment-end (if (and (boundp 'comment-end) comment-end)
-                         comment-end
-                       ""))
+  (let* ((comment-syntax (cj/--comment-read-syntax))
+         (comment-start (car comment-syntax))
+         (comment-end (cdr comment-syntax))
          (decoration-char (read-string "Decoration character (default =): " nil nil "="))
          (text (read-string "Comment text: "))
          (padding (string-to-number (read-string "Padding spaces (default 2): " nil nil "2")))
@@ -338,12 +341,9 @@ LENGTH is the total width of each line."
   "Insert a 3-line comment box with centered text.
 Prompts for decoration character, text, and uses `fill-column' for length."
   (interactive)
-  (let* ((comment-start (if (and (boundp 'comment-start) comment-start)
-                           comment-start
-                         (read-string "Comment start character(s): ")))
-         (comment-end (if (and (boundp 'comment-end) comment-end)
-                         comment-end
-                       ""))
+  (let* ((comment-syntax (cj/--comment-read-syntax))
+         (comment-start (car comment-syntax))
+         (comment-end (cdr comment-syntax))
          (decoration-char (read-string "Decoration character (default -): " nil nil "-"))
          (text (capitalize (string-trim (read-from-minibuffer "Comment: "))))
          (length (min fill-column 80)))
@@ -366,12 +366,9 @@ text, so it delegates to `cj/--comment-box-emit' with HEAVY non-nil."
   "Insert a heavy box comment with blank lines around centered text.
 Prompts for decoration character, text, and length option."
   (interactive)
-  (let* ((comment-start (if (and (boundp 'comment-start) comment-start)
-                           comment-start
-                         (read-string "Comment start character(s): ")))
-         (comment-end (if (and (boundp 'comment-end) comment-end)
-                         comment-end
-                       ""))
+  (let* ((comment-syntax (cj/--comment-read-syntax))
+         (comment-start (car comment-syntax))
+         (comment-end (cdr comment-syntax))
          (decoration-char (read-string "Decoration character (default *): " nil nil "*"))
          (text (read-string "Comment text: "))
          (length-option (completing-read "Comment length: "
@@ -449,12 +446,9 @@ BOX-STYLE is either \\='single or \\='double for line style."
   "Insert a unicode box comment.
 Prompts for text, box style, and length option."
   (interactive)
-  (let* ((comment-start (if (and (boundp 'comment-start) comment-start)
-                           comment-start
-                         (read-string "Comment start character(s): ")))
-         (comment-end (if (and (boundp 'comment-end) comment-end)
-                         comment-end
-                       ""))
+  (let* ((comment-syntax (cj/--comment-read-syntax))
+         (comment-start (car comment-syntax))
+         (comment-end (cdr comment-syntax))
          (text (read-string "Comment text: "))
          (box-style (intern (completing-read "Comment box style: "
                                              '("single" "double")
