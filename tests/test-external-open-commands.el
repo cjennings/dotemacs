@@ -89,6 +89,16 @@
 
 ;;; cj/find-file-auto
 
+(ert-deftest test-external-open-video-looping-errors-missing-program ()
+  "Error: a missing video player gives a clear user-error, not an opaque crash.
+The command fires via the find-file advice, so visiting a video on a
+machine without mpv must fail with a message naming the program."
+  (cl-letf (((symbol-function 'executable-find) (lambda (&rest _) nil))
+            ((symbol-function 'call-process)
+             (lambda (&rest _) (error "call-process should not run"))))
+    (should-error (cj/open-video-looping "/tmp/some-video.mp4")
+                  :type 'user-error)))
+
 (ert-deftest test-external-open-find-file-auto-routes-media-externally ()
   "Normal: a non-video external extension (`.docx', in
 `default-open-extensions') triggers `cj/xdg-open' instead of the original

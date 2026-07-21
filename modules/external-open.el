@@ -197,6 +197,11 @@ blocks Emacs."
 	(if (env-windows-p)
 		(w32-shell-execute "open" cj/video-open-command
 						   (mapconcat (lambda (a) (format "\"%s\"" a)) args " "))
+	  ;; Guard like `cj/open-this-file-with': this fires via the find-file
+	  ;; advice, so a missing player must fail with a clear message, not an
+	  ;; opaque call-process error mid-visit.
+	  (unless (executable-find cj/video-open-command)
+		(user-error "Program not found: %s" cj/video-open-command))
 	  (apply #'call-process cj/video-open-command nil 0 nil args))))
 
 ;; -------------------- Open Files With Default File Handler -------------------
