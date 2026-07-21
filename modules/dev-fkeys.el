@@ -364,9 +364,10 @@ TypeScript / JavaScript and unknown languages return nil."
               (if (string-empty-p rel-dir)
                   "./"
                 (format "./%s" rel-dir)))))
-    ('typescript
+    ((or 'typescript 'javascript)
      ;; Prefer vitest when present on PATH, fall back to jest otherwise.
-     ;; Both runners take a path argument and accept relative paths.
+     ;; Both runners take a path argument and accept relative paths, and
+     ;; both run JS test files the same way they run TS ones.
      (let ((runner (or (and (executable-find "vitest") "vitest")
                        (and (executable-find "jest")   "jest")
                        "jest")))  ; reasonable default for stack traces

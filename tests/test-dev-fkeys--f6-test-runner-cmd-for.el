@@ -138,10 +138,15 @@ rather than a silent nil that F6's outer wrapper interprets as
               'typescript t "src/foo.test.ts" "foo" "src")
              "npx --no-install vitest src/foo.test.ts"))))
 
-(ert-deftest test-dev-fkeys-f6-cmd-for-javascript-returns-nil ()
-  "Error: JavaScript is punted for v1 and returns nil."
-  (should (null (cj/--f6-test-runner-cmd-for
-                 'javascript t "src/foo.test.js" "foo" "src"))))
+(ert-deftest test-dev-fkeys-f6-cmd-for-javascript-uses-npx-runner ()
+  "Normal: javascript gets the same npx runner command as typescript.
+The language detector classifies js/jsx and the test-file detector
+recognizes JS test files, but the dispatch had no javascript arm, so
+C-F6 on a JS test errored even though the npx path would run it."
+  (cl-letf (((symbol-function 'executable-find) (lambda (&rest _) nil)))
+    (should (equal (cj/--f6-test-runner-cmd-for
+                    'javascript t "src/foo.test.js" "foo" "src")
+                   "npx --no-install jest src/foo.test.js"))))
 
 (ert-deftest test-dev-fkeys-f6-cmd-for-unknown-returns-nil ()
   "Error: an unknown language returns nil."
