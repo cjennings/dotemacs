@@ -315,6 +315,34 @@ d shrinks the frame to the current day, w restores the seven-day span."
   (should (eq (lookup-key cj/agenda-frame-mode-map (kbd "w"))
               'cj/--agenda-frame-week-view)))
 
+(ert-deftest test-org-agenda-frame-shadow-denies-org-mutations-preserves-allowlist ()
+  "Boundary: with the frame mode active over `org-agenda-mode-map', mutating
+org-agenda keys are denied and the allowlist still works.
+The `[t]' default cannot shadow org-agenda-mode-map's explicit bindings, so
+the shadow walk must add explicit denies for every non-allowlisted key --
+single keys (t/I/k/z/s/.), the C-c mutators (schedule/deadline/clock), and
+C-x (save-all) -- while leaving the allowlist (navigation, engage, refresh,
+d/w, C-c C-o) intact."
+  (require 'org-agenda)
+  (cj/--agenda-frame-shadow-mutations)
+  (with-temp-buffer
+    (use-local-map org-agenda-mode-map)
+    (cj/agenda-frame-mode 1)
+    ;; escaping mutators are now explicitly denied (not org's commands)
+    (dolist (chord '("t" "I" "k" "z" "s" "." "C-c C-s" "C-c C-d"
+                     "C-c C-x C-i" "C-x C-s"))
+      (should (eq (key-binding (kbd chord))
+                  'cj/--agenda-frame-denied-readonly)))
+    ;; the allowlist survives the walk
+    (should (eq (key-binding (kbd "n")) 'org-agenda-next-line))
+    (should (eq (key-binding (kbd "p")) 'org-agenda-previous-line))
+    (should (eq (key-binding (kbd "RET")) 'cj/--agenda-frame-engage-open))
+    (should (eq (key-binding (kbd "g")) 'cj/--agenda-frame-safe-redo))
+    (should (eq (key-binding (kbd "d")) 'cj/--agenda-frame-day-view))
+    (should (eq (key-binding (kbd "w")) 'cj/--agenda-frame-week-view))
+    (should (eq (key-binding (kbd "C-c C-o")) 'cj/--agenda-frame-open-link))
+    (should (eq (key-binding (kbd "q")) 'cj/--agenda-frame-close))))
+
 (ert-deftest test-org-agenda-frame-map-frame-controls-bound ()
   "Normal: the frame's own controls work from inside the frame.
 S-<f8> must close/toggle and C-M-<f8> must force-rescan; unbound, the

@@ -31,6 +31,7 @@
 ;; `with-eval-after-load' so a batch test-load runs no org-agenda side effects.
 (defvar org-agenda-custom-commands)
 (defvar org-agenda-finalize-hook)
+(defvar org-agenda-mode-map)
 (defvar org-agenda-sticky)
 (defvar org-agenda-window-setup)
 (declare-function cj/build-org-agenda-list "org-agenda-config" (&optional force-rebuild))
@@ -317,6 +318,47 @@ of contract."
   :init-value nil
   :lighter " AgendaFrame"
   :keymap cj/agenda-frame-mode-map)
+
+(defun cj/--agenda-frame-shadow-mutations (&optional source-map prefix)
+  "Deny every SOURCE-MAP key sequence not on the frame map's allowlist.
+Walk SOURCE-MAP (default `org-agenda-mode-map') recursively.  For each
+sequence it binds to a command, if `cj/agenda-frame-mode-map' doesn't already
+bind that sequence to a command or manage it as a prefix, add an explicit
+read-only deny.
+
+This closes the default-deny hole: a keymap's `[t]' default never shadows an
+explicit binding in a lower-priority map, so a single `[t]' catch-all denies
+only keys that are unbound everywhere.  Every key `org-agenda-mode-map' binds
+\(t, I, k, z, s, ., the C-c mutators, C-x C-s, ...) would otherwise sail
+through the catch-all and mutate source files from the read-only frame.
+Explicitly denying each non-allowlisted sequence makes the catch-all's intent
+actually hold.
+
+PREFIX is the accumulated key vector during recursion (internal).  Idempotent:
+re-running rebinds the same denials.  Runs from `with-eval-after-load' once
+`org-agenda-mode-map' exists."
+  (let ((source (or source-map org-agenda-mode-map))
+        (prefix (or prefix [])))
+    (map-keymap
+     (lambda (event binding)
+       (unless (or (eq event t) (eq event 'menu-bar) (eq event 'remap)
+                   (consp event))
+         (let ((seq (vconcat prefix (vector event))))
+           (cond
+            ((keymapp binding)
+             (cj/--agenda-frame-shadow-mutations binding seq))
+            ((commandp binding)
+             (let ((ours (lookup-key cj/agenda-frame-mode-map seq)))
+               ;; A command we allowlisted or a prefix we manage: leave it.
+               ;; Anything else (only the `[t]' default, or unbound under a
+               ;; shared prefix) escapes to org's command -- deny it here.
+               (unless (or (commandp ours) (keymapp ours))
+                 (define-key cj/agenda-frame-mode-map seq
+                             #'cj/--agenda-frame-denied-readonly))))))))
+     source)))
+
+(with-eval-after-load 'org-agenda
+  (cj/--agenda-frame-shadow-mutations))
 
 (defun cj/--agenda-frame-maybe-enable-mode ()
   "Re-enable `cj/agenda-frame-mode' after an agenda build in the agenda frame.
