@@ -95,9 +95,18 @@ The existing top-level key is `d' (org-agenda-config.el:344), so `F' is
 collision-free.  The sticky buffer derives its name from this key
 \(*Org Agenda(F)*).")
 
+(defvar cj/--agenda-frame-span 7
+  "Span, in days, of the agenda-frame view.
+The `F' custom command reads this via its `org-agenda-span' setting, which
+Org evaluates on every build and every redo, so `cj/--agenda-frame-day-view'
+\(span 1) and `cj/--agenda-frame-week-view' (span 7) change it and the next
+redo picks up the new span.  Reset to 7 on each spawn so a fresh frame opens
+at the documented default.")
+
 (defun cj/--agenda-frame-command ()
   "Return the `org-agenda-custom-commands' entry for the agenda frame.
-A one-block agenda: a seven-day span anchored to today rather than
+A one-block agenda: a `cj/--agenda-frame-span'-day span anchored to today
+rather than
 Monday (`org-agenda-list' otherwise anchors any seven-day span to the
 week start in Org 9.7.11), rendered in the frame's sole window
 \(`current-window', so Org's default `reorganize-frame' can't split it),
@@ -105,7 +114,7 @@ as its own sticky *Org Agenda(F)* buffer, with follow-mode forced off so
 a non-nil global default can't open a second window at build time."
   `(,cj/--agenda-frame-command-key "Agenda frame: 7-day today-anchored"
     ((agenda ""
-             ((org-agenda-span 7)
+             ((org-agenda-span cj/--agenda-frame-span)
               (org-agenda-start-day "0d")
               (org-agenda-start-on-weekday nil)
               (org-agenda-start-with-follow-mode nil)
@@ -195,7 +204,7 @@ frame stranded on a non-agenda buffer."
   "Shown when a mutating or buffer-opening command is denied in the frame.")
 
 (defconst cj/--agenda-frame-fixed-view-message
-  "Agenda frame is fixed to the 7-day view"
+  "Agenda frame shows only the day (d) and week (w) views"
   "Shown when a view-changing command is denied in the frame.")
 
 (defun cj/--agenda-frame-denied-readonly ()
@@ -257,6 +266,10 @@ The default binding for every key not on the allowlist."
     ;; frame-scoped safe redo, same as r) rather than denying it as a
     ;; view-change.  C-M-<f8> stays the force-rescan.
     (define-key map (kbd "g") #'cj/--agenda-frame-safe-redo)
+    ;; d / w toggle the span (today's day vs the seven-day view) in place; the
+    ;; other view-changers stay denied to keep the today-anchored frame stable.
+    (define-key map (kbd "d") #'cj/--agenda-frame-day-view)
+    (define-key map (kbd "w") #'cj/--agenda-frame-week-view)
     (define-key map (kbd "S-<f8>") #'cj/agenda-frame-toggle)
     (define-key map (kbd "C-M-<f8>") #'cj/org-agenda-refresh-files)
     ;; C-x C-c means "close this frame" here.  The global
@@ -284,8 +297,9 @@ The default binding for every key not on the allowlist."
     ;; its global binding and escapes the read-only frame into ai-term.
     (dolist (key '("M-SPC" "M-S-SPC"))
       (define-key map (kbd key) #'cj/--agenda-frame-denied-readonly))
-    ;; View-changers get the distinct fixed-view message, not the read-only one.
-    (dolist (key '("w" "d" "y" "f" "b" "j"))
+    ;; The remaining view-changers get the distinct fixed-view message, not the
+    ;; read-only one.  d/w are handled above (they toggle the span in place).
+    (dolist (key '("y" "f" "b" "j"))
       (define-key map (kbd key) #'cj/--agenda-frame-denied-fixed-view))
     map)
   "Keymap for `cj/agenda-frame-mode'.
@@ -428,6 +442,9 @@ Returns the new agenda frame on success."
     (condition-case err
         (progn
           (setq cj/--agenda-frame-launch-frame launch)
+          ;; A fresh frame opens at the documented seven-day default, even if a
+          ;; prior session left the span on the day view (d).
+          (setq cj/--agenda-frame-span 7)
           (setq frame (make-frame (cj/--agenda-frame-make-parameters)))
           (select-frame-set-input-focus frame)
           ;; Cached, non-forced: a frame spawned early after daemon startup
@@ -715,6 +732,21 @@ out-of-range window-start nor steals focus."
               (cj/--agenda-frame-do-redo frame buffer window))
           (when (window-live-p prev-window)
             (select-window prev-window t)))))))
+
+(defun cj/--agenda-frame-day-view ()
+  "Shrink the Full Agenda frame to today's single-day view.
+Sets the span to 1 and refreshes.  The redo re-evaluates the span, so the
+day view survives the wall-clock refresh tick until `w' widens it again."
+  (interactive)
+  (setq cj/--agenda-frame-span 1)
+  (cj/--agenda-frame-safe-redo))
+
+(defun cj/--agenda-frame-week-view ()
+  "Restore the Full Agenda frame to the seven-day today-anchored view.
+Sets the span back to 7 and refreshes."
+  (interactive)
+  (setq cj/--agenda-frame-span 7)
+  (cj/--agenda-frame-safe-redo))
 
 (defun cj/--agenda-frame-start-timer (frame)
   "Start FRAME's five-minute wall-clock refresh timer, unless one exists.

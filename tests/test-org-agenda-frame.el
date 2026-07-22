@@ -121,13 +121,49 @@
   (should (equal (nth 0 (cj/--agenda-frame-command)) "F")))
 
 (ert-deftest test-org-agenda-frame-command-today-anchored-7-day ()
-  "Normal: the span is seven days anchored to today, not Monday."
+  "Normal: the default span is seven days anchored to today, not Monday.
+The span is the frame-span variable (default 7), evaluated the way org
+evaluates custom-command settings."
   (let ((s (test-org-agenda-frame--block-settings)))
-    (should (equal (cadr (assq 'org-agenda-span s)) 7))
+    (should (equal (default-value 'cj/--agenda-frame-span) 7))
+    (should (equal (eval (cadr (assq 'org-agenda-span s)) t)
+                   (default-value 'cj/--agenda-frame-span)))
     (should (equal (cadr (assq 'org-agenda-start-day s)) "0d"))
     ;; start-on-weekday nil is what un-anchors the span from Monday.
     (should (assq 'org-agenda-start-on-weekday s))
     (should (null (cadr (assq 'org-agenda-start-on-weekday s))))))
+
+(ert-deftest test-org-agenda-frame-command-span-follows-variable ()
+  "Normal: the block span reads `cj/--agenda-frame-span', so d/w can change it
+and a redo -- which re-evaluates the lprops -- picks up the new span."
+  (let ((cj/--agenda-frame-span 1))
+    (should (equal (eval (cadr (assq 'org-agenda-span
+                                     (test-org-agenda-frame--block-settings)))
+                         t)
+                   1)))
+  (let ((cj/--agenda-frame-span 7))
+    (should (equal (eval (cadr (assq 'org-agenda-span
+                                     (test-org-agenda-frame--block-settings)))
+                         t)
+                   7))))
+
+(ert-deftest test-org-agenda-frame-day-view-sets-span-1-and-redoes ()
+  "Normal: d sets the span to one day and refreshes via the safe redo."
+  (let ((cj/--agenda-frame-span 7) redone)
+    (cl-letf (((symbol-function 'cj/--agenda-frame-safe-redo)
+               (lambda (&rest _) (setq redone t))))
+      (cj/--agenda-frame-day-view)
+      (should (equal cj/--agenda-frame-span 1))
+      (should redone))))
+
+(ert-deftest test-org-agenda-frame-week-view-sets-span-7-and-redoes ()
+  "Normal: w restores the seven-day span and refreshes."
+  (let ((cj/--agenda-frame-span 1) redone)
+    (cl-letf (((symbol-function 'cj/--agenda-frame-safe-redo)
+               (lambda (&rest _) (setq redone t))))
+      (cj/--agenda-frame-week-view)
+      (should (equal cj/--agenda-frame-span 7))
+      (should redone))))
 
 (ert-deftest test-org-agenda-frame-command-tight-prefix-format ()
   "Normal: the view sets its own prefix format with a narrow category column.
@@ -212,7 +248,7 @@ the spawn wrapper, where it names the buffer."
     (cl-letf (((symbol-function 'message)
                (lambda (fmt &rest args) (setq captured (apply #'format fmt args)))))
       (cj/--agenda-frame-denied-fixed-view))
-    (should (string-match-p "7-day view" captured))))
+    (should (string-match-p "day (d) and week (w)" captured))))
 
 ;;; Default-deny policy — the keymap
 
@@ -267,9 +303,17 @@ fixed-view deny handler."
 (ert-deftest test-org-agenda-frame-map-view-changers-fixed-view-deny ()
   "Boundary: view-changing keys are explicitly denied with the fixed-view message,
 not caught by the read-only catch-all."
-  (dolist (key '("w" "d" "y" "f" "b" "j"))
+  (dolist (key '("y" "f" "b" "j"))
     (should (eq (lookup-key cj/agenda-frame-mode-map (kbd key))
                 'cj/--agenda-frame-denied-fixed-view))))
+
+(ert-deftest test-org-agenda-frame-map-day-week-view-keys ()
+  "Normal: d and w toggle the span (day / week) rather than being denied.
+d shrinks the frame to the current day, w restores the seven-day span."
+  (should (eq (lookup-key cj/agenda-frame-mode-map (kbd "d"))
+              'cj/--agenda-frame-day-view))
+  (should (eq (lookup-key cj/agenda-frame-mode-map (kbd "w"))
+              'cj/--agenda-frame-week-view)))
 
 (ert-deftest test-org-agenda-frame-map-frame-controls-bound ()
   "Normal: the frame's own controls work from inside the frame.
@@ -943,6 +987,21 @@ showing the launch buffer."
               ((symbol-function 'cj/--agenda-frame-start-timer) (lambda (_f) nil)))
       (cj/--agenda-frame-spawn)
       (should collapsed))))
+
+(ert-deftest test-org-agenda-frame-spawn-resets-span-to-7 ()
+  "Normal: a fresh spawn opens at the documented seven-day default, even when a
+prior frame's session left `cj/--agenda-frame-span' at the day view."
+  (let ((cj/--agenda-frame-span 1))
+    (cl-letf (((symbol-function 'selected-frame) (lambda () 'launch))
+              ((symbol-function 'make-frame) (lambda (&rest _) 'af))
+              ((symbol-function 'select-frame-set-input-focus) (lambda (_f &rest _) nil))
+              ((symbol-function 'cj/build-org-agenda-list) (lambda (&rest _) nil))
+              ((symbol-function 'org-agenda) (lambda (&rest _) nil))
+              ((symbol-function 'delete-other-windows) (lambda (&rest _) nil))
+              ((symbol-function 'cj/--agenda-frame-sticky-buffer) (lambda () nil))
+              ((symbol-function 'cj/--agenda-frame-start-timer) (lambda (_f) nil)))
+      (cj/--agenda-frame-spawn)
+      (should (equal cj/--agenda-frame-span 7)))))
 
 (ert-deftest test-org-agenda-frame-spawn-starts-timer ()
   "Normal: a successful spawn starts the refresh timer for the new frame."
