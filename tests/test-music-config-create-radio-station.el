@@ -106,15 +106,16 @@
 
 (ert-deftest test-music-config-menu-map-lowercase-keys ()
   "Normal: the menu's former uppercase keys live on lowercase homes, and the
-playlist buffer saves on v."
+playlist buffer saves on s (single on 1, old save key v unbound)."
   (should (eq (lookup-key cj/music-map "v") 'cj/music-playlist-show))
   (should (eq (lookup-key cj/music-map "u") 'emms-shuffle))
   (should (eq (lookup-key cj/music-map "l") 'emms-toggle-repeat-playlist))
   (should-not (lookup-key cj/music-map "R"))
   (should-not (lookup-key cj/music-map "M"))
   (should-not (lookup-key cj/music-map "Z"))
-  (should (eq (lookup-key emms-playlist-mode-map "v") 'cj/music-playlist-save))
-  (should-not (eq (lookup-key emms-playlist-mode-map "w") 'cj/music-playlist-save)))
+  (should (eq (lookup-key emms-playlist-mode-map "s") 'cj/music-playlist-save))
+  (should (eq (lookup-key emms-playlist-mode-map "1") 'emms-toggle-repeat-track))
+  (should-not (lookup-key emms-playlist-mode-map "v")))
 
 ;;; Error Cases
 

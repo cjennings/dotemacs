@@ -1377,12 +1377,12 @@ The rule uses a resize-safe :align-to span, not a hardcoded character count."
      (propertize "Mode    " 'face 'cj/music-header-face)
      (propertize " : " 'face 'cj/music-header-face)
      (funcall mode-indicator "r" "repeat" (bound-and-true-p emms-repeat-playlist)) "  "
-     (funcall mode-indicator "s" "single" (bound-and-true-p emms-repeat-track)) "  "
+     (funcall mode-indicator "1" "single" (bound-and-true-p emms-repeat-track)) "  "
      (funcall mode-indicator "z" "random" (bound-and-true-p emms-random-playlist)) "  "
      (funcall mode-indicator "x" "consume" cj/music-consume-mode) "\n"
      (propertize "Keys    " 'face 'cj/music-header-face)
      (propertize " : " 'face 'cj/music-header-face)
-     (propertize "a:add  c:clear  L:load  v:save  D:delete  S:stop  SPC:pause  <>:skip  ↑↓:move  C-↑↓:reorder  q:dismiss"
+     (propertize "a:add  c:clear  L:load  s:save  D:delete  SPC:pause  <>:skip  ↑↓:move  C-↑↓:reorder  q:dismiss"
                  'face 'cj/music-keyhint-face) "\n"
      (propertize "Radio   " 'face 'cj/music-header-face)
      (propertize " : " 'face 'cj/music-header-face)
@@ -1614,7 +1614,6 @@ unless fancy."
         ;; Playback
         ("p"   . emms-playlist-mode-go)
         ("SPC" . emms-pause)
-        ("s"   . emms-stop)
         ("n"   . cj/music-next)
         (">"   . cj/music-next)
         ("P"   . cj/music-previous)
@@ -1640,7 +1639,6 @@ unless fancy."
         ("D" . cj/music-delete-playlist)
         ("E" . cj/music-playlist-edit)
         ("g" . cj/music-playlist-reload)
-        ("v" . cj/music-playlist-save)
         ;; Track reordering
         ("S-<up>"   . emms-playlist-mode-shift-track-up)
         ("S-<down>" . emms-playlist-mode-shift-track-down)
@@ -2094,14 +2092,15 @@ when there is nothing to fetch."
   (message "Cleared music art cache: %s" cj/music-art-cache-dir))
 
 ;; Radio row in the playlist buffer: n = search by name, t = search by tag,
-;; m = enter a station by hand.  This moves the "single" mode toggle off t to s
-;; and emms-stop off s to S (see the header's Mode/Keys/Radio rows).
+;; m = enter a station by hand.  Single-track mode is on 1 and s saves the
+;; playlist; stop was dropped (SPC/pause covers it).  These run after
+;; use-package's :map, so they win (see the header's Mode/Keys/Radio rows).
 (with-eval-after-load 'emms
   (keymap-set emms-playlist-mode-map "n" #'cj/music-radio-search-by-name)
   (keymap-set emms-playlist-mode-map "t" #'cj/music-radio-search-by-tag)
   (keymap-set emms-playlist-mode-map "m" #'cj/music-create-radio-station)
-  (keymap-set emms-playlist-mode-map "s" #'emms-toggle-repeat-track)
-  (keymap-set emms-playlist-mode-map "S" #'emms-stop))
+  (keymap-set emms-playlist-mode-map "1" #'emms-toggle-repeat-track)
+  (keymap-set emms-playlist-mode-map "s" #'cj/music-playlist-save))
 
 (provide 'music-config)
 ;;; music-config.el ends here

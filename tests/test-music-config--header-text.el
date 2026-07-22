@@ -139,6 +139,23 @@
           (should (string-match-p "consume" plain))))
     (test-header--teardown)))
 
+(ert-deftest test-music-config--header-text-boundary-key-hints-single-save-stop ()
+  "Header key hints: single is on 1, save is on s, and stop (S) is gone.
+SPC/pause covers stop, so the S:stop hint and the [s] single / v:save hints
+are retired."
+  (unwind-protect
+      (progn
+        (test-header--setup-playlist-buffer '("/music/a.mp3"))
+        (let* ((header (with-current-buffer cj/music-playlist-buffer-name
+                         (cj/music--header-text)))
+               (plain (test-header--strip-properties header)))
+          (should (string-match-p "\\[1\\] single" plain))
+          (should (string-match-p "s:save" plain))
+          (should-not (string-match-p "\\[s\\] single" plain))
+          (should-not (string-match-p "v:save" plain))
+          (should-not (string-match-p "S:stop" plain))))
+    (test-header--teardown)))
+
 ;;; Error Cases
 
 (ert-deftest test-music-config--header-text-error-empty-playlist-shows-zero-count ()
