@@ -55,6 +55,10 @@
   (expand-file-name "comp-warnings.log" user-emacs-directory)
   "File where native-comp warnings will be appended.")
 
+(defvar cj/comp-warnings-log-max-bytes (* 512 1024)
+  "Cap on `comp-warnings-log' size.  Once it exceeds this, the log is reset
+before the next write, so native-comp warnings can't grow it without bound.")
+
 (defun cj/log-comp-warning (type message &rest args)
   "Log native-comp warnings of TYPE with MESSAGE & ARGS.
 Log to buffer `comp-warnings-log'. Suppress warnings from appearing in the
@@ -62,13 +66,24 @@ Log to buffer `comp-warnings-log'. Suppress warnings from appearing in the
 timestamp to the file specified by `comp-warnings-log'. Return non-nil to
 indicate the warning was handled."
   (when (memq 'comp (if (listp type) type (list type)))
-    (with-temp-buffer
-      (insert (format-time-string "[%Y-%m-%d %H:%M:%S] "))
-      (insert (if (stringp message)
-                  (apply #'format message args)
-                (format "%S %S" message args)))
-      (insert "\n")
-      (append-to-file (point-min) (point-max) comp-warnings-log))
+    ;; Reset the log if it has grown past the cap, so async comp warnings can't
+    ;; grow it without bound.
+    (when (ignore-errors
+            (> (or (file-attribute-size (file-attributes comp-warnings-log)) 0)
+               cj/comp-warnings-log-max-bytes))
+      (ignore-errors (delete-file comp-warnings-log)))
+    ;; Guard the write: this runs as `:before-until' advice on `display-warning',
+    ;; so a signal here (an unwritable log path) would propagate out and break
+    ;; warning display for every async comp notice.  Swallow the failure; the
+    ;; warning stays suppressed either way.
+    (ignore-errors
+      (with-temp-buffer
+        (insert (format-time-string "[%Y-%m-%d %H:%M:%S] "))
+        (insert (if (stringp message)
+                    (apply #'format message args)
+                  (format "%S %S" message args)))
+        (insert "\n")
+        (append-to-file (point-min) (point-max) comp-warnings-log)))
     ;; Return non-nil to tell `display-warning' “we handled it.”
     t))
 

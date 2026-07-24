@@ -162,5 +162,36 @@ and the rendered S-expression lands in the log."
               (should (string-match-p ":slot" contents)))))
       (delete-file comp-warnings-log))))
 
+(ert-deftest test-system-defaults-log-comp-warning-unwritable-log-does-not-signal ()
+  "Error: an unwritable log path must not signal.
+The function is `:before-until' advice on `display-warning'; a signal here
+propagates out of `display-warning' and breaks warning display for every
+async native-comp notice.  It swallows the write failure and still returns
+t (the warning stays suppressed), rather than crashing."
+  (let ((comp-warnings-log "/proc/nonexistent-dir/cannot-write.log"))
+    (should (eq t (cj/log-comp-warning 'comp "boom")))))
+
+(ert-deftest test-system-defaults-log-comp-warning-caps-log-growth ()
+  "Boundary: the log is bounded — once it exceeds the cap, a further write
+resets it (deletes the old file, keeping only the new entry) rather than
+growing without limit.  A hard reset, not a tail-trim: on overflow the old
+history is discarded, which is fine for a transient diagnostic log."
+  (let ((comp-warnings-log (make-temp-file "comp-warnings-" nil ".log")))
+    (unwind-protect
+        (progn
+          ;; Seed the file well over the cap.
+          (with-temp-file comp-warnings-log
+            (insert (make-string (1+ cj/comp-warnings-log-max-bytes) ?x)))
+          (should (> (file-attribute-size (file-attributes comp-warnings-log))
+                     cj/comp-warnings-log-max-bytes))
+          (cj/log-comp-warning 'comp "after the cap")
+          (should (<= (file-attribute-size (file-attributes comp-warnings-log))
+                      cj/comp-warnings-log-max-bytes))
+          ;; The newest entry survives the trim.
+          (with-temp-buffer
+            (insert-file-contents comp-warnings-log)
+            (should (string-match-p "after the cap" (buffer-string)))))
+      (delete-file comp-warnings-log))))
+
 (provide 'test-system-defaults-functions)
 ;;; test-system-defaults-functions.el ends here
