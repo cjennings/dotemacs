@@ -18,8 +18,17 @@ cd "$REPO_ROOT" || exit 1
 SECRET_PATTERNS_CS='(AKIA[0-9A-Z]{16}|sk-[a-zA-Z0-9_-]{20,}|-----BEGIN (RSA|DSA|EC|OPENSSH|PGP)( PRIVATE)?( KEY| KEY BLOCK)?-----)'
 SECRET_PATTERNS_CI='(api[_-]?key|api[_-]?secret|auth[_-]?token|secret[_-]?key|bearer[_-]?token|access[_-]?token|password)[[:space:]]*[:=][[:space:]]*["'"'"'][^"'"'"']{16,}["'"'"']'
 
-added_lines="$(git diff --cached -U0 --diff-filter=AM \
-  | grep '^+' | grep -v '^+++' || true)"
+# Read the diff on its own so a git failure is distinguishable from "grep
+# matched nothing".  Both end in a non-zero status, but only one of them means
+# there is nothing to scan; piping them together and swallowing the result with
+# `|| true` made a broken git look like a clean commit.
+if ! staged_diff="$(git diff --cached -U0 --diff-filter=AM)"; then
+  echo "pre-commit: cannot read the staged diff — refusing to skip the secret scan" >&2
+  exit 1
+fi
+
+# The greps keep their `|| true`: exiting 1 on no match is their normal result.
+added_lines="$(printf '%s\n' "$staged_diff" | grep '^+' | grep -v '^+++' || true)"
 
 cs_hits="$(printf '%s\n' "$added_lines" | grep -nE  "$SECRET_PATTERNS_CS" || true)"
 ci_hits="$(printf '%s\n' "$added_lines" | grep -niE "$SECRET_PATTERNS_CI" || true)"
@@ -37,7 +46,14 @@ if [ -n "$secret_hits" ]; then
 fi
 
 # --- 2. Paren check on staged .el files ---
-staged_el="$(git diff --cached --name-only --diff-filter=AM | grep '\.el$' || true)"
+# Same split as the secret scan above: a git failure must not read as "no .el
+# files staged", which would skip the paren check silently.
+if ! staged_names="$(git diff --cached --name-only --diff-filter=AM)"; then
+  echo "pre-commit: cannot read the staged file list — refusing to skip the paren check" >&2
+  exit 1
+fi
+
+staged_el="$(printf '%s\n' "$staged_names" | grep '\.el$' || true)"
 
 if [ -n "$staged_el" ]; then
   paren_fail=""
