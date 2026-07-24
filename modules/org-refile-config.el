@@ -185,6 +185,25 @@ ARG DEFAULT-BUFFER RFLOC and MSG parameters passed to org-refile."
 
 ;; --------------------------------- Org Refile --------------------------------
 
+(declare-function org-save-all-org-buffers "org")
+
+(defun cj/org-refile--save-all-buffers (&rest _)
+  "Save every open Org buffer.  Installed as `:after' advice on `org-refile'.
+Named (not an anonymous lambda) so the :config reload can `advice-remove'
+it by reference and a test can assert its installation."
+  (org-save-all-org-buffers))
+
+(defun cj/org-refile--ensure-targets-in-org-mode (&rest _)
+  "Put every string-named refile target buffer into `org-mode' first.
+Installed as `:before' advice on `org-refile-get-targets'.  Fixes targets
+opened before Org loaded getting stuck in `fundamental-mode'.  A non-string
+target car (a function or symbol spec) is skipped.  Named for the same
+remove-by-reference and testability reasons as the save helper above."
+  (dolist (target org-refile-targets)
+    (let ((file (car target)))
+      (when (stringp file)
+        (cj/org-refile-ensure-org-mode file)))))
+
 (use-package org-refile
   :ensure nil ;; built-in
   :defer .5
@@ -193,20 +212,14 @@ ARG DEFAULT-BUFFER RFLOC and MSG parameters passed to org-refile."
 		("C-c C-w"   . cj/org-refile)
 		("C-c w"     . cj/org-refile-in-file))
   :config
-  ;; save all open org buffers after a refile is complete
-  (advice-add 'org-refile :after
-			  (lambda (&rest _)
-				(org-save-all-org-buffers)))
-
-  ;; Ensure refile target buffers are in org-mode before processing
-  ;; Fixes issue where buffers opened before org loaded get stuck in fundamental-mode
-  (advice-add 'org-refile-get-targets :before
-              (lambda (&rest _)
-                "Ensure all refile target buffers are in org-mode."
-                (dolist (target org-refile-targets)
-                  (let ((file (car target)))
-                    (when (stringp file)
-                      (cj/org-refile-ensure-org-mode file)))))))
+  ;; Install both advices by named-function reference with a remove-then-add
+  ;; guard.  Anonymous lambdas here couldn't be `advice-remove'd (deleting the
+  ;; advice from source left a live daemon still running it) and couldn't be
+  ;; tested; the named helpers above are both.
+  (advice-remove 'org-refile #'cj/org-refile--save-all-buffers)
+  (advice-add 'org-refile :after #'cj/org-refile--save-all-buffers)
+  (advice-remove 'org-refile-get-targets #'cj/org-refile--ensure-targets-in-org-mode)
+  (advice-add 'org-refile-get-targets :before #'cj/org-refile--ensure-targets-in-org-mode))
 
 (provide 'org-refile-config)
 ;;; org-refile-config.el ends here.
