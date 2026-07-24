@@ -418,10 +418,15 @@ removed after a later success -- the failure banner would stick forever."
     (should (= 0 (seq-count (lambda (o) (overlay-get o 'before-string))
                             (overlays-in (point-min) (point-max)))))))
 
-(ert-deftest test-org-agenda-frame-map-mutation-keys-not-explicitly-bound ()
-  "Boundary: a mutation key (t = org-agenda-todo) is not explicitly bound, so the
-[t] catch-all denies it as read-only."
-  (should (null (lookup-key cj/agenda-frame-mode-map (kbd "t")))))
+(ert-deftest test-org-agenda-frame-map-mutation-keys-denied ()
+  "Boundary: a mutation key (t = org-agenda-todo) is denied, never allowlisted.
+It is denied two ways depending on whether the shadow walk has run: the `[t]'
+catch-all handles it (lookup returns nil) before the walk, and the walk binds
+it explicitly to the deny handler once `org-agenda-mode-map' is present.  Both
+are a read-only denial; the test asserts the outcome, not which path produced
+it, so it holds whether or not org-agenda is loaded in the test process."
+  (let ((b (lookup-key cj/agenda-frame-mode-map (kbd "t"))))
+    (should (or (null b) (eq b 'cj/--agenda-frame-denied-readonly)))))
 
 ;;; Default-deny policy — the minor mode + finalize re-enable
 

@@ -359,8 +359,14 @@ re-running rebinds the same denials.  Runs from `with-eval-after-load' once
                              #'cj/--agenda-frame-denied-readonly))))))))
      source)))
 
-(with-eval-after-load 'org-agenda
-  (cj/--agenda-frame-shadow-mutations))
+;; The shadow walk is installed at the END of this file, not here: it reads
+;; `commandp' on each allowlisted binding to decide whether to keep it, and the
+;; view/redo handlers (day-view, week-view, safe-redo) are defined further down.
+;; If org-agenda is already loaded when this file loads (the normal startup order,
+;; and every reload), `with-eval-after-load' fires immediately -- so the walk must
+;; not run until those defuns exist, or it reads them as undefined, fails the
+;; commandp guard, and denies the very keys the allowlist grants.  See the bottom
+;; of the file.
 
 (defun cj/--agenda-frame-maybe-enable-mode ()
   "Re-enable `cj/agenda-frame-mode' after an agenda build in the agenda frame.
@@ -830,6 +836,12 @@ force-refresh idea in the F8 family."
 
 ;; The public gesture appears only now that the feature is complete and live.
 (cj/--agenda-frame-install-keys)
+
+;; Install the read-only shadow now that every allowlist handler above is
+;; defined, so the walk's `commandp' guard recognizes them and preserves the
+;; allowlist regardless of whether org-agenda loaded before or after this file.
+(with-eval-after-load 'org-agenda
+  (cj/--agenda-frame-shadow-mutations))
 
 (provide 'org-agenda-frame)
 ;;; org-agenda-frame.el ends here
