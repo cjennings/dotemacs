@@ -300,16 +300,28 @@ When called non-interactively with nil, syncs all calendars."
 ;;; Timer management
 
 (defun calendar-sync--sync-timer-function ()
-  "Function called by sync timer.
-Checks for timezone changes and triggers re-sync if detected."
-  (when (calendar-sync--timezone-changed-p)
-    (let ((old-tz (calendar-sync--format-timezone-offset
-                   calendar-sync--last-timezone-offset))
-          (new-tz (calendar-sync--format-timezone-offset
-                   (calendar-sync--current-timezone-offset))))
-      (message "calendar-sync: Timezone change detected (%s → %s), re-syncing..."
-               old-tz new-tz)))
-  (calendar-sync--sync-all-calendars))
+  "Function called by the hourly sync timer.
+Checks for timezone changes and triggers re-sync if detected.
+
+The body is wrapped so a signal — from the timezone check or the sync
+fan-out — is caught and logged rather than propagated: this runs from a
+`run-at-time' timer, and an unguarded error would repeat on every tick,
+once an hour, indefinitely.  The timezone-change notice goes to the silent
+log, not the echo area, since an hourly timer must not spam `message'."
+  (condition-case err
+      (progn
+        (when (calendar-sync--timezone-changed-p)
+          (let ((old-tz (calendar-sync--format-timezone-offset
+                         calendar-sync--last-timezone-offset))
+                (new-tz (calendar-sync--format-timezone-offset
+                         (calendar-sync--current-timezone-offset))))
+            (calendar-sync--log-silently
+             "calendar-sync: Timezone change detected (%s → %s), re-syncing..."
+             old-tz new-tz)))
+        (calendar-sync--sync-all-calendars))
+    (error
+     (calendar-sync--log-silently
+      "calendar-sync: sync timer error: %s" (error-message-string err)))))
 
 ;;;###autoload
 (defun calendar-sync-start ()

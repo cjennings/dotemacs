@@ -713,5 +713,50 @@ Valid events should be parsed, invalid ones skipped."
     (should-not (and org-content
                      (string-match-p "OutOfRangeEvent" org-content)))))
 
+;;; calendar-sync--sync-timer-function — hourly-timer body hygiene
+
+(ert-deftest test-calendar-sync-timer-function-does-not-propagate-a-signal ()
+  "Error: a signal in the timer body is caught, not propagated.
+The function runs from an hourly `run-at-time' timer.  An unguarded signal
+in the timezone check or the sync fan-out would error on every tick — the
+same error, once an hour, forever.  It must swallow-and-log instead."
+  (cl-letf (((symbol-function 'calendar-sync--timezone-changed-p)
+             (lambda (&rest _) (error "boom from the timezone check")))
+            ((symbol-function 'calendar-sync--sync-all-calendars) #'ignore)
+            ((symbol-function 'calendar-sync--log-silently) #'ignore))
+    ;; Must return normally rather than signal.
+    (should (progn (calendar-sync--sync-timer-function) t))))
+
+(ert-deftest test-calendar-sync-timer-function-signal-in-sync-is-caught ()
+  "Error: a signal from the sync fan-out is also caught, not propagated."
+  (cl-letf (((symbol-function 'calendar-sync--timezone-changed-p) #'ignore)
+            ((symbol-function 'calendar-sync--sync-all-calendars)
+             (lambda (&rest _) (error "boom from sync-all")))
+            ((symbol-function 'calendar-sync--log-silently) #'ignore))
+    (should (progn (calendar-sync--sync-timer-function) t))))
+
+(ert-deftest test-calendar-sync-timer-function-timezone-change-is-not-echoed ()
+  "Normal: a detected timezone change is logged silently, not echoed.
+An hourly timer that calls `message' spams the echo area; the notice belongs
+in the silent log like the module's other timer-path notices."
+  (let (silent-logged echoed)
+    (cl-letf (((symbol-function 'calendar-sync--timezone-changed-p)
+               (lambda (&rest _) t))
+              ((symbol-function 'calendar-sync--format-timezone-offset)
+               (lambda (&rest _) "UTC+0"))
+              ((symbol-function 'calendar-sync--current-timezone-offset)
+               (lambda (&rest _) 0))
+              ((symbol-function 'calendar-sync--sync-all-calendars) #'ignore)
+              ((symbol-function 'calendar-sync--log-silently)
+               (lambda (fmt &rest _) (when (string-match-p "Timezone" fmt)
+                                       (setq silent-logged t))))
+              ((symbol-function 'message)
+               (lambda (fmt &rest _) (when (and (stringp fmt)
+                                                (string-match-p "Timezone" fmt))
+                                       (setq echoed t)))))
+      (calendar-sync--sync-timer-function)
+      (should silent-logged)
+      (should-not echoed))))
+
 (provide 'test-calendar-sync)
 ;;; test-calendar-sync.el ends here
