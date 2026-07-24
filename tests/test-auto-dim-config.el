@@ -30,7 +30,12 @@
       (progn
         (should (bound-and-true-p auto-dim-other-buffers-mode))
         (should (null auto-dim-other-buffers-dim-on-focus-out))
-        (should (eq t auto-dim-other-buffers-dim-on-switch-to-minibuffer))
+        ;; Entering the minibuffer must not change what is dimmed: a dim window
+        ;; stays dim, a lit one stays lit.  The fork's `adob--update' returns
+        ;; early when this is nil and the selected window is the minibuffer, so
+        ;; nil is what keeps a minibuffer prompt from re-dimming the window the
+        ;; user was just in.
+        (should (null auto-dim-other-buffers-dim-on-switch-to-minibuffer))
         (should-not (assq 'fringe auto-dim-other-buffers-affected-faces)))
     (when (fboundp 'auto-dim-other-buffers-mode)
       (auto-dim-other-buffers-mode -1))))

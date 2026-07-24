@@ -58,7 +58,11 @@ focus cue on a split-displayed dashboard, accepted as a fair trade."
   ;; Emacs loses focus -- on Hyprland focus moves to other apps constantly,
   ;; and the ai-term agents live in their own windows.
   (auto-dim-other-buffers-dim-on-focus-out nil)
-  (auto-dim-other-buffers-dim-on-switch-to-minibuffer t)
+  ;; Entering the minibuffer leaves dimming exactly as it was -- a dim window
+  ;; stays dim, a lit one stays lit.  With this at t, the window being worked
+  ;; in went dark on every minibuffer prompt, since selecting the minibuffer
+  ;; deselects it and the dim follows selection.
+  (auto-dim-other-buffers-dim-on-switch-to-minibuffer nil)
   :config
   ;; Remap these faces to auto-dim-other-buffers (pure-black background +
   ;; faded gray foreground, defined in the theme) in non-selected windows.
