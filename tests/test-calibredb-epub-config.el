@@ -285,57 +285,6 @@ so the search buffer rebuilds against the now-unfiltered set."
       (cj/calibredb-clear-filters))
     (should (equal "" passed))))
 
-;;; --------------------------- cj/force-nov-mode-for-epub ---------------------
-
-(ert-deftest test-calibredb-epub-force-nov-mode-on-epub-calls-nov-mode ()
-  "Normal: a .epub buffer with nov-mode bound dispatches to `nov-mode' and
-does not fall through to the original mode dispatcher."
-  (skip-unless (fboundp 'nov-mode))
-  (let (orig-called nov-called)
-    (cl-letf (((symbol-function 'nov-mode)
-               (lambda () (setq nov-called t))))
-      (with-temp-buffer
-        (setq buffer-file-name "/tmp/sample.epub")
-        (cj/force-nov-mode-for-epub
-         (lambda (&rest _) (setq orig-called t)))))
-    (should nov-called)
-    (should-not orig-called)))
-
-(ert-deftest test-calibredb-epub-force-nov-mode-passes-through-non-epub ()
-  "Boundary: a non-epub buffer falls through to the original mode dispatcher."
-  (let (orig-called)
-    (with-temp-buffer
-      (setq buffer-file-name "/tmp/sample.txt")
-      (cj/force-nov-mode-for-epub
-       (lambda (&rest _) (setq orig-called t))))
-    (should orig-called)))
-
-(ert-deftest test-calibredb-epub-force-nov-mode-passes-through-no-filename ()
-  "Boundary: a buffer with no associated filename falls through to the
-original mode dispatcher."
-  (let (orig-called)
-    (with-temp-buffer
-      (cj/force-nov-mode-for-epub
-       (lambda (&rest _) (setq orig-called t))))
-    (should orig-called)))
-
-(ert-deftest test-calibredb-epub-force-nov-mode-passes-through-when-nov-missing ()
-  "Error: a .epub buffer falls through to the original dispatcher when nov-mode
-is not defined (the require failed and there is nothing to dispatch to)."
-  (let ((saved (and (fboundp 'nov-mode) (symbol-function 'nov-mode)))
-        orig-called)
-    (when saved (fmakunbound 'nov-mode))
-    (unwind-protect
-        (cl-letf (((symbol-function 'require)
-                   ;; Pretend the (require 'nov nil t) call fails too.
-                   (lambda (&rest _) nil)))
-          (with-temp-buffer
-            (setq buffer-file-name "/tmp/sample.epub")
-            (cj/force-nov-mode-for-epub
-             (lambda (&rest _) (setq orig-called t)))))
-      (when saved (fset 'nov-mode saved)))
-    (should orig-called)))
-
 ;;; ---------------------------- cj/nov--metadata-get --------------------------
 
 (ert-deftest test-calibredb-epub-metadata-get-symbol-key ()

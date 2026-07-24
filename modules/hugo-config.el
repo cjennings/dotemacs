@@ -28,6 +28,7 @@
 (require 'user-constants)
 (require 'host-environment)
 (require 'system-lib)  ;; completion table + file annotator
+(require 'keybindings) ;; cj/register-prefix-map, cj/custom-keymap
 
 ;; --------------------------------- Constants ---------------------------------
 
@@ -247,14 +248,18 @@ to /var/www/cjennings/, so a successful push is the deploy."
 
 ;; -------------------------------- Keybindings --------------------------------
 
-(global-set-key (kbd "C-; h n") #'cj/hugo-new-post)
-(global-set-key (kbd "C-; h e") #'cj/hugo-export-post)
-(global-set-key (kbd "C-; h o") #'cj/hugo-open-blog-dir)
-(global-set-key (kbd "C-; h O") #'cj/hugo-open-blog-dir-external)
-(global-set-key (kbd "C-; h d") #'cj/hugo-open-draft)
-(global-set-key (kbd "C-; h D") #'cj/hugo-toggle-draft)
-(global-set-key (kbd "C-; h p") #'cj/hugo-preview)
-(global-set-key (kbd "C-; h P") #'cj/hugo-publish)
+(defvar-keymap cj/hugo-keymap
+  :doc "Keymap for Hugo blog commands"
+  "n" #'cj/hugo-new-post
+  "e" #'cj/hugo-export-post
+  "o" #'cj/hugo-open-blog-dir
+  "O" #'cj/hugo-open-blog-dir-external
+  "d" #'cj/hugo-open-draft
+  "D" #'cj/hugo-toggle-draft
+  "p" #'cj/hugo-preview
+  "P" #'cj/hugo-publish)
+
+(cj/register-prefix-map "h" cj/hugo-keymap)
 
 (with-eval-after-load 'which-key
   (which-key-add-key-based-replacements

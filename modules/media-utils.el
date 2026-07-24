@@ -210,6 +210,32 @@ with a plain argv list -- no shell anywhere in the pipeline."
 
 ;; ------------------------- Media-Download Via yt-dlp -------------------------
 
+(defun cj/media--yt-dl-message (event url-display)
+  "Return the message for tsp EVENT on URL-DISPLAY, or nil when it reports nothing.
+
+Reports queueing, not completion, and the distinction is the point.
+`cj/yt-dl-it' launches \"tsp yt-dlp ...\", and tsp enqueues the job and
+exits immediately, so this sentinel fires on tsp's exit rather than
+yt-dlp's.  A clean exit proves the job was accepted by the spooler and
+nothing more, so claiming the download finished would be a guess that is
+wrong whenever yt-dlp fails minutes later.  Check the spooler with
+\"tsp\" for real download status."
+  (cond
+   ((string-match-p "finished" event)
+    (format "✓ Queued for download: %s" url-display))
+   ((string-match-p "exited abnormally" event)
+    (format "✗ Could not queue download: %s" url-display))))
+
+(defun cj/media--yt-dl-sentinel (url-display)
+  "A process sentinel reporting the queueing of URL-DISPLAY.
+Messages per `cj/media--yt-dl-message' and reaps the process buffer once
+tsp finishes or exits."
+  (lambda (proc event)
+    (when-let ((msg (cj/media--yt-dl-message event url-display)))
+      (message "%s" msg))
+    (when (string-match-p "finished\\|exited" event)
+      (kill-buffer (process-buffer proc)))))
+
 (defun cj/yt-dl-it (url)
   "Downloads the URL in an async shell."
   (unless (executable-find "yt-dlp")
@@ -223,16 +249,8 @@ with a plain argv list -- no shell anywhere in the pipeline."
 		 (process (start-process "yt-dlp" buffer-name
 								 "tsp" "yt-dlp" "--add-metadata" "-ic"
 								 "-o" output-template url)))
-	(message "Started download: %s" url-display)
-	(set-process-sentinel process
-						  (lambda (proc event)
-							(cond
-							 ((string-match-p "finished" event)
-							  (message "✓ Finished downloading: %s" url-display))
-							 ((string-match-p "exited abnormally" event)
-							  (message "✗ Download failed: %s" url-display)))
-							(when (string-match-p "finished\\|exited" event)
-							  (kill-buffer (process-buffer proc)))))))
+	(message "Queueing download: %s" url-display)
+	(set-process-sentinel process (cj/media--yt-dl-sentinel url-display))))
 
 (provide 'media-utils)
 ;;; media-utils.el ends here.

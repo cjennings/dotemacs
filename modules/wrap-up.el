@@ -23,12 +23,12 @@
   "Bury comint and compilation buffers."
   (dolist (buf (buffer-list))
     (with-current-buffer buf
+	  ;; Byte-compilation output arrives in `emacs-lisp-compilation-mode',
+	  ;; which derives from `compilation-mode' and so is covered by that clause.
 	  (when (or (derived-mode-p 'comint-mode)
 				(derived-mode-p 'compilation-mode)
 				(derived-mode-p 'debugger-mode)
-				(derived-mode-p 'elisp-compile-mode)
-				(derived-mode-p 'messages-buffer-mode)
-				) ;; byte-compilations
+				(derived-mode-p 'messages-buffer-mode))
         (bury-buffer)))))
 
 (defun cj/bury-buffers-after-delay ()

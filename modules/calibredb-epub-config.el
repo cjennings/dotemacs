@@ -205,22 +205,14 @@ Adjust it live with `cj/nov-widen-text' and `cj/nov-narrow-text'.")
 (defvar cj/nov-margin-step 2
   "Percentage points each `cj/nov-widen-text'/`cj/nov-narrow-text' press changes.")
 
-;; Prevent magic-fallback-mode-alist from opening epub as archive-mode
-;; Advise set-auto-mode to force nov-mode for .epub files before magic-fallback runs
-(defun cj/force-nov-mode-for-epub (orig-fun &rest args)
-  "Force nov-mode for .epub files, bypassing archive-mode detection."
-  (if (and buffer-file-name
-           (string-match-p "\\.epub\\'" buffer-file-name))
-      (progn
-        (unless (featurep 'nov)
-          (require 'nov nil t))
-        ;; Call nov-mode if available, otherwise fallback to default behavior
-        (if (fboundp 'nov-mode)
-            (nov-mode)
-          (apply orig-fun args)))
-    (apply orig-fun args)))
-
-(advice-add 'set-auto-mode :around #'cj/force-nov-mode-for-epub)
+;; .epub reaches nov-mode through auto-mode-alist -- nov's use-package :mode
+;; below registers "\\.epub\\'" there, and `set-auto-mode' consults
+;; auto-mode-alist before magic-fallback-mode-alist, so the zip container never
+;; reaches the archive-mode fallback.  An :around advice on `set-auto-mode' used
+;; to force this and was pure overhead: set-auto-mode runs on every file visit,
+;; so it added a frame and a failure surface to every file of every type.
+;; Verified live before removal -- a real zip-format .epub opened in nov-mode
+;; both with the advice and without it.
 
 ;; Define helper functions before use-package so they're available for hooks
 (defun cj/forward-paragraph-and-center ()

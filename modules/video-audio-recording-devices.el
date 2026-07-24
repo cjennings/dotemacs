@@ -272,54 +272,6 @@ Returns the selected device name, or signals user-error if cancelled."
       (user-error "Device setup cancelled"))
     device))
 
-(defun cj/recording-group-devices-by-hardware ()
-  "Group audio sources by physical hardware device.
-Returns alist of (friendly-name . (mic-source . monitor-source)).
-Only includes devices that have BOTH a mic and a monitor source,
-since recording needs both to capture your voice and system audio."
-  (let ((sources (cj/recording-parse-sources))
-        (devices (make-hash-table :test 'equal))
-        (result nil))
-    ;; Group sources by base device name (hardware identifier)
-    (dolist (source sources)
-      (let* ((device (nth 0 source))
-             ;; Extract hardware ID — the unique part identifying the physical device.
-             ;; Different device types use different naming conventions in PulseAudio.
-             (base-name (cond
-                         ;; USB devices: extract usb-XXXXX-XX part
-                         ((string-match "\\.\\(usb-[^.]+\\-[0-9]+\\)\\." device)
-                          (match-string 1 device))
-                         ;; Built-in (PCI) devices: extract pci-XXXXX part
-                         ((string-match "\\.\\(pci-[^.]+\\)\\." device)
-                          (match-string 1 device))
-                         ;; Bluetooth devices: extract and normalize MAC address
-                         ;; (input uses colons, output uses underscores)
-                         ((string-match "bluez_\\(?:input\\|output\\)\\.\\([^.]+\\)" device)
-                          (replace-regexp-in-string "_" ":" (match-string 1 device)))
-                         (t device)))
-             (is-monitor (string-match-p "\\.monitor$" device))
-             (device-entry (gethash base-name devices)))
-        (unless device-entry
-          (setf device-entry (cons nil nil))
-          (puthash base-name device-entry devices))
-        (if is-monitor
-            (setcdr device-entry device)
-          (setcar device-entry device))))
-
-    ;; Convert hash table to alist with user-friendly names
-    (maphash (lambda (base-name pair)
-               (when (and (car pair) (cdr pair))
-                 (let ((friendly-name
-                        (cond
-                         ((string-match-p "usb.*[Jj]abra" base-name) "Jabra SPEAK 510 USB")
-                         ((string-match-p "^usb-" base-name) "USB Audio Device")
-                         ((string-match-p "^pci-" base-name) "Built-in Audio")
-                         ((string-match-p "^[0-9A-Fa-f:]+$" base-name) "Bluetooth Headset")
-                         (t base-name))))
-                   (push (cons friendly-name pair) result))))
-             devices)
-    (nreverse result)))
-
 (defun cj/recording-select-device (prompt device-type)
   "Interactively select an audio device.
 PROMPT is shown to user.  DEVICE-TYPE is \\='mic or \\='monitor for filtering.

@@ -65,24 +65,40 @@
 ;; on Arch: yay (or whatever your AUR package manager is) -S  arch-wiki-docs
 ;; browse the arch wiki topics offline
 
+(defvar cj/arch-wiki-html-dir "/usr/share/doc/arch-wiki/html/en"
+  "Directory holding the offline ArchWiki HTML copies.
+Populated by the arch-wiki-docs package on Arch systems.")
+
+(defun cj/--arch-wiki-topics (dir)
+  "Return an alist of (BASENAME . FULLPATH) for ArchWiki topics under DIR.
+
+Returns nil when DIR does not exist rather than signaling.  This is the
+whole point of the helper: `directory-files' raises file-missing on an
+absent directory, and the caller's \"is arch-wiki-docs installed?\" hint
+sat below that call, so on the one machine state the hint was written for
+it could never be reached."
+  (when (file-directory-p dir)
+    (mapcar (lambda (f) (cons (file-name-base f) f))
+            (directory-files dir t "\\.html\\'"))))
+
 (defun cj/local-arch-wiki-search ()
   "Prompt for an ArchWiki topic and open its local HTML copy in EWW.
 
-Looks for “*.html” files under \"/usr/share/doc/arch-wiki/html/en\",
-lets you complete on their basenames, and displays the chosen file
-with `eww-browse-url'. If no file is found, reminds you to install
+Looks for “*.html” files under `cj/arch-wiki-html-dir', lets you complete
+on their basenames, and displays the chosen file with `eww-browse-url'.
+If the directory is missing or empty, reminds you to install
 arch-wiki-docs."
   (interactive)
-  (let* ((dir "/usr/share/doc/arch-wiki/html/en")
-		 (full-filenames (directory-files dir t "\\.html\\'"))
-		 (basenames (mapcar 'file-name-base full-filenames))
-		 (chosen (completing-read "Choose an ArchWiki Topic: " basenames)))
-	(if (member chosen basenames)
-		(let* ((idx (cl-position chosen basenames :test 'equal))
-			   (fullname (nth idx full-filenames))
-			   (url (concat "file://" fullname)))
-		  (eww-browse-url url))
-	  (message "File not found! Is arch-wiki-docs installed?"))))
+  (let ((topics (cj/--arch-wiki-topics cj/arch-wiki-html-dir)))
+    (if (null topics)
+        (message "No ArchWiki topics in %s. Is arch-wiki-docs installed?"
+                 cj/arch-wiki-html-dir)
+      (let* ((chosen (completing-read "Choose an ArchWiki Topic: "
+                                      (mapcar #'car topics)))
+             (fullname (cdr (assoc chosen topics))))
+        (if fullname
+            (eww-browse-url (concat "file://" fullname))
+          (message "No ArchWiki topic named %s" chosen))))))
 (keymap-global-set "C-h A" #'cj/local-arch-wiki-search)
 
 (provide 'help-utils)

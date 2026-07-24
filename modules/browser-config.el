@@ -143,7 +143,23 @@ Persists the choice for future sessions."
             ('save-failed (message "Failed to save browser choice"))
             ('invalid-plist (message "Invalid browser configuration"))))))))
 
-;; Initialize: Load saved choice or use first available browser
+(defun cj/--preferred-default-browser (browsers)
+  "Return the browser plist to adopt as the first-run default from BROWSERS.
+
+Prefers the first entry with a non-nil :executable -- a real external
+browser -- and falls back to the first entry overall when none is
+installed.  Built-in browsers carry a nil :executable and so are always
+\"available\", which put EWW at the head of `cj/discover-browsers' on
+every machine.  Taking the head therefore opened every link in the text
+browser on a fresh checkout even with Chrome installed, until the user
+happened to run `cj/choose-browser'.  EWW stays reachable as the
+deliberate fallback when nothing external is on PATH.
+
+Returns nil for an empty BROWSERS list."
+  (or (seq-find (lambda (b) (plist-get b :executable)) browsers)
+      (car browsers)))
+
+;; Initialize: Load saved choice or use the preferred available browser
 (defun cj/--do-initialize-browser ()
   "Initialize browser configuration.
 Returns: (cons \\='loaded browser-plist) if saved choice was loaded,
@@ -153,10 +169,10 @@ Returns: (cons \\='loaded browser-plist) if saved choice was loaded,
   (let ((saved-choice (cj/load-browser-choice)))
     (if saved-choice
         (cons 'loaded saved-choice)
-      ;; No saved choice - try to set first available browser
+      ;; No saved choice - adopt the preferred available browser
       (let ((browsers (cj/discover-browsers)))
         (if browsers
-            (cons 'first-available (car browsers))
+            (cons 'first-available (cj/--preferred-default-browser browsers))
           (cons 'no-browsers nil))))))
 
 (defun cj/initialize-browser ()
