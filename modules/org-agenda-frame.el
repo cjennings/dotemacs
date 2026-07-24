@@ -45,10 +45,12 @@
 (declare-function org-get-at-bol "org" (property))
 (declare-function org-fold-show-context "org-fold" (&optional key))
 (declare-function org-agenda "org-agenda" (&optional arg org-keys restriction))
-;; Forward references: defined later in this file (Phase 2 for -safe-redo,
-;; the lifecycle block for -delete).
-(declare-function cj/--agenda-frame-safe-redo "org-agenda-frame" ())
-(declare-function cj/--agenda-frame-delete "org-agenda-frame" ())
+;; No declare-function for -safe-redo / -delete: they are defined later in THIS
+;; file, and the byte-compiler resolves same-file forward references at end of
+;; compilation.  A declare-function for a same-file function instead counts as a
+;; second definition ("defined multiple times") and, worse, its declared arglist
+;; overrides the real one for arg-count checking -- the empty () shadowed
+;; -safe-redo's actual (&optional frame), disabling that check.
 
 (defconst cj/--agenda-frame-parameter 'cj/agenda-frame
   "Frame parameter marking the dedicated agenda frame.

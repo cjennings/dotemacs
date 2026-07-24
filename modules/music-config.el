@@ -374,6 +374,11 @@ point until it ends; the snap lands when the search exits."
 (defvar-local cj/music--renumber-timer nil
   "Pending idle timer for the playlist row renumber, or nil.")
 
+;; Forward declaration: the real `defvar-local' is a few defuns below, next to
+;; the highlight helper that owns it.  Declared special here so the setq in this
+;; function compiles as a dynamic binding, not a free-variable warning.
+(defvar cj/music--current-number-overlay)
+
 (defun cj/music--renumber-rows (&optional buffer)
   "Number every playlist row in BUFFER (default: current buffer) via overlays.
 Each non-blank line gets an \"NNN \" before-string so the cursor stays
@@ -788,6 +793,10 @@ ENTRIES.  Nil when neither applies (the caller falls back to a timestamp)."
              thereis (or (emms-track-get tr 'info-title)
                          (plist-get (cdr (assoc (emms-track-name tr) entries))
                                     :name)))))
+
+;; Forward declaration: the real `defvar' lives with the radio config block far
+;; below.  Declared special here so this reference compiles clean.
+(defvar cj/music-radio-save-dir)
 
 (defun cj/music--save-directory (tracks)
   "Directory a saved playlist targets.

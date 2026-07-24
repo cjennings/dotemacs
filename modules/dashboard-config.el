@@ -73,6 +73,7 @@
 ;; External package commands invoked by launchers.
 (declare-function mu4e "mu4e")
 (declare-function pearl-list-issues "pearl")
+(declare-function wttrin "wttrin")
 
 ;; ------------------------ Dashboard Bookmarks Override -----------------------
 ;; overrides the bookmark insertion from the dashboard package to provide an
@@ -84,13 +85,13 @@
 (defvar dashboard-bookmarks-item-format "%s"
   "Format to use when showing the base of the file name.")
 
-;; `el' is bound dynamically by dashboard's section-insertion machinery, which the
-;; override below plugs into.  Declare it so the byte-compiler reads the
-;; references as that special variable rather than a free variable.  The name is
-;; dashboard's, not ours, so the missing-prefix lint is suppressed rather than
-;; renamed (renaming would break the dynamic binding dashboard supplies).
-(with-suppressed-warnings ((lexical el))
-  (defvar el))
+;; No `(defvar el)' here on purpose.  `el' is the per-item variable that
+;; dashboard's `dashboard-insert-section' macro binds inside its own expansion;
+;; the override's forms below reference it within that binding.  Declaring `el'
+;; special (as an earlier attempt did) is what CREATED a byte-compile warning --
+;; it turned the macro's ordinary lexical binding into one that "shadows the
+;; dynamic variable el".  Left lexical, the references resolve inside the
+;; expansion and the compile is clean.
 
 ;; The override body uses the `dashboard-insert-section' MACRO, so it must be
 ;; known when this module byte-compiles or the call compiles as a plain

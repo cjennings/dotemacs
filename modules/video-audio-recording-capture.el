@@ -56,6 +56,10 @@ Checks if process is actually alive, not just if variable is set."
 
 ;;; Process Lifecycle (Sentinel and Graceful Shutdown)
 
+;; Forward declaration: the real `defvar' is defined below with the other
+;; recording thresholds.  Declared special here so this reference compiles clean.
+(defvar cj/recording-start-fail-threshold)
+
 (defun cj/recording-process-sentinel (process event)
   "Sentinel for recording processes — handles unexpected exits.
 PROCESS is the ffmpeg shell process, EVENT describes what happened.
