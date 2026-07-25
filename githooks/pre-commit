@@ -19,9 +19,10 @@ SECRET_PATTERNS_CS='(AKIA[0-9A-Z]{16}|sk-[a-zA-Z0-9_-]{20,}|-----BEGIN (RSA|DSA|
 SECRET_PATTERNS_CI='(api[_-]?key|api[_-]?secret|auth[_-]?token|secret[_-]?key|bearer[_-]?token|access[_-]?token|password)[[:space:]]*[:=][[:space:]]*["'"'"'][^"'"'"']{16,}["'"'"']'
 
 # Read the diff on its own so a git failure is distinguishable from "grep
-# matched nothing".  Both end in a non-zero status, but only one of them means
+# matched nothing". Both end in a non-zero status, but only one of them means
 # there is nothing to scan; piping them together and swallowing the result with
-# `|| true` made a broken git look like a clean commit.
+# `|| true` made a broken git look like a clean commit — the scan searched an
+# empty string, found nothing, and the secret went in.
 if ! staged_diff="$(git diff --cached -U0 --diff-filter=AM)"; then
   echo "pre-commit: cannot read the staged diff — refusing to skip the secret scan" >&2
   exit 1
@@ -46,10 +47,10 @@ if [ -n "$secret_hits" ]; then
 fi
 
 # --- 2. Paren check on staged .el files ---
-# Same split as the secret scan above: a git failure must not read as "no .el
-# files staged", which would skip the paren check silently.
+# Same split as the secret scan above: a git failure must not read as "no files
+# staged", which would skip the language check silently.
 if ! staged_names="$(git diff --cached --name-only --diff-filter=AM)"; then
-  echo "pre-commit: cannot read the staged file list — refusing to skip the paren check" >&2
+  echo "pre-commit: cannot read the staged file list — refusing to skip the check" >&2
   exit 1
 fi
 
