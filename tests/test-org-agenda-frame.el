@@ -174,6 +174,45 @@ leaves a wide blank gutter between the source name and the item."
     (should (string-match-p "%-10:c"
                             (cadr (assq 'org-agenda-prefix-format s))))))
 
+(ert-deftest test-org-agenda-frame-command-skips-done-items ()
+  "Normal: completed tasks never appear in the Full Agenda.
+The global agenda deliberately shows scheduled done items, so the dedicated
+view needs its own skip function to exclude every done-state keyword."
+  (let* ((settings (test-org-agenda-frame--block-settings))
+         (skip (assq 'org-agenda-skip-function settings)))
+    (should skip)
+    (should (equal (eval (cadr skip) t)
+                   '(org-agenda-skip-entry-if 'todo 'done)))))
+
+(ert-deftest test-org-agenda-frame-command-render-excludes-scheduled-done ()
+  "Boundary: a scheduled high-priority DONE item is absent from rendered output.
+An equally scheduled active task remains, proving the whole date was not
+skipped."
+  (require 'org-agenda)
+  (let* ((file (make-temp-file "agenda-frame-done-" nil ".org"))
+         (today (format-time-string "%Y-%m-%d %a"))
+         (org-agenda-files (list file))
+         (org-agenda-custom-commands (list (cj/--agenda-frame-command)))
+         (org-agenda-sticky nil)
+         (agenda-buffer "*Org Agenda*"))
+    (unwind-protect
+        (progn
+          (with-temp-file file
+            (insert "#+TODO: TODO | DONE\n"
+                    "* DONE [#A] completed-scheduled-marker\n"
+                    "SCHEDULED: <" today ">\n"
+                    "* TODO [#A] active-scheduled-marker\n"
+                    "SCHEDULED: <" today ">\n"))
+          (org-agenda nil cj/--agenda-frame-command-key)
+          (with-current-buffer agenda-buffer
+            (should-not (string-match-p "completed-scheduled-marker"
+                                        (buffer-string)))
+            (should (string-match-p "active-scheduled-marker"
+                                    (buffer-string)))))
+      (when (get-buffer agenda-buffer)
+        (kill-buffer agenda-buffer))
+      (delete-file file))))
+
 (ert-deftest test-org-agenda-frame-do-redo-leaves-sticky-alone ()
   "Normal: the redo binds current-window but never touches sticky.
 org-agenda-redo handles the in-place rebuild itself (it binds sticky nil
@@ -315,6 +354,24 @@ d shrinks the frame to the current day, w restores the seven-day span."
   (should (eq (lookup-key cj/agenda-frame-mode-map (kbd "w"))
               'cj/--agenda-frame-week-view)))
 
+(ert-deftest test-org-agenda-frame-map-controlled-task-mutations ()
+  "Normal: status and priority changes are the frame's controlled mutations.
+C-c t is Craig's requested status chord, C-c C-t keeps Org's standard agenda
+chord, and both Meta and the configured Super arrows support the same
+priority/status operations."
+  (dolist (binding '(("C-c t" . org-agenda-todo)
+                     ("C-c C-t" . org-agenda-todo)
+                     ("M-<up>" . org-agenda-priority-up)
+                     ("M-<down>" . org-agenda-priority-down)
+                     ("M-<left>" . org-agenda-todo-previousset)
+                     ("M-<right>" . org-agenda-todo-nextset)
+                     ("s-<up>" . org-agenda-priority-up)
+                     ("s-<down>" . org-agenda-priority-down)
+                     ("s-<left>" . org-agenda-todo-previousset)
+                     ("s-<right>" . org-agenda-todo-nextset)))
+    (should (eq (lookup-key cj/agenda-frame-mode-map (kbd (car binding)))
+                (cdr binding)))))
+
 (ert-deftest test-org-agenda-frame-shadow-denies-org-mutations-preserves-allowlist ()
   "Boundary: with the frame mode active over `org-agenda-mode-map', mutating
 org-agenda keys are denied and the allowlist still works.
@@ -340,6 +397,12 @@ d/w, C-c C-o) intact."
     (should (eq (key-binding (kbd "g")) 'cj/--agenda-frame-safe-redo))
     (should (eq (key-binding (kbd "d")) 'cj/--agenda-frame-day-view))
     (should (eq (key-binding (kbd "w")) 'cj/--agenda-frame-week-view))
+    (should (eq (key-binding (kbd "C-c t")) 'org-agenda-todo))
+    (should (eq (key-binding (kbd "C-c C-t")) 'org-agenda-todo))
+    (should (eq (key-binding (kbd "M-<up>")) 'org-agenda-priority-up))
+    (should (eq (key-binding (kbd "M-<right>")) 'org-agenda-todo-nextset))
+    (should (eq (key-binding (kbd "s-<down>")) 'org-agenda-priority-down))
+    (should (eq (key-binding (kbd "s-<left>")) 'org-agenda-todo-previousset))
     (should (eq (key-binding (kbd "C-c C-o")) 'cj/--agenda-frame-open-link))
     (should (eq (key-binding (kbd "q")) 'cj/--agenda-frame-close))))
 

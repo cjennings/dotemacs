@@ -23,7 +23,8 @@
 ;;
 ;; Validates:
 ;; - d/w/g/r keep their allowlist commands in the org-first load order
-;; - a real mutation key (t) is still denied (the read-only guarantee holds)
+;; - the controlled status/priority mutations survive the shadow walk
+;; - a non-allowlisted mutation key (t) is still denied
 ;;
 ;;; Code:
 
@@ -65,14 +66,22 @@ Returns an alist of (KEY . BINDING-SYMBOL-NAME-OR-nil)."
 
 (ert-deftest test-integration-org-agenda-frame-allowlist-survives-org-first-load ()
   "Integration: with org-agenda loaded before the frame module, the allowlisted
-view/redo keys keep their commands and a mutation key stays denied."
+view/redo and controlled task-mutation keys survive while t stays denied."
   (skip-unless (file-exists-p (expand-file-name "modules/org-agenda-frame.el"
                                                 test-oaf--repo-root)))
-  (let ((got (test-oaf--lookup-in-subprocess '("d" "w" "g" "r" "t"))))
+  (let ((got (test-oaf--lookup-in-subprocess
+              '("d" "w" "g" "r" "C-c t" "C-c C-t"
+                "M-<up>" "M-<right>" "s-<down>" "s-<left>" "t"))))
     (should (equal "cj/--agenda-frame-day-view"  (cdr (assoc "d" got))))
     (should (equal "cj/--agenda-frame-week-view" (cdr (assoc "w" got))))
     (should (equal "cj/--agenda-frame-safe-redo" (cdr (assoc "g" got))))
     (should (equal "cj/--agenda-frame-safe-redo" (cdr (assoc "r" got))))
+    (should (equal "org-agenda-todo" (cdr (assoc "C-c t" got))))
+    (should (equal "org-agenda-todo" (cdr (assoc "C-c C-t" got))))
+    (should (equal "org-agenda-priority-up" (cdr (assoc "M-<up>" got))))
+    (should (equal "org-agenda-todo-nextset" (cdr (assoc "M-<right>" got))))
+    (should (equal "org-agenda-priority-down" (cdr (assoc "s-<down>" got))))
+    (should (equal "org-agenda-todo-previousset" (cdr (assoc "s-<left>" got))))
     ;; t is a real org mutation key; it must be denied, not allowlisted.
     (should (equal "cj/--agenda-frame-denied-readonly" (cdr (assoc "t" got))))))
 

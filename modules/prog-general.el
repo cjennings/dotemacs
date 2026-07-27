@@ -39,6 +39,7 @@
 ;;; Code:
 
 (require 'user-constants)  ;; code-dir, projects-dir, snippets-dir
+(require 'cl-lib)
 
 (defvar display-line-numbers-type)
 (defvar outline-minor-mode-map)
@@ -57,6 +58,7 @@
 (declare-function dired-get-filename "dired")
 (declare-function global-treesit-auto-mode "treesit-auto")
 (declare-function treesit-auto-add-to-auto-mode-alist "treesit-auto")
+(declare-function treesit-auto-install-all "treesit-auto")
 (declare-function treesit-auto-recipe-lang "treesit-auto")
 (declare-function highlight-indent-guides-mode "highlight-indent-guides")
 (declare-function electric-pair-default-inhibit "elec-pair")
@@ -120,20 +122,27 @@ REGEXP must be a string or an rx form."
 ;; build mid-edit.  Batch/test runs never load treesit-auto (no package
 ;; init), so they can never install.  Fresh-machine bootstrap is the
 ;; explicit `cj/install-treesit-grammars' command below.
+(defun cj/treesit-auto-pin-go-revision (recipes)
+  "Pin the Go grammar revision in treesit-auto RECIPES.
+Return the updated Go recipe, or nil when RECIPES has no Go entry.
+Discover the `revision' slot at runtime because treesit-auto is not loaded
+when this file's `use-package' form is macro-expanded."
+  (when-let ((go-recipe
+              (cl-find-if
+               (lambda (recipe)
+                 (eq (treesit-auto-recipe-lang recipe) 'go))
+               recipes)))
+    (aset go-recipe
+          (cl-struct-slot-offset 'treesit-auto-recipe 'revision)
+          "v0.19.1")
+    go-recipe))
+
 (use-package treesit-auto
   :custom
   (treesit-auto-install 'prompt)
   :config
-  (require 'cl-lib)
   ;; Pin Go grammar to v0.19.1 for compatibility with Emacs 30.2 font-lock queries
-  (let* ((go-idx (cl-position-if (lambda (recipe)
-                                    (eq (treesit-auto-recipe-lang recipe) 'go))
-                                  treesit-auto-recipe-list))
-         (go-recipe (and go-idx (nth go-idx treesit-auto-recipe-list))))
-    (when go-recipe
-      ;; Use the struct accessor so a treesit-auto slot reorder can't silently
-      ;; write the pin into the wrong field.
-      (setf (treesit-auto-recipe-revision go-recipe) "v0.19.1")))
+  (cj/treesit-auto-pin-go-revision treesit-auto-recipe-list)
 
   (treesit-auto-add-to-auto-mode-alist 'all)
   (global-treesit-auto-mode))

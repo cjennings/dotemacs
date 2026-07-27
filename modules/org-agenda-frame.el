@@ -42,6 +42,11 @@
 (declare-function org-agenda-next-item "org-agenda" (n))
 (declare-function org-agenda-previous-item "org-agenda" (n))
 (declare-function org-agenda-open-link "org-agenda" (&optional arg))
+(declare-function org-agenda-priority-down "org-agenda" ())
+(declare-function org-agenda-priority-up "org-agenda" ())
+(declare-function org-agenda-todo "org-agenda" (&optional arg))
+(declare-function org-agenda-todo-nextset "org-agenda" ())
+(declare-function org-agenda-todo-previousset "org-agenda" ())
 (declare-function org-get-at-bol "org" (property))
 (declare-function org-fold-show-context "org-fold" (&optional key))
 (declare-function org-agenda "org-agenda" (&optional arg org-keys restriction))
@@ -121,6 +126,11 @@ a non-nil global default can't open a second window at build time."
               (org-agenda-start-day "0d")
               (org-agenda-start-on-weekday nil)
               (org-agenda-start-with-follow-mode nil)
+              ;; The global daily agenda intentionally keeps scheduled done
+              ;; items visible.  The Full Agenda is a live work surface, so
+              ;; completed items are noise regardless of schedule or priority.
+              (org-agenda-skip-function
+               '(org-agenda-skip-entry-if 'todo 'done))
               ;; Narrow category column: the global agenda format pads the
               ;; category to 25 chars, leaving a wide blank gutter between
               ;; the source name (todo:, dcal:) and the item.
@@ -273,6 +283,22 @@ The default binding for every key not on the allowlist."
     ;; other view-changers stay denied to keep the today-anchored frame stable.
     (define-key map (kbd "d") #'cj/--agenda-frame-day-view)
     (define-key map (kbd "w") #'cj/--agenda-frame-week-view)
+    ;; (d) Controlled task mutations.  The frame remains default-deny for
+    ;; scheduling, clocking, capture, notes, and file writes, but status and
+    ;; priority are deliberate in-place agenda operations.  C-c t is Craig's
+    ;; requested status chord; C-c C-t keeps Org's standard agenda chord.
+    ;; This config uses Super arrows in ordinary Org agendas, while Meta arrows
+    ;; are the requested Full Agenda muscle memory, so support both.
+    (define-key map (kbd "C-c t") #'org-agenda-todo)
+    (define-key map (kbd "C-c C-t") #'org-agenda-todo)
+    (dolist (key '("M-<up>" "s-<up>"))
+      (define-key map (kbd key) #'org-agenda-priority-up))
+    (dolist (key '("M-<down>" "s-<down>"))
+      (define-key map (kbd key) #'org-agenda-priority-down))
+    (dolist (key '("M-<left>" "s-<left>"))
+      (define-key map (kbd key) #'org-agenda-todo-previousset))
+    (dolist (key '("M-<right>" "s-<right>"))
+      (define-key map (kbd key) #'org-agenda-todo-nextset))
     (define-key map (kbd "S-<f8>") #'cj/agenda-frame-toggle)
     (define-key map (kbd "C-M-<f8>") #'cj/org-agenda-refresh-files)
     ;; C-x C-c means "close this frame" here.  The global
@@ -280,7 +306,7 @@ The default binding for every key not on the allowlist."
     ;; by `make-frame', not emacsclient, so with no client to close it falls
     ;; back to killing the daemon itself.
     (define-key map (kbd "C-x C-c") #'cj/--agenda-frame-close)
-    ;; (d) Input machinery punched through the catch-all.  An explicit nil
+    ;; (e) Input machinery punched through the catch-all.  An explicit nil
     ;; shadows the [t] default in this map, so these fall through to their
     ;; global bindings.  Without the punches, every frame-focus change
     ;; (switch-frame), every wheel scroll, and every mouse click hits the
@@ -292,7 +318,7 @@ The default binding for every key not on the allowlist."
                        [mouse-1] [down-mouse-1] [drag-mouse-1]
                        (kbd "C-h")))
       (define-key map key nil))
-    ;; (e) Global chords that would pull focus out of the frame must be
+    ;; (f) Global chords that would pull focus out of the frame must be
     ;; denied *explicitly*.  The [t] catch-all can't reach them: a keymap's
     ;; default binding does not shadow an *explicit* binding in a
     ;; lower-priority map, and these are bound in the global map (M-SPC /
@@ -307,16 +333,17 @@ The default binding for every key not on the allowlist."
     map)
   "Keymap for `cj/agenda-frame-mode'.
 Shadows `org-agenda-mode-map' by default-deny: the `[t]' catch-all denies
-every key that is not explicitly allowlisted here, so a future Org binding
-is denied by default and there is nothing to keep in sync.")
+every key that is not explicitly allowlisted here.  Status and priority are
+the only source-task mutations allowed; a future Org binding is denied by
+default and there is nothing to keep in sync.")
 
 (define-minor-mode cj/agenda-frame-mode
-  "Read-only, focus-locked policy for the dedicated agenda frame.
+  "Focus-locked, default-deny policy for the dedicated agenda frame.
 Only the allowlist in `cj/agenda-frame-mode-map' is permitted: navigation,
 the engage/open keys (routed to the working frame), and the frame's own
-controls.  Every other key/mouse command is denied.  The enforcement
-boundary is keys and mouse; a direct \\[execute-extended-command] is out
-of contract."
+controls, plus controlled task status and priority changes.  Every other
+key/mouse command is denied.  The enforcement boundary is keys and mouse;
+a direct \\[execute-extended-command] is out of contract."
   :init-value nil
   :lighter " AgendaFrame"
   :keymap cj/agenda-frame-mode-map)
