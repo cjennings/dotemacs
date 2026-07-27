@@ -20,21 +20,25 @@
 ;; keep normal agenda opens fast.
 
 ;;; Code:
+(require 'seq)
 (require 'user-constants)
 (require 'system-lib)
 (require 'cj-cache-lib)
 
-(defcustom cj/org-agenda-window-height 0.75
-  "Fraction of the selected frame used for the org agenda window."
-  :type 'number
-  :group 'org-agenda)
-
 (defun cj/--org-agenda-display-rule ()
-  "Return the display-buffer rule for the org agenda buffer."
-  `("\\*Org Agenda\\*"
-    (display-buffer-reuse-mode-window display-buffer-below-selected)
-    (dedicated . t)
-    (window-height . ,cj/org-agenda-window-height)))
+  "Return the display-buffer rule for the org agenda buffer.
+`display-buffer-full-frame' gives the agenda the whole frame rather than a
+fraction of it, so the view is a surface you read rather than a strip you
+squint at.  `org-agenda-restore-windows-after-quit' (set below) is what
+makes that non-destructive: quitting the agenda puts the previous window
+layout back.
+
+The window is deliberately not `dedicated': with the agenda owning the only
+window, a dedicated one leaves `org-agenda-switch-to' (RET on an item) with
+nowhere to put the file, and it splits or opens a frame instead of simply
+replacing the agenda."
+  '("\\*Org Agenda\\*"
+    (display-buffer-reuse-mode-window display-buffer-full-frame)))
 
 ;; Load debug functions if enabled
 (when (or (eq cj/debug-modules t)
@@ -65,7 +69,12 @@
   ;; that reaches `org-agenda-files' another way.
   (setq org-agenda-skip-unavailable-files t)
 
-  ;; display the agenda from the bottom
+  ;; The agenda takes the whole frame, so quitting it has to give the previous
+  ;; window layout back -- otherwise every F8 costs the arrangement of windows
+  ;; that were up when it was pressed.
+  (setq org-agenda-restore-windows-after-quit t)
+
+  ;; display the agenda across the whole frame
   (add-to-list 'display-buffer-alist
                (cj/--org-agenda-display-rule))
 
@@ -74,6 +83,89 @@
                                     (local-set-key (kbd "s-<right>") #'org-agenda-todo-nextset)
                                     (local-set-key (kbd "s-<left>")
                                                    #'org-agenda-todo-previousset))))
+
+;; ---------------------------- Agenda Auto-Refresh ----------------------------
+;; A full-frame agenda is meant to be left up and glanced at, so it has to stay
+;; current on its own: the now-line moves, and calendar-sync writes new events
+;; into the agenda files behind it.  One repeating timer rebuilds whichever
+;; agenda is actually on screen.
+
+(defcustom cj/org-agenda-refresh-seconds 300
+  "Cadence, in seconds, of the org-agenda auto-refresh.
+The timer fires on wall-clock multiples of this value, so the default 300
+refreshes on the :00/:05/:10 marks rather than five minutes after whenever
+the agenda happened to open."
+  :type 'integer
+  :group 'org-agenda)
+
+(defvar cj/--org-agenda-refresh-timer nil
+  "The repeating auto-refresh timer, or nil when auto-refresh is stopped.")
+
+(declare-function org-agenda-redo "org-agenda" (&optional all))
+
+(defun cj/--org-agenda-seconds-to-next-mark (time period)
+  "Return seconds from TIME to the next wall-clock multiple of PERIOD.
+TIME is any Emacs time value; PERIOD is a positive number of seconds, so
+300 gives the :00/:05 marks.  A TIME landing exactly on a mark returns a
+full PERIOD rather than zero, so the timer never fires twice back to back."
+  (unless (and (numberp period) (> period 0))
+    (error "Refresh period must be a positive number of seconds: %S" period))
+  (let ((remainder (mod (floor (float-time time)) period)))
+    (if (zerop remainder) period (- period remainder))))
+
+(defun cj/--org-agenda-refresh-window ()
+  "Return a live window displaying an org-agenda buffer, or nil.
+Only a visible agenda is worth rebuilding: an off-screen one costs the same
+full rescan and shows it to nobody, and it will be rebuilt on the next tick
+after it comes back into view."
+  (seq-find (lambda (window)
+              (with-current-buffer (window-buffer window)
+                (derived-mode-p 'org-agenda-mode)))
+            (window-list-1 nil 'nomini 'visible)))
+
+(defun cj/--org-agenda-auto-refresh ()
+  "Rebuild the on-screen agenda, leaving point on the line it was on.
+Does nothing when no agenda is displayed.
+
+The body is wrapped in `condition-case' deliberately.  This runs from a
+repeating timer, where an unguarded signal resignals on every tick and
+buries Emacs in identical backtraces -- the failure mode that made
+calendar-sync's hourly timer unusable.  A failed rebuild is logged and the
+timer keeps its cadence."
+  (condition-case err
+      (when-let* ((window (cj/--org-agenda-refresh-window)))
+        (with-selected-window window
+          (let ((line (line-number-at-pos)))
+            (org-agenda-redo)
+            (goto-char (point-min))
+            (forward-line (1- line)))))
+    (error
+     (cj/log-silently
+      (format "org-agenda auto-refresh failed: %s" (error-message-string err))))))
+
+(defun cj/org-agenda-auto-refresh-start ()
+  "Start the wall-clock-aligned agenda auto-refresh timer.
+Cancels any existing timer first, so re-loading this module into a running
+daemon replaces the ticker rather than stacking a second one."
+  (interactive)
+  (cj/org-agenda-auto-refresh-stop)
+  (setq cj/--org-agenda-refresh-timer
+        (run-at-time (cj/--org-agenda-seconds-to-next-mark
+                      (current-time) cj/org-agenda-refresh-seconds)
+                     cj/org-agenda-refresh-seconds
+                     #'cj/--org-agenda-auto-refresh)))
+
+(defun cj/org-agenda-auto-refresh-stop ()
+  "Cancel the agenda auto-refresh timer.  A no-op when already stopped."
+  (interactive)
+  (when (timerp cj/--org-agenda-refresh-timer)
+    (cancel-timer cj/--org-agenda-refresh-timer))
+  (setq cj/--org-agenda-refresh-timer nil))
+
+;; Arm at load.  Skipped under `noninteractive' so a batch test run doesn't
+;; carry a live repeating timer it has nothing to refresh.
+(unless noninteractive
+  (cj/org-agenda-auto-refresh-start))
 
 ;; ----------------------- Project-name Category Override ---------------------
 ;; The default `org-category' for a todo.org buffer is "todo" (the filename
@@ -225,14 +317,11 @@ improves performance from several seconds to instant."
 Use this after adding new projects or todo.org files.
 Bypasses cache and scans directories from scratch.
 
-Bound to C-M-<f8>, the force-rebuild sibling of the F8 agenda family
-\(<f8> display, s-<f8> all files, C-<f8> single project, M-<f8> this buffer).
-The binding lives in `org-agenda-frame.el', which took S-<f8> for the
-agenda-frame toggle and moved the force-rescan here."
+Bound to S-<f8>, the force-rebuild sibling of the F8 agenda family
+\(<f8> display, s-<f8> all files, C-<f8> single project, M-<f8> this buffer)."
   (interactive)
   (cj/build-org-agenda-list 'force-rebuild))
-;; S-<f8> and C-M-<f8> are bound by `org-agenda-frame.el' (cj/--agenda-frame-install-keys):
-;; S-<f8> toggles the dedicated agenda frame; C-M-<f8> runs the force-rescan above.
+(global-set-key (kbd "S-<f8>") #'cj/org-agenda-refresh-files)
 
 (defun cj/todo-list-all-agenda-files ()
   "Displays an \\='org-agenda\\=' todo list.

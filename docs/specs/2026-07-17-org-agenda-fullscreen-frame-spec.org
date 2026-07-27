@@ -4,10 +4,11 @@
 #+TODO: TODO | DONE
 #+TODO: DRAFT READY DOING | IMPLEMENTED SUPERSEDED CANCELLED
 
-* IMPLEMENTED org-agenda fullscreen frame
+* SUPERSEDED org-agenda fullscreen frame
 :PROPERTIES:
 :ID:       7705c94b-9bb7-47d8-9828-e9584172c54f
 :END:
+- 2026-07-27 Mon @ 13:57 -0500 — SUPERSEDED. Craig replaced the whole design with a separate Emacs process that shows the agenda, toggles fullscreen on a key, and refreshes itself every five minutes. This reverses the "Not a separate OS process" non-goal below: the daemon frame bought live shared state, but paid for it with a default-deny read-only policy, engage-routing, auto-dim suspension, and a marker-cloning failure path — machinery that only existed because the agenda shared a process with the working frames. A separate process needs none of it. =modules/org-agenda-frame.el= and its two test files were deleted and =S-<f8>= returned to =cj/org-agenda-refresh-files=.
 - 2026-07-20 Mon @ 15:33 -0500 — post-implementation correction: dropped =(fullscreen . fullboth)= from the spawned frame. Craig's "fullscreen" meant a normal frame at its full tiled position, not a compositor-wide fullscreen; the frame is now a plain =make-frame= that a tiling WM (Hyprland) places side by side with the working frame. The engage-routing and focus logic are unchanged and now matter more (open a task in the adjacent working pane). The spec's "fullscreen" wording and filename are retained as historical; read them as "dedicated tiled frame". Covered by =test-org-agenda-frame-parameters-normal-tiled-frame=.
 - 2026-07-20 Mon @ 14:10 -0500 — IMPLEMENTED. Built both phases in =modules/org-agenda-frame.el= (58 ERT tests, full suite green, byte-compile clean, full init loads clean, live-reloaded into the daemon with all wiring confirmed). Phase 1: frame lookup/predicate/working-frame routing, the =F= today-anchored 7-day view + registration, the default-deny =cj/agenda-frame-mode= (allowlist + two message classes + menu removal + finalize re-enable), transactional spawn/raise/delete/toggle, engage routing, sticky/close lifecycle. Phase 2: the 5-min wall-clock =org-agenda-redo= timer with the window/focus contract, duplicate-timer prevention, deterministic point restoration, the frame-owned last-good snapshot with cloned markers + failure overlay + report-once latch, and the public =cj/agenda-frame-toggle= on =S-<f8>= with the force-rescan moved to =C-M-<f8>=. The compositor fullscreen/focus and real-redo behaviors are a residual manual check (VERIFY filed under Manual testing).
 - 2026-07-20 Mon @ 13:30 -0500 — DOING. Decomposed into build tasks (Phase 1, Phase 2, flip-to-IMPLEMENTED) under the fullscreen-frame PROJECT in todo.org; =:SPEC_ID:= stamped. Building Phase 1.
@@ -27,7 +28,7 @@
 - 2026-07-17 Fri @ 19:34:07 -0500 — drafted.
 
 * Metadata
-| Status   | implemented                                    |
+| Status   | superseded                                     |
 |----------+------------------------------------------------|
 | Owner    | Craig Jennings                                 |
 |----------+------------------------------------------------|
