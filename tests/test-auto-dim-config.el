@@ -30,15 +30,104 @@
       (progn
         (should (bound-and-true-p auto-dim-other-buffers-mode))
         (should (null auto-dim-other-buffers-dim-on-focus-out))
-        ;; Entering the minibuffer must not change what is dimmed: a dim window
-        ;; stays dim, a lit one stays lit.  The fork's `adob--update' returns
-        ;; early when this is nil and the selected window is the minibuffer, so
-        ;; nil is what keeps a minibuffer prompt from re-dimming the window the
-        ;; user was just in.
+        ;; Config intent only: this asserts the value the module just set, so it
+        ;; cannot fail even if the fork inverts what the flag MEANS.  The two
+        ;; behavioral tests below are what actually pin the behavior.
         (should (null auto-dim-other-buffers-dim-on-switch-to-minibuffer))
         (should-not (assq 'fringe auto-dim-other-buffers-affected-faces)))
     (when (fboundp 'auto-dim-other-buffers-mode)
       (auto-dim-other-buffers-mode -1))))
+
+(defmacro test-auto-dim--with-two-windows (win-a win-b &rest body)
+  "Bind WIN-A and WIN-B to two live windows with the mode on, then run BODY.
+Restores the window configuration, the buffers, and the mode's PRIOR state.
+Restoring rather than force-disabling matters: `auto-dim-other-buffers-mode' is
+global, and switching it off unconditionally left a later test in this file
+asserting the mode is on with it off.  That only stayed hidden because ERT runs
+tests alphabetically and the asserting test sorts first."
+  (declare (indent 2))
+  `(let ((config (current-window-configuration))
+         (was-on (bound-and-true-p auto-dim-other-buffers-mode)))
+     (unwind-protect
+         (let* ((,win-a (selected-window))
+                (,win-b (split-window)))
+           (set-window-buffer ,win-a (get-buffer-create " *adob-a*"))
+           (set-window-buffer ,win-b (get-buffer-create " *adob-b*"))
+           (select-window ,win-a)
+           (auto-dim-other-buffers-mode 1)
+           ,@body)
+       (when (fboundp 'auto-dim-other-buffers-mode)
+         (auto-dim-other-buffers-mode (if was-on 1 -1)))
+       (set-window-configuration config)
+       (dolist (name '(" *adob-a*" " *adob-b*"))
+         (when (get-buffer name) (kill-buffer name))))))
+
+(ert-deftest test-auto-dim-config-minibuffer-entry-leaves-previous-window-lit ()
+  "Normal: with the flag nil, entering the minibuffer leaves the previous window lit.
+This is the half that works, and the reason the flag is set to nil.
+
+Deliberately asserts the composite behavior rather than naming one function.
+Selecting the minibuffer fires the mode's own hooks, so the observable outcome is
+not attributable to the explicit `adob--update' call alone -- and the observable
+outcome is what the setting promises the user.
+
+The `win-b' assertions are positive controls.  Without them this test passes
+against an implementation where dimming is broken everywhere, which looks
+identical to the implementation being correct."
+  (skip-unless (file-directory-p test-auto-dim--fork))
+  (require 'auto-dim-config)
+  (test-auto-dim--with-two-windows win-a win-b
+    (adob--rescan-windows)
+    (should (null (window-parameter win-a 'adob--dim)))
+    (should (window-parameter win-b 'adob--dim))
+    (select-window (minibuffer-window))
+    (adob--update)
+    (should (null (window-parameter win-a 'adob--dim)))
+    (should (window-parameter win-b 'adob--dim))))
+
+(ert-deftest test-auto-dim-config-minibuffer-entry-dims-when-flag-is-t ()
+  "Boundary: with the flag t, entering the minibuffer DOES dim the previous window.
+This is what gives the nil setting meaning.  Without it the suite never shows the
+flag changing anything, so the config assertion in
+`test-auto-dim-config-applies-settings' has nothing standing behind it."
+  (skip-unless (file-directory-p test-auto-dim--fork))
+  (require 'auto-dim-config)
+  (test-auto-dim--with-two-windows win-a win-b
+    (let ((auto-dim-other-buffers-dim-on-switch-to-minibuffer t))
+      (adob--rescan-windows)
+      (should (null (window-parameter win-a 'adob--dim)))
+      (select-window (minibuffer-window))
+      (adob--update)
+      (should (window-parameter win-a 'adob--dim)))))
+
+(ert-deftest test-auto-dim-config-rescan-ignores-the-minibuffer-flag ()
+  "Error: `adob--rescan-windows' dims everything on a minibuffer selection.
+Known defect in the fork, pinned here rather than left undocumented.  The
+rescan is on `window-configuration-change-hook' and dims by window identity
+alone -- and `(window-list nil \\='n)' excludes the minibuffer, so when the
+minibuffer is selected nothing matches and every window dims.  A completion
+popup is the everyday case: `adob--update' honours the flag, this does not.
+
+Expected to fail until the fork honours the flag in the rescan too.  When it
+starts passing, ERT reports an unexpected pass -- that is the signal to drop
+this test and stop treating the gap as open.
+
+The `win-b' positive control is load-bearing here.  Three different broken
+implementations -- dimming disabled everywhere, the rescan never setting the
+parameter, `adob--update' made a no-op -- all produce an unexpected pass that
+would otherwise read as \"the fork fixed it\".  Asserting that `win-b' is still
+dimmed separates a real fix from dimming having broken."
+  :expected-result :failed
+  (skip-unless (file-directory-p test-auto-dim--fork))
+  (require 'auto-dim-config)
+  (test-auto-dim--with-two-windows win-a win-b
+    (adob--rescan-windows)
+    (should (null (window-parameter win-a 'adob--dim)))
+    (should (window-parameter win-b 'adob--dim))
+    (select-window (minibuffer-window))
+    (adob--rescan-windows)
+    (should (window-parameter win-b 'adob--dim))
+    (should (null (window-parameter win-a 'adob--dim)))))
 
 (defconst test-auto-dim--flat-dimmed-org-faces
   (append (mapcar (lambda (n) (intern (format "org-level-%d" n)))
