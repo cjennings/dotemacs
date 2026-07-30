@@ -199,17 +199,27 @@ nil so the org default category applies."
 
 (defun cj/--org-set-todo-category ()
   "Set buffer-local `org-category' to the project name for a todo.org buffer.
-Runs from `org-mode-hook'.  Only overrides when `org-category' is still
-the default-from-filename (\"todo\"), so an explicit `#+CATEGORY:' in
-the file keeps precedence."
+Runs from `org-mode-hook'.  Only overrides when nothing has set
+`org-category', so an explicit `#+CATEGORY:' in the file keeps precedence.
+
+The nil test is the whole guard, and it took a while to get right.  Org does
+not assign the filename fallback to `org-category': with no `#+CATEGORY:' the
+variable stays nil and `org-get-category' derives \"todo\" at read time.  An
+earlier version guarded on `(string= \"todo\" org-category)', which is a state
+org never produces, so this hook did nothing from the day it shipped."
   (when (and buffer-file-name
              (boundp 'org-category)
-             (stringp org-category)
-             (string= "todo" org-category))
+             (null org-category))
     (when-let* ((project (cj/--org-todo-category-from-file buffer-file-name)))
       (setq-local org-category project))))
 
-(add-hook 'org-mode-hook #'cj/--org-set-todo-category)
+;; Depth -100 so this runs FIRST, and it is load-bearing.  `org-get-category'
+;; resolves a deferred `:CATEGORY' that the org-element cache then holds, so any
+;; hook that reads the category before this one freezes "todo" in that cache and
+;; leaves the `setq-local' below inert -- `org-category' reads correct while the
+;; agenda still shows "todo".  `add-hook' prepends by default, so without the
+;; depth every hook added later would run earlier, and three already do.
+(add-hook 'org-mode-hook #'cj/--org-set-todo-category -100)
 
 ;; ------------------------ Org Agenda File List Cache -------------------------
 ;; Cache agenda file list to avoid expensive directory scanning on every view.
