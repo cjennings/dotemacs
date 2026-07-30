@@ -1,0 +1,94 @@
+#+TITLE: org-element persistent-cache corruption — reproduction evidence
+#+AUTHOR: Craig Jennings
+#+DATE: 2026-07-28
+
+* What this is
+
+Evidence for the org-element cache corruption I chased on 2026-07-28, kept
+because the diagnosis outlived the fix. I shipped a fix as =d2103877=, put it
+through four hostile reviews, and reverted it on their findings. These scripts
+are what the reviews were arguing about.
+
+Run any of them with:
+
+: emacs --batch -q -l <script>
+
+Several of the failing ones never terminate once corruption sets in, because
+=org-element--cache-self-verify= floods warnings (one run reached 26 million
+lines). Use =timeout=.
+
+* The actual bug
+
+=org-element--cache-persist-before-write= (org-element.el:7694) resolves
+=(get-file-buffer ...)= and destructively nils =:buffer= on the *live* cache.
+The next edit to that buffer then signals =wrong-type-argument stringp nil=
+from =org-element--cache-after-change=.
+
+It needs no second buffer and no dirvish. That is the finding that killed the
+fix: I had diagnosed a *trigger* and written the fix against it.
+
+Which buffer gets corrupted is decided by =buffer-list= order, since
+=get-file-buffer= returns the first buffer visiting the file. That is why the
+symptom is intermittent, and why any future fix needs a test that controls the
+order rather than accepting whatever the harness happens to produce.
+
+* The scripts
+
+| File                       | What it shows                                             |
+|----------------------------+-----------------------------------------------------------|
+| =hostile-d-nopreview.el=   | The root cause. One org buffer, no preview, no dirvish.   |
+|                            | =org-persist-write-all-buffer= alone strips =:buffer=     |
+|                            | from 6134 elements and the next insert signals.           |
+|----------------------------+-----------------------------------------------------------|
+| =hostile-d-order.el=       | Corruption depends on =buffer-list= order. Bury the real  |
+|                            | buffer and =get-file-buffer= returns the other one, and   |
+|                            | the run comes back clean.                                 |
+|----------------------------+-----------------------------------------------------------|
+| =hostile-d-faithful.el=    | A faithful replay of dirvish's preview, with the real     |
+|                            | =dirvish-preview-environment= bindings and buffer naming. |
+|                            | Reproduces. My own replay below was looser.               |
+|----------------------------+-----------------------------------------------------------|
+| =hostile-c-repro.el=       | The regression the reverted fix introduced: with          |
+|                            | =org-element-cache-persistent= nil in a preview buffer,   |
+|                            | =org-element-cache-reset= unregisters the *real* file's   |
+|                            | persisted cache and removes it from disk.                 |
+|----------------------------+-----------------------------------------------------------|
+| =hostile-a-errorbranch.el= | dirvish.el:671-680 kills the preview buffer on a signal   |
+|                            | without ever running =dirvish-preview-setup-hook=, so a   |
+|                            | hook-based fix is skipped there. Needs =so-long= enabled  |
+|                            | to reach, which it is not here today.                     |
+|----------------------------+-----------------------------------------------------------|
+| =hostile-e-ffnoselect.el=  | =dirvish--find-file-temporarily= returns the user's       |
+|                            | existing buffer, which dirvish later kills. Separate      |
+|                            | pre-existing bug, tracked as its own task.                |
+|----------------------------+-----------------------------------------------------------|
+| =repro-preview-cache.el=   | My original replay. Kept as the record of what I ran,     |
+|                            | not as good evidence: its control differs from it by      |
+|                            | three variables, so on its own it cannot attribute cause. |
+|----------------------------+-----------------------------------------------------------|
+| =control-no-preview.el=    | That flawed control.                                      |
+|----------------------------+-----------------------------------------------------------|
+| =variant-no-kill.el=       | Preview created but not killed: clean. Supported the      |
+|                            | "the kill is required" framing, which turned out to be    |
+|                            | backwards. The persist *write* is causal; the kill only   |
+|                            | triggers it.                                              |
+|----------------------------+-----------------------------------------------------------|
+| =variant-no-persist.el=    | Same sequence with persistence off: clean.                |
+|----------------------------+-----------------------------------------------------------|
+| =verify-shipped-fix.el=    | The reverted fix suppressing the corruption on the        |
+|                            | dirvish path. It did work there. It was aimed one layer   |
+|                            | too low and carried a regression.                         |
+|----------------------------+-----------------------------------------------------------|
+| =d2103877-reverted.patch=  | The reverted commit, kept so the approach is recoverable. |
+|----------------------------+-----------------------------------------------------------|
+
+* What does not reproduce it
+
+Turning =org-element--cache-self-verify= on does *not* manufacture the error.
+It reproduces at org's defaults; self-verify only makes it loud. I had worried
+the instrumentation was creating the signal, and it is not.
+
+* Filed as
+
+See =todo.org=: the org-element persist task, and the separate dirvish
+=find-file-noselect= buffer-kill task.

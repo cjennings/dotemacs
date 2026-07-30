@@ -1,0 +1,199 @@
+commit d2103877f677463cbf113df951f388aaaa4a06ea
+Author: Craig Jennings <c@cjennings.net>
+Date:   Tue Jul 28 18:25:03 2026 -0500
+
+    fix(dirvish): keep org previews out of the persistent element cache
+    
+    - Previewing an open .org file corrupted that file's element cache.
+    - The next edit to it signalled wrong-type-argument stringp nil.
+    - Dirvish's fallback preview claims the real file's buffer-file-name.
+    - set-auto-mode then makes it a second org-mode buffer.
+    - Killing that preview is what breaks the original buffer.
+    
+    I made the opt-out buffer-local, so real org buffers keep persistence.
+    
+    That error string is the one cj/org-clear-element-cache was written for,
+    so the workaround had been hiding this.
+
+diff --git a/modules/dirvish-config.el b/modules/dirvish-config.el
+index edbb0b35..ef5966c9 100644
+--- a/modules/dirvish-config.el
++++ b/modules/dirvish-config.el
+@@ -833,7 +833,41 @@ Returns nil if not in a project."
+    ;; No project found
+    (t nil)))
+ 
+-
++;;; ------------------- Dirvish Preview Org-Element Cache Opt-Out ---------------
++;; dirvish's `fallback' dispatcher previews any file it has no media handler for,
++;; and `dirvish--preview-file-maybe-truncate' builds that preview by pointing
++;; `buffer-file-name' at the real file and running `set-auto-mode'.  Previewing an
++;; .org file therefore yields a SECOND org-mode buffer claiming an already-open
++;; file's name.  When dirvish later kills that preview buffer, the real buffer's
++;; org-element cache is left corrupt, and the next edit to it signals
++;; `wrong-type-argument stringp nil' from `org-element--cache-after-change'.
++;;
++;; Reproduced 2026-07-28 with controls: no preview is clean, a preview left alive
++;; is clean, and the same sequence with `org-element-cache-persistent' nil is
++;; clean -- so the kill is required and the persistent cache is the mechanism.
++;; (That error string is the one `cj/org-clear-element-cache' was written for,
++;; which is how this hid for so long: the workaround was already in the config.)
++;;
++;; Opting the throwaway preview buffer out of the persistent cache is enough.  It
++;; is deliberately buffer-local: the real org buffers must keep persistence.
++
++;; A variable, not a function -- declared so the byte-compiler knows it is
++;; special without pulling org-element onto dirvish's load path.
++(defvar org-element-cache-persistent)
++
++(defun cj/--dirvish-preview-disable-org-cache-persist ()
++  "Opt a dirvish org-mode preview buffer out of the persistent element cache.
++Runs from `dirvish-preview-setup-hook' in the preview buffer.  Does nothing
++outside org-mode, and nothing when `org-element-cache-persistent' is unbound --
++a signal here would abort dirvish's preview rendering, so every branch is a
++no-op rather than an error.  Returns nil."
++  (when (and (derived-mode-p 'org-mode)
++             (boundp 'org-element-cache-persistent))
++    (setq-local org-element-cache-persistent nil))
++  nil)
++
++(add-hook 'dirvish-preview-setup-hook
++          #'cj/--dirvish-preview-disable-org-cache-persist)
+ 
+ (provide 'dirvish-config)
+ ;;; dirvish-config.el ends here.
+diff --git a/tests/test-dirvish-config--preview-org-cache.el b/tests/test-dirvish-config--preview-org-cache.el
+new file mode 100644
+index 00000000..233b04a8
+--- /dev/null
++++ b/tests/test-dirvish-config--preview-org-cache.el
+@@ -0,0 +1,129 @@
++;;; test-dirvish-config--preview-org-cache.el --- preview org-cache opt-out tests -*- lexical-binding: t; -*-
++
++;;; Commentary:
++;; Dirvish's fallback preview builds a buffer, points `buffer-file-name' at the
++;; real file, and runs `set-auto-mode' -- so previewing an .org file yields a
++;; second org-mode buffer claiming an open file's name.  Killing that preview
++;; buffer corrupted the real buffer's element cache, surfacing as
++;; `wrong-type-argument stringp nil' on the next edit.  Reproduced 2026-07-28
++;; with controls: the kill is required, and `org-element-cache-persistent' is
++;; the mechanism (nil made the same sequence clean).
++;;
++;; `cj/--dirvish-preview-disable-org-cache-persist' opts the preview buffer out
++;; of the persistent cache, buffer-locally, leaving the real buffer alone.
++
++;;; Code:
++
++(require 'ert)
++(require 'org-element)
++(add-to-list 'load-path (expand-file-name "modules" user-emacs-directory))
++(require 'dirvish-config)
++
++(declare-function cj/--dirvish-preview-disable-org-cache-persist "dirvish-config" ())
++
++;;; ----------------------------- Normal cases ---------------------------------
++
++(ert-deftest test-dirvish-preview-org-cache-disables-in-org-buffer ()
++  "Normal: an org-mode preview buffer opts out of the persistent cache."
++  (with-temp-buffer
++    (delay-mode-hooks (org-mode))
++    (cj/--dirvish-preview-disable-org-cache-persist)
++    (should (local-variable-p 'org-element-cache-persistent))
++    (should-not org-element-cache-persistent)))
++
++(ert-deftest test-dirvish-preview-org-cache-leaves-global-alone ()
++  "Normal: the opt-out is buffer-local and never touches the global value.
++The real org buffers must keep their persistent cache; only the throwaway
++preview buffer opts out.  Asserting the global default explicitly is the point
++of this test -- a buffer-local set that leaked to the default would disable
++persistence everywhere and still pass every other test here."
++  (let ((original (default-value 'org-element-cache-persistent)))
++    (unwind-protect
++        (progn
++          (setq-default org-element-cache-persistent t)
++          (with-temp-buffer
++            (delay-mode-hooks (org-mode))
++            (cj/--dirvish-preview-disable-org-cache-persist)
++            (should-not org-element-cache-persistent))
++          ;; The default survived the buffer-local set.
++          (should (eq (default-value 'org-element-cache-persistent) t))
++          ;; And a fresh org buffer still inherits persistence.
++          (with-temp-buffer
++            (delay-mode-hooks (org-mode))
++            (should org-element-cache-persistent)))
++      (setq-default org-element-cache-persistent original))))
++
++;;; ---------------------------- Boundary cases --------------------------------
++
++(ert-deftest test-dirvish-preview-org-cache-ignores-non-org-buffer ()
++  "Boundary: a non-org preview buffer is left completely alone."
++  (with-temp-buffer
++    (fundamental-mode)
++    (cj/--dirvish-preview-disable-org-cache-persist)
++    (should-not (local-variable-p 'org-element-cache-persistent))))
++
++(ert-deftest test-dirvish-preview-org-cache-covers-derived-mode ()
++  "Boundary: a mode derived from org-mode still opts out.
++The check is `derived-mode-p', not an `eq' on `major-mode', so org derivatives
++previewed by dirvish are covered too."
++  (with-temp-buffer
++    (delay-mode-hooks (org-mode))
++    (define-derived-mode cj-test-org-derived-mode org-mode "TestOrg"
++      "Throwaway org derivative for this test.")
++    (delay-mode-hooks (cj-test-org-derived-mode))
++    (cj/--dirvish-preview-disable-org-cache-persist)
++    (should (local-variable-p 'org-element-cache-persistent))
++    (should-not org-element-cache-persistent)))
++
++(ert-deftest test-dirvish-preview-org-cache-is-idempotent ()
++  "Boundary: running twice in one buffer is a no-op the second time."
++  (with-temp-buffer
++    (delay-mode-hooks (org-mode))
++    (cj/--dirvish-preview-disable-org-cache-persist)
++    (cj/--dirvish-preview-disable-org-cache-persist)
++    (should (local-variable-p 'org-element-cache-persistent))
++    (should-not org-element-cache-persistent)))
++
++;;; ------------------------------ Error cases ---------------------------------
++
++(ert-deftest test-dirvish-preview-org-cache-survives-missing-variable ()
++  "Error: no signal when `org-element-cache-persistent' is not bound.
++The function runs from a dirvish hook; an error there would break preview
++rendering, so a missing org internal must degrade to a no-op.
++
++Drives real state rather than mocking `boundp'.  `boundp' is a C primitive, and
++redefining one is unreliable under native-comp -- a natively-compiled caller can
++run the real primitive through a trampoline and quietly ignore the mock, which
++would turn this into a test that passes without exercising the guard.  Org-mode
++is entered before the unbind so mode setup never reads the missing variable."
++  (let* ((bound (boundp 'org-element-cache-persistent))
++         (original (and bound (default-value 'org-element-cache-persistent))))
++    (unwind-protect
++        (with-temp-buffer
++          (delay-mode-hooks (org-mode))
++          (makunbound 'org-element-cache-persistent)
++          (should-not (boundp 'org-element-cache-persistent))
++          (should-not (cj/--dirvish-preview-disable-org-cache-persist))
++          ;; The guard declined to create a binding rather than erroring.
++          (should-not (local-variable-p 'org-element-cache-persistent)))
++      (when bound (setq-default org-element-cache-persistent original)))))
++
++(ert-deftest test-dirvish-preview-org-cache-runs-in-a-fileless-buffer ()
++  "Error: a buffer with no `buffer-file-name' is handled without signalling."
++  (with-temp-buffer
++    (delay-mode-hooks (org-mode))
++    (should-not (buffer-file-name))
++    (cj/--dirvish-preview-disable-org-cache-persist)
++    (should-not org-element-cache-persistent)))
++
++;;; ----------------------------- Registration ---------------------------------
++
++(ert-deftest test-dirvish-preview-org-cache-hook-registered ()
++  "Normal: the opt-out is on `dirvish-preview-setup-hook'.
++Registration is the half that makes the fix reach dirvish at all -- the
++function being correct is useless if nothing calls it."
++  (should (memq 'cj/--dirvish-preview-disable-org-cache-persist
++                (default-value 'dirvish-preview-setup-hook))))
++
++(provide 'test-dirvish-config--preview-org-cache)
++;;; test-dirvish-config--preview-org-cache.el ends here

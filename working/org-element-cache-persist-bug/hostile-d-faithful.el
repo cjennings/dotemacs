@@ -1,0 +1,48 @@
+;; Faithful replay: real dirvish env incl. delay-mode-hooks, inhibit-message,
+;; timestamped buffer name, preview-hash text reuse, dirvish--kill-buffer shape.
+(require 'cl-lib) (require 'org) (require 'org-element) (require 'org-persist)
+(when (getenv "FIX")
+  (add-to-list 'load-path (expand-file-name "modules" default-directory))
+  (require 'dirvish-config))
+(setq org-element-use-cache t org-element-cache-persistent t)
+(defvar hash (make-hash-table :test 'equal))
+(defun nilbuf (b) (with-current-buffer b
+  (let ((k 0)) (avl-tree-mapc (lambda (e) (unless (org-element-property :buffer e) (cl-incf k))) org-element--cache) k)))
+(defun preview (file name)
+  (with-current-buffer (get-buffer-create "*preview-temp*")
+    (let ((text (gethash file hash)) info jka-compr-verbose)
+      (with-silent-modifications
+        (setq buffer-read-only t)
+        (if text (insert text) (insert-file-contents file nil 0 1048576))
+        (setq buffer-file-name file) (goto-char (point-min))
+        (rename-buffer name))
+      (condition-case err
+          (eval `(let ((inhibit-message t) (non-essential t)
+                       (enable-dir-local-variables nil) (enable-local-variables :safe))
+                   (setq-local delay-mode-hooks t)
+                   (set-auto-mode) (font-lock-mode 1)))
+        (error (setq info (error-message-string err))))
+      (if info (message ">> preview aborted: %s" info)
+        (run-hooks 'dirvish-preview-setup-hook)
+        (unless text (puthash file (buffer-string) hash)))
+      (message ">> preview mode=%s delay-mode-hooks=%S persist=%S"
+               major-mode delay-mode-hooks org-element-cache-persistent)
+      (current-buffer))))
+(defun dv-kill (b) (and (buffer-live-p b) (let (kill-buffer-query-functions) (kill-buffer b))))
+(let* ((file (make-temp-file "fa-" nil ".org")))
+  (copy-file (expand-file-name "todo.org" default-directory) file t)
+  (let ((real (find-file-noselect file)))
+    (with-current-buffer real (org-element-cache-map (lambda (_) nil) :granularity 'element))
+    (message ">> real nil-buffer before=%d" (nilbuf real))
+    ;; pass 1
+    (dv-kill (preview file (format "PREVIEW :: %s :: %s" "1753000000" (file-name-nondirectory file))))
+    (message ">> after pass1 kill nil-buffer=%d gfb=%S" (nilbuf real) (buffer-name (get-file-buffer file)))
+    ;; pass 2 (hash hit: text branch)
+    (dv-kill (preview file (format "PREVIEW :: %s :: %s" "1753000001" (file-name-nondirectory file))))
+    (message ">> after pass2 kill nil-buffer=%d" (nilbuf real))
+    (with-current-buffer real
+      (goto-char (point-max))
+      (condition-case err (let ((inhibit-read-only t)) (insert "\n* E\n"))
+        (error (message ">> RESULT: SIGNALLED %S" err)))
+      (message ">> edit completed") (set-buffer-modified-p nil)))
+  (delete-file file))

@@ -1,0 +1,87 @@
+Subject: [BUG] Persisting the element cache while its buffer is live corrupts it [9.7.11 (release_9.7.11 @ /usr/share/emacs/30.2/lisp/org/)]
+
+Writing the element cache to disk strips the :buffer property from every cached
+element in the live buffer and never puts it back. The next access to a cached
+headline signals (wrong-type-argument stringp nil), and it keeps signalling until
+the cache is reset by hand.
+
+Minimal reproduction, self-contained, no dirvish or other packages involved. Save
+as repro.el and run "emacs -Q --batch -l repro.el":
+
+    (require 'org)
+    (require 'org-element)
+    (require 'org-persist)
+
+    (let* ((dir (make-temp-file "org-persist-repro-" t))
+           (org-persist-directory (expand-file-name "persist" dir))
+           (file (expand-file-name "notes.org" dir))
+           (org-element-use-cache t)
+           (org-element-cache-persistent t)
+           (org-log-done nil))
+      (with-temp-file file
+        (dotimes (i 20) (insert (format "* TODO task %d\nbody %d\n" i i))))
+      (let ((buffer (find-file-noselect file)))
+        (with-current-buffer buffer
+          (org-element-cache-reset)
+          (org-element-cache-map #'ignore :granularity 'headline)
+          (goto-char (point-min))
+          (re-search-forward "^\\* TODO task 0")
+          (beginning-of-line)
+          (org-todo "DONE"))
+        (org-persist-write `((elisp org-element--cache)
+                             (version ,org-element-cache-version))
+                           buffer t)
+        (with-current-buffer buffer
+          (message "%S"
+                   (condition-case err
+                       (progn (org-element-cache-map
+                               (lambda (e) (org-element-property :raw-value e))
+                               :granularity 'headline)
+                              "ok")
+                     (error err))))
+        (set-buffer-modified-p nil)
+        (kill-buffer buffer))
+      (delete-directory dir t))
+
+Expected: "ok".
+Actual: (wrong-type-argument stringp nil).
+
+Adding a print of the cached :buffer values on either side of the write shows
+(#<buffer notes.org>) before and (nil) after.
+
+The mechanism, as far as I can follow it. org-element--cache-persist-before-write
+walks org-element--cache and clears :buffer on every element. That looks
+deliberate, since buffer objects can't be printed, and a8286a5a9 describes it as
+"Clear and restore non-printable buffer objects in :buffer property". The restore
+half is org-element--cache-persist-after-read, which sets :buffer back to
+(current-buffer). But that only runs on the read path. Nothing restores :buffer
+after a write, so a write against a buffer that is still alive leaves the live
+cache holding nils.
+
+The error itself comes from org-element--headline-parse-title. Cached elements
+keep their deferred :title and :tags thunks, and resolving one runs
+(with-current-buffer (org-element-property :buffer headline)). set-buffer on nil
+is the signal.
+
+How I reached it without calling org-persist-write directly. Any second buffer
+visiting the same file will do it, because org-persist registers a buffer-local
+org-persist-write-all-buffer on kill-buffer-hook, and the write's hook resolves
+(get-file-buffer FILE), which can return the other buffer. In my case dirvish
+built a preview buffer, pointed buffer-file-name at a file I already had open,
+and ran set-auto-mode. Killing that preview corrupted the cache of the buffer I
+was working in. Any package that makes a throwaway buffer visiting a live file
+can trigger it, so I don't think this is dirvish's bug to fix.
+
+Two details that might help narrow it. Which buffer gets damaged depends on
+buffer-list order, since get-file-buffer returns the first buffer visiting the
+file. And a nearly empty cache survives, because the next access reparses instead
+of reading a stripped element. That combination is probably why this shows up as
+an intermittent "org-element cache is broken again" rather than a clean repro.
+
+Setting org-element-cache-persistent to nil avoids it, which I see recommended on
+this list fairly often. It looks like it may be working around this rather than a
+separate problem.
+
+I haven't written a patch. From the outside the symmetric fix would be to restore
+:buffer after an in-session write the way the read path does, rather than to stop
+clearing it. Happy to test a patch against the reproduction above.
