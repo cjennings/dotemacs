@@ -14,9 +14,12 @@
 ;;; Normal Cases
 
 (ert-deftest test-calendar-sync--expand-monthly-normal-generates-occurrences ()
-  "Test expanding monthly event generates occurrences within range."
-  (let* ((start-date (test-calendar-sync-time-days-from-now 1 10 0))
-         (end-date (test-calendar-sync-time-days-from-now 1 11 0))
+  "Test expanding monthly event generates occurrences within range.
+Anchored on a day every month has: a series on the 29th, 30th, or 31st
+correctly skips the months lacking that day, which is fewer than one per month
+and not what this assertion is about."
+  (let* ((start-date (test-calendar-sync-time-monthly-anchor 10 0))
+         (end-date (test-calendar-sync-time-monthly-anchor 11 0))
          (base-event (list :summary "Monthly Review"
                            :start start-date
                            :end end-date))
@@ -28,9 +31,13 @@
     (should (< (length occurrences) 20))))
 
 (ert-deftest test-calendar-sync--expand-monthly-normal-preserves-day-of-month ()
-  "Test that each occurrence falls on the same day of month."
-  (let* ((start-date (test-calendar-sync-time-days-from-now 5 10 0))
-         (end-date (test-calendar-sync-time-days-from-now 5 11 0))
+  "Test that each occurrence falls on the same day of month.
+Anchored on a day every month has, so the assertion below can be an equality.
+It used to be `<=' against an anchor whose day varied with the run date, which a
+skipped month satisfies without ever landing on the right day -- the assertion
+held even when the series was wrong."
+  (let* ((start-date (test-calendar-sync-time-monthly-anchor 10 0))
+         (end-date (test-calendar-sync-time-monthly-anchor 11 0))
          (expected-day (nth 2 start-date))
          (base-event (list :summary "Monthly"
                            :start start-date
@@ -39,15 +46,15 @@
          (range (test-calendar-sync-wide-range))
          (occurrences (calendar-sync--expand-monthly base-event rrule range)))
     (should (> (length occurrences) 0))
-    ;; Day of month should be consistent (may clamp for short months)
+    ;; Every occurrence lands on the anchor day, exactly.
     (dolist (occ occurrences)
       (let ((day (nth 2 (plist-get occ :start))))
-        (should (<= day expected-day))))))
+        (should (= day expected-day))))))
 
 (ert-deftest test-calendar-sync--expand-monthly-normal-interval-two ()
   "Test expanding bi-monthly event."
-  (let* ((start-date (test-calendar-sync-time-days-from-now 1 9 0))
-         (end-date (test-calendar-sync-time-days-from-now 1 10 0))
+  (let* ((start-date (test-calendar-sync-time-monthly-anchor 9 0))
+         (end-date (test-calendar-sync-time-monthly-anchor 10 0))
          (base-event (list :summary "Bi-Monthly"
                            :start start-date
                            :end end-date))

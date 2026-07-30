@@ -172,6 +172,22 @@ Returns float number of days (positive if date2 > date1)."
         (t2 (calendar-sync--date-to-time (list (nth 0 date2) (nth 1 date2) (nth 2 date2)))))
     (/ (float-time (time-subtract t2 t1)) 86400.0)))
 
+(defun test-calendar-sync-time-monthly-anchor (hour minute)
+  "Return a soon-future date on a day-of-month that every month has.
+Walks forward from tomorrow to the first date whose day is 28 or less, then
+returns it at HOUR:MINUTE.
+
+Use this instead of `test-calendar-sync-time-days-from-now' for any test that
+asserts a monthly cadence.  A relative offset is not a date-independent anchor:
+its day-of-month varies with the run date, and a monthly series anchored on the
+29th, 30th, or 31st correctly appears only in the months that have that day.  A
+test asserting roughly one occurrence per month then fails for several days each
+month, which is what happened on 2026-07-30."
+  (let ((days 1))
+    (while (> (nth 2 (test-calendar-sync-time-days-from-now days hour minute)) 28)
+      (setq days (1+ days)))
+    (test-calendar-sync-time-days-from-now days hour minute)))
+
 (defun test-calendar-sync-wide-range ()
   "Generate wide date range: 90 days past to 365 days future.
 Returns (start-time end-time) suitable for expansion functions."
