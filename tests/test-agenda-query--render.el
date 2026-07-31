@@ -26,6 +26,9 @@
 
 (add-to-list 'load-path (expand-file-name "modules" user-emacs-directory))
 (require 'agenda-query)
+;; Supplies `cj/org-todo-keywords', the vocabulary the batch writer sets and
+;; the editor's org config reads.
+(require 'user-constants)
 
 (defun test-aq-render--epoch (min hour day month year)
   "Return the epoch for local MIN HOUR DAY MONTH YEAR."
@@ -136,10 +139,43 @@ The renderer parses the same shape whether or not anything is scheduled."
   (let ((org-agenda-files nil))
     (should (equal "[]" (cj/agenda-render-json 1785474000 1785477600)))))
 
+;;; ---------- the batch reader has to know the keyword vocabulary ----------
+
+(ert-deftest test-agenda-render-normal-custom-keyword-is-parsed ()
+  "Normal: a config keyword is recognised, so it leaves the title.
+
+The batch writer runs without the editor's init, so it has to set
+`org-todo-keywords' itself.  When it does not, org stops parsing the headline
+as a task at all: DOING and the priority cookie stay glued to the front of the
+title and the row reads as having no keyword.  That is a wrong answer that
+still parses as JSON, which is the worst kind."
+  (let ((org-todo-keywords cj/org-todo-keywords))
+    (test-aq-render--with-agenda-file
+        "* DOING [#A] Justin Johns advisor projects\nSCHEDULED: <2026-07-31 Fri 09:00>\n"
+      (let ((row (car rows)))
+        (should (equal "Justin Johns advisor projects" (alist-get 't row)))
+        (should (equal "DOING" (alist-get 'keyword row)))))))
+
+(ert-deftest test-agenda-render-boundary-unknown-keyword-stays-in-title ()
+  "Boundary: with stock keywords the same headline degrades visibly.
+
+Pinning the failure mode, not endorsing it.  This is what the surface showed
+before the batch writer learned the vocabulary, and it is why the test above
+exists."
+  (let ((org-todo-keywords '((sequence "TODO" "|" "DONE"))))
+    (test-aq-render--with-agenda-file
+        "* DOING [#A] Justin Johns advisor projects\nSCHEDULED: <2026-07-31 Fri 09:00>\n"
+      (should (string-prefix-p "DOING" (alist-get 't (car rows)))))))
+
 ;;; ---------- the cache writer ----------
 
 (ert-deftest test-agenda-render-normal-cache-update-writes-today ()
-  "Normal: the cache writer covers the whole local day and creates its dir.
+  "Normal: the cache writer covers three whole local days and creates its dir.
+
+Yesterday's midnight through tomorrow's day close.  A consumer drawing a
+rolling window centred on now needs both sides of midnight: with a single
+calendar day, the part of its span outside today has nothing to draw, which
+late in the evening is half the surface.
 
 This is the function that actually ships the feature, so it gets its own
 coverage rather than riding on the tests for the profile beneath it.  The
@@ -161,19 +197,23 @@ or the next 24 from now, would still produce a plausible-looking file."
                          (cj/agenda-render-cache-update)))
           (should (file-exists-p cj/agenda-render-cache-file))
           (let* ((window (car windows))
-                 (d (decode-time (car window))))
+                 (start (decode-time (car window)))
+                 (now (decode-time)))
             ;; Opens at local midnight...
-            (should (= 0 (nth 2 d)))
-            (should (= 0 (nth 1 d)))
-            (should (= 0 (nth 0 d)))
-            ;; ...and closes one second before the next.
+            (should (= 0 (nth 2 start)))
+            (should (= 0 (nth 1 start)))
+            (should (= 0 (nth 0 start)))
+            ;; ...on yesterday, and closes at the end of tomorrow.
+            (should (= (car window)
+                       (cj/--agenda-query-epoch
+                        0 0 0 (1- (nth 3 now)) (nth 4 now) (nth 5 now))))
             (should (= (cdr window)
-                       (1- (cj/--agenda-query-epoch
-                            0 0 0 (1+ (nth 3 d)) (nth 4 d) (nth 5 d)))))
-            ;; It is today's day, not an arbitrary one.
-            (should (equal (list (nth 3 d) (nth 4 d) (nth 5 d))
-                           (let ((now (decode-time)))
-                             (list (nth 3 now) (nth 4 now) (nth 5 now)))))))
+                       (cj/--agenda-query-day-close
+                        (1+ (nth 3 now)) (nth 4 now) (nth 5 now))))
+            ;; Three whole days, give or take an hour at a DST changeover.
+            (let ((hours (/ (- (cdr window) (car window)) 3600.0)))
+              (should (>= hours 70.9))
+              (should (<= hours 73.1)))))
       (delete-directory dir t))))
 
 (ert-deftest test-agenda-render-boundary-cache-update-is-idempotent ()

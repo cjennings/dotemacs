@@ -16,6 +16,7 @@
 ;;; Code:
 
 (require 'keybindings)  ;; provides cj/custom-keymap (used in :init below)
+(require 'user-constants)  ;; provides cj/org-todo-keywords (used in :config)
 
 ;; Declare org variables and functions used before org is loaded so this module
 ;; byte-compiles standalone.  Plain `defvar' (no value) marks the symbol special
@@ -284,10 +285,9 @@ a no-op identical-state transition (see `cj/org--noop-state-log-p')."
   "All org-todo related settings are grouped and set in this function."
 
   ;; logging task creation, task start, and task resolved states
-  (setq org-todo-keywords '((sequence "TODO(t)" "PROJECT(p)" "DOING(i)"
-                                      "WAITING(w)" "VERIFY(v)" "STALLED(s)"
-                                      "DELEGATED(x)" "|"
-                                      "FAILED(f!)" "DONE(d!)" "CANCELLED(c!)")))
+  ;; Defined in user-constants so a batch Emacs can load the sequence without
+  ;; this module's package dependencies.  See `cj/org-todo-keywords'.
+  (setq org-todo-keywords cj/org-todo-keywords)
 
   ;; Keyword and priority faces are defined and wired in org-faces-config.el
   ;; (loaded just after this module): each keyword and priority maps to its own

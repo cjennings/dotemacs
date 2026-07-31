@@ -275,5 +275,23 @@ and portable across different machines."
 ;; bare `(require 'user-constants)' (tests, byte-compile, batch) stays
 ;; side-effect-free.
 
+(defconst cj/org-todo-keywords
+  '((sequence "TODO(t)" "PROJECT(p)" "DOING(i)"
+              "WAITING(w)" "VERIFY(v)" "STALLED(s)"
+              "DELEGATED(x)" "|"
+              "FAILED(f!)" "DONE(d!)" "CANCELLED(c!)"))
+  "The TODO keyword sequence, kept where a batch Emacs can reach it.
+
+`org-config' sets `org-todo-keywords' from this, and so does any batch process
+that has to read the org files the way the editor does.  It lives here rather
+than in `org-config' because that module loads through `use-package' and needs
+packages a batch run has no reason to install.
+
+The duplication this avoids is not cosmetic.  A reader that does not know
+DOING is a keyword does not merely mislabel it: org stops parsing the headline
+as a task at all, so the keyword and the priority cookie stay glued to the
+front of the title and the entry reads as not-done regardless of its real
+state.")
+
 (provide 'user-constants)
 ;;; user-constants.el ends here

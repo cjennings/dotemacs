@@ -1,0 +1,14 @@
+[Unit]
+Description=Write the agenda render cache for external surfaces
+# Deliberately no dependency on emacs.service or graphical-session.target.
+# The whole point is that the cache stays current while Emacs is down, so the
+# writer is a batch Emacs that needs neither the daemon nor a compositor.
+Documentation=file:%h/.emacs.d/modules/agenda-query.el
+
+[Service]
+Type=oneshot
+ExecStart=%h/.emacs.d/scripts/agenda-render-cache
+# One run is about a second of CPU. Cap it well above that so a wedged run is
+# killed rather than left holding the timer.
+TimeoutStartSec=120
+Nice=10

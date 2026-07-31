@@ -575,18 +575,28 @@ entry spans its day and a point event has zero width.  See
     json))
 
 (defun cj/agenda-render-cache-update ()
-  "Write today's agenda to `cj/agenda-render-cache-file' for the renderer.
+  "Write the agenda around today to `cj/agenda-render-cache-file'.
 
-The window is the whole local day, midnight to day close, so it is 23 or 25
-hours long on a DST changeover rather than a flat 24.  Returns the path.
+The window is three whole local days: yesterday's midnight through tomorrow's
+day close.  A consumer drawing a rolling window centred on now needs entries
+from either side of midnight, and a single calendar day leaves it with nothing
+to draw for the part of its span that falls outside today -- half the surface,
+late in the evening.  Three days covers any rolling span up to a full day
+either way, and the consumer filters to what it actually draws.
+
+Day boundaries are computed rather than assumed, so the span is 71, 72 or 73
+hours across a DST changeover rather than a flat 72.  Returns the path.
 
 Safe to call repeatedly and from a timer: it only reads org files, creates the
 cache directory if needed, and replaces the file by rename, so a reader on its
 own schedule never sees a partial write."
   (interactive)
   (let* ((d (decode-time (time-convert nil 'integer)))
-         (start (cj/--agenda-query-epoch 0 0 0 (nth 3 d) (nth 4 d) (nth 5 d)))
-         (end (cj/--agenda-query-day-close (nth 3 d) (nth 4 d) (nth 5 d))))
+         (day (nth 3 d)) (month (nth 4 d)) (year (nth 5 d))
+         ;; Out-of-range day fields normalize, so day 0 is last month's last
+         ;; day and day+1 rolls the month or year without special cases.
+         (start (cj/--agenda-query-epoch 0 0 0 (1- day) month year))
+         (end (cj/--agenda-query-day-close (1+ day) month year)))
     (make-directory (file-name-directory cj/agenda-render-cache-file) t)
     (cj/agenda-render-json start end cj/agenda-render-cache-file)
     (when (called-interactively-p 'interactive)

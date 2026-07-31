@@ -1,0 +1,17 @@
+[Unit]
+Description=Refresh the agenda render cache every 5 minutes
+
+[Timer]
+# OnCalendar rather than OnUnitActiveSec, because Persistent= only has an
+# effect on calendar timers (systemd.timer(5)). A monotonic schedule silently
+# ignores it, so a machine that slept through several intervals would come back
+# to a stale file with nothing to trigger a catch-up -- and the surface reading
+# it cannot tell stale from correct.
+OnCalendar=*:0/5
+Persistent=true
+# A cold boot should not wait for the next wall-clock slot.
+OnBootSec=1min
+AccuracySec=30s
+
+[Install]
+WantedBy=timers.target
