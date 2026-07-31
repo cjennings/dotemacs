@@ -129,6 +129,7 @@
 (require 'org-config)            ;; basic org-mode settings
 (require 'org-faces-config)      ;; custom themeable faces for agenda keywords + priorities
 (require 'org-agenda-config)     ;; agenda, task tracking, and notifications
+(require 'agenda-query)          ;; agenda window as JSON for external renderers
 (require 'org-babel-config)      ;; org-mode prog blocks; literate programming
 (require 'org-capture-config)
 (require 'org-contacts-config)   ;; fully integrated org-mode contacts management
