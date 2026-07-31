@@ -14,8 +14,15 @@
 ;; Direct test load: yes.
 ;;
 ;; Answers "what is on the agenda between these two instants" as JSON, so a
-;; renderer running outside Emacs can draw it.  `cj/agenda-window-json' is the
-;; entry point; it reads `org-agenda-files' and leaves every buffer unmodified.
+;; renderer running outside Emacs can draw it.  Both entry points read
+;; `org-agenda-files' and leave every buffer unmodified.
+;;
+;; Two output profiles over one query.  `cj/agenda-window-json' is canonical:
+;; epoch seconds, descriptive field names, and a null end where the source has
+;; no range.  `cj/agenda-render-json' adds what the wallpaper renderer reads --
+;; s and e in epoch MILLISECONDS, t for the title, and an end every row can
+;; actually be drawn with.  `cj/agenda-render-cache-update' writes that profile
+;; for today to `cj/agenda-render-cache-file'.
 ;;
 ;; Epoch seconds at the boundary is the load-bearing interface choice.  It takes
 ;; timezone out of the contract entirely: the consumer does its own zoneinfo
@@ -416,6 +423,36 @@ counted twice."
                 (string< (alist-get 'title a) (alist-get 'title b))
               (< sa sb))))))
 
+(defun cj/--agenda-query-drawable-end (event)
+  "Return EVENT's end as something a renderer can draw, in epoch seconds.
+
+The canonical row reports a null end when the source has no range, which is
+faithful but not drawable.  Here an all-day entry's extent is its whole day and
+a timed point event's is the instant itself, so every row has a width -- even
+if that width is zero.  Derived from the row, so this stays a pure function of
+canonical output."
+  (let ((start (alist-get 'start event))
+        (end (alist-get 'end event)))
+    (cond
+     ((integerp end) end)
+     ((eq t (alist-get 'all-day event))
+      (let ((d (decode-time start)))
+        (cj/--agenda-query-day-close (nth 3 d) (nth 4 d) (nth 5 d))))
+     (t start))))
+
+(defun cj/--agenda-query-render-row (event)
+  "Return EVENT in the renderer's contract, adding s, e and t.
+
+The renderer reads s and e as epoch MILLISECONDS and t as the title; it takes
+everything else and drops it before drawing.  The canonical fields are kept
+alongside rather than replaced, so one file serves both the renderer and any
+consumer reading the documented shape.  Milliseconds live only in s and e --
+`start' and `end' stay seconds, and the two never mix within a key."
+  (append (list (cons 's (* 1000 (alist-get 'start event)))
+                (cons 'e (* 1000 (cj/--agenda-query-drawable-end event)))
+                (cons 't (alist-get 'title event)))
+          event))
+
 (defun cj/--agenda-query-write-atomically (path text)
   "Write TEXT to PATH through a temp file and a rename, returning PATH.
 
@@ -465,6 +502,15 @@ Signals when either bound falls outside 1900-2200, or when the window is wider
 than `cj/agenda-query-max-window-seconds'.  Both checks exist to surface a
 milliseconds-for-seconds mistake, which otherwise answers with dates in the
 year 58549 or builds millions of rows."
+  (let ((json (json-serialize
+               (vconcat (cj/--agenda-query-events start-epoch end-epoch)))))
+    (when out-path
+      (cj/--agenda-query-write-atomically out-path json))
+    json))
+
+(defun cj/--agenda-query-events (start-epoch end-epoch)
+  "Return the sorted event rows between START-EPOCH and END-EPOCH.
+Shared by both output profiles; the callers do their own writing."
   (unless (numberp start-epoch)
     (signal 'wrong-type-argument (list 'numberp start-epoch)))
   (unless (numberp end-epoch)
@@ -492,10 +538,60 @@ year 58549 or builds millions of rows."
                     (nconc events
                            (cj/--agenda-query-buffer-events
                             buffer file win-start win-end))))))))
-    (let ((json (json-serialize (vconcat (cj/--agenda-query-sort events)))))
-      (when out-path
-        (cj/--agenda-query-write-atomically out-path json))
-      json)))
+    (cj/--agenda-query-sort events)))
+
+(defconst cj/agenda-render-cache-file
+  (expand-file-name
+   "settings/agenda.json"
+   (let ((xdg (getenv "XDG_CACHE_HOME")))
+     ;; An empty XDG_CACHE_HOME is set-but-useless; `or' would take it and
+     ;; resolve the whole path relative to whatever the cwd happens to be.
+     (if (and xdg (not (string-empty-p xdg)))
+         xdg
+       (expand-file-name ".cache" (or (getenv "HOME") "~")))))
+  "Where the wallpaper renderer reads the day from.
+
+A stable path is load-bearing on both sides.  Because the file is only ever
+replaced by a rename, the renderer keeps drawing the last good answer while
+Emacs is down, which makes this file its own cache.")
+
+(defun cj/agenda-render-json (start-epoch end-epoch &optional out-path)
+  "Return the agenda between START-EPOCH and END-EPOCH in the renderer's shape.
+
+Bounds are epoch SECONDS, as everywhere else here.  Each row carries the
+canonical fields plus the three the renderer reads: s and e as epoch
+MILLISECONDS, and t as the title.  The renderer works in milliseconds
+throughout, and converting once here beats converting in three places there.
+
+Every row has a drawable e, even where the canonical end is null: an all-day
+entry spans its day and a point event has zero width.  See
+`cj/--agenda-query-drawable-end'."
+  (let ((json (json-serialize
+               (vconcat (mapcar #'cj/--agenda-query-render-row
+                                (cj/--agenda-query-events start-epoch
+                                                          end-epoch))))))
+    (when out-path
+      (cj/--agenda-query-write-atomically out-path json))
+    json))
+
+(defun cj/agenda-render-cache-update ()
+  "Write today's agenda to `cj/agenda-render-cache-file' for the renderer.
+
+The window is the whole local day, midnight to day close, so it is 23 or 25
+hours long on a DST changeover rather than a flat 24.  Returns the path.
+
+Safe to call repeatedly and from a timer: it only reads org files, creates the
+cache directory if needed, and replaces the file by rename, so a reader on its
+own schedule never sees a partial write."
+  (interactive)
+  (let* ((d (decode-time (time-convert nil 'integer)))
+         (start (cj/--agenda-query-epoch 0 0 0 (nth 3 d) (nth 4 d) (nth 5 d)))
+         (end (cj/--agenda-query-day-close (nth 3 d) (nth 4 d) (nth 5 d))))
+    (make-directory (file-name-directory cj/agenda-render-cache-file) t)
+    (cj/agenda-render-json start end cj/agenda-render-cache-file)
+    (when (called-interactively-p 'interactive)
+      (message "Agenda render cache written to %s" cj/agenda-render-cache-file))
+    cj/agenda-render-cache-file))
 
 (provide 'agenda-query)
 ;;; agenda-query.el ends here
