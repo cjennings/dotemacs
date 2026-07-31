@@ -59,7 +59,7 @@
 (declare-function mm-insert-part "mm-decode")
 (declare-function mm-destroy-parts "mm-decode")
 (require 'external-open) ;; for cj/xdg-open, cj/open-this-file-with
-(require 'system-lib)   ;; cj/confirm-strong (overwrite confirms), used below
+(require 'system-lib)   ;; cj/confirm-destructive (overwrite confirms), used below
 
 ;; cj/kill-buffer-and-window and cj/kill-other-window-buffer defined in undead-buffers.el
 (declare-function cj/kill-buffer-and-window "undead-buffers")
@@ -168,7 +168,7 @@ When called interactively, prompts for confirmation if target file exists."
     (condition-case _
         (cj/--move-buffer-and-file dir nil)
       (file-already-exists
-       (if (cj/confirm-strong (format "File %s exists; overwrite? " target))
+       (if (cj/confirm-destructive (format "File %s exists; overwrite? " target))
            (cj/--move-buffer-and-file dir t)
          (message "File not moved"))))))
 
@@ -208,7 +208,7 @@ When called interactively, prompts for confirmation if target file exists."
   (condition-case err
       (cj/--rename-buffer-and-file new-name nil)
     (file-already-exists
-     (if (cj/confirm-strong (format "File %s exists; overwrite? " new-name))
+     (if (cj/confirm-destructive (format "File %s exists; overwrite? " new-name))
          (cj/--rename-buffer-and-file new-name t)
        (message "File not renamed")))
     (error

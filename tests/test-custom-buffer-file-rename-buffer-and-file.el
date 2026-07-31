@@ -923,11 +923,17 @@
         (with-temp-file new-file
           (insert "existing"))
         (find-file old-file)
-        ;; Mock yes-or-no-p to capture that it was called
-        (cl-letf (((symbol-function 'yes-or-no-p)
-                   (lambda (prompt)
+        ;; The overwrite confirm goes through `cj/confirm-destructive', which
+        ;; reads a single key rather than a typed yes.  Mock the key read, not
+        ;; `yes-or-no-p' -- mocking the latter would pass whether or not the
+        ;; prompt happened at all.
+        (cl-letf (((symbol-function 'read-char-choice)
+                   (lambda (&rest _)
                      (setq prompted t)
-                     t))
+                     ?y))
+                  ((symbol-function 'yes-or-no-p)
+                   (lambda (&rest _)
+                     (error "overwrite confirm must not demand a typed yes")))
                   ((symbol-function 'read-string)
                    (lambda (&rest _) "new.txt")))
           (call-interactively #'cj/rename-buffer-and-file)

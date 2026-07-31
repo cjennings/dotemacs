@@ -162,7 +162,7 @@ Add cj/music-radio-search (query -> search -> completing-read multi-select -> wr
 
 * Readiness dimensions
 - Data model & ownership: a station plist (uuid, name, url, codec, bitrate, tags, country, votes, clickcount) derived from the API; the .m3u file is generated and owned by Craig once written. No local cache in v1.
-- Errors, empty states & failure: named user-errors — no server reachable, empty results, cancelled selection, write failure (naming the file). No silent data loss; overwrite reuses the existing cj/confirm-strong prompt from create-radio-station.
+- Errors, empty states & failure: named user-errors — no server reachable, empty results, cancelled selection, write failure (naming the file). No silent data loss; overwrite reuses the existing cj/confirm-destructive prompt from create-radio-station.
 - Security & privacy: no credentials. The only outbound data is the search query and a User-Agent to a public API. No sensitive data logged.
 - Observability: the command messages the server used, the result count, and each file written. Search is one short synchronous call; if it ever feels slow, a "Searching radio-browser…" message covers it.
 - Performance & scale: result sets bounded by an explicit limit (default ~30). One GET per search. No scaling concern.

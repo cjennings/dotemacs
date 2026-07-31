@@ -85,26 +85,34 @@
     (put 'test-sc-confirm-cmd 'cj/system-confirm nil)))
 
 (ert-deftest test-system-cmd-strong-confirm-decline-aborts ()
-  "Boundary: a strong-confirm var uses yes-or-no-p; declining aborts and
-does not run the command."
+  "Boundary: a strong-confirm var asks a single y/n; declining aborts and
+does not run the command.
+
+The strong path used to demand a typed \"yes\", and this test used to assert
+that by erroring if `read-char-choice' was called at all.  It now asserts the
+opposite, because a long-form prompt is only as safe as it is answerable: on
+2026-07-31 one became unanswerable when a second agent session held the
+selected window, and the Emacs session had to be killed with buffers unsaved.
+What survives the change is the part that mattered -- the prompt still has no
+default, so RET and space re-prompt rather than confirming a shutdown."
   (defvar test-sc-strong-cmd "test-strong-cmd")
   (put 'test-sc-strong-cmd 'cj/system-confirm 'strong)
   (unwind-protect
-      (cl-letf (((symbol-function 'yes-or-no-p) (lambda (&rest _) nil))
-                ((symbol-function 'read-char-choice)
-                 (lambda (&rest _) (error "strong confirm must not use read-char-choice")))
+      (cl-letf (((symbol-function 'read-char-choice) (lambda (&rest _) ?n))
+                ((symbol-function 'yes-or-no-p)
+                 (lambda (&rest _) (error "strong confirm must not demand a typed yes")))
                 ((symbol-function 'start-process-shell-command)
                  (lambda (&rest _) (error "shouldn't run"))))
         (should-error (cj/system-cmd 'test-sc-strong-cmd) :type 'user-error))
     (put 'test-sc-strong-cmd 'cj/system-confirm nil)))
 
 (ert-deftest test-system-cmd-strong-confirm-accept-runs ()
-  "Normal: a strong-confirm var runs the command when yes-or-no-p returns t."
+  "Normal: a strong-confirm var runs the command on a single y."
   (defvar test-sc-strong-cmd-2 "echo strong")
   (put 'test-sc-strong-cmd-2 'cj/system-confirm 'strong)
   (let (cmd-line)
     (unwind-protect
-        (cl-letf (((symbol-function 'yes-or-no-p) (lambda (&rest _) t))
+        (cl-letf (((symbol-function 'read-char-choice) (lambda (&rest _) ?y))
                   ((symbol-function 'start-process-shell-command)
                    (lambda (_name _buf c) (setq cmd-line c) 'fake-proc))
                   ((symbol-function 'set-process-query-on-exit-flag) #'ignore)
@@ -113,6 +121,29 @@ does not run the command."
           (cj/system-cmd 'test-sc-strong-cmd-2))
       (put 'test-sc-strong-cmd-2 'cj/system-confirm nil))
     (should (string-match-p "echo strong" cmd-line))))
+
+(ert-deftest test-system-cmd-strong-confirm-rejects-stray-keys ()
+  "Boundary: the strong prompt offers only y and n, so a stray RET or space
+cannot confirm an irreversible command.
+
+This is the protection the typed-\"yes\" form existed for, kept while the
+answer became a single keystroke.  Asserted on the accepted-character set
+handed to `read-char-choice' rather than on the prompt text, because the set
+is what actually decides."
+  (defvar test-sc-strong-cmd-3 "echo strong")
+  (put 'test-sc-strong-cmd-3 'cj/system-confirm 'strong)
+  (let (chars)
+    (unwind-protect
+        (cl-letf (((symbol-function 'read-char-choice)
+                   (lambda (_prompt cs &rest _) (setq chars cs) ?n))
+                  ((symbol-function 'start-process-shell-command)
+                   (lambda (&rest _) (error "shouldn't run"))))
+          (should-error (cj/system-cmd 'test-sc-strong-cmd-3) :type 'user-error))
+      (put 'test-sc-strong-cmd-3 'cj/system-confirm nil))
+    (should (equal (sort (copy-sequence chars) #'<) '(?N ?Y ?n ?y)))
+    (should-not (memq ?\r chars))
+    (should-not (memq ?\n chars))
+    (should-not (memq ?\s chars))))
 
 ;;; cj/system-cmd--emacs-service-available-p
 

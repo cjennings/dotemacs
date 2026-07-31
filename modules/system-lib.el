@@ -130,16 +130,33 @@ Callers that must have a secret layer their own error on top."
          (secret (plist-get (car (apply #'auth-source-search spec)) :secret)))
     (if (functionp secret) (funcall secret) secret)))
 
-;; ---------------------------- Strong Confirmation ----------------------------
+;; -------------------------- Destructive Confirmation -------------------------
 
-(defun cj/confirm-strong (prompt)
-  "Ask PROMPT, requiring a full typed \"yes\" or \"no\" answer.
-For irreversible actions -- file destruction, overwrites, power-off.  The
-global default makes `yes-or-no-p' a single keystroke (`use-short-answers'
-is t); this binds it to nil for the one call so the prompt demands the
-long-form answer, keeping a stray RET or space from confirming."
-  (let ((use-short-answers nil))
-    (yes-or-no-p prompt)))
+(defun cj/confirm-destructive (prompt)
+  "Ask PROMPT for an irreversible action.  Return non-nil for yes.
+
+One keystroke, y or n.  Nothing else answers: a stray RET or space
+re-prompts rather than confirming, so the accidental-confirm protection
+survives without the answer costing four keystrokes.
+
+Pending input is discarded first, and that line is load-bearing.
+`read-char-choice' reads from the input queue, so without it a keystroke
+typed before the prompt appeared would confirm a shutdown or a file
+deletion instantly.  The typed-\"yes\" form this replaced absorbed such a
+key harmlessly, and dropping the guard without replacing it would have
+traded a rare annoyance for a rare catastrophe.
+
+This used to demand a typed \"yes\", and that was a worse trade than it
+looked.  On 2026-07-31 one such prompt went unanswered -- a second agent
+session held the selected window while the prompt waited in another frame,
+so keystrokes went to a terminal instead of the minibuffer, and the session
+was killed with buffers unsaved.  A single keystroke does not make a prompt
+reachable when focus is elsewhere; C-g is still the escape either way.  What
+it changes is the cost of the situation, and losing unsaved buffers is a far
+bigger hazard than a mis-keyed confirm."
+  (discard-input)
+  (eq ?y (downcase (read-char-choice (concat prompt "(y or n) ")
+                                     '(?y ?Y ?n ?N)))))
 
 (defun cj/--font-lock-global-modes-excluding (current mode)
   "Return CURRENT `font-lock-global-modes' with MODE added to the exclusion.

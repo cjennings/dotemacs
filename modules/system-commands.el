@@ -39,7 +39,7 @@
 ;; require keeps the module loadable on its own (tests, byte-compile) rather
 ;; than relying on init.el's load order.
 (require 'host-environment)
-;; `system-lib' provides `cj/confirm-strong', used at runtime by the `strong'
+;; `system-lib' provides `cj/confirm-destructive', used at runtime by the `strong'
 ;; confirm branch of `cj/system-cmd' for irreversible actions (shutdown/reboot).
 (require 'system-lib)
 (eval-when-compile (require 'subr-x))
@@ -76,10 +76,11 @@ If CMD is deemed dangerous, ask for confirmation."
          (label (nth 2 resolved)))
     (let ((confirm (and sym (get sym 'cj/system-confirm))))
       (cond
-       ;; Strong confirm for irreversible actions (shutdown, reboot):
-       ;; require an explicit "yes", so a stray RET/space can't trigger them.
+       ;; Strong confirm for irreversible actions (shutdown, reboot): one
+       ;; keystroke, but with no default, so a stray RET/space can't trigger
+       ;; them and type-ahead is discarded before the read.
        ((eq confirm 'strong)
-        (unless (cj/confirm-strong (format "Really run %s (%s)? " label cmdstr))
+        (unless (cj/confirm-destructive (format "Really run %s (%s)? " label cmdstr))
           (user-error "Aborted")))
        ;; Quick (Y/n) confirm for recoverable actions (logout, suspend).
        (confirm
@@ -96,9 +97,11 @@ If CMD is deemed dangerous, ask for confirmation."
 
 (defmacro cj/defsystem-command (name var cmdstr &optional confirm)
   "Define VAR with CMDSTR and interactive command NAME to run it.
-CONFIRM controls the confirmation prompt: t for a quick (Y/n) prompt,
-the symbol `strong' for an explicit yes-or-no-p (used for irreversible
-actions like shutdown and reboot), nil for no confirmation."
+CONFIRM controls the confirmation prompt: t for a quick (Y/n) prompt where
+RET and space mean yes, the symbol `strong' for `cj/confirm-destructive'
+\(used for irreversible actions like shutdown and reboot), nil for no
+confirmation.  Both are one keystroke; the difference is that `strong' has
+no default, so RET and space re-prompt rather than confirming."
   (declare (indent defun))
   `(progn
      (defvar ,var ,cmdstr)

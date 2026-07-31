@@ -22,7 +22,7 @@
 ;;; Code:
 
 (require 'cl-lib)
-(require 'system-lib)  ;; cj/confirm-strong (permanent file destruction confirm)
+(require 'system-lib)  ;; cj/confirm-destructive (permanent file destruction confirm)
 (require 'external-open)  ;; cj/xdg-open, called to open conversion output files
 
 ;; Function declarations (lazily-loaded packages and sibling modules).
@@ -765,7 +765,7 @@ switching off the .7z format to gpg-wrapped tar."
 Uses =shred -u= so the file is unlinked after overwriting, matching the
 \"delete\" the command name and prompt promise."
 	(interactive)
-	(when (cj/confirm-strong "This will permanently destroy files. Continue? ")
+	(when (cj/confirm-destructive "This will permanently destroy files. Continue? ")
 	  (dwim-shell-command-on-marked-files
 	   "Secure delete"
 	   "shred -vfzu -n 3 '<<f>>'"

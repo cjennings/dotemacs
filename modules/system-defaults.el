@@ -227,8 +227,9 @@ appears only once per session."
 (setq ad-redefinition-action 'accept)         ;; silence warnings about advised functions getting redefined.
 (setq large-file-warning-threshold nil)       ;; open files regardless of size
 (setq use-short-answers t)                    ;; single-key y/n for ordinary yes-or-no-p prompts
-                                              ;; (irreversible actions use `cj/confirm-strong', which
-                                              ;; forces a typed "yes" by binding this nil for that call)
+                                              ;; (irreversible actions use `cj/confirm-destructive',
+                                              ;; also one key, but it ignores RET and space so a stray
+                                              ;; keystroke re-prompts instead of confirming)
 (setq auto-revert-verbose nil)                ;; turn off auto revert messages
 (setq custom-safe-themes t)                   ;; treat all themes as safe (stop asking)
 (setq server-client-instructions nil)         ;; I already know what to do when done with the frame

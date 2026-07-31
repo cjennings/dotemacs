@@ -884,11 +884,17 @@
         (with-temp-file source-file
           (insert "new"))
         (find-file source-file)
-        ;; Mock yes-or-no-p to capture that it was called
-        (cl-letf (((symbol-function 'yes-or-no-p)
-                   (lambda (prompt)
+        ;; The overwrite confirm goes through `cj/confirm-destructive', which
+        ;; reads a single key rather than a typed yes.  Mock the key read, not
+        ;; `yes-or-no-p' -- mocking the latter would pass whether or not the
+        ;; prompt happened at all.
+        (cl-letf (((symbol-function 'read-char-choice)
+                   (lambda (&rest _)
                      (setq prompted t)
-                     t))
+                     ?y))
+                  ((symbol-function 'yes-or-no-p)
+                   (lambda (&rest _)
+                     (error "overwrite confirm must not demand a typed yes")))
                   ((symbol-function 'read-directory-name)
                    (lambda (&rest _) target-dir)))
           (call-interactively #'cj/move-buffer-and-file)
@@ -907,11 +913,14 @@
         (with-temp-file source-file
           (insert "new"))
         (find-file source-file)
-        ;; Mock yes-or-no-p to capture if it was called
-        (cl-letf (((symbol-function 'yes-or-no-p)
-                   (lambda (prompt)
-                     (setq prompted t)
-                     t))
+        ;; Both prompt paths are mocked, not just the old one.  Watching
+        ;; `yes-or-no-p' alone would make this assertion unfalsifiable now
+        ;; that the confirm reads a key instead: it would pass whether the
+        ;; prompt was correctly skipped or merely moved.
+        (cl-letf (((symbol-function 'read-char-choice)
+                   (lambda (&rest _) (setq prompted t) ?y))
+                  ((symbol-function 'yes-or-no-p)
+                   (lambda (&rest _) (setq prompted t) t))
                   ((symbol-function 'read-directory-name)
                    (lambda (&rest _) target-dir)))
           (call-interactively #'cj/move-buffer-and-file)

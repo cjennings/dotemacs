@@ -31,7 +31,7 @@
 (require 'user-constants)
 (require 'keybindings)  ;; provides cj/custom-keymap
 (require 'cj-window-toggle-lib)  ;; side-window size memory (F10 toggle)
-(require 'system-lib)            ;; cj/confirm-strong (overwrite confirms)
+(require 'system-lib)            ;; cj/confirm-destructive (overwrite confirms)
 
 ;; Declare these foreign package vars special so `let'-binding them below
 ;; compiles as a dynamic bind, not a dead lexical local -- otherwise emms /
@@ -833,7 +833,7 @@ reloaded playlist keeps its display name and cover art."
     (when (string-empty-p (string-trim chosen))
       (user-error "Playlist name cannot be empty"))
     (when (and (file-exists-p full)
-               (not (cj/confirm-strong (format "Overwrite %s? " filename))))
+               (not (cj/confirm-destructive (format "Overwrite %s? " filename))))
       (user-error "Aborted saving playlist"))
     (make-directory dir t)
     (cj/music--write-playlist-file full tracks entries)
@@ -875,7 +875,7 @@ clears its file association."
   (let ((file (cj/music--select-m3u-file "Delete playlist: ")))
     (if (not file)
         (message "Playlist deletion cancelled")
-      (unless (cj/confirm-strong (format "Delete playlist %s? "
+      (unless (cj/confirm-destructive (format "Delete playlist %s? "
                                          (file-name-nondirectory file)))
         (user-error "Aborted deleting playlist"))
       (cj/music--delete-playlist-file file)
