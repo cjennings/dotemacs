@@ -300,6 +300,41 @@ Changes take effect on the next recording (not the current one)."
 
 (cj/register-prefix-map "r" cj/record-map)
 
+;; Fast chords for the two toggles, alongside C-; r v and C-; r a.  F9 is free:
+;; ai-term vacated the F9 family when its swap moved to M-SPC, and
+;; `test-ai-term-f9-family-removed-globally' keeps it vacated.  Both commands
+;; still take a prefix argument, so C-u F9 prompts for the recording location.
+(keymap-global-set "<f9>" #'cj/video-recording-toggle)
+(keymap-global-set "S-<f9>" #'cj/audio-recording-toggle)
+
+(defvar eat-mode-map)
+(defvar eat-semi-char-mode-map)
+(defvar eat-char-mode-map)
+(defvar eat-eshell-char-mode-map)
+
+;; EAT builds each input mode's keymap from key categories, and which categories
+;; a mode claims is what decides whether a chord reaches Emacs at all.
+;;
+;; Semi-char mode -- the default, and where every agent buffer sits -- is built
+;; from :ascii, :arrow and :navigation.  It never claims function keys, so F9
+;; already fell through to the global map.  The semi-char entry below is
+;; belt-and-braces rather than the fix, which is why it reads as redundant.
+;;
+;; Char mode is the one that swallows F9.  It adds :function, binding f1 through
+;; f63 to eat-self-input, and it is a minor mode, so its map outranks
+;; eat-mode-map.  Without an entry here the pair splits in the worst possible
+;; way: :function claims only the unmodified keys, so S-F9 would toggle audio in
+;; a char-mode buffer while F9 went to the program under the cursor.  That is a
+;; recording you believe you started and didn't.
+;;
+;; Claiming both costs a char-mode program the use of F9.  I would rather pay
+;; that than ship a toggle that works for audio and silently fails for video.
+(with-eval-after-load 'eat
+  (dolist (map (list eat-semi-char-mode-map eat-mode-map
+                     eat-char-mode-map eat-eshell-char-mode-map))
+    (keymap-set map "<f9>" #'cj/video-recording-toggle)
+    (keymap-set map "S-<f9>" #'cj/audio-recording-toggle)))
+
 (with-eval-after-load 'which-key
   (which-key-add-key-based-replacements
     "C-; r" "recording menu"
