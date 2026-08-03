@@ -1,0 +1,17 @@
+[Unit]
+Description=Sync calendars from their .ics feeds into org
+# Deliberately no dependency on emacs.service or graphical-session.target.
+# The point of moving this out of the editor is that calendars stay current
+# while Emacs is down, so the writer is a batch Emacs that needs neither the
+# daemon nor a compositor.
+Documentation=file:%h/.emacs.d/modules/calendar-sync.el
+
+[Service]
+Type=oneshot
+ExecStart=%h/.emacs.d/scripts/calendar-sync-run
+# The script waits for every calendar to settle, bounded by
+# calendar-sync-batch-timeout (300s). Cap the unit above that so the script's
+# own timeout reports a named failure per calendar, rather than systemd
+# killing it first and leaving only "timeout".
+TimeoutStartSec=360
+Nice=10

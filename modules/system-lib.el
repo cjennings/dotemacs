@@ -8,7 +8,8 @@
 ;; Eager reason: low-level helpers (executable lookup, process output, silent
 ;;   logging) used by many eager modules during startup.
 ;; Top-level side effects: none.
-;; Runtime requires: none (auth-source loaded on demand inside the helper).
+;; Runtime requires: none at load (auth-source is required on demand inside
+;; `cj/auth-source-secret-value', so the cost lands only on callers that use it).
 ;; Direct test load: yes (pure helpers; batch-safe).
 ;;
 ;; This module provides low-level system utility functions for checking
@@ -125,6 +126,19 @@ This does so without echoing in the minibuffer."
 With USER, also match on the login.  Resolves a function-valued secret
 \(the netrc backend returns the secret as a function\) by calling it.
 Callers that must have a secret layer their own error on top."
+  ;; Loaded here rather than at the top of the file, so a module that merely
+  ;; requires system-lib does not pay for auth-source.  It has to be loaded
+  ;; *somewhere*, though: `declare-function' only quiets the byte-compiler.
+  ;; An interactive Emacs always has auth-source in by the time anyone calls
+  ;; here, which hid the omission until a batch `-Q' sync tried to resolve a
+  ;; `:secret-host' feed and died on a void `auth-source-search'.
+  ;;
+  ;; Guarded on `fboundp' rather than calling `require' unconditionally: a
+  ;; bare require re-loads auth-source.el over whatever is already in place,
+  ;; which replaces a caller's stubbed `auth-source-search' mid-call and sends
+  ;; a test that meant to fake the lookup out to the real authinfo instead.
+  (unless (fboundp 'auth-source-search)
+    (require 'auth-source))
   (let* ((spec (append (list :host host :require '(:secret) :max 1)
                        (when user (list :user user))))
          (secret (plist-get (car (apply #'auth-source-search spec)) :secret)))

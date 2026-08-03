@@ -87,10 +87,22 @@ calendar feed URLs."
   "Sync interval in minutes.
 Default: 60 minutes (1 hour).")
 
-(defvar calendar-sync-auto-start t
-  "Whether to automatically start calendar sync when module loads.
-If non-nil, sync starts automatically when calendar-sync is loaded.
-If nil, user must manually call `calendar-sync-start'.")
+(defvar calendar-sync-auto-start nil
+  "Whether the editor arms its own periodic sync when this module loads.
+
+Off by default: the calendar-sync.timer systemd unit owns the schedule now,
+running scripts/calendar-sync-run every ten minutes whether or not Emacs is
+up.  Leaving the in-editor timer armed as well would give two owners writing
+the same org files and the same state file, with no coordination between
+them.
+
+Set to t to hand the schedule back to the editor -- the deferred start at the
+end of this file still works, and `calendar-sync-start' and
+`calendar-sync-now' remain available on demand either way.
+
+The tradeoff this default accepts: a checkout whose timer has never been
+enabled does not sync on its own.  Enabling the unit is a one-time step per
+machine, alongside symlinking it into ~/.config/systemd/user.")
 
 (defvar calendar-sync-user-emails
   '("craigmartinjennings@gmail.com" "craig.jennings@deepsat.com" "c@cjennings.net")
@@ -215,16 +227,27 @@ calendar files do not block the interactive Emacs thread.
 
 Skips a calendar whose previous sync is still in flight, so a timer tick that
 fires before a slow fetch finishes does not launch a second overlapping sync for
-the same calendar."
+the same calendar.
+
+A synchronous failure is contained here and recorded against this calendar
+alone.  The async callbacks record their own failures, but they never run when
+the error lands before a process starts -- resolving a `:secret-host' feed
+reads authinfo.gpg, which signals outright on a cold gpg-agent.  Uncontained,
+that first error aborted the whole loop and the remaining calendars never
+synced."
   (let ((name (plist-get calendar :name)))
-    (cond
-     ((calendar-sync--syncing-p name)
-      (calendar-sync--log-silently
-       "calendar-sync: [%s] sync already in flight; skipping overlapping tick" name))
-     ((eq (plist-get calendar :fetcher) 'api)
-      (calendar-sync--sync-calendar-api calendar))
-     (t
-      (calendar-sync--sync-calendar-ics calendar)))))
+    (if (calendar-sync--syncing-p name)
+        (calendar-sync--log-silently
+         "calendar-sync: [%s] sync already in flight; skipping overlapping tick" name)
+      (condition-case err
+          (if (eq (plist-get calendar :fetcher) 'api)
+              (calendar-sync--sync-calendar-api calendar)
+            (calendar-sync--sync-calendar-ics calendar))
+        (error
+         (let ((reason (error-message-string err)))
+           (calendar-sync--log-silently
+            "calendar-sync: [%s] Sync error: %s" name reason)
+           (calendar-sync--mark-sync-failed name reason)))))))
 
 (defun calendar-sync--require-calendars ()
   "Return non-nil if calendars are configured, else warn and return nil."
@@ -296,6 +319,96 @@ When called non-interactively with nil, syncs all calendars."
                 status-lines)))
       (message "calendar-sync status:\n%s"
                (string-join (nreverse status-lines) "\n")))))
+
+;;; Batch entry point
+
+;; `emacs --batch' exits the moment its top-level form returns, and this
+;; pipeline is asynchronous end to end -- curl in one process, the org
+;; conversion in a second batch Emacs.  So `calendar-sync-now' is the wrong
+;; entry point for a timer: it returns as soon as the fetches are launched,
+;; and batch Emacs would exit and kill both children mid-flight, having
+;; written nothing and reported success.
+;;
+;; The batch path therefore starts the sync and then blocks on the same
+;; per-calendar state the interactive session keeps.  Nothing new tracks
+;; completion -- the pipeline's own record of what finished is the signal.
+
+(defvar calendar-sync--batch-poll-seconds 0.2
+  "Seconds `calendar-sync--batch-wait' blocks per iteration.
+Short enough that the wait ends promptly once the last child exits, long
+enough that the loop is not a spin.  Rebound in tests.")
+
+(defvar calendar-sync-batch-timeout 300
+  "Seconds `calendar-sync-batch-run' waits for every calendar to settle.
+Covers a `calendar-sync-fetch-timeout' fetch plus the org conversion, with
+room to spare: the calendars run in parallel, so this is not a per-calendar
+budget.")
+
+(defun calendar-sync--batch-results (names)
+  "Return one (NAME . STATUS) pair per calendar in NAMES, in that order.
+A calendar with no state entry reads `never' rather than nil, so one that
+never started still counts when the failures are tallied."
+  (mapcar (lambda (name)
+            (cons name
+                  (or (plist-get (calendar-sync--get-calendar-state name) :status)
+                      'never)))
+          names))
+
+(defun calendar-sync--batch-failures (results)
+  "Return the rows of RESULTS that did not finish cleanly.
+Only `ok' passes.  `error' failed outright, `syncing' means the wait expired
+with the fetch still in flight, and `never' means the sync never started --
+in all three the org file on disk is not the calendar's current contents,
+which is the staleness the timer exists to prevent."
+  (seq-remove (lambda (row) (eq (cdr row) 'ok)) results))
+
+(defun calendar-sync--batch-wait (names timeout)
+  "Block until no calendar in NAMES is syncing, or TIMEOUT seconds elapse.
+Return non-nil when every calendar settled, nil when the timeout expired
+first.  `accept-process-output' is also what lets the fetch and conversion
+sentinels run, so this loop drives the pipeline as well as waiting on it."
+  (let ((deadline (+ (float-time) timeout)))
+    (while (and (seq-some #'calendar-sync--syncing-p names)
+                (< (float-time) deadline))
+      (accept-process-output nil calendar-sync--batch-poll-seconds))
+    (not (seq-some #'calendar-sync--syncing-p names))))
+
+;;;###autoload
+(defun calendar-sync-batch-run (&optional timeout)
+  "Sync every configured calendar, blocking until all of them finish.
+Return the (NAME . STATUS) rows.  TIMEOUT defaults to
+`calendar-sync-batch-timeout'.
+
+This is the entry point for the systemd timer.  Prefer `calendar-sync-now'
+in an interactive session, where returning immediately is the point."
+  (unless (calendar-sync--require-calendars)
+    (error "calendar-sync: no calendars configured"))
+  (let ((names (calendar-sync--calendar-names)))
+    (calendar-sync--sync-all-calendars)
+    (calendar-sync--batch-wait names (or timeout calendar-sync-batch-timeout))
+    (calendar-sync--batch-results names)))
+
+;;;###autoload
+(defun calendar-sync-batch-run-and-report ()
+  "Run a batch sync, print one line per calendar, and return an exit code.
+0 when every calendar synced, 1 otherwise.  Written for
+scripts/calendar-sync-run, which turns the code into the process's own exit
+status so systemd records a failed sync instead of swallowing it.
+
+A failed row carries its recorded `:last-error'.  The interactive failure
+path logs the reason to *Messages', which batch Emacs discards at exit, so
+without this the journal shows only `error' — no way to tell a cold
+gpg-agent from a revoked feed token or a dead network without re-running the
+sync by hand."
+  (let* ((results (calendar-sync-batch-run))
+         (failures (calendar-sync--batch-failures results)))
+    (dolist (row results)
+      (let ((reason (unless (eq (cdr row) 'ok)
+                      (plist-get (calendar-sync--get-calendar-state (car row))
+                                 :last-error))))
+        (princ (format "%s: %s%s\n" (car row) (cdr row)
+                       (if reason (format " — %s" reason) "")))))
+    (if failures 1 0)))
 
 ;;; Timer management
 
@@ -405,6 +518,11 @@ Syncs all calendars immediately, then every `calendar-sync-interval-minutes'."
 
 ;; Defer auto-sync until calendar data is first needed.
 ;;
+;; Dormant unless `calendar-sync-auto-start' is turned back on -- the systemd
+;; timer owns the schedule now.  Kept because the reasoning below still holds
+;; for anyone who hands the schedule back to the editor, and because it is the
+;; only safe shape for an in-editor start.
+;;
 ;; The :secret-host feed URLs live in authinfo.gpg, and BOTH the immediate sync
 ;; and every periodic timer tick resolve them.  Calling `calendar-sync-start' at
 ;; load (immediate sync + recurring timer) therefore decrypts authinfo.gpg right
@@ -412,6 +530,11 @@ Syncs all calendars immediately, then every `calendar-sync-interval-minutes'."
 ;; after a reboot).  Defer the whole start to the first org-agenda use, so the
 ;; unlock happens when the user actually asks for calendar data.  A manual
 ;; `calendar-sync-start' / `calendar-sync-now' still works on demand.
+;;
+;; That deferral is also what made the timer necessary: hanging the start on
+;; `org-agenda-mode-hook' means a session where the agenda is never opened
+;; never syncs at all, which after a reboot is every session until the first
+;; agenda call.  The batch path has no such trigger to miss.
 (defun calendar-sync--auto-start-on-first-agenda ()
   "Start auto-sync on the first org-agenda use, then remove this hook.
 One-shot: deferring `calendar-sync-start' until the agenda is first built keeps a

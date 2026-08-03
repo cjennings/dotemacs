@@ -77,5 +77,44 @@ than crashing."
       (should (equal (list cal) ics-calls))
       (should (null api-calls)))))
 
+(ert-deftest test-calendar-sync--sync-dispatch-error-leaf-signal-is-contained ()
+  "Error: a syncer that signals marks the calendar failed instead of propagating.
+
+Resolving a `:secret-host' feed reads authinfo.gpg, and a cold gpg-agent makes
+that signal a `file-error' before any process starts — so the failure arrives
+synchronously, where the async callbacks that normally record a failure never
+run."
+  (let ((failed '())
+        (calendar-sync--calendar-states (make-hash-table :test 'equal)))
+    (cl-letf (((symbol-function 'calendar-sync--sync-calendar-ics)
+               (lambda (_) (signal 'file-error '("Decryption failed"))))
+              ((symbol-function 'calendar-sync--mark-sync-failed)
+               (lambda (name reason) (push (cons name reason) failed))))
+      (calendar-sync--sync-calendar
+       '(:name "google" :url "https://x/y.ics" :file "/tmp/c.org"))
+      (should (equal "google" (car (car failed)))))))
+
+(ert-deftest test-calendar-sync--sync-all-continues-past-a-failing-calendar ()
+  "Error: one calendar's synchronous failure does not stop the ones after it.
+
+This is the whole cost of leaving the signal uncontained: on a machine whose
+feeds resolve through authinfo, the first calendar's decryption error aborted
+the entire run, so calendars that would have synced fine never got the chance."
+  (let ((synced '())
+        (calendar-sync--calendar-states (make-hash-table :test 'equal))
+        (calendar-sync-calendars
+         '((:name "bad" :url "https://x/a.ics" :file "/tmp/a.org")
+           (:name "good" :url "https://x/b.ics" :file "/tmp/b.org"))))
+    (cl-letf (((symbol-function 'calendar-sync--sync-calendar-ics)
+               (lambda (cal)
+                 (if (equal (plist-get cal :name) "bad")
+                     (signal 'file-error '("Decryption failed"))
+                   (push (plist-get cal :name) synced))))
+              ((symbol-function 'calendar-sync--mark-sync-failed)
+               (lambda (&rest _) nil))
+              ((symbol-function 'message) (lambda (&rest _) nil)))
+      (calendar-sync--sync-all-calendars)
+      (should (equal '("good") synced)))))
+
 (provide 'test-calendar-sync--sync-dispatch)
 ;;; test-calendar-sync--sync-dispatch.el ends here

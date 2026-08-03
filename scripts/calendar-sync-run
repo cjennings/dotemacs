@@ -1,0 +1,63 @@
+#!/usr/bin/env bash
+# Sync every configured calendar from its .ics feed, once, and wait for it.
+#
+# Runs a batch Emacs rather than talking to the daemon, for the same reason
+# agenda-render-cache does: the org files this writes feed the agenda, waybar
+# and the projected wallpaper, and none of those should go stale because the
+# editor happens to be down. Nothing here touches a running Emacs, so it is
+# safe to fire from a timer alongside an active session.
+#
+# Why a script at all: calendar-sync used to start its hourly timer from
+# `org-agenda-mode-hook', so a session where the agenda was never opened never
+# synced at all. That is not a rare corner -- it is every reboot until the
+# first agenda call. The timer owns the schedule now, and the editor's own
+# auto-start is off.
+#
+# The exit code is the point. `calendar-sync-batch-run-and-report' waits for
+# every calendar to leave the syncing state and returns non-zero if any did
+# not land, so a failed fetch shows up in `systemctl --user status' instead of
+# being swallowed.
+#
+# Usage: calendar-sync-run
+# Env:   EMACS_D                -- config directory (default ~/.emacs.d)
+#        EMACS                  -- emacs binary (default emacs)
+#        CALENDAR_SYNC_CONFIG   -- private config file holding the calendar
+#                                  list, instead of the configured default.
+#        CALENDAR_SYNC_STATE    -- sync-state file, instead of the configured
+#                                  default. Lets a test run without writing
+#                                  the real session's persisted state.
+#        CALENDAR_SYNC_TIMEOUT  -- seconds to wait for all calendars to settle.
+
+set -euo pipefail
+
+EMACS_D="${EMACS_D:-$HOME/.emacs.d}"
+EMACS="${EMACS:-emacs}"
+
+if [ ! -d "$EMACS_D/modules" ]; then
+	echo "calendar-sync-run: no modules directory at $EMACS_D/modules" >&2
+	exit 1
+fi
+
+# The overrides are set before the module loads on purpose: the private config
+# is read at load time, and `defvar'/`defcustom' both leave an already-bound
+# value alone. This is the same seam the in-editor conversion worker uses.
+pre=""
+if [ -n "${CALENDAR_SYNC_CONFIG:-}" ]; then
+	pre="$pre (setq calendar-sync-private-config-file \"$CALENDAR_SYNC_CONFIG\")"
+fi
+if [ -n "${CALENDAR_SYNC_STATE:-}" ]; then
+	pre="$pre (setq calendar-sync--state-file \"$CALENDAR_SYNC_STATE\")"
+fi
+if [ -n "${CALENDAR_SYNC_TIMEOUT:-}" ]; then
+	pre="$pre (setq calendar-sync-batch-timeout $CALENDAR_SYNC_TIMEOUT)"
+fi
+
+# -Q keeps the daemon's init out of it: this needs the calendar-sync modules,
+# not a full editor. load-prefer-newer stops a stale .elc from answering for
+# changed source, which would silently sync with yesterday's logic.
+exec "$EMACS" --batch -Q \
+	--eval "(progn (setq load-prefer-newer t)$pre)" \
+	-L "$EMACS_D/modules" \
+	--eval '(progn
+                  (require (quote calendar-sync))
+                  (kill-emacs (calendar-sync-batch-run-and-report)))'
