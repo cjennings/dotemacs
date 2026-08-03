@@ -149,15 +149,35 @@ why the defect stayed invisible until a playlist moved out of it."
                        (list track-path))))
     (test-music-config--append-track-to-m3u-file-teardown)))
 
-(ert-deftest test-music-config--append-track-to-m3u-file-normal-base-is-the-playlist-not-the-music-root ()
-  "Normal: the written line is relative to the playlist's own directory.
-Stated directly as well as via the round-trip, so a reader change could not
-quietly make both sides agree on the wrong base."
+(ert-deftest test-music-config--append-track-to-m3u-file-normal-under-playlist-dir-is-relative ()
+  "Normal: a track under the playlist's directory is written relative to it.
+The music root sits at a different depth on purpose.  Put it alongside the
+playlist directory instead and both candidate bases produce the same string,
+so the assertion would hold against a writer using either one."
   (test-music-config--append-track-to-m3u-file-setup)
   (unwind-protect
-      ;; Same depth asymmetry as the round-trip test above, and for the same
-      ;; reason: with the music root alongside playlists/ both bases agree and
-      ;; the assertion holds against the broken writer.
+      (let* ((base (cj/create-test-base-dir))
+             (playlists (expand-file-name "mpd/playlists/" base))
+             (cj/music-root (expand-file-name "music/" base))
+             (m3u-file (expand-file-name "album.m3u" playlists))
+             (track-path (expand-file-name "sub/song.mp3" playlists)))
+        (make-directory (expand-file-name "sub/" playlists) t)
+        (make-directory cj/music-root t)
+        (with-temp-buffer (write-file m3u-file))
+        (cj/music--append-track-to-m3u-file track-path m3u-file)
+        (with-temp-buffer
+          (insert-file-contents m3u-file)
+          (should (string= (buffer-string) "sub/song.mp3\n")))
+        (should (equal (cj/music--m3u-file-tracks m3u-file) (list track-path))))
+    (test-music-config--append-track-to-m3u-file-teardown)))
+
+(ert-deftest test-music-config--append-track-to-m3u-file-normal-sibling-dir-is-absolute ()
+  "Normal: a track outside the playlist's directory is written absolute.
+A sibling would otherwise come out as \"../audio/x.mp3\".  Absolute is the
+convention for cross-tree references here, and it survives the playlist being
+moved again later, which a ../ chain does not."
+  (test-music-config--append-track-to-m3u-file-setup)
+  (unwind-protect
       (let* ((base (cj/create-test-base-dir))
              (playlists (expand-file-name "mpd/playlists/" base))
              (audio (expand-file-name "mpd/audio/" base))
@@ -171,15 +191,15 @@ quietly make both sides agree on the wrong base."
         (cj/music--append-track-to-m3u-file track-path m3u-file)
         (with-temp-buffer
           (insert-file-contents m3u-file)
-          (should (string= (buffer-string) "../audio/rain-loop.mp3\n"))))
+          (should (string= (buffer-string) (concat track-path "\n"))))
+        (should (equal (cj/music--m3u-file-tracks m3u-file) (list track-path))))
     (test-music-config--append-track-to-m3u-file-teardown)))
 
-(ert-deftest test-music-config--append-track-to-m3u-file-normal-deep-parent-chain-round-trips ()
-  "Normal: a track several levels above the playlist round-trips.
-The single \"../\" the tests above exercise is the shallow case.  Once
-playlists and audio can live anywhere, a multi-level chain is the shape most
-likely to be broken by a later \"let's normalize these paths\" edit, and
-nothing else here would catch it."
+(ert-deftest test-music-config--append-track-to-m3u-file-normal-deep-parent-chain-goes-absolute ()
+  "Normal: a track several levels away is written absolute, not as a ../ chain.
+This is the case the absolute fallback exists for.  A four-level chain is
+unreadable and breaks the moment the playlist moves, so distance from the
+playlist is exactly when an absolute path earns its keep."
   (test-music-config--append-track-to-m3u-file-setup)
   (unwind-protect
       (let* ((base (cj/create-test-base-dir))
@@ -194,13 +214,38 @@ nothing else here would catch it."
         (cj/music--append-track-to-m3u-file track-path m3u-file)
         (with-temp-buffer
           (insert-file-contents m3u-file)
-          ;; playlists/ -> c -> b -> a -> base is four hops up.
-          (should (string= (buffer-string) "../../../../faraway/song.mp3\n")))
+          ;; Four hops up (playlists -> c -> b -> a -> base) would be the
+          ;; relative form; the writer declines it and emits the absolute path.
+          (should (string= (buffer-string) (concat track-path "\n"))))
         (should (equal (cj/music--m3u-file-tracks m3u-file)
                        (list track-path))))
     (test-music-config--append-track-to-m3u-file-teardown)))
 
 ;;; Boundary Cases
+
+(ert-deftest test-music-config--append-track-to-m3u-file-boundary-dotdot-named-dir-stays-relative ()
+  "Boundary: a directory whose name merely begins with two dots stays relative.
+This is the input the relative-vs-absolute test actually turns on.  The check
+looks for a leading \"../\", so a real subdirectory named \"..hidden\" is under
+the playlist and must not be mistaken for an escape.  Loosening the check to
+\"..\" would break exactly this case and nothing else in the suite would catch
+it."
+  (test-music-config--append-track-to-m3u-file-setup)
+  (unwind-protect
+      (let* ((base (cj/create-test-base-dir))
+             (playlists (expand-file-name "mpd/playlists/" base))
+             (cj/music-root (expand-file-name "music/" base))
+             (m3u-file (expand-file-name "p.m3u" playlists))
+             (track-path (expand-file-name "..hidden/song.mp3" playlists)))
+        (make-directory (expand-file-name "..hidden/" playlists) t)
+        (make-directory cj/music-root t)
+        (with-temp-buffer (write-file m3u-file))
+        (cj/music--append-track-to-m3u-file track-path m3u-file)
+        (with-temp-buffer
+          (insert-file-contents m3u-file)
+          (should (string= (buffer-string) "..hidden/song.mp3\n")))
+        (should (equal (cj/music--m3u-file-tracks m3u-file) (list track-path))))
+    (test-music-config--append-track-to-m3u-file-teardown)))
 
 (ert-deftest test-music-config--append-track-to-m3u-file-boundary-very-long-path-appends-successfully ()
   "Append very long track path without truncation."

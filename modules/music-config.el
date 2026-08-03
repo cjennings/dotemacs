@@ -677,16 +677,25 @@ M3U-FILE should be an existing, writable M3U file path."
   (unless (file-writable-p m3u-file)
     (error "M3U file is not writable: %s" m3u-file))
 
-  ;; Write the path relative to the playlist's own directory, which is the base
-  ;; `cj/music--m3u-file-tracks' and EMMS both resolve against.  This used to be
-  ;; `cj/music-root'.  For a playlist inside the music root the two are the same
-  ;; directory, so the disagreement stayed invisible until a playlist lived
-  ;; somewhere else -- then the appended line resolved against the wrong base and
-  ;; pointed at a file that was never there.
-  (let ((relative-path (if (file-name-absolute-p track-path)
-                           (file-relative-name track-path
-                                               (file-name-directory m3u-file))
-                         track-path)))
+  ;; Relative when the track sits under the playlist's own directory, absolute
+  ;; otherwise.
+  ;;
+  ;; The base is the playlist rather than `cj/music-root' because that is what
+  ;; both readers resolve against -- `cj/music--m3u-file-tracks' and EMMS's
+  ;; `emms-source-playlist-parse-m3u'.  Inside the music root the two are the
+  ;; same directory, which is why basing on the root went unnoticed: it only
+  ;; wrote an unresolvable line once a playlist lived somewhere else.
+  ;;
+  ;; Falling back to absolute keeps a cross-tree reference readable, and it
+  ;; survives the playlist being moved again.  A playlist in the mpd directory
+  ;; pointing into ~/music would otherwise carry a four-level ../ chain that
+  ;; breaks the moment anything moves.
+  (let* ((dir (file-name-directory m3u-file))
+         (relative-path
+          (if (not (file-name-absolute-p track-path))
+              track-path
+            (let ((rel (file-relative-name track-path dir)))
+              (if (string-prefix-p "../" rel) track-path rel)))))
     ;; Determine if we need a leading newline
     (let ((needs-prefix-newline nil)
           (file-size (file-attribute-size (file-attributes m3u-file))))
