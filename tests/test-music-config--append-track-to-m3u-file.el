@@ -307,6 +307,73 @@ it."
                           (concat existing-content relative-path "\n")))))
     (test-music-config--append-track-to-m3u-file-teardown)))
 
+;;; Boundary Cases: symlinked playlists
+
+(defun test-music-config--append--make-symlinked-playlist (base content link-depth)
+  "Create a playlist whose deployed path is a symlink, and return that path.
+CONTENT is written to the real file.  LINK-DEPTH controls how long the link
+string is, which is the whole point: `file-attributes' does not follow
+symlinks, so a writer sizing the file that way reads the length of the link
+rather than the content."
+  (let* ((deployed (expand-file-name "deployed/" base))
+         (deep (expand-file-name (mapconcat #'identity
+                                            (make-list link-depth "longdirname")
+                                            "/")
+                                 base))
+         (real (expand-file-name "p.m3u" deep))
+         (link (expand-file-name "p.m3u" deployed)))
+    (make-directory deep t)
+    (make-directory deployed t)
+    (with-temp-buffer (insert content) (write-file real))
+    (make-symbolic-link (file-relative-name real deployed) link t)
+    link))
+
+(ert-deftest test-music-config--append-track-to-m3u-file-boundary-symlink-longer-than-content ()
+  "Boundary: appending to a symlinked playlist whose link string is longer than
+its content must not signal.  Sizing the file with `file-attributes' returns
+the link's length, so the read range falls outside the file, nothing is
+inserted, and `char-after' hands nil to a numeric comparison.  Measured on the
+real deployed set: 31 of 100 symlinked playlists are in this state."
+  (test-music-config--append-track-to-m3u-file-setup)
+  (unwind-protect
+      (let* ((base (cj/create-test-base-dir))
+             (m3u-file (test-music-config--append--make-symlinked-playlist
+                        base "https://example.com/s.mp3\n" 8))
+             (track-path (expand-file-name "song.mp3" (file-name-directory m3u-file))))
+        (should (> (file-attribute-size (file-attributes m3u-file))
+                   (file-attribute-size (file-attributes (file-truename m3u-file)))))
+        (cj/music--append-track-to-m3u-file track-path m3u-file)
+        ;; The seeded line is a stream URL, which the reader passes through, so
+        ;; both entries come back.
+        (should (equal (cj/music--m3u-file-tracks m3u-file)
+                       (list "https://example.com/s.mp3" track-path))))
+    (test-music-config--append-track-to-m3u-file-teardown)))
+
+(ert-deftest test-music-config--append-track-to-m3u-file-boundary-symlink-no-spurious-blank-line ()
+  "Boundary: a symlinked playlist already ending in a newline gains no blank line.
+The trailing-newline probe reads a byte chosen from the wrong size, so it
+misreads a terminated file as unterminated and prepends a newline.  All 100
+symlinked playlists in the deployed set read the wrong byte this way."
+  (test-music-config--append-track-to-m3u-file-setup)
+  (unwind-protect
+      ;; Content deliberately longer than the link string, so the misread byte
+      ;; still lands inside the file.  That separates this from the sibling test
+      ;; above: here the probe reads a valid but wrong byte and silently
+      ;; misjudges, rather than reading past the end and signalling.
+      (let* ((base (cj/create-test-base-dir))
+             (content (mapconcat (lambda (i) (format "track-%03d-with-a-longish-name.mp3" i))
+                                 (number-sequence 1 12) "\n"))
+             (m3u-file (test-music-config--append--make-symlinked-playlist
+                        base (concat content "\n") 2))
+             (track-path (expand-file-name "second.mp3" (file-name-directory m3u-file))))
+        (should (< (file-attribute-size (file-attributes m3u-file))
+                   (file-attribute-size (file-attributes (file-truename m3u-file)))))
+        (cj/music--append-track-to-m3u-file track-path m3u-file)
+        (with-temp-buffer
+          (insert-file-contents m3u-file)
+          (should (string= (buffer-string) (concat content "\nsecond.mp3\n")))))
+    (test-music-config--append-track-to-m3u-file-teardown)))
+
 ;;; Error Cases
 
 (ert-deftest test-music-config--append-track-to-m3u-file-error-nonexistent-file-signals-error ()

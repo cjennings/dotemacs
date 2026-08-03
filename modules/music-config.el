@@ -696,14 +696,20 @@ M3U-FILE should be an existing, writable M3U file path."
               track-path
             (let ((rel (file-relative-name track-path dir)))
               (if (string-prefix-p "../" rel) track-path rel)))))
-    ;; Determine if we need a leading newline
-    (let ((needs-prefix-newline nil)
-          (file-size (file-attribute-size (file-attributes m3u-file))))
-      (when (> file-size 0)
-        ;; Read the last character of the file to check if it ends with newline
-        (with-temp-buffer
-          (insert-file-contents m3u-file nil (max 0 (1- file-size)) file-size)
-          (setq needs-prefix-newline (not (= (char-after (point-min)) ?\n)))))
+    ;; Does the file need a separating newline first?  Read the content and look
+    ;; at its last character, rather than seeking to a byte offset derived from
+    ;; `file-attributes'.  That call does not follow symlinks, so on a
+    ;; stow-deployed playlist it measures the link string instead of the file:
+    ;; every symlinked playlist read the wrong byte and gained a blank line per
+    ;; append, and where the link string was the longer of the two the range fell
+    ;; outside the file entirely and the append died on a nil `char-after'.
+    ;; Playlists are small text files, so reading one is cheaper than being
+    ;; clever about offsets.
+    (let ((needs-prefix-newline
+           (with-temp-buffer
+             (insert-file-contents m3u-file)
+             (and (> (buffer-size) 0)
+                  (/= (char-before (point-max)) ?\n)))))
 
       ;; Append the track with proper newline handling
       (with-temp-buffer
