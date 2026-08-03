@@ -677,9 +677,15 @@ M3U-FILE should be an existing, writable M3U file path."
   (unless (file-writable-p m3u-file)
     (error "M3U file is not writable: %s" m3u-file))
 
-  ;; Convert absolute path to relative path from music root
+  ;; Write the path relative to the playlist's own directory, which is the base
+  ;; `cj/music--m3u-file-tracks' and EMMS both resolve against.  This used to be
+  ;; `cj/music-root'.  For a playlist inside the music root the two are the same
+  ;; directory, so the disagreement stayed invisible until a playlist lived
+  ;; somewhere else -- then the appended line resolved against the wrong base and
+  ;; pointed at a file that was never there.
   (let ((relative-path (if (file-name-absolute-p track-path)
-                           (file-relative-name track-path cj/music-root)
+                           (file-relative-name track-path
+                                               (file-name-directory m3u-file))
                          track-path)))
     ;; Determine if we need a leading newline
     (let ((needs-prefix-newline nil)
