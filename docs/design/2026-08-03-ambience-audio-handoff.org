@@ -1,0 +1,79 @@
+#+TITLE: Ambience audio — build notes and source findings
+#+AUTHOR: Craig Jennings
+#+DATE: 2026-08-03
+
+Build notes for the ambient audio the music config plays. The audio itself
+is not tracked here; it lives at =~/documents/sounds/ambience/= and the
+playlist reaches it by relative path. This file is the technique and the
+measurements, which are the parts worth keeping.
+
+* What these are
+
+Three 1-hour ambient tracks built 2026-08-03:
+
+  cafe-1h              29 MB  cafe murmur only
+  rain-1h              25 MB  rain only
+  rain-plus-cafe65-1h  43 MB  both, cafe at 65% of the rain
+
+* How they were built
+
+Sources are two short loops — cafe at 1:50 and rain at 2:32, both 24 kHz
+stereo at 56-64 kbps.
+
+The two pure tracks are =ffmpeg -stream_loop= with =-c copy=, so they carry
+no second-generation encoding loss: bit-identical to the source repeated
+about thirty times. Only the mix is re-encoded (libmp3lame 96k, 24 kHz to
+match source).
+
+The mix is rain at unity and cafe at =volume=0.65=, combined with
+=amix=normalize=0=.
+
+*The =normalize=0= is the part to remember.* =amix= normalizes by default,
+which halves both inputs and throws the 65% ratio away — the thing you were
+setting is silently discarded and the output still sounds plausible.
+
+Verified after building: peak -1.1 dBTP (no clipping), mean -23.3 dB.
+
+=cafe-1h= is 3599.26s rather than 3600 because a stream copy cuts on an MP3
+frame boundary. I took the lossless copy over the last 0.74s.
+
+* A better-sounding source set exists
+
+There is also a set built from openly-licensed field recordings, at
+=~/documents/sounds/ambience/cc0-*.mp3= — rain from "Lluvia En Riumors"
+(CC0 1.0, 18:08, lossless FLAC source) and cafe from "Cafe, Aldeburgh, UK"
+via radio aporee (Public Domain Mark 1.0, 17:33, 320 kbps).
+
+They sound better than the short loops for a structural reason: 44.1 kHz
+throughout, and an hour needs about four passes rather than thirty, so there
+is far less audible repetition.
+
+** Open thread — that set's rain is too percussive
+
+It was recorded on hard pavement, so you hear drop impacts you would never
+hear from inside a cafe.
+
+Measured: its energy above 2 kHz sits only 0.4 dB below full-band, against
+-19.9 dB for a real rain-through-a-window recording.
+
+Filtering the pavement rain to match does not work — it strips to sparse
+thumps, because that recording's rain character lives almost entirely above
+1 kHz. The fix is a different source recorded indoors, which is unresolved.
+
+Relevant if a rain-only mode ever gets built.
+
+* Note on the loop periods
+
+Measured separately when the 15-minute loops were cut: the periods are exact
+rather than estimated, because the files are literal stream-copy repeats, so
+the period is found by locating where the byte stream repeats. cafe is
+109.680s (4570 frames), rain is 151.584s (6316 frames).
+
+gcd(4570, 6316) = 2 frames, so the two layers coincide only every 14,432,060
+frames — 96.2 hours. No practical length wraps both cleanly, which is why the
+15-minute mix uses a 3s equal-power (qsin) crossfade folding its tail over its
+head so F(0) = F(L), rather than a naive cut.
+
+Measured across the wrap against the typical adjacent sample step inside the
+file: a naive 900s cut gives 4875 against 248 (19.7x, an audible click); the
+crossfaded version gives 236 against 229 (1.03x).
