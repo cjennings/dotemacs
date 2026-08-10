@@ -46,6 +46,27 @@ Unset until the one-time setup is done; `cj/keep-refresh' warns when nil."
   :type 'string
   :group 'cj/keep)
 
+(defcustom cj/keep-local-config-file
+  (expand-file-name "google-keep.local.el" user-emacs-directory)
+  "Machine-local Keep config loaded when readable.
+The intended place for `cj/keep-python' (a machine-local venv path) and
+`cj/keep-email' -- gitignored, same shape as calendar-sync.local.el."
+  :type 'file
+  :group 'cj/keep)
+
+(defun cj/keep--load-local-config ()
+  "Load the machine-local Keep config when available.
+Return non-nil when the file loaded cleanly, nil when it is absent or
+broken; a broken file is reported via `message', never signaled."
+  (when (file-readable-p cj/keep-local-config-file)
+    (condition-case err
+        (load cj/keep-local-config-file nil t)
+      (error
+       (message "google-keep: Failed to load local config %s: %s"
+                (abbreviate-file-name cj/keep-local-config-file)
+                (error-message-string err))
+       nil))))
+
 (defvar cj/keep--bridge-script
   (expand-file-name "scripts/google-keep/keep-bridge.py" user-emacs-directory)
   "Path to the gkeepapi bridge script.")
@@ -201,6 +222,10 @@ Returns the note count."
   "Prefix keymap for Google Keep commands (bound to \\=`C-c k').")
 
 (keymap-global-set "C-c k" cj/keep-prefix-map)
+
+;; Machine-local settings (venv interpreter, email) load before the
+;; interpreter warning below, so a venv path set locally is what gets checked.
+(cj/keep--load-local-config)
 
 ;; Warn at load if the interpreter is missing; gkeepapi/token failures surface
 ;; at refresh time via the bridge's stderr reason token.
