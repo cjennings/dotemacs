@@ -16,6 +16,7 @@
 #   make compile           - Byte-compile all modules
 #   make compile-file FILE=  - Byte-compile one file with the project load path
 #   make lint              - Run all linters (checkdoc, package-lint, elisp-lint)
+#   make bootstrap         - Install every package headlessly (fresh machine)
 #   make profile           - Profile Emacs startup performance
 #   make clean             - Remove test artifacts and compiled files
 #   make clean-compiled    - Remove .elc/.eln files only
@@ -54,7 +55,7 @@ EMACS_TEST = $(EMACS_BATCH) -L $(TEST_DIR) -L $(MODULE_DIR)
 .PHONY: help targets test test-all test-unit test-integration test-file test-name \
         test-bash theme-studio-test theme-studio-check theme-studio-coverage theme-studio-gen theme-studio-open theme-studio-theme theme-studio-theme-load theme-studio-theme-reload deploy-wip \
         benchmark coverage coverage-summary coverage-clean \
-        validate-parens validate-modules compile compile-file lint profile \
+        validate-parens validate-modules compile compile-file lint bootstrap profile \
         task-sorted \
         clean clean-compiled clean-tests reset
 
@@ -100,6 +101,7 @@ help:
 	@echo "    make lint              - Run all linters (checkdoc, package-lint, elisp-lint)"
 	@echo ""
 	@echo "  Utilities:"
+	@echo "    make bootstrap         - Install every package headlessly (fresh machine)"
 	@echo "    make profile           - Profile Emacs startup performance"
 	@echo "    make clean             - Remove test artifacts and compiled files"
 	@echo "    make clean-compiled    - Remove .elc/.eln files only"
@@ -451,6 +453,9 @@ lint:
 # ============================================================================
 # Utility Targets
 # ============================================================================
+
+bootstrap:
+	@bash scripts/bootstrap-packages.sh
 
 profile:
 	@echo "Profiling Emacs startup..."

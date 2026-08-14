@@ -253,6 +253,18 @@ early-init.el.")
 ;;(require 'use-package-ensure)  ; Needed for :ensure to work
 (setq use-package-always-ensure t)  ; Auto-install packages
 
+;; A dead download must not abort startup. `use-package-ensure-elpa' already
+;; warns and carries on when an install fails, but it guards with
+;; `condition-case-unless-debug', which does nothing while `debug-on-error' is
+;; set -- and it is set above, deliberately, so init errors are loud. The two
+;; collide: one file-error from an ELPA host stopped a fresh install in place
+;; with a third of the config loaded. This module takes over
+;; `use-package-ensure-function' so the debugger is inhibited for the install
+;; alone, retries a transient failure, and reports what is missing once startup
+;; finishes. The load-path form matches init.el's so add-to-list dedups it.
+(add-to-list 'load-path (concat user-emacs-directory "modules/"))
+(require 'package-resilience)
+
 ;; Keep the GNU ELPA signing keys current so signature verification doesn't
 ;; start failing when the archive key expires (the usual reason verification
 ;; gets turned off). Failure is non-fatal so a clean-machine bootstrap or an
