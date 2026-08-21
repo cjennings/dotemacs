@@ -28,6 +28,13 @@
   ;; :vc (:url "git@cjennings.net:emacs-wttrin.git"
   ;;      :branch "release/0.4.0"
   ;;      :rev :newest)
+  ;; wttrin declares xterm-color in its own Package-Requires, but nothing here
+  ;; reads that header: `:load-path' keeps package.el out of the picture, and
+  ;; use-package suppresses the `use-package-always-ensure' default whenever
+  ;; `:load-path' is present.  The dependency came free under the `:vc' form
+  ;; above and stopped when the local checkout took over.  Naming the package
+  ;; here installs it without disturbing the checkout.
+  :ensure xterm-color
   :demand t  ;; REQUIRED: mode-line must start at Emacs startup
   :preface
   ;; Change this to t to enable debug logging
