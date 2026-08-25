@@ -1,0 +1,232 @@
+#+TITLE: telega-server is dead on velox: the docker image pin went stale when the package updated
+#+AUTHOR: Craig Jennings
+#+DATE: 2026-08-23
+
+* Summary
+
+Telegram has been an unscannable channel on velox since 2026-08-19. Two triage
+sweeps (08-21 and 08-23) recorded it as a scan failure and both blamed a missing
+docker image. That diagnosis was wrong. The real cause is a version mismatch
+between =modules/telega-config.el='s digest pin and the telega package MELPA
+installed on 2026-08-18. It is reproducible, it is silent, and ratio is one
+package upgrade from the same failure.
+
+Everything below was measured on velox on 2026-08-23, with ratio checked over
+tailscale for comparison.
+
+* What actually happens
+
+=telega-server= starts fine. The container runs, tdlib initialises, and telega.el
+completes a handshake with it: the server log shows five =setOption= requests
+arriving from telega.el (language, =use_storage_optimizer=, =ignore_file_names=).
+About eleven milliseconds later telega.el sends =close= and the client unwinds
+cleanly: requests aborted, =authorizationStateClosing=,
+=authorizationStateClosed=, =Td::hangup=, =Stop Td=.
+
+The trigger is in =telega-tdlib-events.el= around line 1306. When tdlib reports
+its =:version= option, telega compares it against =telega-tdlib-min-version= and,
+if the server is older, does this:
+
+#+begin_src emacs-lisp
+(warn version-error-msg)
+;; Finally stop processing events from telega-server
+(telega-server-kill)
+(error version-error-msg)
+#+end_src
+
+The numbers:
+
+| where                                              | value  |
+|----------------------------------------------------+--------|
+| tdlib in the pinned image                          | 1.8.64 |
+| =telega-tdlib-min-version= in telega-20260817.621  | 1.8.66 |
+
+1.8.64 < 1.8.66, so telega kills its own server on every launch.
+
+* The timeline is exact
+
+- =elpa/telega-20260817.621/= is dated 2026-08-18 11:14. The package updated,
+  and that build raised =telega-tdlib-min-version= from 1.8.64 to 1.8.66.
+- =~/.telega/telega-server.log= holds at least six launch attempts across
+  2026-08-19 15:20, 08-20 10:50, 08-21 15:10 and 08-23 10:50 (the count grows by
+  one each time I reproduce it). Every one reaches
+  =authorizationStateWaitTdlibParameters= and then closes. Not one ever reaches
+  =WaitPhoneNumber=, let alone Ready.
+- The first failure is the day after the package update. Nothing else changed.
+
+The digest pin is
+=zevlg/telega-server@sha256:a4b88e029ba381eca7c37c9618c9e3ad73aa9db2097fe07a0c6684d40d32b84e=,
+an image built 2026-06-05. It was correct for the July package and is wrong for
+this one.
+
+* Two things I got wrong first, worth recording
+
+The image is present. I reported it missing on 08-21 and again on 08-23, on the
+strength of =docker images= showing only the slack-mcp container. That output
+lies here: the newer docker CLI's default listing (the =IMAGE / DISK USAGE /
+CONTENT SIZE= format) only shows tagged images, and an image pulled by digest has
+no =RepoTags=. =docker images -a --digests= shows it plainly:
+
+: zevlg/telega-server   <none>   sha256:a4b88e02...   db0e011ad225   2 months ago   312MB
+
+If a probe needs to know whether an image is on a machine, =docker image inspect
+<ref>= is the honest check. =docker images= isn't.
+
+The image also works. I ran the exact command telega builds
+(=telega-docker-run-cmd=) by hand. tdlib 1.8.64 came up, created a client, and sat
+at =authorizationStateWaitTdlibParameters= waiting for telega.el, which is
+correct behaviour. There's nothing wrong with the container.
+
+* Why nothing told me, and what I still don't know about that
+
+I first wrote this up as "the death alert is structurally unable to fire because
+=telega-server-kill= is orderly, so the exit status is zero." That was wrong, and
+the evidence that refutes it was already in front of me: the daemon's
+=*Messages*= holds =[125]telega-server: exited abnormally with code 125=, and
+=telega-server--sentinel= prints that line only from its non-zero-exit branch.
+=telega-server-kill= works by killing the process buffer, not by a clean close,
+so the process exits 125. =cj/--telega-server-death-p= returns t for any non-zero
+integer, and the =:after= advice on the sentinel then runs
+=notify fail "Telegram: telega-server died" ... --persist=.
+
+So the notification path was armed and should have paged me on every one of
+those launches. I didn't see one. I can't reconstruct why from here: the
+daemon's process table from those days is gone, so whether =notify= ran and I
+dismissed it, or the =notify= script was absent in the days after the 08-13
+rebuild, or the advice hadn't been installed in that daemon, is unmeasured.
+Worth a controlled reproduction with the daemon watched, rather than another
+guess.
+
+Two things did fail as described. The =(warn ...)= goes to =*Warnings*=, which I
+never look at in a daemon driven by =emacsclient=. And =(telega t)= still returns
+=started= regardless, so a caller checking the return value learns nothing; only
+=(telega-server-live-p)= a moment later tells the truth.
+
+* ratio is fine today and breaks on its next package upgrade
+
+|                                                | velox               | ratio                |
+|------------------------------------------------+---------------------+----------------------|
+| telega package                                 | telega-20260817.621 | telega-20260706.2147 |
+| =telega-tdlib-min-version=                     | 1.8.66              | 1.8.64               |
+| pinned image (a4b88e, tdlib 1.8.64)            | present             | present              |
+| =zevlg/telega-server:latest= (aa7e79c4)        | absent (pulled later, see below) | present |
+| =~/.telega/td.binlog=                          | absent              | 1.5 MB, written 08-16 |
+| =~/.telega/db.sqlite=                          | absent              | 14.7 MB              |
+
+ratio's package still wants 1.8.64, which is exactly what the pinned image
+carries, which is why Telegram still works there. It's one =package-upgrade
+telega= away from the identical silent failure. Worth fixing before that happens
+rather than after.
+
+* Second, separate problem on velox: there is no Telegram session
+
+=~/.telega/= on velox holds only an empty =cache/= and =temp/=, both dated
+2026-08-19 15:26, the first failed attempt. No =td.binlog=, no =db.sqlite=. The
+account state was lost in the 2026-08-13 rebuild and never restored (the same
+rebuild that wiped the Signal identity, which I recovered from the pre-reinstall
+backup).
+
+So fixing the image pin gets telega to start on velox. It will then sit at
+=WaitPhoneNumber= and need interactive auth (phone number plus verification code)
+inside =M-x telega=. That can't be done headlessly. The pre-reinstall backup is
+worth checking for =~/.telega= before re-authing from scratch, since restoring
+the binlog would keep the existing session rather than minting a new device.
+
+* The obvious fix doesn't work
+
+The mechanical fix would be to move =cj/telega-docker-image= to a digest whose
+tdlib is >= 1.8.66. The obvious candidate is =zevlg/telega-server:latest=, which
+ratio already holds at
+=sha256:aa7e79c4e9587c84065782df9399653fb1a967078b08ec1ded77738d4c2d70ad=.
+
+I read the tdlib version straight out of the shared library in both images on
+ratio, where both are present:
+
+| image                  | libtdjson             |
+|------------------------+-----------------------|
+| =a4b88e02= (pinned)    | =libtdjson.so.1.8.64= |
+| =aa7e79c4= (=:latest=) | =libtdjson.so.1.8.66= |
+
+The version floor is satisfied by =:latest=, but the image is broken:
+=docker run --rm zevlg/telega-server:latest telega-server -h= exits 127 with 32
+lines of linker failure, beginning
+
+: Error loading shared library libglycin-2.so.0: No such file or directory (needed by /usr/lib/libgdk_pixbuf-2.0.so.0)
+
+It reproduced identically on velox after I pulled the image there, so it's the
+image and not one machine. My first read blamed the failure on having overridden
+the container entrypoint. That's not it: the image has no entrypoint
+(=ENTRYPOINT=null=, =CMD=["/bin/bash"]=), and the same invocation against the
+pinned image runs and prints =Version 1.2.0, with appindicator, with zlib=.
+
+** It's a known, open upstream bug
+
+[[https://github.com/zevlg/telega.el/issues/596][zevlg/telega.el issue #596]],
+"docker image zevlg/telega-server:latest missing libglycin (-2.so.0)", opened
+2026-08-11 by akovalenko. Still open, no maintainer response, no official fix.
+
+Docker Hub carries only three tags for =zevlg/telega-server=: =latest= (pushed
+2026-07-23, digest =aa7e79c4=), =arm64= (2025-02-03) and =1.8.0= (2021-12-31).
+So there's no =1.8.66= tag to pin to instead, and "pin to latest" and "pin to the
+broken image" are the same action.
+
+** The workaround works, verified locally
+
+The two-line derived image from issue #596:
+
+#+begin_src dockerfile
+FROM zevlg/telega-server:latest
+RUN apk add --no-cache libglycin
+#+end_src
+
+Built on velox as =telega-server-glycin:test=:
+
+- =apk add libglycin= resolves cleanly (150 packages, 155.6 MiB).
+- =telega-server -h= prints =Version 1.2.0, with appindicator, with zlib=. It runs.
+- =/usr/lib/libtdjson.so.1.8.66=, satisfying telega-20260817.621's floor.
+
+* What remains a decision rather than a measurement
+
+1. A locally-built image has no =RepoDigest=, so =cj/telega-docker-image= would
+   degrade from a digest pin to a tag reference, losing the guarantee that pin
+   exists to give.
+2. It's fleet-local. ratio needs the same image built there (or a registry to
+   pull from), or it breaks on its next =package-upgrade telega=.
+3. The alternative is pinning the telega package back to =20260706.2147=. That
+   keeps the working upstream image and the digest pin, and stops the
+   auto-upgrade that caused this, at the cost of freezing telega until #596 is
+   fixed.
+4. Either way velox has no Telegram session, so it lands at =WaitPhoneNumber=
+   and needs interactive auth that can't be done headlessly.
+
+I haven't decided yet. Two related pieces of hardening are worth doing whichever
+way it goes:
+
+- The pin's own docstring already ties it to "this telega's
+  =telega-tdlib-min-version=", so the coupling was understood, but nothing
+  enforces it and the package updates on its own schedule. A launch-time
+  assertion comparing the running server's reported tdlib version against
+  =telega-tdlib-min-version=, reported through =notify= rather than =warn=,
+  catches the whole class. =tests/test-telega-config--docker-pin.el= is the
+  natural home for a test that the pin and the installed package's floor agree.
+- A controlled reproduction of the silent death with the daemon watched, to
+  find out why the armed notification wasn't seen (previous section).
+
+* Reproducing it
+
+#+begin_src sh
+# the image is there, despite what `docker images` shows
+docker images -a --digests | grep telega
+docker image inspect zevlg/telega-server@sha256:a4b88e029ba381eca7c37c9618c9e3ad73aa9db2097fe07a0c6684d40d32b84e >/dev/null && echo present
+
+# the version floor vs what the image ships
+grep -E 'defconst telega-tdlib-(min|max)-version' ~/.emacs.d/elpa/telega-*/telega.el
+
+# repeated identical failures, no Ready among them
+grep -c 'authorizationStateClosed' ~/.telega/telega-server.log
+grep 'Receive request 6: close' ~/.telega/telega-server.log
+
+# the broken upstream image, and the derived one that works
+docker run --rm zevlg/telega-server:latest telega-server -h; echo "exit $?"
+docker run --rm telega-server-glycin:test telega-server -h; echo "exit $?"
+#+end_src
