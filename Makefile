@@ -17,6 +17,7 @@
 #   make compile-file FILE=  - Byte-compile one file with the project load path
 #   make lint              - Run all linters (checkdoc, package-lint, elisp-lint)
 #   make bootstrap         - Install every package headlessly (fresh machine)
+#   make telega-image      - Build the telega-server container image
 #   make profile           - Profile Emacs startup performance
 #   make clean             - Remove test artifacts and compiled files
 #   make clean-compiled    - Remove .elc/.eln files only
@@ -55,7 +56,7 @@ EMACS_TEST = $(EMACS_BATCH) -L $(TEST_DIR) -L $(MODULE_DIR)
 .PHONY: help targets test test-all test-unit test-integration test-file test-name \
         test-bash theme-studio-test theme-studio-check theme-studio-coverage theme-studio-gen theme-studio-open theme-studio-theme theme-studio-theme-load theme-studio-theme-reload deploy-wip \
         benchmark coverage coverage-summary coverage-clean \
-        validate-parens validate-modules compile compile-file lint bootstrap profile \
+        validate-parens validate-modules compile compile-file lint bootstrap telega-image profile \
         task-sorted \
         clean clean-compiled clean-tests reset
 
@@ -102,6 +103,7 @@ help:
 	@echo ""
 	@echo "  Utilities:"
 	@echo "    make bootstrap         - Install every package headlessly (fresh machine)"
+	@echo "    make telega-image      - Build the telega-server container image"
 	@echo "    make profile           - Profile Emacs startup performance"
 	@echo "    make clean             - Remove test artifacts and compiled files"
 	@echo "    make clean-compiled    - Remove .elc/.eln files only"
@@ -456,6 +458,16 @@ lint:
 
 bootstrap:
 	@bash scripts/bootstrap-packages.sh
+
+# telega-server container image.  Built locally from a digest-pinned upstream
+# base plus the library upstream forgot (see docker/telega-server/Dockerfile).
+# The tag here is the source of truth: `cj/telega-docker-image' in
+# modules/telega-config.el must name the same one, and a test holds them equal.
+TELEGA_IMAGE = cj/telega-server:1.8.66-glycin
+
+telega-image:
+	@docker build -t $(TELEGA_IMAGE) docker/telega-server
+	@echo "built $(TELEGA_IMAGE)"
 
 profile:
 	@echo "Profiling Emacs startup..."

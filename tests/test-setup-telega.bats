@@ -57,11 +57,11 @@ setup() {
 
 # --------------------------- pull_or_announce_image -----------------------
 
-@test "pull_or_announce_image: announces the in-Emacs build when no image is set" {
+@test "pull_or_announce_image: points at make telega-image when no image is set" {
     TELEGA_DOCKER_IMAGE=""
     run pull_or_announce_image
     [ "$status" -eq 0 ]
-    [[ "$output" == *"M-x telega-server-build"* ]]
+    [[ "$output" == *"make telega-image"* ]]
 }
 
 @test "pull_or_announce_image: pulls when TELEGA_DOCKER_IMAGE is set" {

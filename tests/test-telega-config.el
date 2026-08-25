@@ -45,6 +45,10 @@ stub's cryptic load-file failure."
   (let (called)
     (cl-letf (((symbol-function 'featurep)
                (lambda (sym &optional _sub) (eq sym 'telega)))
+              ;; The pinned image is a local build; treat it as present so
+              ;; this test stays about delegation, not the image check.
+              ((symbol-function 'cj/--telega-docker-image-present-p)
+               (lambda (_) t))
               ((symbol-function 'telega)
                (lambda (&rest _) (setq called t))))
       (cj/telega))

@@ -212,6 +212,35 @@ way it goes:
 - A controlled reproduction of the silent death with the daemon watched, to
   find out why the armed notification wasn't seen (previous section).
 
+* Decision (2026-08-25): derived image, built from a Dockerfile in this repo
+
+I went with the derived image, in a form that keeps most of what the digest
+pin gave. Three things settled it:
+
+- The derived image (tdlib 1.8.66) satisfies both machines' current packages:
+  velox's telega wants 1.8.66 and ratio's wants 1.8.64, and telega accepts
+  anything at or above its floor. The package pin would have worked only on
+  velox, and only after copying =elpa/telega-20260706.2147= over from ratio.
+- package.el has no version pin and MELPA serves only its latest build, so
+  "pin the package back" is a copied directory plus the hope that nobody runs
+  =package-upgrade= again. Nothing enforces it.
+- The pre-reinstall backup on the NAS holds velox's =~/.telega= (td.binlog
+  and db.sqlite from 2026-07-05), so a working image plus that directory may
+  restore the session without a phone re-auth.
+
+The shape: =docker/telega-server/Dockerfile= (FROM pinned to the upstream
+digest, plus =apk add libglycin=), =make telega-image= builds it under
+=cj/telega-server:1.8.66-glycin=, =cj/telega-docker-image= defaults to that
+tag, and =cj/telega= refuses to launch with a "run make telega-image" message
+when the image isn't built, so a fresh machine gets a pointer instead of a
+confusing registry pull failure. The digest guarantee lives in the
+Dockerfile's FROM line; a test holds the defcustom default equal to the
+Makefile's tag. When #596 is fixed upstream, the pin goes back to a registry
+digest and the Dockerfile goes.
+
+Not done here: the launch-time tdlib-version assertion, and the controlled
+reproduction of the unseen death notification. Both are filed.
+
 * Reproducing it
 
 #+begin_src sh

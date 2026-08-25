@@ -7,8 +7,8 @@
 # - Verifies docker is installed and the daemon is responsive.
 # - Verifies the user can talk to docker without sudo (group membership).
 # - Pulls the telega-server image if a public one is configured (env var
-#   `TELEGA_DOCKER_IMAGE'); otherwise prints the in-Emacs build command
-#   (`M-x telega-server-build') for the user to run once.
+#   `TELEGA_DOCKER_IMAGE'); otherwise points at `make telega-image', which
+#   builds the pinned image from docker/telega-server/Dockerfile.
 # - Installs the `telega' Emacs package via package.el if it isn't
 #   already in package-user-dir.  modules/telega-config.el uses
 #   `:ensure nil' (a stale MELPA index can 404 and take startup down
@@ -52,10 +52,10 @@ pull_or_announce_image() {
     if [[ -z "$TELEGA_DOCKER_IMAGE" ]]; then
         cat <<EOF
   → no public image configured (set TELEGA_DOCKER_IMAGE to override)
-    build the telega-server image once from inside Emacs:
-      M-x telega-server-build
-    telega.el handles the docker build under the hood when
-    \`telega-use-docker' is t (set in modules/telega-config.el).
+    build the telega-server image once from the repo's Dockerfile:
+      make telega-image
+    modules/telega-config.el pins \`cj/telega-docker-image' to the tag
+    that target builds (docker/telega-server/Dockerfile).
 EOF
         return 0
     fi

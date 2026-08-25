@@ -18,9 +18,10 @@
 ;;
 ;; TDLib (Telegram Database Library) runs in a docker container via
 ;; `telega-use-docker' so a fresh-clone install does not need a
-;; system-level TDLib build.  =scripts/setup-telega.sh= prepares the
-;; container the first time; afterwards telega.el reattaches
-;; automatically.
+;; system-level TDLib build.  The image is built locally from
+;; =docker/telega-server/Dockerfile= with =make telega-image= (see the
+;; pin section below for why it is not pulled from the registry);
+;; =scripts/setup-telega.sh= covers the rest of a fresh clone.
 ;;
 ;; First-run auth (phone number + Telegram verification code) is
 ;; interactive and happens inside `M-x telega'.  This module does not
@@ -68,20 +69,29 @@
 ;; telega picks its container image in `telega-docker--image-name', which only
 ;; pins to a version tag when `telega-tdlib-min-version' equals
 ;; `telega-tdlib-max-version' and the version ends in ".0".  Here min is
-;; "1.8.64" and max is nil, so that test never passes and the image is always
+;; "1.8.66" and max is nil, so that test never passes and the image is always
 ;; "zevlg/telega-server:latest" -- a floating tag.  The elpa package is fixed
 ;; at whatever version was installed, so the server can be replaced underneath
 ;; a static elisp without anything announcing it.
 ;;
-;; Pinning by digest names one immutable image.  Set to nil to hand the choice
-;; back to telega.
+;; The pin used to be a registry digest.  It became a local tag on 2026-08-25:
+;; the telega package raised its tdlib floor to 1.8.66, and upstream's only
+;; image at that version fails to start (libglycin missing,
+;; zevlg/telega.el#596).  docker/telega-server/Dockerfile derives a working
+;; image from that upstream digest plus the one missing package, and
+;; `make telega-image' builds it under the tag below.  The digest guarantee
+;; now lives in the Dockerfile's FROM line; the Makefile owns the tag and a
+;; test holds this default equal to it.  Set to nil to hand the choice back
+;; to telega.
 
 (defcustom cj/telega-docker-image
-  "zevlg/telega-server@sha256:a4b88e029ba381eca7c37c9618c9e3ad73aa9db2097fe07a0c6684d40d32b84e"
+  "cj/telega-server:1.8.66-glycin"
   "Container image reference for `telega-server', or nil for telega's default.
-Pin by digest rather than tag: a tag can be re-pushed upstream, a digest
-cannot.  The default is the image carrying libtdjson 1.8.64, which matches
-this telega's `telega-tdlib-min-version'."
+The default names the image `make telega-image' builds locally from
+docker/telega-server/Dockerfile, whose base is pinned by upstream digest.
+It must match TELEGA_IMAGE in the Makefile; `cj/telega' refuses to launch
+when the image is not present, since docker would otherwise try to pull a
+local-only tag from the registry and fail confusingly."
   :type '(choice (const :tag "Let telega infer the image" nil)
                  (string :tag "Image reference"))
   :group 'telega-docker)
@@ -175,6 +185,21 @@ into telega's sentinel and abort its status handling and relogin path."
 (with-eval-after-load 'telega-server
   (advice-add 'telega-server--sentinel :after #'cj/--telega-server-notify-death))
 
+(defun cj/--telega-docker-image-present-p (image)
+  "Return non-nil when IMAGE exists in the local docker image store.
+Uses `docker image inspect' rather than `docker images': the listing hides
+digest-pulled and untagged images, and this check exists because that
+listing lied once.  Any failure (docker absent, daemon down) reads as
+not-present, which routes the user to the same make target."
+  (condition-case nil
+      (zerop (call-process "docker" nil nil nil "image" "inspect" image))
+    (error nil)))
+
+(defun cj/--telega-missing-image-message (image)
+  "Return the user-facing message for a pinned IMAGE that is not built yet."
+  (format "telega-server image %s is not built -- run `make telega-image' in %s"
+          image (abbreviate-file-name user-emacs-directory)))
+
 (defun cj/telega ()
   "Launch telega.el with a helpful message when it isn't installed yet.
 
@@ -183,14 +208,22 @@ stale MELPA archive index can't take startup down with a 404.  The
 trade-off: a fresh clone needs a one-time install before this
 launcher works.  Without this wrapper, the autoload stub fails with
 the cryptic =Cannot open load file: telega=; with it, the user gets
-pointed at =scripts/setup-telega.sh= and the manual fallback."
+pointed at =scripts/setup-telega.sh= and the manual fallback.
+
+When `cj/telega-docker-image' is set, the image must already be built:
+it is a local tag, so a missing one would send docker to the registry
+for something that was never there.  The check is skipped with no pin,
+where telega infers and pulls its own image."
   (interactive)
-  (if (or (featurep 'telega)
-          (locate-library "telega"))
-      (telega)
+  (unless (or (featurep 'telega)
+              (locate-library "telega"))
     (user-error
      (concat "telega not installed -- run scripts/setup-telega.sh, "
-             "or `M-x package-install RET telega'"))))
+             "or `M-x package-install RET telega'")))
+  (let ((image (cj/--telega-docker-pinned-image)))
+    (when (and image (not (cj/--telega-docker-image-present-p image)))
+      (user-error "%s" (cj/--telega-missing-image-message image))))
+  (telega))
 
 (cj/register-command "T" #'cj/telega)
 
