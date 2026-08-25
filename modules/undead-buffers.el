@@ -31,7 +31,16 @@
 
 (defvar cj/undead-buffer-list
   '("*scratch*" "*EMMS-Playlist*" "*Messages*" "*ert*"
-    "*AI-Assistant*")
+    "*AI-Assistant*"
+    ;; *Warnings* stays alive because Emacs 31's warnings.el defers daemon
+    ;; startup warnings into an `after-make-frame-functions' closure that
+    ;; holds this buffer object until the first client frame.  The startup
+    ;; sweep in `cj/dashboard-only' used to kill it; the closure then failed
+    ;; inside `make-frame', server.el reported the window system as
+    ;; unsupported, and emacsclient silently retried on $DISPLAY, so the first
+    ;; frame of every 31.1 session opened on XWayland.  I bury it instead, the
+    ;; same choice desktop.el makes in `desktop-clear-preserve-buffers'.
+    "*Warnings*")
   "Buffer names to bury instead of killing (exact match).")
 
 (defvar cj/undead-buffer-regexps nil

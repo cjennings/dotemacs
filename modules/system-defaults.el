@@ -89,6 +89,30 @@ indicate the warning was handled."
 
 (advice-add 'display-warning :before-until #'cj/log-comp-warning)
 
+;; ------------------ Deferred Daemon Warnings vs. Frame Creation -----------------
+
+;; Emacs 31's warnings.el defers warnings raised during daemon startup: it puts
+;; a one-shot closure on `after-make-frame-functions' holding the *Warnings*
+;; buffer object and calls `warning--display-buffer' on it when the first
+;; client frame is made.  If that buffer died in between, `display-buffer'
+;; signals inside `make-frame', server.el reports "-window-system-unsupported",
+;; and emacsclient retries on $DISPLAY -- the first frame of the session
+;; silently opens on XWayland.  Keeping *Warnings* alive is the root fix
+;; (undead-buffers.el); this guard is the backstop, so no future buffer sweep
+;; can break frame creation the same way.  The function only exists from
+;; Emacs 31; advising an undefined symbol is harmless and takes effect once
+;; warnings.el defines it.
+
+(defun cj/warning--display-buffer-if-live (orig buffer)
+  "Call ORIG with BUFFER only when it names or is a live buffer.
+Around advice for `warning--display-buffer'.  BUFFER may be a buffer object
+or a buffer name, like `display-buffer' accepts.  Return nil when skipped."
+  (let ((buf (and buffer (get-buffer buffer))))
+    (when (buffer-live-p buf)
+      (funcall orig buf))))
+
+(advice-add 'warning--display-buffer :around #'cj/warning--display-buffer-if-live)
+
 ;; ---------------------------------- Unicode ----------------------------------
 
 (set-locale-environment "en_US.UTF-8")
