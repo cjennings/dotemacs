@@ -415,7 +415,8 @@ terminal.  ai-term's agent buffers are managed separately via M-SPC."
 ;; Carried over from the ghostel era for the EAT agent terminals (ai-term).
 ;; Agents run EAT over tmux, so copy-mode is tmux's own copy-mode -- the same UX
 ;; ghostel-over-tmux had.  C-<up> enters it and scrolls up in one stroke; C-; x c
-;; enters it via the menu, and C-; x h grabs the whole pane history into a buffer.
+;; enters it via the menu, C-; x h grabs the whole pane history into a buffer,
+;; and C-; x d detaches the tmux client without going through its prefix.
 
 (declare-function cj/register-prefix-map "keybindings")
 (declare-function eat-emacs-mode "eat")
@@ -585,6 +586,20 @@ scrollback) and moves point to the start of the line."
     (eat-emacs-mode)
     (beginning-of-line)))
 
+(defun cj/term-tmux-detach ()
+  "Detach the tmux client from inside an agent terminal.
+Writes tmux's prefix and the detach key (C-b d) straight into the pty, the
+same path `cj/term-copy-mode-dwim' uses for C-b [.  A keyboard C-b inside
+the Claude Code pane has been observed to land as stray text instead of
+reaching tmux as a prefix (root cause not yet pinned down), so the string
+path is the reliable one.  Outside tmux it writes
+nothing and says so, since C-b d typed into a plain shell is just a control
+character."
+  (interactive)
+  (if (cj/term--in-tmux-p)
+      (cj/--term-send-string "\C-bd")
+    (message "cj/term-tmux-detach: not attached to tmux")))
+
 (defun cj/term--tmux-pane-in-copy-mode-p (pane-id)
   "Return non-nil when tmux PANE-ID is currently displaying a mode.
 tmux's `pane_in_mode' is 1 while a pane is in any mode; copy-mode is the only
@@ -613,13 +628,15 @@ pty; without tmux, moves point up in EAT's emacs-mode buffer."
         (cj/term-copy-mode-dwim))
       (forward-line -1)))))
 
-;; The C-; x terminal prefix (copy-mode, tmux history, the F12 toggle).  C-<up>
+;; The C-; x terminal prefix (copy-mode, tmux detach, tmux history, the F12
+;; toggle).  C-<up>
 ;; enters copy-mode + scrolls in one stroke; bound in EAT's semi-char map so it
 ;; reaches Emacs from inside an agent terminal.
 (defvar-keymap cj/term-map
   :doc "Personal terminal command map.")
 (cj/register-prefix-map "x" cj/term-map)
 (keymap-set cj/term-map "c" #'cj/term-copy-mode-dwim)
+(keymap-set cj/term-map "d" #'cj/term-tmux-detach)
 (keymap-set cj/term-map "h" #'cj/term-tmux-history)
 (keymap-set cj/term-map "t" #'cj/term-toggle)
 
