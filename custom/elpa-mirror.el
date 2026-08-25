@@ -1,4 +1,4 @@
-;;; elpa-mirror.el --- Create local package repository from installed packages
+;;; elpa-mirror.el --- Create local package repository from installed packages -*- lexical-binding: t -*-
 
 ;; Copyright (C) 2014-2020 Chen Bin
 
