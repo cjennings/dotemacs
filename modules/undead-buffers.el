@@ -40,7 +40,16 @@
     ;; unsupported, and emacsclient silently retried on $DISPLAY, so the first
     ;; frame of every 31.1 session opened on XWayland.  I bury it instead, the
     ;; same choice desktop.el makes in `desktop-clear-preserve-buffers'.
-    "*Warnings*")
+    "*Warnings*"
+    ;; The async native-compile log stays alive for the same reason, one
+    ;; buffer over.  comp-run parks every compile worker on this buffer and
+    ;; the worker's sentinel reads it back before starting the next job.
+    ;; The startup sweep killed it, which SIGHUPs every :noquery worker under
+    ;; it; each sentinel then died in `with-current-buffer' on the dead
+    ;; buffer and `comp--run-async-workers' never ran again, so the queue
+    ;; sat stranded for the life of the daemon, nothing was ever cached, and
+    ;; every boot re-ran the same compile storm at the first frame.
+    "*Async-native-compile-log*")
   "Buffer names to bury instead of killing (exact match).")
 
 (defvar cj/undead-buffer-regexps nil
