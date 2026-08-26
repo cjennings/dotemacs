@@ -55,6 +55,12 @@
 ;; so it doesn't leak into a shared batch session.  `make test-name' loads
 ;; every test file into one Emacs; a leaked cwd there breaks the relative
 ;; loads of every file that follows.
+;; Declared special before the `let' below binds it: this file is lexical,
+;; so without the defvar the binding is a lexical local, and use-package's
+;; own `defcustom' then fails with "Defining as dynamic an already lexical
+;; var" (fatal at load since 31.1 moved the defcustom to autoload time).
+(defvar use-package-always-ensure)
+
 (let ((default-directory default-directory)
       (use-package-always-ensure nil))
   (cl-letf (((symbol-function 'server-running-p) (lambda (&rest _) t))

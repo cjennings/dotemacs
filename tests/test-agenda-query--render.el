@@ -162,10 +162,17 @@ still parses as JSON, which is the worst kind."
 Pinning the failure mode, not endorsing it.  This is what the surface showed
 before the batch writer learned the vocabulary, and it is why the test above
 exists."
+  ;; No priority cookie in this fixture.  org 9.8 (Emacs 31.1) parses the
+  ;; cookie with `org-priority-regexp' under `looking-at', and that regexp's
+  ;; lazy `.*?' prefix swallows everything between the stars and the cookie,
+  ;; unknown keyword included.  A cookie here would test org's bug rather than
+  ;; the vocabulary gap this test pins.
   (let ((org-todo-keywords '((sequence "TODO" "|" "DONE"))))
     (test-aq-render--with-agenda-file
-        "* DOING [#A] Justin Johns advisor projects\nSCHEDULED: <2026-07-31 Fri 09:00>\n"
-      (should (string-prefix-p "DOING" (alist-get 't (car rows)))))))
+        "* DOING Justin Johns advisor projects\nSCHEDULED: <2026-07-31 Fri 09:00>\n"
+      (let ((row (car rows)))
+        (should (string-prefix-p "DOING" (alist-get 't row)))
+        (should-not (equal "DOING" (alist-get 'keyword row)))))))
 
 ;;; ---------- the cache writer ----------
 

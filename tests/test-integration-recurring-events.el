@@ -24,13 +24,22 @@
 
 ;;; Setup and Teardown
 
+(defvar test-integration-recurring-events--saved-tz nil
+  "The TZ in force before setup pinned it, restored by teardown.")
+
 (defun test-integration-recurring-events-setup ()
-  "Setup for recurring events integration tests."
-  nil)
+  "Setup for recurring events integration tests.
+Pins TZ to America/Chicago: the fixtures are TZID=America/Chicago and the
+assertions expect that zone's local rendering (\"Sat 10:30-11:00\"), so on
+any other machine zone the pipeline's correct conversion reads as a failure.
+`setenv' on TZ also calls `set-time-zone-rule', which is what the time
+functions actually consult."
+  (setq test-integration-recurring-events--saved-tz (getenv "TZ"))
+  (setenv "TZ" "America/Chicago"))
 
 (defun test-integration-recurring-events-teardown ()
-  "Teardown for recurring events integration tests."
-  nil)
+  "Teardown for recurring events integration tests: restore the machine TZ."
+  (setenv "TZ" test-integration-recurring-events--saved-tz))
 
 ;;; Test Data
 

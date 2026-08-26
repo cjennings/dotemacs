@@ -16,6 +16,11 @@
 (package-initialize)
 (add-to-list 'load-path (expand-file-name "modules" user-emacs-directory))
 (require 'calibredb-epub-config)
+;; Load calibredb before any test stubs its functions with `cl-letf'.  The
+;; module's jump path calls `(require 'calibredb)' inside the body; if the
+;; package is still an autoload at that point, the real `defun' lands on top of
+;; the stub and the test runs the real command against the real library.
+(require 'calibredb)
 (require 'nov nil t)  ; for the nov-mode-map keybinding test; harmless if absent
 
 (declare-function cj/nov--text-width "calibredb-epub-config" (total-cols))

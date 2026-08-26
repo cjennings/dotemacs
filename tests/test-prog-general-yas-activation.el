@@ -122,7 +122,11 @@ produces the marker block."
   "Boundary: <cj + expand in python-ts-mode (a tree-sitter prog-mode-derived
 mode) produces the marker block.  Verifies the snippet reaches modern
 tree-sitter modes through fundamental-mode inheritance."
-  (skip-unless (fboundp 'python-ts-mode))
+  ;; `python-ts-mode' prompts to install a missing grammar, which a batch run
+  ;; cannot answer, so skip on the grammar rather than on the mode's existence.
+  (skip-unless (and (fboundp 'python-ts-mode)
+                    (require 'treesit nil t)
+                    (treesit-ready-p 'python t)))
   (should (string= (test-prog-general--expand-cj-in-mode #'python-ts-mode)
                    test-prog-general--cj-expected)))
 

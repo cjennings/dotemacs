@@ -196,27 +196,27 @@ Returns the count of files deleted."
              count user-emacs-directory)))
 (keymap-set cj/debug-config-keymap "c d" 'cj/delete-emacs-home-compiled-files)
 
-(defun cj/compile-this-elisp-buffer ()
-  "Compile the current .el: prefer native (.eln), else .elc. Message if neither."
-  (interactive)
-  (unless (and buffer-file-name (string-match-p "\\.el\\'" buffer-file-name))
-    (user-error "Not visiting a .el file"))
-  (save-buffer)
-  (let ((file buffer-file-name))
+(defun cj/--compile-elisp-file (file &optional available-p)
+  "Compile FILE: prefer async native, then sync native, then byte-compile.
+AVAILABLE-P decides which compilers exist; it defaults to `fboundp'.  It is
+a parameter so tests can force each branch without redefining `fboundp':
+an `fset' on that subr pulls in comp-run and bytecomp, whose own `defun'
+of `byte-compile-file' then lands on top of any test double."
+  (let ((available-p (or available-p #'fboundp)))
     (cond
      ;; Native compilation (async preferred)
-     ((fboundp 'native-compile-async)
+     ((funcall available-p 'native-compile-async)
       (native-compile-async file)
       (message "Queued native compilation for %s" file))
      ;; Native compilation (sync, if async not available)
-     ((fboundp 'native-compile)
+     ((funcall available-p 'native-compile)
       (condition-case err
           (progn
             (native-compile file)
             (message "Native-compiled %s" file))
         (error (message "Native compile failed: %s" (error-message-string err)))))
      ;; Byte-compile fallback
-     ((fboundp 'byte-compile-file)
+     ((funcall available-p 'byte-compile-file)
       (let ((out (byte-compile-file file)))
         (if out
             (message "Byte-compiled -> %s" out)
@@ -224,6 +224,14 @@ Returns the count of files deleted."
      ;; Neither facility available
      (t
       (message "No compilation available (no native-compile, no byte-compile)")))))
+
+(defun cj/compile-this-elisp-buffer ()
+  "Compile the current .el: prefer native (.eln), else .elc. Message if neither."
+  (interactive)
+  (unless (and buffer-file-name (string-match-p "\\.el\\'" buffer-file-name))
+    (user-error "Not visiting a .el file"))
+  (save-buffer)
+  (cj/--compile-elisp-file buffer-file-name))
 (keymap-set cj/debug-config-keymap "c ." 'cj/compile-this-elisp-buffer)
 
 ;; --------------------------- Information Reporting ---------------------------

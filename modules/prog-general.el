@@ -119,9 +119,11 @@ REGEXP must be a string or an rx form."
 
 ;; Manages tree-sitter grammars.  Install is 'prompt, never t: with t,
 ;; merely opening a file could trigger a network download and a compiler
-;; build mid-edit.  Batch/test runs never load treesit-auto (no package
-;; init), so they can never install.  Fresh-machine bootstrap is the
-;; explicit `cj/install-treesit-grammars' command below.
+;; build mid-edit.  `make test' runs with no package init and so never
+;; loads treesit-auto, but a test file that calls `package-initialize'
+;; itself does load it, and a tree-sitter mode then prompts for a missing
+;; grammar; such tests must skip on `treesit-ready-p'.  Fresh-machine
+;; bootstrap is the explicit `cj/install-treesit-grammars' command below.
 (defun cj/treesit-auto-pin-go-revision (recipes)
   "Pin the Go grammar revision in treesit-auto RECIPES.
 Return the updated Go recipe, or nil when RECIPES has no Go entry.
