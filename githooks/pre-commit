@@ -15,7 +15,12 @@ cd "$REPO_ROOT" || exit 1
 # AKIA[0-9A-Z]{16} matches any mixed-case 20-char run, which random base64 in an
 # embedded image blob hits ~6% of the time per 100KB and blocks real commits.
 # Only the keyword=value patterns need -i.
-SECRET_PATTERNS_CS='(AKIA[0-9A-Z]{16}|sk-[a-zA-Z0-9_-]{20,}|-----BEGIN (RSA|DSA|EC|OPENSSH|PGP)( PRIVATE)?( KEY| KEY BLOCK)?-----)'
+#
+# The sk- pattern is anchored on a word boundary: unanchored it matched inside
+# any hyphenated identifier ending in sk- (task-, risk-, disk-) with 20 more
+# word characters, which blocked a commit on an elisp assertion naming
+# task-missing-last-reviewed. A real key always starts its token.
+SECRET_PATTERNS_CS='(AKIA[0-9A-Z]{16}|\bsk-[a-zA-Z0-9_-]{20,}|-----BEGIN (RSA|DSA|EC|OPENSSH|PGP)( PRIVATE)?( KEY| KEY BLOCK)?-----)'
 SECRET_PATTERNS_CI='(api[_-]?key|api[_-]?secret|auth[_-]?token|secret[_-]?key|bearer[_-]?token|access[_-]?token|password)[[:space:]]*[:=][[:space:]]*["'"'"'][^"'"'"']{16,}["'"'"']'
 
 # Read the diff on its own so a git failure is distinguishable from "grep
