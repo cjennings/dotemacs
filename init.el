@@ -160,7 +160,12 @@
 (require 'music-config)
 ;; games-config: deferred (load-graph Phase 4).  malyon / 2048-game autoload
 ;; their own commands via package.el; games-config only supplies malyon's config,
-;; so load it when malyon loads rather than requiring it at startup.
+;; so load it when malyon loads rather than requiring it at startup.  The two
+;; use-package forms exist so `use-package-always-ensure' installs the packages
+;; on a fresh machine: nothing else declares them, and a8571eff's removal left
+;; both absent after the 2026-08-13 reinstall.  :defer t keeps them unloaded.
+(use-package malyon :defer t :commands (malyon))
+(use-package 2048-game :defer t :commands (2048-game))
 (with-eval-after-load 'malyon (require 'games-config))
 (require 'takuzu-config) ;; Takuzu (Binairo) puzzle on M-x takuzu; package in ~/code/takuzu
 

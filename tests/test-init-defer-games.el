@@ -42,5 +42,36 @@ load failed to define malyon."
     (should (featurep 'games-config))
     (should (equal malyon-stories-directory "/tmp/games-defer-test/text.games/"))))
 
+(defun test-init-defer-games--declaration-installs-p (init package)
+  "Return non-nil when INIT (init.el's text) declares PACKAGE in an installing form.
+A `use-package' form that carries `:ensure nil' or `:load-path' does not
+install (use-package suppresses `use-package-always-ensure' for both), so
+the check rejects those rather than accepting any form that names the package."
+  (and (string-match (format "^(use-package %s\\b\\([^\n]*\\))[ \t]*$"
+                             (regexp-quote package))
+                     init)
+       (let ((args (match-string 1 init)))
+         (not (string-match-p ":ensure nil\\|:load-path" args)))))
+
+(ert-deftest test-init-defer-games-init-declares-both-packages ()
+  "Normal: init.el declares malyon and 2048-game in forms that install them.
+`use-package-always-ensure' is the installer for these two.  a8571eff dropped
+the declarations along with the eager require, and both packages silently
+vanished on the next rebuild while every other test still passed."
+  (let ((init (with-temp-buffer
+                (insert-file-contents (expand-file-name "init.el" default-directory))
+                (buffer-string))))
+    (should (test-init-defer-games--declaration-installs-p init "malyon"))
+    (should (test-init-defer-games--declaration-installs-p init "2048-game"))))
+
+(ert-deftest test-init-defer-games-declaration-check-rejects-non-installing-forms ()
+  "Boundary: the declaration check refuses forms use-package would not install."
+  (should-not (test-init-defer-games--declaration-installs-p
+               "(use-package malyon :ensure nil :defer t)\n" "malyon"))
+  (should-not (test-init-defer-games--declaration-installs-p
+               "(use-package malyon :load-path \"~/x\" :defer t)\n" "malyon"))
+  (should (test-init-defer-games--declaration-installs-p
+           "(use-package malyon :defer t :commands (malyon))\n" "malyon")))
+
 (provide 'test-init-defer-games)
 ;;; test-init-defer-games.el ends here
