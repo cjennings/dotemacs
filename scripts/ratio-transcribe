@@ -1,0 +1,203 @@
+#!/usr/bin/env bash
+# ratio-transcribe - Transcribe audio on my own transcription host, with speaker labels
+# Usage: ratio-transcribe <audio-file> [language]
+#
+# Same contract as assemblyai-transcribe: the transcript goes to stdout, one line
+# per speaker turn ("HH:MM:SS Speaker A: text"); progress and errors go to stderr;
+# any failure exits non-zero with nothing on stdout.
+#
+# The work happens on a host that runs the meeting-transcribe queue (whisper-cpp
+# plus pyannote). This script copies the audio over ssh, drops a job into the
+# queue, waits, and prints the result. The job id is a hash of the audio and its
+# options, so if the connection drops or the laptop sleeps, running the same
+# command again just collects the finished transcript. If the host can't be
+# reached at all, the same queue and worker run on this machine instead.
+#
+# Optional environment:
+#   SPEAKERS                     exact number of speakers, when you know it
+#   MIN_SPEAKERS, MAX_SPEAKERS   a range instead
+#   TRANSCRIBE_HOST              ssh name of the host (default: ratio)
+#   TRANSCRIBE_TIMEOUT           seconds to wait for the job (default: 3600)
+#   TRANSCRIBE_POLL              seconds between checks (default: 10)
+#   TRANSCRIBE_LOCAL=1           skip the host and run here
+#   TRANSCRIBE_WORKER            path to the local worker
+
+set -euo pipefail
+
+AUDIO="${1:-}"
+LANG_CODE="${2:-en}"
+HOST="${TRANSCRIBE_HOST:-ratio}"
+TIMEOUT="${TRANSCRIBE_TIMEOUT:-3600}"
+POLL="${TRANSCRIBE_POLL:-10}"
+WORKER="${TRANSCRIBE_WORKER:-$HOME/.local/share/pyannote-diarize/src/transcribe-worker}"
+STATE=".local/state/meeting-transcribe"   # relative to the home directory, on either machine
+
+if [[ -z "$AUDIO" ]]; then
+  echo "Usage: ratio-transcribe <audio-file> [language]" >&2
+  echo "Example: SPEAKERS=3 ratio-transcribe meeting.m4a en" >&2
+  exit 1
+fi
+
+if [[ ! -f "$AUDIO" ]]; then
+  echo "Error: Audio file not found: $AUDIO" >&2
+  exit 1
+fi
+# scp reads "name:with:colons" as host:path; an absolute path removes the ambiguity.
+AUDIO="$(realpath -- "$AUDIO")"
+
+# Everything below ends up in a job file and on command lines, so check it first.
+if [[ ! "$LANG_CODE" =~ ^[A-Za-z]{2,8}(-[A-Za-z0-9]{1,8})*$ ]]; then
+  echo "Error: Invalid language code: $LANG_CODE" >&2
+  exit 1
+fi
+
+for name in SPEAKERS MIN_SPEAKERS MAX_SPEAKERS; do
+  value="${!name:-}"
+  if [[ -n "$value" && ! "$value" =~ ^[1-9][0-9]*$ ]]; then
+    echo "Error: $name must be a positive whole number of speakers, got: $value" >&2
+    exit 1
+  fi
+done
+if [[ -n "${SPEAKERS:-}" && ( -n "${MIN_SPEAKERS:-}" || -n "${MAX_SPEAKERS:-}" ) ]]; then
+  echo "Error: give an exact SPEAKERS count or a MIN/MAX speaker range, not both" >&2
+  exit 1
+fi
+if [[ -n "${MIN_SPEAKERS:-}" && -n "${MAX_SPEAKERS:-}" ]] && (( MIN_SPEAKERS > MAX_SPEAKERS )); then
+  echo "Error: MIN_SPEAKERS cannot exceed MAX_SPEAKERS (speaker range)" >&2
+  exit 1
+fi
+
+for tool in jq sha256sum; do
+  if ! command -v "$tool" &> /dev/null; then
+    echo "Error: $tool command not found" >&2
+    exit 1
+  fi
+done
+
+EXT="${AUDIO##*.}"
+[[ "$EXT" =~ ^[A-Za-z0-9]{1,5}$ ]] || EXT="bin"
+EXT="${EXT,,}"
+
+if [[ -n "${SPEAKERS:-}" ]]; then
+  COUNT_TAG="s${SPEAKERS}"
+elif [[ -n "${MIN_SPEAKERS:-}${MAX_SPEAKERS:-}" ]]; then
+  COUNT_TAG="r${MIN_SPEAKERS:-x}-${MAX_SPEAKERS:-x}"
+else
+  COUNT_TAG="auto"
+fi
+JOB_ID="$(sha256sum "$AUDIO" | cut -c1-16)-${LANG_CODE,,}-${COUNT_TAG}"
+
+JOB_JSON=$(jq -cn \
+  --arg language "$LANG_CODE" \
+  --arg name "$(basename "$AUDIO")" \
+  --arg speakers "${SPEAKERS:-}" --arg min "${MIN_SPEAKERS:-}" --arg max "${MAX_SPEAKERS:-}" \
+  '{language: $language}
+   + (if $speakers != "" then {speakers: ($speakers | tonumber)} else {} end)
+   + (if $min != "" then {min_speakers: ($min | tonumber)} else {} end)
+   + (if $max != "" then {max_speakers: ($max | tonumber)} else {} end)
+   + {original_name: $name}')
+
+# ssh reads stdin unless told not to, which would swallow the input of any loop
+# this script is called from. Only the job-file upload needs stdin.
+remote() { ssh -n -o BatchMode=yes -o ConnectTimeout=8 "$HOST" "$@"; }
+remote_with_stdin() { ssh -o BatchMode=yes -o ConnectTimeout=8 "$HOST" "$@"; }
+
+# One word for where the job stands on the host: done, failed, queued or new.
+remote_status() {
+  remote "cd $STATE 2>/dev/null || { echo new; exit 0; }
+    if [ -e done/$JOB_ID.txt ]; then echo done
+    elif [ -e failed/$JOB_ID.log ]; then echo failed
+    elif [ -d incoming/$JOB_ID ] || [ -d work/$JOB_ID ]; then echo queued
+    else echo new; fi"
+}
+
+print_transcript() {  # $1 = the transcript text
+  if [[ -z "${1//[[:space:]]/}" ]]; then
+    echo "Error: the transcript came back empty" >&2
+    exit 1
+  fi
+  echo "Transcription complete! (${SECONDS}s total)" >&2
+  printf '%s\n' "$1"
+}
+
+run_remote() {
+  local status
+  status=$(remote_status)
+
+  if [[ "$status" == "failed" ]]; then
+    echo "An earlier attempt at this job failed; trying again..." >&2
+    remote "rm -f $STATE/failed/$JOB_ID.log"
+    status="new"
+  fi
+
+  if [[ "$status" == "new" ]]; then
+    echo "Uploading audio file to $HOST..." >&2
+    # Copy into uploading/, then rename into incoming/. The queue only ever sees
+    # a complete job.
+    remote "mkdir -p $STATE/incoming $STATE/uploading/$JOB_ID"
+    scp -q -o BatchMode=yes "$AUDIO" "$HOST:$STATE/uploading/$JOB_ID/audio.$EXT" < /dev/null
+    printf '%s' "$JOB_JSON" | remote_with_stdin "cat > $STATE/uploading/$JOB_ID/job.json"
+    remote "mv $STATE/uploading/$JOB_ID $STATE/incoming/$JOB_ID"
+    echo "Job $JOB_ID queued. Waiting for completion..." >&2
+  elif [[ "$status" == "queued" ]]; then
+    echo "Job $JOB_ID is already queued on $HOST. Waiting for completion..." >&2
+  fi
+
+  while true; do
+    # A dropped connection is not a failed job; keep asking until the timeout.
+    status=$(remote_status 2> /dev/null) || status="unreachable"
+    case "$status" in
+      done)
+        print_transcript "$(remote "cat $STATE/done/$JOB_ID.txt")"
+        return 0
+        ;;
+      failed)
+        echo "Error: transcription failed on $HOST" >&2
+        remote "cat $STATE/failed/$JOB_ID.log" >&2 || true
+        exit 1
+        ;;
+    esac
+    if (( SECONDS >= TIMEOUT )); then
+      echo "Error: no result after ${TIMEOUT}s. The job is still with $HOST;" >&2
+      echo "run the same command again to collect the transcript." >&2
+      exit 1
+    fi
+    sleep "$POLL"
+    [[ "$status" == "unreachable" ]] || echo "Processing... (${SECONDS}s elapsed)" >&2
+  done
+}
+
+run_local() {
+  if [[ ! -x "$WORKER" ]]; then
+    echo "Error: $HOST is unreachable and there is no local worker at $WORKER" >&2
+    exit 1
+  fi
+  local state="$HOME/$STATE"
+  if [[ ! -s "$state/done/$JOB_ID.txt" ]]; then
+    echo "Running the transcription locally (this machine is slower; expect a wait)..." >&2
+    rm -f "$state/failed/$JOB_ID.log"
+    rm -rf "$state/uploading/$JOB_ID"
+    mkdir -p "$state/incoming" "$state/uploading/$JOB_ID"
+    cp "$AUDIO" "$state/uploading/$JOB_ID/audio.$EXT"
+    printf '%s' "$JOB_JSON" > "$state/uploading/$JOB_ID/job.json"
+    [[ -d "$state/incoming/$JOB_ID" ]] || mv "$state/uploading/$JOB_ID" "$state/incoming/$JOB_ID"
+    HF_HUB_OFFLINE=1 "$WORKER" >&2 < /dev/null
+  fi
+  if [[ -e "$state/failed/$JOB_ID.log" ]]; then
+    echo "Error: local transcription failed" >&2
+    cat "$state/failed/$JOB_ID.log" >&2
+    exit 1
+  fi
+  if [[ ! -e "$state/done/$JOB_ID.txt" ]]; then
+    echo "Error: the local worker finished without producing a transcript" >&2
+    exit 1
+  fi
+  print_transcript "$(< "$state/done/$JOB_ID.txt")"
+}
+
+if [[ -z "${TRANSCRIBE_LOCAL:-}" ]] && remote true 2> /dev/null; then
+  run_remote
+else
+  [[ -n "${TRANSCRIBE_LOCAL:-}" ]] || echo "$HOST is unreachable." >&2
+  run_local
+fi

@@ -33,6 +33,11 @@
 ;;   - 'assemblyai: Cloud transcription with speaker diarization
 ;;     API key retrieved from authinfo.gpg (machine api.assemblyai.com)
 ;;   - 'local-whisper: Local transcription (requires whisper installed)
+;;   - 'ratio: Self-hosted whisper plus speaker diarization on my transcription
+;;     host, via scripts/ratio-transcribe (ssh queue; falls back to a local
+;;     worker when the host is unreachable).  No API key.  SPEAKERS=N in the
+;;     environment pins the diarizer's speaker count; 1 is right for a
+;;     recording that holds only one side of a call.
 ;;
 ;; NOTIFICATIONS:
 ;;   - "Transcription started on <file>"
@@ -56,7 +61,8 @@
   "Transcription backend to use.
 - `openai-api': Fast cloud transcription via OpenAI API
 - `assemblyai': Cloud transcription with speaker diarization via AssemblyAI
-- `local-whisper': Local transcription using installed Whisper")
+- `local-whisper': Local transcription using installed Whisper
+- `ratio': Self-hosted whisper plus diarization on my transcription host")
 
 (defvar cj/transcription-keep-log-when-done nil
   "Whether to keep log files after successful transcription.
@@ -74,9 +80,11 @@ Status: running, complete, error")
 (defconst cj/--transcription-backends
   '((openai-api    :script "oai-transcribe"        :auth-host "api.openai.com"     :env-var "OPENAI_API_KEY")
     (assemblyai    :script "assemblyai-transcribe" :auth-host "api.assemblyai.com" :env-var "ASSEMBLYAI_API_KEY")
-    (local-whisper :script "local-whisper"         :auth-host nil                  :env-var nil))
+    (local-whisper :script "local-whisper"         :auth-host nil                  :env-var nil)
+    (ratio         :script "ratio-transcribe"      :auth-host nil                  :env-var nil))
   "Per-backend descriptors. Each entry: (SYMBOL :script S :auth-host H :env-var V).
-`:auth-host' and `:env-var' are nil for local backends that need no API key.")
+`:auth-host' and `:env-var' are nil for backends that need no API key: the
+local whisper install, and the self-hosted ratio queue reached over ssh.")
 
 (defun cj/--backend-plist (backend)
   "Return the descriptor plist for BACKEND, or signal if unknown."
@@ -470,9 +478,11 @@ duration is computed from START-TIME."
   "Switch transcription backend.
 Prompts with completing-read to select from available backends."
   (interactive)
-  (let* ((backends '(("assemblyai" . assemblyai)
-                     ("openai-api" . openai-api)
-                     ("local-whisper" . local-whisper)))
+  ;; Offer exactly the descriptor set.  This used to carry its own list, so
+  ;; a backend added to the descriptors was reachable only by setq.
+  (let* ((backends (mapcar (lambda (entry)
+                             (cons (symbol-name (car entry)) (car entry)))
+                           cj/--transcription-backends))
          (current (symbol-name cj/transcribe-backend))
          (prompt (format "Transcription backend (current: %s): " current))
          (choice (completing-read prompt backends nil t))
