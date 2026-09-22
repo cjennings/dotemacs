@@ -145,12 +145,16 @@ re-scanning large target files after the first successful lookup."
               :around #'cj/org-capture--set-target-location-advice))
 
 ;; --------------------------- Capture F-Key Guard -----------------------------
-;; The global popup keys (F1 dashboard sweep, F10 music, F11 dirvish-side,
+;; The global popup keys (F1 dashboard sweep, F9 dirvish-side, F10 music,
 ;; F12 terminal, M-SPC agent swap) fire even while a capture is in progress
 ;; and pop their UI over the capture popup.  org-capture-mode is a minor
 ;; mode active exactly for the capture's duration and its keymap shadows
 ;; the global map, so blocking the keys there scopes the guard precisely:
 ;; the moment the capture finalizes or aborts, the keys work again.
+;;
+;; The list follows the command, not the key.  F11 was on it while it held
+;; dirvish-side; now that F11 is the frame fullscreen toggle it pops nothing
+;; over a capture and stays usable.
 
 (defun cj/--org-capture-blocked-key ()
   "Refuse a global popup key while a capture is in progress."
@@ -160,7 +164,7 @@ re-scanning large target files after the first successful lookup."
 (defvar org-capture-mode-map)
 
 (with-eval-after-load 'org-capture
-  (dolist (key '("<f1>" "<f10>" "<f11>" "<f12>" "M-SPC"))
+  (dolist (key '("<f1>" "<f9>" "<f10>" "<f12>" "M-SPC"))
     (keymap-set org-capture-mode-map key #'cj/--org-capture-blocked-key)))
 
 ;; ----------------------- Project-Aware Capture Target ------------------------

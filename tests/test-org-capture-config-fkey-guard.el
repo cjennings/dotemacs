@@ -2,8 +2,10 @@
 
 ;;; Commentary:
 ;; While a capture is in progress, the global popup keys (F1 dashboard
-;; sweep, F10 music, F11 dirvish-side, F12 terminal, M-SPC agent swap)
-;; must not fire and pop UI over the capture.  org-capture-mode is a
+;; sweep, F9 dirvish-side, F10 music, F12 terminal, M-SPC agent swap)
+;; must not fire and pop UI over the capture.  F11 is deliberately not on
+;; the list: it toggles frame fullscreen, which pops nothing over the
+;; capture, so blocking it would only get in the way.  org-capture-mode is a
 ;; minor mode active exactly for the capture's duration and its keymap
 ;; shadows the global map, so the guard binds those keys there to a
 ;; blocker that signals a `user-error' naming the way out.
@@ -21,9 +23,16 @@
 
 (ert-deftest test-org-capture-fkey-guard-keys-bound ()
   "Normal: every leaking popup key is bound to the blocker in capture mode."
-  (dolist (key '("<f1>" "<f10>" "<f11>" "<f12>" "M-SPC"))
+  (dolist (key '("<f1>" "<f9>" "<f10>" "<f12>" "M-SPC"))
     (should (eq (keymap-lookup org-capture-mode-map key)
                 #'cj/--org-capture-blocked-key))))
+
+(ert-deftest test-org-capture-fkey-guard-leaves-fullscreen-alone ()
+  "Boundary: F11 (frame fullscreen) is not blocked.  It pops no UI, and
+before dirvish-side moved to F9 it was on this list only because F11 was the
+sidebar key; the entry must follow the command, not the key."
+  (should-not (eq (keymap-lookup org-capture-mode-map "<f11>")
+                  #'cj/--org-capture-blocked-key)))
 
 (ert-deftest test-org-capture-fkey-guard-blocker-signals-user-error ()
   "Error: the blocker signals a user-error rather than doing nothing."

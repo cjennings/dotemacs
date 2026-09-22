@@ -846,7 +846,7 @@ have large package-managed binding lists not enumerated here.
   - [ ] M-D (dirvish-mode-map) — dwim-shell-commands-menu — (dwim-shell-config.el:934)
   - [ ] + (dirvish-mode-map) — cj/music-add-dired-selection — (music-config.el:597)
   - [ ] T (dired/dirvish-mode-map) — cj/transcribe-media-at-point — (transcription-config.el:463/467)
-  - [ ] <f11> (dirvish-mode-map) — dirvish-side — (dirvish-config.el:481)
+  - [ ] <f9> (global) — dirvish-side — (dirvish-config.el:661; F11 is stock toggle-frame-fullscreen again as of 2026-09-22)
 - [ ] Shell / terminal
   - [ ] C-r (eshell-mode-map) — cj/eshell-history-search — (eshell-config.el:202)
   - [ ] <up> (eshell-hist-mode-map) — previous-line — (eshell-config.el:99)

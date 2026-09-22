@@ -29,7 +29,7 @@
 ;; - S: Study — start an org-drill session on the .org file at point
 ;; - M-D (Meta-Shift-d): DWIM shell commands menu
 ;; - TAB: Toggle subtree expansion
-;; - F11: Toggle sidebar view
+;; - F9: Toggle sidebar view
 
 ;;; Code:
 
@@ -653,7 +653,13 @@ no popup frame is live."
   (("C-x d"   . dirvish)
    ("C-x C-d" . dirvish)
    ("C-x D"   . dirvish)
-   ("<f11>"   . dirvish-side)
+   ;; F9, not F11: F11 is stock Emacs's toggle-frame-fullscreen, the same key
+   ;; every other application uses, and the sidebar sat on it for years by
+   ;; shadowing that.  F9 is the free bare F-key: ai-term left it for M-SPC
+   ;; in June 2026 and the recording chord came off it on 2026-09-22.  F2 is
+   ;; the preview key (markdown-mode binds it) and F5 is reserved for the
+   ;; debug backend, so neither was a candidate.
+   ("<f9>"    . dirvish-side)
    :map dirvish-mode-map
    ("bg"      . cj/set-wallpaper)
    ("/"       . dirvish-narrow)
