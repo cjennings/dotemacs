@@ -20,7 +20,7 @@
 #   make telega-image      - Build the telega-server container image
 #   make profile           - Profile Emacs startup performance
 #   make clean             - Remove test artifacts and compiled files
-#   make clean-compiled    - Remove .elc/.eln files only
+#   make clean-compiled    - Remove .elc/.eln files only (keeps elpa/)
 #   make clean-tests       - Remove test artifacts only
 #   make reset             - Reset to first launch (destructive!)
 
@@ -106,7 +106,7 @@ help:
 	@echo "    make telega-image      - Build the telega-server container image"
 	@echo "    make profile           - Profile Emacs startup performance"
 	@echo "    make clean             - Remove test artifacts and compiled files"
-	@echo "    make clean-compiled    - Remove .elc/.eln files only"
+	@echo "    make clean-compiled    - Remove .elc/.eln files only (keeps elpa/)"
 	@echo "    make clean-tests       - Remove test artifacts only"
 	@echo "    make reset             - Reset to first launch (DESTRUCTIVE!)"
 	@echo ""
@@ -494,9 +494,13 @@ task-sorted:
 clean: clean-tests clean-compiled
 	@echo "✓ Clean complete"
 
+# elpa/ is excluded: package.el owns that bytecode and nothing here rebuilds it.
+# Without it every package loads from source, slower and with no native-comp
+# JIT, and Emacs 31 warns about each file lacking a lexical-binding cookie.
 clean-compiled:
 	@echo "Removing compiled files (.elc, .eln)..."
-	@find $(EMACS_HOME) -type f \( -name "*.eln" -o -name "*.elc" \) -delete
+	@find "$(EMACS_HOME)" -type f \( -name "*.eln" -o -name "*.elc" \) \
+	  -not -path "$(patsubst %/,%,$(EMACS_HOME))/elpa/*" -delete
 	@echo "✓ Compiled files removed"
 
 clean-tests:
