@@ -28,6 +28,11 @@
 (require 'user-constants)
 (require 'system-lib)
 (require 'media-utils)
+;; elfeed.el ends with a bare `(unless byte-compile-root-dir ...)'.  That
+;; variable lives in bytecomp, so loading elfeed (source or .elc) in a
+;; session that hasn't loaded bytecomp signals void-variable.  I load it here, ahead of
+;; any elfeed load, rather than rely on something else having pulled it in.
+(require 'bytecomp)
 
 (declare-function elfeed "elfeed")
 (declare-function elfeed-update "elfeed")
