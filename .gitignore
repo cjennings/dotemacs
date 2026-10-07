@@ -87,8 +87,10 @@ history
 # Data directory (calendar sync output, API rest files)
 /data/
 
-# Network Security Manager runtime database (cert fingerprints, written by Emacs)
+# Network Security Manager runtime database (cert fingerprints, written by Emacs;
+# network-security.data before Emacs 31, network-security.eld since)
 /network-security.data
+/network-security.eld
 
 # --- elisp ruleset ---
 *.eln
