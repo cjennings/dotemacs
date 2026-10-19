@@ -144,5 +144,11 @@
   "Nil title should signal an error rather than silently producing garbage."
   (should-error (test-reveal--header nil) :type 'user-error))
 
+(ert-deftest test-org-reveal-config-header-template-normal-keeps-underscores-literal ()
+  "Normal: #+OPTIONS: turns off ^ markup so snake_case identifiers in slide text stay literal.
+Without it a heading like event_payloads_ais exports as event with a subscript."
+  (let ((result (cj/--reveal-header-template "My Talk")))
+    (should (string-match-p "^#\\+OPTIONS:.*\\^:nil" result))))
+
 (provide 'test-org-reveal-config-header-template)
 ;;; test-org-reveal-config-header-template.el ends here

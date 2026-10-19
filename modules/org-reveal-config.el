@@ -18,6 +18,10 @@
 ;; Fully offline workflow using a local reveal.js clone (managed by
 ;; scripts/setup-reveal.sh) and self-contained HTML export.
 ;;
+;; Slides use a 16:9 canvas with a smaller base font than the stock theme,
+;; and a script in the export shrinks any slide whose content would
+;; otherwise be clipped (see "Slide Sizing" below).
+;;
 ;; Keybindings (C-; p prefix):
 ;; - C-; p SPC : Ensure headers, export, and open in browser
 ;; - C-; p e : Export to self-contained HTML and open in browser
@@ -37,6 +41,8 @@
 (defvar org-reveal-plugins)
 (defvar org-reveal-highlight-css)
 (defvar org-reveal-init-options)
+(defvar org-reveal-head-preamble)
+(defvar org-reveal-extra-script)
 (declare-function org-reveal-export-to-html "ox-reveal")
 
 ;; --------------------------------- Constants ---------------------------------
@@ -51,6 +57,130 @@
 (defconst cj/reveal-default-transition "none"
   "Default reveal.js slide transition for new presentations.")
 
+;; ------------------------------- Slide Sizing --------------------------------
+;;
+;; reveal.js lays every slide out on a fixed canvas and scales that canvas
+;; to the window; content taller than the canvas is clipped, not scrolled.
+;; Three things keep a dense slide readable instead of cut off:
+;;
+;; - a 16:9 canvas (the shape of every screen the slides land on), so lines
+;;   wrap later than on the stock 960x700 frame;
+;; - a smaller base font and heading scale, set through the theme's CSS
+;;   variables in the head preamble so any reveal.js 4+ theme picks them up;
+;; - a script, spliced in after Reveal.initialize, that shrinks any slide
+;;   whose content still overflows.  It floors at half size: a slide that
+;;   overflows even there needs splitting, not shrinking.
+;;
+;; The script rides ox-reveal's extra-script slot, so a file that sets its
+;; own #+REVEAL_EXTRA_SCRIPT replaces it.  Print view (?print-pdf) paginates
+;; instead of clipping, so the fit is skipped there and a printed deck can
+;; differ from the presented one.
+
+(defconst cj/reveal-canvas-width 1280
+  "Width of the reveal.js slide canvas in CSS pixels.")
+
+(defconst cj/reveal-canvas-height 720
+  "Height of the reveal.js slide canvas in CSS pixels.")
+
+(defconst cj/reveal-base-font-size "30px"
+  "Base font size for slide text, as a px value.
+The stock themes use 42px, which fits about six short lines on a slide.
+Keep it in px: ox-reveal runs the head preamble through `format-spec',
+so a % unit would break the export.")
+
+(defun cj/--reveal-init-options ()
+  "Return the Reveal.initialize options shared by default and template.
+One line with no trailing comma, so ox-reveal can splice it into the
+Reveal.initialize call."
+  (format "slideNumber:true, hash:true, transition:'%s', width:%d, height:%d"
+          cj/reveal-default-transition
+          cj/reveal-canvas-width
+          cj/reveal-canvas-height))
+
+(defun cj/--reveal-head-preamble ()
+  "Return the <style> element for the document head.
+Sets the house font sizes through the theme variables and stops the
+theme from upper-casing headings."
+  (format "<style>
+:root {
+  --r-main-font-size: %s;
+  --r-heading1-size: 2.2em;
+  --r-heading2-size: 1.5em;
+  --r-heading3-size: 1.2em;
+  --r-heading4-size: 1em;
+}
+.reveal h1, .reveal h2, .reveal h3, .reveal p { text-transform: none; }
+</style>"
+          cj/reveal-base-font-size))
+
+(defun cj/--reveal-fit-script ()
+  "Return the JavaScript that shrinks overflowing slides to the canvas.
+ox-reveal emits it inside the <script> element right after
+Reveal.initialize, so Reveal already exists: every slide is fitted once
+reveal is ready and the current one refitted on each slide change.
+Hidden slides are shown for the measurement only, so the display state
+reveal manages is restored before anything paints."
+  "// Shrink any slide whose content overflows the canvas height so it scales
+// down instead of being clipped.  Floors at half size: a slide that still
+// overflows there needs splitting, not shrinking.
+(function () {
+  var FLOOR = 0.5;    // never below half size: split the slide instead
+  var MARGIN = 0.05;  // breathing room above the bottom edge of the canvas
+  var PASSES = 8;     // fixed-height content converges slowly; cap the loop
+  var busy = false;   // layout() re-enters through slidechanged in scroll view
+  // Overview boxes every slide at the canvas height and print view paginates,
+  // so a measurement there is meaningless.
+  function skip() {
+    return (Reveal.isPrintView && Reveal.isPrintView())
+        || (Reveal.isOverview && Reveal.isOverview());
+  }
+  // Shrink SLIDE until it fits; return true when its font size changed.
+  function fit(slide) {
+    if (!slide || skip()) { return false; }
+    var limit = Reveal.getConfig().height * (1 - MARGIN);
+    var before = slide.style.fontSize;
+    var scale = 1;
+    slide.style.fontSize = '';
+    for (var pass = 0; pass < PASSES && scale > FLOOR && slide.scrollHeight > limit; pass++) {
+      scale = Math.max(FLOOR, scale * limit / slide.scrollHeight);
+      slide.style.fontSize = (scale * 100).toFixed(1) + '%';
+    }
+    if (scale === FLOOR && slide.scrollHeight > limit) {
+      console.warn('reveal fit: slide still overflows at half size, split it: '
+                   + (slide.id || '(no id)'));
+    }
+    return slide.style.fontSize !== before;
+  }
+  function shown(el, fn) {
+    var saved = el.style.display;
+    el.style.display = 'block';
+    try { fn(); } finally { el.style.display = saved; }
+  }
+  function fitAll() {
+    busy = true;
+    try {
+      Reveal.getSlides().forEach(function (slide) {
+        var parent = slide.parentNode;
+        var run = function () { shown(slide, function () { fit(slide); }); };
+        if (parent && parent.classList && parent.classList.contains('stack')) {
+          shown(parent, run);
+        } else {
+          run();
+        }
+      });
+      Reveal.layout();
+    } finally { busy = false; }
+  }
+  function refit(slide) {
+    if (busy) { return; }
+    busy = true;
+    try { if (fit(slide)) { Reveal.layout(); } } finally { busy = false; }
+  }
+  if (Reveal.isReady()) { fitAll(); } else { Reveal.on('ready', fitAll); }
+  Reveal.on('slidechanged', function (event) { refit(event.currentSlide); });
+  Reveal.on('overviewhidden', function () { refit(Reveal.getCurrentSlide()); });
+})();")
+
 ;; --------------------------------- ox-reveal ---------------------------------
 
 (use-package ox-reveal
@@ -60,10 +190,9 @@
   (setq org-reveal-single-file t)
   (setq org-reveal-plugins '(highlight notes search zoom))
   (setq org-reveal-highlight-css "%r/plugin/highlight/monokai.css")
-  (setq org-reveal-init-options (format "slideNumber:true, hash:true, transition:'%s'"
-                                         cj/reveal-default-transition))
-  (setq org-reveal-head-preamble
-        "<style>.reveal h1,.reveal h2,.reveal h3,.reveal p{text-transform:none;}</style>"))
+  (setq org-reveal-init-options (cj/--reveal-init-options))
+  (setq org-reveal-head-preamble (cj/--reveal-head-preamble))
+  (setq org-reveal-extra-script (cj/--reveal-fit-script)))
 
 ;; ----------------------------- Private Helpers -------------------------------
 
@@ -76,15 +205,15 @@
 #+DATE: %s
 #+REVEAL_ROOT: %s
 #+REVEAL_THEME: %s
-#+REVEAL_INIT_OPTIONS: slideNumber:true, hash:true, transition:'%s'
+#+REVEAL_INIT_OPTIONS: %s
 #+REVEAL_PLUGINS: (highlight notes search zoom)
 #+REVEAL_HIGHLIGHT_CSS: %%r/plugin/highlight/monokai.css
-#+OPTIONS: toc:nil num:nil date:nil timestamp:nil author:t
+#+OPTIONS: toc:nil num:nil date:nil timestamp:nil author:t ^:nil
 
 " title (user-full-name) (format-time-string "%Y-%m-%d")
     (concat "file://" cj/reveal-root)
     cj/reveal-default-theme
-    cj/reveal-default-transition))
+    (cj/--reveal-init-options)))
 
 (defun cj/--reveal-title-to-filename (title)
   "Convert TITLE to a slug-based .org filename.
