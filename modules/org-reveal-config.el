@@ -99,8 +99,10 @@ Reveal.initialize call."
 
 (defun cj/--reveal-head-preamble ()
   "Return the <style> element for the document head.
-Sets the house font sizes through the theme variables and stops the
-theme from upper-casing headings."
+Sets the house font sizes through the theme variables, stops the theme
+from upper-casing headings, and left-aligns slide text (reveal centers
+everything by default); the title slide and standalone images keep the
+centering."
   (format "<style>
 :root {
   --r-main-font-size: %s;
@@ -110,6 +112,9 @@ theme from upper-casing headings."
   --r-heading4-size: 1em;
 }
 .reveal h1, .reveal h2, .reveal h3, .reveal p { text-transform: none; }
+.reveal .slides section { text-align: left; }
+.reveal .slides #sec-title-slide { text-align: center; }
+.reveal .slides section .figure { text-align: center; }
 </style>"
           cj/reveal-base-font-size))
 

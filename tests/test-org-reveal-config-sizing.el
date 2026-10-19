@@ -70,6 +70,13 @@
   "Normal: the rule that stops the theme upper-casing headings survives the rewrite."
   (should (string-match-p "text-transform: *none" (cj/--reveal-head-preamble))))
 
+(ert-deftest test-org-reveal-config-head-preamble-normal-left-aligns-slide-content ()
+  "Normal: slide text is left-aligned by default; the title slide and standalone images keep reveal's centering."
+  (let ((css (cj/--reveal-head-preamble)))
+    (should (string-match-p "\\.reveal \\.slides section {[^}]*text-align: *left" css))
+    (should (string-match-p "#sec-title-slide {[^}]*text-align: *center" css))
+    (should (string-match-p "section \\.figure {[^}]*text-align: *center" css))))
+
 (ert-deftest test-org-reveal-config-head-preamble-boundary-one-style-element ()
   "Boundary: exactly one <style> element, opened and closed."
   (let ((css (cj/--reveal-head-preamble)))
