@@ -62,9 +62,10 @@ auto-save-list/
 # reveal.js local clone (managed by scripts/setup-reveal.sh)
 /reveal.js/
 
-# Claude tooling — gitignored, not published to the public mirror
+# Agent tooling — gitignored, not published to the public mirror
 /.ai/
 /.claude/
+/.codex/
 /CLAUDE.md
 /AGENTS.md
 history
